@@ -53,14 +53,15 @@ import java.util.stream.Collectors;
  * This service moves Xenon state between two Xenon clusters.
  */
 public class CopyStateTriggerTaskService extends StatefulService {
-  private static final long OWNER_SELECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(10);
+  public static final String STAT_NAME_SKIP_COUNT = "skipCount";
 
-  private static final long DEFAULT_TRIGGER_INTERVAL = TimeUnit.MINUTES.toMicros(5);
+  private static final long OWNER_SELECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(10);
+  private static final long DEFAULT_TRIGGER_INTERVAL_MICROS = TimeUnit.MINUTES.toMicros(5);
 
   /**
    * Service execution stages.
    */
-  public static enum ExecutionState {
+  public enum ExecutionState {
     RUNNING,
     STOPPED
   }
@@ -127,6 +128,9 @@ public class CopyStateTriggerTaskService extends StatefulService {
     @Immutable
     @DefaultBoolean(value = true)
     public Boolean enableMaintenance;
+
+    @Immutable //since this is applied only on service start
+    public Long maintenanceIntervalMicros;
   }
 
   public CopyStateTriggerTaskService() {
@@ -154,6 +158,10 @@ public class CopyStateTriggerTaskService extends StatefulService {
     }
     InitializationUtils.initialize(state);
 
+    if (state.maintenanceIntervalMicros == null) {
+      state.maintenanceIntervalMicros = DEFAULT_TRIGGER_INTERVAL_MICROS;
+    }
+
     try {
       validateState(state);
     } catch (Throwable t) {
@@ -164,7 +172,7 @@ public class CopyStateTriggerTaskService extends StatefulService {
 
     if (state.enableMaintenance) {
       this.toggleOption(ServiceOption.PERIODIC_MAINTENANCE, true);
-      this.setMaintenanceIntervalMicros(DEFAULT_TRIGGER_INTERVAL);
+      this.setMaintenanceIntervalMicros(state.maintenanceIntervalMicros);
     }
 
     start.setBody(state).complete();
@@ -198,7 +206,7 @@ public class CopyStateTriggerTaskService extends StatefulService {
    * Handle service periodic maintenance calls.
    */
   @Override
-  public void handleMaintenance(Operation post) {
+  public void handlePeriodicMaintenance(Operation post) {
     post.complete();
 
     Operation.CompletionHandler handler = new Operation.CompletionHandler() {
@@ -245,14 +253,19 @@ public class CopyStateTriggerTaskService extends StatefulService {
         return;
       }
       List<CopyStateTaskService.State> documents =
-          QueryTaskUtils.getBroadcastQueryDocuments(CopyStateTaskService.State.class, o).stream()
-        .filter((d) -> d.taskState.stage == TaskStage.CREATED || d.taskState.stage == TaskStage.STARTED)
-        .collect(Collectors.toList());
+          QueryTaskUtils.getBroadcastQueryDocuments(CopyStateTaskService.State.class, o);
+
+      documents = documents.stream()
+          .filter((d) -> d.taskState.stage == TaskStage.CREATED || d.taskState.stage == TaskStage.STARTED)
+          .collect(Collectors.toList());
+
       if (documents.isEmpty()) {
         startNewTask(patch, currentState);
+      } else {
+        adjustStat(STAT_NAME_SKIP_COUNT, 1);
       }
     })
-    .sendWith(this);
+        .sendWith(this);
   }
 
   private void startNewTask(Operation patch, State currentState) {

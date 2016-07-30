@@ -82,9 +82,9 @@ public class ServiceHostUtils {
    */
   private static final int REQUIRED_STABLE_STATE_COUNT = 5;
 
-  private static final long WAIT_ITERATION_SLEEP = 500;
+  private static final long WAIT_ITERATION_SLEEP_MILLIS = 500;
 
-  private static final long WAIT_ITERATION_COUNT = 30000 / WAIT_ITERATION_SLEEP; // 30 seconds.
+  private static final long WAIT_ITERATION_COUNT = 30000 / WAIT_ITERATION_SLEEP_MILLIS; // 30 seconds.
 
   public static void waitForNodeGroupConvergence(
       ServiceHost[] hosts,
@@ -455,7 +455,7 @@ public class ServiceHostUtils {
   public static QueryTask waitForQuery(
       ServiceHost host, String referrer, QueryTask query, Predicate<QueryTask> predicate)
       throws Throwable {
-    return waitForQuery(host, referrer, query, predicate, WAIT_ITERATION_COUNT, WAIT_ITERATION_SLEEP);
+    return waitForQuery(host, referrer, query, predicate, WAIT_ITERATION_COUNT, WAIT_ITERATION_SLEEP_MILLIS);
   }
 
   /**
@@ -503,7 +503,7 @@ public class ServiceHostUtils {
                                           final ServiceHost host,
                                           Runnable cleanup)
       throws Throwable {
-    return waitForServiceState(type, serviceUri, predicate, host, WAIT_ITERATION_SLEEP, WAIT_ITERATION_COUNT, cleanup);
+    return waitForServiceState(type, serviceUri, predicate, host, WAIT_ITERATION_SLEEP_MILLIS, WAIT_ITERATION_COUNT, cleanup);
   }
 
 
@@ -513,7 +513,7 @@ public class ServiceHostUtils {
   public static <T> T waitForServiceState(final Class<T> type, final String serviceUri,
                                           Predicate<T> predicate,
                                           final ServiceHost host,
-                                          long waitIterationSleep,
+                                          long waitIterationSleepMillis,
                                           long waitIterationCount,
                                           Runnable cleanup)
       throws Throwable {
@@ -531,7 +531,7 @@ public class ServiceHostUtils {
           }
         },
         predicate,
-        waitIterationSleep,
+        waitIterationSleepMillis,
         waitIterationCount,
         cleanup,
         timeoutMessage);
@@ -543,14 +543,14 @@ public class ServiceHostUtils {
   public static <T> T waitForState(Supplier<T> supplier, Predicate<T> predicate, Runnable cleanup,
                                    String timeoutMessage)
       throws Throwable {
-    return waitForState(supplier, predicate, WAIT_ITERATION_SLEEP, WAIT_ITERATION_COUNT, cleanup, timeoutMessage);
+    return waitForState(supplier, predicate, WAIT_ITERATION_SLEEP_MILLIS, WAIT_ITERATION_COUNT, cleanup, timeoutMessage);
   }
 
   /**
    * Generic wait function.
    */
   public static <T> T waitForState(Supplier<T> supplier, Predicate<T> predicate,
-                                   long waitIterationSleep, long waitIterationCount,
+                                   long waitIterationSleepMillis, long waitIterationCount,
                                    Runnable cleanup, String timeoutMessage)
       throws Throwable {
     for (int i = 0; i < waitIterationCount; i++) {
@@ -558,7 +558,7 @@ public class ServiceHostUtils {
       if (predicate.test(t)) {
         return t;
       }
-      Thread.sleep(waitIterationSleep);
+      Thread.sleep(waitIterationSleepMillis);
     }
 
     if (cleanup != null) {

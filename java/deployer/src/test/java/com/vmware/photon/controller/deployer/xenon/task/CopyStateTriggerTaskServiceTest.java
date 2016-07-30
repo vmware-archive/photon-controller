@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.xenon.task;
 
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
@@ -26,6 +27,7 @@ import com.vmware.photon.controller.deployer.xenon.util.Pair;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.ServiceStats;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.TaskState.TaskStage;
 import com.vmware.xenon.common.Utils;
@@ -39,12 +41,15 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 
 import java.lang.reflect.Field;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * This class implements tests for the {@link CopyStateTriggerTaskService} class.
@@ -147,16 +152,21 @@ public class CopyStateTriggerTaskServiceTest {
               startState,
               CopyStateTriggerTaskService.State.class);
 
-      CopyStateTriggerTaskService.State currentState = destinationCluster
-          .getServiceState(state.documentSelfLink, CopyStateTriggerTaskService.State.class);
-      currentState = waitForTriggerToFinish(currentState);
+      ServiceHostUtils.waitForServiceState(CopyStateTriggerTaskService.State.class,
+          state.documentSelfLink,
+          (CopyStateTriggerTaskService.State result) -> result.triggersSuccess > 0,
+          destinationCluster.getHosts()[0],
+          TimeUnit.SECONDS.toMillis(1),
+          10,
+          null
+      );
 
       NodeGroupBroadcastResponse response = destinationCluster.
           sendBroadcastQueryAndWait(generateQueryCopyStateTaskQuery());
       List<CopyStateTaskService.State> documents = QueryTaskUtils
           .getBroadcastQueryDocuments(CopyStateTaskService.State.class, response);
 
-      assertThat(documents.size(), is(1));
+      assertThat(documents.size(), is(greaterThanOrEqualTo(1)));
       assertThat(copyStateHasCorrectValues(documents.get(0), state), is(true));
     }
 
@@ -164,26 +174,49 @@ public class CopyStateTriggerTaskServiceTest {
     public void successStartsOnlyOneCopyStateService() throws Throwable {
       startClusters();
 
-      CopyStateTriggerTaskService.State state = destinationCluster
+      CopyStateTriggerTaskService.State state = buildValidStartState();
+
+      CopyStateTaskService.State seedCopyTask = buildValidCopyTaskStartState(TaskStage.CREATED);
+      destinationCluster
+          .callServiceSynchronously(
+              CopyStateTaskFactoryService.SELF_LINK,
+              seedCopyTask,
+              CopyStateTaskService.State.class);
+
+      startState.enableMaintenance = false;
+
+      state = destinationCluster
           .callServiceSynchronously(
               CopyStateTriggerTaskFactoryService.SELF_LINK,
-              startState,
+              state,
               CopyStateTriggerTaskService.State.class);
+
       CopyStateTriggerTaskService.State patch = new CopyStateTriggerTaskService.State();
-      Thread.sleep(100);
       destinationCluster.sendPatchAndWait(state.documentSelfLink, patch);
 
-      CopyStateTriggerTaskService.State currentState = destinationCluster
-          .getServiceState(state.documentSelfLink, CopyStateTriggerTaskService.State.class);
-      currentState = waitForTriggerToFinish(currentState);
+      ServiceHostUtils.waitForServiceState(ServiceStats.class,
+          state.documentSelfLink + "/stats",
+          (ServiceStats result) -> {
+            ServiceStats.ServiceStat serviceStat = result.entries.get(CopyStateTriggerTaskService.STAT_NAME_SKIP_COUNT);
+            return serviceStat != null && serviceStat.latestValue > 0;
+          },
+          destinationCluster.getHosts()[0],
+          TimeUnit.SECONDS.toMillis(1),
+          10,
+          null
+      );
 
       NodeGroupBroadcastResponse response = destinationCluster
           .sendBroadcastQueryAndWait(generateQueryCopyStateTaskQuery());
       List<CopyStateTaskService.State> documents = QueryTaskUtils
           .getBroadcastQueryDocuments(CopyStateTaskService.State.class, response);
 
+      List<CopyStateTaskService.State> startedDocuments =
+          documents.stream()
+              .filter((d) -> d.taskState.stage == TaskStage.CREATED || d.taskState.stage == TaskStage.STARTED)
+              .collect(Collectors.toList());
+
       assertThat(documents.size(), is(1));
-      assertThat(copyStateHasCorrectValues(documents.get(0), state), is(true));
     }
 
     @Test
@@ -295,7 +328,22 @@ public class CopyStateTriggerTaskServiceTest {
     state.destinationIp = "0.0.0.0";
     state.factoryLink = ContainerFactoryService.SELF_LINK;
     state.destinationPort = 1234;
-    state.enableMaintenance = false;
+    state.enableMaintenance = true;
+    state.maintenanceIntervalMicros = TimeUnit.MILLISECONDS.toMicros(50);
     return state;
+  }
+
+  private CopyStateTaskService.State buildValidCopyTaskStartState(TaskState.TaskStage stage) {
+    CopyStateTaskService.State startState = new CopyStateTaskService.State();
+    startState.taskState = new TaskState();
+    startState.taskState.stage = stage;
+    startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    startState.sourceServers = new HashSet<>();
+    startState.sourceServers.add(new Pair<>("127.0.0.1", new Integer(1234)));
+    startState.destinationPort = 4321;
+    startState.destinationIp = "127.0.0.1";
+    startState.factoryLink = ContainerFactoryService.SELF_LINK;
+    startState.sourceFactoryLink = ContainerFactoryService.SELF_LINK;
+    return startState;
   }
 }
