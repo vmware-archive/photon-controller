@@ -13,19 +13,33 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.task;
 
+import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
+import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
+import java.net.URI;
+import java.util.EnumSet;
 
 /**
  * Class implementing a periodically triggered service to clean up IpLeaseService,
@@ -37,8 +51,10 @@ public class IpLeaseCleanerService extends StatefulService {
   public static final String FACTORY_LINK = com.vmware.photon.controller.common.xenon.ServiceUriPaths.CLOUDSTORE_ROOT
       + "/ip-leases-cleaners";
 
+  public static final int DEFAULT_PAGE_LIMIT = 1000;
+
   public static FactoryService createFactory() {
-    return FactoryService.create(IpLeaseDeleteService.class, IpLeaseDeleteService.State.class);
+    return FactoryService.create(IpLeaseCleanerService.class, IpLeaseCleanerService.State.class);
   }
 
   public IpLeaseCleanerService() {
@@ -56,6 +72,8 @@ public class IpLeaseCleanerService extends StatefulService {
     initializeState(state);
     validateState(state);
     start.setBody(state).complete();
+
+    processStart(state);
   }
 
   @Override
@@ -63,11 +81,50 @@ public class IpLeaseCleanerService extends StatefulService {
     ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
     State currentState = getState(patch);
     State patchState = patch.getBody(State.class);
+    URI referrer = patch.getReferer();
 
-    validatePatch(currentState, patchState);
+    validatePatch(currentState, patchState, referrer);
     applyPatch(currentState, patchState);
     validateState(currentState);
     patch.complete();
+
+    processPatch(currentState);
+  }
+
+
+  /**
+   * Does any additional processing after the start operation has been completed.
+   *
+   * @param current
+   */
+
+  private void processStart(final State current) {
+    if (current.isSelfProgressionDisabled) {
+      ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
+      return;
+    }
+
+    try {
+      if (!isFinalStage(current) && current.nextPageLink == null) {
+        Operation queryIpLeasePagination = Operation
+            .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
+            .setBody(buildIpLeaseQuery(current));
+        queryIpLeasePagination
+            .setCompletion(((op, failure) -> {
+              if (failure != null) {
+                failTask(failure);
+                return;
+              }
+              ServiceDocumentQueryResult results = op.getBody(QueryTask.class).results;
+              current.nextPageLink = results.nextPageLink;
+              sendStageProgressPatch(current);
+            })).sendWith(this);
+      } else {
+        sendStageProgressPatch(current);
+      }
+    } catch (Throwable e) {
+      failTask(e);
+    }
   }
 
   /**
@@ -85,6 +142,155 @@ public class IpLeaseCleanerService extends StatefulService {
   }
 
   /**
+   * Does any additional processing after the patch operation has been completed.
+   *
+   * @param current
+   */
+  private void processPatch(final State current) {
+    try {
+      switch (current.taskState.stage) {
+        case STARTED:
+          processIpLeaseDocuments(current);
+          break;
+
+        case FAILED:
+        case FINISHED:
+        case CANCELLED:
+          break;
+
+        default:
+          this.failTask(
+              new IllegalStateException(
+                  String.format("Un-expected stage: %s", current.taskState.stage))
+          );
+      }
+    } catch (Throwable e) {
+      failTask(e);
+    }
+  }
+
+  /**
+   * Retrieves the first page of IpLeaseService and kicks of the subsequent processing.
+   *
+   * @param current
+   */
+  private void processIpLeaseDocuments(final State current) {
+    if (current.nextPageLink == null) {
+      finishTask(current);
+      return;
+    }
+
+    Operation getOnePageOfIpLeaseDocuments =
+        Operation.createGet(UriUtils.buildUri(getHost(), current.nextPageLink));
+    getOnePageOfIpLeaseDocuments
+        .setCompletion((op, throwable) -> {
+          if (throwable != null) {
+            failTask(throwable);
+            return;
+          }
+          current.nextPageLink = op.getBody(QueryTask.class).results.nextPageLink;
+          sendStageProgressPatch(current);
+        })
+        .sendWith(this);
+  }
+
+  private QueryTask buildIpLeaseQuery(State s) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(IpLeaseService.State.class));
+
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+
+    querySpec.query
+        .addBooleanClause(kindClause);
+
+    querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+    querySpec.resultLimit = s.pageLimit;
+    return QueryTask.create(querySpec).setDirect(true);
+  }
+
+  /**
+   * Determines if the task is in a final state.
+   *
+   * @param s
+   * @return
+   */
+  private boolean isFinalStage(State s) {
+    return s.taskState.stage == TaskState.TaskStage.FINISHED ||
+        s.taskState.stage == TaskState.TaskStage.FAILED ||
+        s.taskState.stage == TaskState.TaskStage.CANCELLED;
+  }
+
+  private void finishTask(final State patch) {
+    ServiceUtils.logInfo(this, "Finished deleting unreleased ip leases.");
+    if (patch.taskState == null) {
+      patch.taskState = new TaskState();
+    }
+    patch.taskState.stage = TaskState.TaskStage.FINISHED;
+
+    this.sendStageProgressPatch(patch);
+  }
+
+  /**
+   * Moves the service into the FAILED state.
+   *
+   * @param e
+   */
+  private void failTask(Throwable e) {
+    ServiceUtils.logSevere(this, e);
+    this.sendStageProgressPatch(buildPatch(TaskState.TaskStage.FAILED, e));
+  }
+
+  /**
+   * Send a patch message to ourselves to update the execution stage.
+   *
+   * @param state
+   */
+  private void sendStageProgressPatch(State state) {
+    if (state.isSelfProgressionDisabled) {
+      ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
+      return;
+    }
+
+    State patchState = new State();
+    if (state.nextPageLink != null) {
+      patchState.nextPageLink = state.nextPageLink;
+    }
+
+    if (state.taskState == null) {
+      patchState.taskState.stage = TaskState.TaskStage.STARTED;
+    } else {
+      patchState.taskState = state.taskState;
+    }
+
+    Operation patch = Operation
+        .createPatch(UriUtils.buildUri(getHost(), getSelfLink()))
+        .setBody(patchState);
+    this.sendRequest(patch);
+  }
+
+  /**
+   * Build a state object that can be used to submit a stage progress
+   * self patch.
+   *
+   * @param stage
+   * @param e
+   * @return
+   */
+  private State buildPatch(TaskState.TaskStage stage, Throwable e) {
+    State s = new State();
+    s.taskState = new TaskState();
+    s.taskState.stage = stage;
+
+    if (e != null) {
+      s.taskState.failure = Utils.toServiceErrorResponse(e);
+    }
+
+    return s;
+  }
+
+  /**
+   * >>>>>>> cloud-store: add query IpLeaseService documents
    * Validate service state coherence.
    *
    * @param current
@@ -113,10 +319,24 @@ public class IpLeaseCleanerService extends StatefulService {
    *
    * @param current Supplies the start state object.
    * @param patch   Supplies the patch state object.
+   *                <<<<<<< HEAD
    */
-  private void validatePatch(State current, State patch) {
+  private void validatePatch(State current, State patch, URI referrer) {
+    checkNotNull(current.taskState.stage);
+    checkNotNull(patch.taskState.stage);
+
+    if (current.taskState.stage != TaskState.TaskStage.CREATED &&
+        referrer.getPath().contains(TaskSchedulerServiceFactory.SELF_LINK)) {
+      throw new IllegalStateException("Service is not in CREATED stage, ignores patch from TaskSchedulerService");
+    }
+
     ValidationUtils.validatePatch(current, patch);
-    ValidationUtils.validateTaskStageProgression(current.taskState, patch.taskState);
+
+    // Patches cannot be applied to documents in terminal states.
+    checkState(current.taskState.stage.ordinal() < TaskState.TaskStage.FINISHED.ordinal());
+
+    // Patches cannot transition the document to an earlier state
+    checkState(patch.taskState.stage.ordinal() >= current.taskState.stage.ordinal());
   }
 
   /**
@@ -129,13 +349,19 @@ public class IpLeaseCleanerService extends StatefulService {
     /**
      * Service execution stage.
      */
-    @DefaultTaskState(value = TaskState.TaskStage.CREATED)
+    @DefaultTaskState(value = TaskState.TaskStage.STARTED)
     public TaskState taskState;
 
     /**
      * The link to next page.
      */
     public String nextPageLink;
+
+    /**
+     * The page limit for querying IpCleanerService.
+     */
+    @DefaultInteger(value = DEFAULT_PAGE_LIMIT)
+    public int pageLimit;
 
     /**
      * Flag that controls if we should self patch to make forward progress.
