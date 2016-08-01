@@ -59,7 +59,7 @@ public class VsphereIsoStore {
    * @param inputStream
    * @return
    */
-  public long uploadIsoFile(String isoDatastorePath, InputStream inputStream) {
+  public long uploadIsoFile(String isoDatastorePath, InputStream inputStream) throws IOException {
     NfcClient nfcClient = getNfcClient(hostServiceTicket);
     return uploadFile(nfcClient, isoDatastorePath, inputStream);
   }
@@ -77,24 +77,18 @@ public class VsphereIsoStore {
     }
   }
 
-  private long uploadFile(NfcClient nfcClient, String filePath, InputStream inputStream) {
+  private long uploadFile(NfcClient nfcClient, String filePath, InputStream inputStream) throws IOException {
     logger.info("write to {}", filePath);
-    OutputStream outputStream = null;
     long size = 0;
-    try {
-      outputStream = nfcClient.putFileAutoClose(filePath, RESERVED_DS_SPACE);
+
+    try (OutputStream outputStream = nfcClient.putFileAutoClose(filePath, RESERVED_DS_SPACE)) {
       IOUtils.copyLarge(inputStream, outputStream);
     } catch (IOException e) {
       logger.error("Failed to upload ISO file", e);
       throw new RuntimeException(e);
     } finally {
-      try {
+      if (inputStream != null) {
         inputStream.close();
-        outputStream.close();
-      } catch (IOException e) {
-        logger.warn("Unable to close streaming for iso '{}' after {}: ",
-            filePath, Long.toString(size), e);
-        throw new RuntimeException(e);
       }
     }
 
