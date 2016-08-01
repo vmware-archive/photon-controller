@@ -42,6 +42,7 @@ import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteFactory
 import com.vmware.photon.controller.cloudstore.xenon.task.DhcpSubnetDeleteService;
 import com.vmware.photon.controller.cloudstore.xenon.task.EntityLockCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.xenon.task.EntityLockDeleteFactoryService;
+import com.vmware.photon.controller.cloudstore.xenon.task.IpLeaseCleanerService;
 import com.vmware.photon.controller.cloudstore.xenon.task.IpLeaseDeleteService;
 import com.vmware.photon.controller.cloudstore.xenon.task.TombstoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.AvailabilityZoneCleanerTriggerBuilder;
@@ -122,6 +123,7 @@ public class CloudStoreServiceGroup
           .put(IpLeaseService.class, IpLeaseService::createFactory)
           .put(DhcpSubnetDeleteService.class, DhcpSubnetDeleteService::createFactory)
           .put(IpLeaseDeleteService.class, IpLeaseDeleteService::createFactory)
+          .put(IpLeaseCleanerService.class, IpLeaseCleanerService::createFactory)
           .build();
 
   protected static final String SCHEDULER_IP_LEASE_DELETES = "/ip-lease-deletes";
@@ -217,6 +219,7 @@ public class CloudStoreServiceGroup
             && photonControllerXenonHost.checkServiceAvailable(DatastoreCleanerFactoryService.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(DhcpSubnetDeleteService.FACTORY_LINK)
             && photonControllerXenonHost.checkServiceAvailable(IpLeaseDeleteService.FACTORY_LINK)
+            && photonControllerXenonHost.checkServiceAvailable(IpLeaseCleanerService.FACTORY_LINK)
 
             // triggers
             && photonControllerXenonHost.checkServiceAvailable(TaskTriggerFactoryService.SELF_LINK)
