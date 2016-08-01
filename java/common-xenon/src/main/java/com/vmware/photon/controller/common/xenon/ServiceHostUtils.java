@@ -336,6 +336,10 @@ public class ServiceHostUtils {
 
     boolean areReady = true;
     for (Class service : services) {
+      boolean isServiceReady = isServiceReady(host, serviceLinkFieldName, service);
+      if (!isServiceReady) {
+        logger.info("%s is not ready.", getServiceSelfLink(serviceLinkFieldName, service));
+      }
       areReady &= isServiceReady(host, serviceLinkFieldName, service);
     }
 
