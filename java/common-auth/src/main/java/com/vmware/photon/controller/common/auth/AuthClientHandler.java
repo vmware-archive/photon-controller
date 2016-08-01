@@ -129,7 +129,7 @@ public class AuthClientHandler {
       return oidcClient.getOidcClient(clientID)
           .buildAuthenticationRequestURI(
               redirectURI,
-              ResponseType.idToken(),
+              ResponseType.idTokenAccessToken(),
               ResponseMode.FRAGMENT,
               tokenSpec,
               new State(LOGIN_STATE),
