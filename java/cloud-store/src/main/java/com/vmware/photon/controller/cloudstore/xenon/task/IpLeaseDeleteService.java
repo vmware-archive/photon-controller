@@ -135,6 +135,10 @@ public class IpLeaseDeleteService extends StatefulService {
                 deleteOperation.setCompletion(
                     (operation, ex) -> {
                       if (ex != null) {
+                        if (operation.getStatusCode() != 404) {
+                          finishTask(current);
+                          return;
+                        }
                         failTask(ex);
                         return;
                       }
@@ -441,7 +445,7 @@ public class IpLeaseDeleteService extends StatefulService {
     public String nextPageLink;
 
     /**
-     * The page limit for querying DhcpSubnetService.
+     * The page limit for querying IpLeaseService.
      */
     @DefaultInteger(value = DEFAULT_PAGE_LIMIT)
     public int pageLimit;

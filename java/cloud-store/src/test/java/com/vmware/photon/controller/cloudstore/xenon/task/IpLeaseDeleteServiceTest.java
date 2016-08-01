@@ -390,7 +390,6 @@ public class IpLeaseDeleteServiceTest {
         IpLeaseDeleteService.State state = new IpLeaseDeleteService.State();
 
         state.subnetId = "subnet-id";
-        state.documentSelfLink = "ip-lease-" + i;
         env.sendPostAndWaitForReplication(
             IpLeaseService.FACTORY_LINK, state);
       }

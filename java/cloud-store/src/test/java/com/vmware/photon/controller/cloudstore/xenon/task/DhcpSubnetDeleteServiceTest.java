@@ -50,7 +50,7 @@ import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests {@link com.vmware.photon.controller.cloudstore.xenon.task.trigger.DhcpSubnetDeleteService}.
+ * Tests {@link com.vmware.photon.controller.cloudstore.xenon.task.DhcpSubnetDeleteService}.
  */
 public class DhcpSubnetDeleteServiceTest {
 
