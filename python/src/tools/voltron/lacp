@@ -1,0 +1,316 @@
+#!/usr/bin/env python
+# Copyright 2016 VMware, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License.  You may obtain a copy
+# of the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, without
+# warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+# License for then specific language governing permissions and limitations
+# under the License.
+
+"""
+Python program for enabling LACP
+"""
+
+from __future__ import print_function
+
+import argparse
+import atexit
+import getpass
+import sys
+import time
+import traceback
+import uuid
+
+from pyVim.connect import SmartConnect, Disconnect
+from pyVmomi import vim, vmodl, Vim
+
+SWITCH_IP_ADDRESS = "192.168.1.254"
+PHYSICAL_NICS = ["vmnic1"]
+DVS_ID = str(uuid.uuid4())
+DVS_NAME = "dvs1"
+LACP_NAME = "lacp1"
+
+
+class Lacp:
+    def __init__(self, dvs_uuid):
+        self.dvs_uuid = dvs_uuid
+        self.si = None
+        self.content = None
+        self.dvsManager = None
+        self.hostSystem = None
+        self.hostNetworkSystem = None
+        self.hostNetworkConfig = None
+        self.networkFolder = None
+
+    def connect(self, host, user, pwd, port):
+        try:
+            self.si = SmartConnect(host=host, user=user, pwd=pwd, port=port)
+        except IOError:
+            pass
+
+        if not self.si:
+            print("Cannot connect to specified host using specified username and password")
+            sys.exit()
+
+        atexit.register(Disconnect, self.si)
+
+        internal_content = self.si.RetrieveInternalContent()
+        self.dvsManager = internal_content.hostDistributedVirtualSwitchManager
+
+        content = self.si.RetrieveContent()
+        dataCenter = content.rootFolder.childEntity[0]
+        hostFolder = dataCenter.hostFolder
+        computeResource = hostFolder.childEntity[0]
+        self.hostSystem = computeResource.host[0]
+        self.hostNetworkSystem = self.hostSystem.configManager.networkSystem
+        self.hostNetworkConfig = self.hostNetworkSystem.networkConfig
+        self.networkFolder = dataCenter.networkFolder
+        self.propertyCollector = content.propertyCollector
+
+    def delete_all_dvs(self):
+        print("deleting all dvs")
+        for dvs in self.dvsManager.GetDistributedVirtualSwitch():
+            print("deleting DVS " + dvs)
+            configSpec = Vim.Dvs.HostDistributedVirtualSwitchManager.DVSConfigSpec(
+                    uuid=dvs,
+                    backing=Vim.Dvs.HostMember.PnicBacking(),
+            )
+            self.dvsManager.ReconfigureDistributedVirtualSwitch(configSpec)
+            self.dvsManager.RemoveDistributedVirtualSwitch(dvs)
+
+    def create_dvs(self, pnics):
+        print("creating DVS")
+        # Create the dvs.
+        prodSpec = Vim.Dvs.ProductSpec(
+                forwardingClass="etherswitch",
+                vendor="VMware",
+                version="6.0.0")
+
+        uplinkPorts = []
+        uplinkPortKeys = []
+        pnicSpecs = []
+        for i in range(len(pnics)):
+            uplinkPorts.append(Vim.Dvs.HostDistributedVirtualSwitchManager.PortData(
+                    portKey=str(i),
+                    name="uplink" + str(i),
+                    connectionCookie=0))
+            uplinkPortKeys.append(str(i))
+            pnicSpecs.append(Vim.Dvs.HostMember.PnicSpec(
+                    pnicDevice=pnics[i],
+                    uplinkPortKey=str(i),
+                    connectionCookie=0))
+
+        lacpGroup = Vim.Dvs.VmwareDistributedVirtualSwitch.LacpGroupConfig(
+                key="123",
+                name=LACP_NAME,
+                mode="active",
+                uplinkNum=2,
+                loadbalanceAlgorithm="srcMac")
+
+        backing = Vim.Dvs.HostMember.PnicBacking(pnicSpec=pnicSpecs)
+        createSpec = Vim.Dvs.HostDistributedVirtualSwitchManager.DVSCreateSpec(
+                uuid=self.dvs_uuid,
+                name=DVS_NAME,
+                backing=backing,
+                productSpec=prodSpec,
+                maxProxySwitchPorts=64,
+                modifyVendorSpecificDvsConfig=True,
+                modifyVendorSpecificHostMemberConfig=True,
+                port=uplinkPorts,
+                uplinkPortKey=uplinkPortKeys,
+                switchIpAddress=SWITCH_IP_ADDRESS)
+        vmwsetting = Vim.Dvs.HostDistributedVirtualSwitchManager.VmwareDVSSettingSpec()
+        vmwsetting.SetLacpGroupConfig([lacpGroup])
+        createSpec.SetVmwareSetting(vmwsetting)
+
+        self.dvsManager.ApplyDvs([createSpec])
+        while self._get_dvs() is None:
+            print("waiting for DVS creation")
+            time.sleep(1)
+
+        print("Successfully created DVS " + self.dvs_uuid)
+
+    def _get_dvs(self):
+        """ Retrieve DVS with self.dvs_uuid """
+        for item in self.networkFolder.childEntity:
+            if isinstance(item, Vim.DistributedVirtualSwitch):
+                if item.uuid == self.dvs_uuid:
+                    return item
+        return None
+
+    def _create_dvpg(self, dvpgName):
+        """ Add a DVS Portgroup. """
+        print("adding port group to DVS")
+        dvs = self._get_dvs()
+        dvpgSpec = Vim.Dvs.DistributedVirtualPortgroup.ConfigSpec()
+        dvpgSpec.SetName(dvpgName)
+        # type should be one of "ephemeral", "earlyBinding" or "lateBinding"
+        dvpgSpec.SetType("earlyBinding")
+        dvpgSpec.SetNumPorts(16)
+
+        task = dvs.AddPortgroups([dvpgSpec])
+        self.wait_for_tasks([task])
+        print("Successfully added port group to DVS " + dvpgName)
+
+    def _get_dvpg(self):
+        """ Retrieve an existing DVS Portgroup """
+        dvs = self._get_dvs()
+        dvpgs = dvs.GetPortgroup()
+        for dvpg in dvpgs:
+            return dvpg
+        return None
+
+    def migrate_vmk(self):
+        print("migrating vmk")
+
+        vnic = self.hostNetworkConfig.vnic[0]
+        dvpg = self._get_dvpg()
+        vswitch = self.hostNetworkConfig.vswitch[0]
+        pnics = vswitch.spec.bridge.nicDevice
+
+        # remove pnics from old vswitch
+        vswitch.changeOperation = "edit"
+        vswitch.spec.bridge = None
+        vswitch.spec.policy = None
+        networkConfig = Vim.Host.NetworkConfig(
+                vswitch=[vswitch]
+        )
+
+        # do the host configuration so that we can make sure the pnic/vmknic
+        # configuration happens atomically
+        networkConfig.proxySwitch = [
+            Vim.Host.HostProxySwitch.Config(
+                changeOperation="edit",
+                uuid=self.dvs_uuid,
+                spec=Vim.Host.HostProxySwitch.Specification(
+                    backing=Vim.Dvs.HostMember.PnicBacking(
+                        pnicSpec=[Vim.Dvs.HostMember.PnicSpec(pnicDevice=pnic) for pnic in pnics]
+                    )
+                )
+            )
+        ]
+
+        # switch vmknic backing to vds
+        networkConfig.vnic = [
+            Vim.Host.VirtualNic.Config(
+                changeOperation="edit",
+                device=vnic.device,
+                portgroup="",
+                spec=Vim.Host.VirtualNic.Specification(
+                    portgroup=None,
+                    distributedVirtualPort=Vim.Dvs.PortConnection(
+                        switchUuid=self.dvs_uuid,
+                        portgroupKey=dvpg.key
+                    )
+                )
+            )
+        ]
+
+        self.hostNetworkSystem.UpdateNetworkConfig(networkConfig, "modify")
+        print("Successfully migrated vmk to DVS")
+
+    def wait_for_tasks(self, tasks):
+        """
+        Given the service instance si and tasks, it returns after all the
+        tasks are complete
+        """
+        print("waiting for task " + str(tasks))
+        pc = self.propertyCollector
+
+        taskList = [str(task) for task in tasks]
+
+        # Create filter
+        objSpecs = [vmodl.query.PropertyCollector.ObjectSpec(obj=task) for task in tasks]
+        propSpec = vmodl.query.PropertyCollector.PropertySpec(type=vim.Task,
+                                                              pathSet=[], all=True)
+        filterSpec = vmodl.query.PropertyCollector.FilterSpec()
+        filterSpec.objectSet = objSpecs
+        filterSpec.propSet = [propSpec]
+        filter = pc.CreateFilter(filterSpec, True)
+
+        try:
+            version, state = None, None
+
+            # Loop looking for updates till the state moves to a completed state.
+            while len(taskList):
+                update = pc.WaitForUpdates(version)
+                for filterSet in update.filterSet:
+                    for objSet in filterSet.objectSet:
+                        task = objSet.obj
+                        for change in objSet.changeSet:
+                            if change.name == 'info':
+                                state = change.val.state
+                            elif change.name == 'info.state':
+                                state = change.val
+                            else:
+                                continue
+
+                            if not str(task) in taskList:
+                                continue
+
+                            if state == vim.TaskInfo.State.success:
+                                # Remove task from taskList
+                                taskList.remove(str(task))
+                            elif state == vim.TaskInfo.State.error:
+                                raise task.info.error
+                # Move to next version
+                version = update.version
+        finally:
+            if filter:
+                filter.Destroy()
+
+
+def get_args():
+    """
+    Supports the command-line arguments listed below.
+    """
+    parser = argparse.ArgumentParser(description='Process command line arguments')
+    parser.add_argument('-s', '--host', default='localhost', action='store', help='ESX host to connect to')
+    parser.add_argument('-o', '--port', type=int, default=443, action='store', help='Port to connect on')
+    parser.add_argument('-u', '--user', required=True, action='store', help='User name to use when connecting to host')
+    parser.add_argument('-p', '--password', required=False, action='store',
+                        help='Password to use when connecting to host')
+    args = parser.parse_args()
+    return args
+
+
+def format_uuid(uuid):
+    """Converts a uuid string to the format used by hostd.
+       'hh hh hh hh hh hh hh hh-hh hh hh hh hh hh hh hh'"""
+    uuid = uuid.translate(None, " -")
+    if len(uuid) != 32:
+        raise ValueError("unexpected format for uuid: %s" % uuid)
+    pairs = [uuid[i:i + 2].lower() for i in range(0, len(uuid), 2)]
+    return " ".join(pairs[:8]) + "-" + " ".join(pairs[8:])
+
+
+def main():
+    args = get_args()
+    if args.password:
+        password = args.password
+    else:
+        password = getpass.getpass(prompt='Enter password for host %s and user %s: ' % (args.host, args.user))
+
+    try:
+        lacp = Lacp(format_uuid(DVS_ID))
+        lacp.connect(args.host, args.user, password, int(args.port))
+        lacp.delete_all_dvs()
+        lacp.create_dvs(PHYSICAL_NICS)
+        lacp._create_dvpg("Management Network1")
+
+        print("Successfully configured LACP")
+
+    except vmodl.MethodFault as e:
+        print("Caught vmodl fault : " + e.msg)
+    except Exception as e:
+        print("Caught Exception : " + str(e))
+        print(traceback.format_exc())
+
+
+# Start program
+if __name__ == "__main__":
+    main()
