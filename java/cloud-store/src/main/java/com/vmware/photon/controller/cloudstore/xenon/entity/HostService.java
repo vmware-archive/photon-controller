@@ -50,7 +50,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
-import com.vmware.xenon.common.ServiceMaintenanceRequest;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -205,8 +204,8 @@ public class HostService extends StatefulService {
       // patch is not from a getHostConfig() call), then also the host service proactively calls the agent to get
       // host configuration and update the host document. This is needed to make sure that when an agent which was
       // temporarily unavailable came back online, we make sure that the host config has not changed.
-      // Apart from these two cases, host configuration is updated as part of handleMaintenance of the Host Service
-      // at periodic intervals.
+      // Apart from these two cases, host configuration is updated as part of handlePeriodicMaintenance of the Host
+      // Service at periodic intervals.
       if (stateChangedToReady || (agentStateChangedToActive && newEsxVersion == null)) {
         getHostConfig(null, startState);
       }
@@ -259,17 +258,11 @@ public class HostService extends StatefulService {
    * @param maintenance
    */
   @Override
-  public void handleMaintenance(Operation maintenance) {
+  public void handlePeriodicMaintenance(Operation maintenance) {
     if (HostService.inUnitTests) {
       return;
     }
     try {
-      // Return if the maintenance call is not the periodically scheduled one
-      ServiceMaintenanceRequest request = maintenance.getBody(ServiceMaintenanceRequest.class);
-      if (!request.reasons.contains(ServiceMaintenanceRequest.MaintenanceReason.PERIODIC_SCHEDULE)) {
-        maintenance.complete();
-        return;
-      }
       getHost().schedule(() -> {
         Operation getOperation = Operation.createGet(this, maintenance.getUri().getPath())
             .setCompletion((op, ex) -> {
@@ -334,11 +327,11 @@ public class HostService extends StatefulService {
   /**
    * This method gets the host config (datastores, networks, etc.) from agent.
    * It also sets the agentState to ACTIVE or MISSING, depending on the result
-   * of the getHostConfig call. Because this updates agentState, handleMaintenance
+   * of the getHostConfig call. Because this updates agentState, handlePeriodicMaintenance
    * does not call pingHost when host configuration is updated.
-   *
+   * <p>
    * The operation parameter is null when executed by handlePatch. But it
-   * is set for handleMaintenance.
+   * is set for handlePeriodicMaintenance.
    */
   private void getHostConfig(Operation operation, State hostState) {
     try {
@@ -510,8 +503,8 @@ public class HostService extends StatefulService {
   // state before the datastore delete task can start querying.
   private void scheduleDatastoreDeleteTasks(State currentState, Set<String> datastoreIds) {
     getHost().schedule(() -> {
-          triggerDatastoreDeleteTasks(datastoreIds);
-        }, currentState.deleteTaskWaitMillis, TimeUnit.MILLISECONDS);
+      triggerDatastoreDeleteTasks(datastoreIds);
+    }, currentState.deleteTaskWaitMillis, TimeUnit.MILLISECONDS);
   }
 
   /**

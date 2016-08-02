@@ -116,7 +116,7 @@ public class TaskTriggerService extends StatefulService {
    * Handle service periodic maintenance calls.
    */
   @Override
-  public void handleMaintenance(Operation post) {
+  public void handlePeriodicMaintenance(Operation post) {
     post.complete();
 
     if (isBackgroundPaused()) {

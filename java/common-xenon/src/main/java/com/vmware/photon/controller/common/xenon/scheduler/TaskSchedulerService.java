@@ -97,7 +97,7 @@ public class TaskSchedulerService extends StatefulService {
    * Handle service periodic maintenance calls.
    */
   @Override
-  public void handleMaintenance(Operation post) {
+  public void handlePeriodicMaintenance(Operation post) {
     post.complete();
 
     Operation.CompletionHandler handler = (Operation op, Throwable failure) -> {
@@ -175,7 +175,7 @@ public class TaskSchedulerService extends StatefulService {
       @Override
       public void handle(Operation completedOp, Throwable failure) {
         if (failure != null) {
-          // The serivce log the failed query, and let the next handleMaintenance function trigger
+          // The serivce log the failed query, and let the next handlePeriodicMaintenance function trigger
           // another one.
           logFailure(failure);
           return;
