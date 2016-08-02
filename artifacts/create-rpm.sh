@@ -20,7 +20,7 @@ COMMIT_COUNT=`git rev-list HEAD | wc -l | xargs`
 ROOT=`git rev-parse --show-toplevel`
 SOURCES_DIR="${ROOT}/artifacts/rpms/SOURCES"
 SPECS_DIR="${ROOT}/artifacts/rpms/SPECS"
-RPMS_DIR="${ROOT}/artifacts/build/RPMS"
+BUILD_DIR="${ROOT}/artifacts/build/"
 TEMP_DIR=$(mktemp -d "${ROOT}/create_tar.XXXXX")
 TAR_PATH="/java/photon-controller-core/build/distributions/"
 TAR_PREFIX="photon-controller-core"
@@ -29,8 +29,8 @@ ENVOY_VIB_URL=${ENVOY_VIB_URL:="http://artifactory.ec.eng.vmware.com/artifactory
 
 trap "rm -rf ${TEMP_DIR}; rm -rf ${SOURCES_DIR};" EXIT
 
-mkdir -p "${RPMS_DIR}"
-rm -rf "${RPMS_DIR}"/*
+mkdir -p "${BUILD_DIR}/RPMS/"
+rm -rf "${BUILD_DIR}"/RPMS/*
 
 # Create source tar file for use by RPM spec file
 mkdir -p "${SOURCES_DIR}"
@@ -73,14 +73,14 @@ fi
 docker pull vmware/photon-controller-rpm-builder
 docker run -i --rm ${DEBUG_OPTIONS} \
   -v "${ROOT}":/photon-controller \
-  -v "${SOURCES_DIR}":/usr/src/photon/SOURCES \
-  -v "${RPMS_DIR}":/usr/src/photon/RPMS \
+  -v "${SOURCES_DIR}":/SOURCES \
+  -v "${BUILD_DIR}":/BUILD \
   -w /photon-controller/artifacts \
   vmware/photon-controller-rpm-builder \
   ./create-rpm-helper.sh "${VERSION}" "${COMMIT}" "${COMMIT_COUNT}" "${DEBUG}"
 
 # Verify rpm was created and could be installed.
 docker run -i --rm \
-  -v "${ROOT}"/artifacts/build/RPMS/x86_64:/rpms \
+  -v "${ROOT}"/artifacts/build/RPMS/noarch:/rpms \
   vmware/photon-controller-rpm-builder \
   bash -c 'ls /rpms/photon-controller*.rpm | xargs rpm -Uvh && [ -d /usr/lib/esxcloud/photon-controller-core ]'
