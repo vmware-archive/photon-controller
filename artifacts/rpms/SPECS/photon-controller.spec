@@ -5,6 +5,7 @@ Name:       photon-controller
 Version:    %{pkg_version}
 Release:    %{pkg_commit_count}.%{?pkg_commit}
 License:    Apache License 2.0
+BuildArch:  noarch
 URL:        https://github.com/vmware/photon-controller
 Group:      Applications
 Vendor:     VMware, Inc.

@@ -34,7 +34,7 @@ task deleteOldRpms(type: Exec) {
 
 task copyRpms(type: Copy) {
   dependsOn ':rpm', deleteOldRpms
-  from "../../artifacts/build/RPMS/x86_64/"
+  from "../../artifacts/build/RPMS/noarch/"
   into "../containers/photon-controller-core/"
 }
 
