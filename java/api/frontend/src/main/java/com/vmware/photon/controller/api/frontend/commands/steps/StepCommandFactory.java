@@ -33,6 +33,7 @@ import com.vmware.photon.controller.api.frontend.entities.StepEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
 import com.vmware.photon.controller.api.frontend.lib.ImageStoreFactory;
 import com.vmware.photon.controller.api.frontend.lib.VsphereIsoStore;
+import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -62,6 +63,7 @@ public class StepCommandFactory {
   private final NetworkBackend networkBackend;
   private final TenantBackend tenantBackend;
   private final ProjectBackend projectBackend;
+  private final NetworkHelper networkHelper;
   private final Boolean useVirtualNetwork;
 
   @Inject
@@ -82,6 +84,7 @@ public class StepCommandFactory {
                             ClusterBackend clusterBackend,
                             TenantBackend tenantBackend,
                             ProjectBackend projectBackend,
+                            NetworkHelper networkHelper,
                             @Named("useVirtualNetwork") Boolean useVirtualNetwork) {
     this.stepBackend = stepBackend;
     this.entityLockBackend = entityLockBackend;
@@ -100,6 +103,7 @@ public class StepCommandFactory {
     this.clusterBackend = clusterBackend;
     this.tenantBackend = tenantBackend;
     this.projectBackend = projectBackend;
+    this.networkHelper = networkHelper;
     this.useVirtualNetwork = useVirtualNetwork;
   }
 
@@ -114,8 +118,7 @@ public class StepCommandFactory {
       case DELETE_DISK:
         return new DiskDeleteStepCmd(taskCommand, stepBackend, stepEntity, diskBackend, attachedDiskBackend);
       case CREATE_VM:
-        return new VmCreateStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, diskBackend,
-                networkBackend, useVirtualNetwork);
+        return new VmCreateStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, diskBackend, networkHelper);
       case CONNECT_VM_SWITCH:
         return new VmJoinVirtualNetworkStepCmd(taskCommand, stepBackend, stepEntity);
       case DISCONNECT_VM_SWITCH:

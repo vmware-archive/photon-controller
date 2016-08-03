@@ -15,6 +15,8 @@ package com.vmware.photon.controller.api.frontend.backends;
 
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControllerXenonRestClient;
+import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
+import com.vmware.photon.controller.api.frontend.utils.PhysicalNetworkHelper;
 import com.vmware.photon.controller.apibackend.helpers.TestHost;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
@@ -66,6 +68,7 @@ public class XenonBackendTestModule extends AbstractModule {
 
   protected void customConfigure() {
     bindConstant().annotatedWith(Names.named("useVirtualNetwork")).to(false);
+    bind(NetworkHelper.class).to(PhysicalNetworkHelper.class);
   }
 
   @Provides

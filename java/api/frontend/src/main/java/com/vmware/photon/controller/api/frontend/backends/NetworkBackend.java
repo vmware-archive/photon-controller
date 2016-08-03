@@ -17,11 +17,9 @@ import com.vmware.photon.controller.api.frontend.entities.NetworkEntity;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
-import com.vmware.photon.controller.api.frontend.exceptions.external.PortGroupRepeatedInMultipleNetworksException;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Subnet;
 import com.vmware.photon.controller.api.model.SubnetCreateSpec;
-import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
 
 import com.google.common.base.Optional;
 
@@ -35,9 +33,6 @@ public interface NetworkBackend {
   TaskEntity createNetwork(SubnetCreateSpec network) throws ExternalException;
 
   ResourceList<Subnet> filter(Optional<String> name, Optional<String> portGroup, Optional<Integer> pageSize);
-
-  NetworkService.State getNetworkByPortGroup(Optional<String> portGroup)
-          throws PortGroupRepeatedInMultipleNetworksException;
 
   ResourceList<Subnet> getPage(String pageLink) throws ExternalException;
 

@@ -40,9 +40,6 @@ import java.util.List;
  */
 public class NetworkService extends StatefulService {
 
-  public static final String PORT_GROUPS_KEY =
-      QueryTask.QuerySpecification.buildCollectionItemName(State.FIELD_NAME_PORT_GROUPS);
-
   public NetworkService() {
     super(State.class);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
@@ -127,6 +124,8 @@ public class NetworkService extends StatefulService {
   public static class State extends ServiceDocument {
 
     public static final String FIELD_NAME_PORT_GROUPS = "portGroups";
+    public static final String FIELD_PORT_GROUPS_QUERY_KEY =
+        QueryTask.QuerySpecification.buildCollectionItemName(State.FIELD_NAME_PORT_GROUPS);
 
     @NotBlank
     @Immutable

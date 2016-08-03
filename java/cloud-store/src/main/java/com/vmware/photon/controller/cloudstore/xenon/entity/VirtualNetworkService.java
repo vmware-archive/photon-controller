@@ -115,6 +115,9 @@ public class VirtualNetworkService extends StatefulService {
       factoryServicePath = FACTORY_LINK,
       serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
+
+    public static final String FIELD_NAME_LOGICAL_SWITCH_ID = "logicalSwitchId";
+
     @NotBlank
     @WriteOnce
     public String name;

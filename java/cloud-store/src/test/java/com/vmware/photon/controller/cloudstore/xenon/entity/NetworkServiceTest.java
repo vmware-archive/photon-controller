@@ -293,7 +293,7 @@ public class NetworkServiceTest {
           .setTermMatchValue(com.vmware.xenon.common.Utils.buildKind(NetworkService.State.class));
 
       QueryTask.Query clause = new QueryTask.Query()
-          .setTermPropertyName(NetworkService.PORT_GROUPS_KEY)
+          .setTermPropertyName(NetworkService.State.FIELD_PORT_GROUPS_QUERY_KEY)
           .setTermMatchValue("P1");
 
       QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
@@ -312,7 +312,7 @@ public class NetworkServiceTest {
           .setTermMatchValue(com.vmware.xenon.common.Utils.buildKind(NetworkService.State.class));
 
       QueryTask.Query clause = new QueryTask.Query()
-          .setTermPropertyName(NetworkService.PORT_GROUPS_KEY)
+          .setTermPropertyName(NetworkService.State.FIELD_PORT_GROUPS_QUERY_KEY)
           .setTermMatchValue("foobar");
 
       QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
