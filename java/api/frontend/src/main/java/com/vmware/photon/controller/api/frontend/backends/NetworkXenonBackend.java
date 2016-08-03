@@ -21,7 +21,6 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalExc
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.api.frontend.exceptions.external.PortGroupRepeatedInMultipleNetworksException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PortGroupsAlreadyAddedToSubnetException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PortGroupsDoNotExistException;
 import com.vmware.photon.controller.api.frontend.utils.PaginationUtils;
@@ -119,25 +118,6 @@ public class NetworkXenonBackend implements NetworkBackend {
 
     return PaginationUtils.xenonQueryResultToResourceList(NetworkService.State.class, queryResult,
         state -> toApiRepresentation(convertToEntity(state)));
-  }
-
-  @Override
-  public NetworkService.State getNetworkByPortGroup(Optional<String> portGroup)
-      throws PortGroupRepeatedInMultipleNetworksException {
-    ServiceDocumentQueryResult queryResult = filterServiceDocuments(Optional.absent(), portGroup, Optional.absent());
-
-    ResourceList<NetworkService.State> networksList =
-        PaginationUtils.xenonQueryResultToResourceList(NetworkService.State.class, queryResult);
-
-    if (networksList == null || networksList.getItems() == null || networksList.getItems().size() == 0) {
-      return null;
-    } else if (networksList.getItems().size() > 1) {
-      Map<String, List<NetworkService.State>> violations = new HashMap<>();
-      violations.put(portGroup.toString(), networksList.getItems());
-      throw new PortGroupRepeatedInMultipleNetworksException(violations);
-    } else {
-      return networksList.getItems().get(0);
-    }
   }
 
   @Override
@@ -381,7 +361,7 @@ public class NetworkXenonBackend implements NetworkBackend {
     }
 
     if (portGroup.isPresent()) {
-      termsBuilder.put(NetworkService.PORT_GROUPS_KEY, portGroup.get().toString());
+      termsBuilder.put(NetworkService.State.FIELD_PORT_GROUPS_QUERY_KEY, portGroup.get().toString());
     }
 
     ImmutableMap<String, String> terms = termsBuilder.build();

@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.api.frontend.commands.steps;
 
 import com.vmware.photon.controller.api.frontend.backends.DiskBackend;
-import com.vmware.photon.controller.api.frontend.backends.NetworkBackend;
 import com.vmware.photon.controller.api.frontend.backends.StepBackend;
 import com.vmware.photon.controller.api.frontend.backends.VmBackend;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
@@ -24,14 +23,17 @@ import com.vmware.photon.controller.api.frontend.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.entities.VmEntity;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.StepNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
+import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
 import com.vmware.photon.controller.api.model.DiskState;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidReservationException;
 import com.vmware.photon.controller.host.gen.CreateVmResponse;
+import com.vmware.photon.controller.host.gen.VmNetworkInfo;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.Vm;
 
@@ -44,6 +46,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -71,7 +74,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
   private DiskBackend diskBackend;
 
   @Mock
-  private NetworkBackend networkBackend;
+  private NetworkHelper networkHelper;
 
   @Mock
   private StepBackend stepBackend;
@@ -93,7 +96,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
   private StepEntity connectVmSwitchStep = new StepEntity();
 
   @BeforeMethod
-  public void setUp() throws InternalException, InterruptedException, StepNotFoundException {
+  public void setUp() throws InternalException, InterruptedException, StepNotFoundException, ExternalException {
     vm = new VmEntity();
     vm.setId("vm-1");
     createVmResponse.setVm(createThriftVm("vm-1", "vm-100", "datastore-1", "datastore-name"));
@@ -102,6 +105,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.lookupAgentId(agentIp)).thenReturn(agentId);
     when(hostClient.getHostIp()).thenReturn(agentIp);
+    when(networkHelper.convertAgentNetworkToVmNetwork(any(VmNetworkInfo.class))).thenReturn(null);
 
     doReturn(task).when(taskCommand).getTask();
     doReturn(connectVmSwitchStep).when(task).findStep(Operation.CONNECT_VM_SWITCH);
@@ -122,7 +126,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
   }
 
   @Test
-  public void testSuccessfulVmCreateWithPortGroup() throws Throwable {
+  public void testSuccessfulVmCreateWithPhysicalNetwork() throws Throwable {
     VmCreateStepCmd command = getVmCreateStepCmd();
 
     LocalityEntity locality = new LocalityEntity();
@@ -131,13 +135,14 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
     vm.setAffinities(ImmutableList.of(locality));
 
     when(hostClient.createVm(reservationId, new HashMap<>())).thenReturn(createVmResponse);
+    when(networkHelper.isSdnEnabled()).thenReturn(false);
 
     command.createVm();
 
     assertThat(connectVmSwitchStep.getTransientResource(VmCreateStepCmd.VM_LOCATION_ID), nullValue());
 
     InOrder inOrder = inOrder(hostClient, vmBackend);
-    inOrder.verify(hostClient).createVm(reservationId, new HashMap<String, String>());
+    inOrder.verify(hostClient).createVm(reservationId, new HashMap<>());
     inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, agentId, agentIp, "datastore-1", "datastore-name", null);
 
     verifyNoMoreInteractions(vmBackend);
@@ -147,14 +152,15 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
   public void testSuccessfulVmCreateWithVirtualNetwork() throws Throwable {
     vm.setNetworks(ImmutableList.of("network-1"));
     when(hostClient.createVm(reservationId, new HashMap<>())).thenReturn(createVmResponse);
+    when(networkHelper.isSdnEnabled()).thenReturn(true);
 
-    VmCreateStepCmd command = getVmCreateStepCmd(true);
+    VmCreateStepCmd command = getVmCreateStepCmd();
     command.createVm();
 
     assertThat(connectVmSwitchStep.getTransientResource(VmCreateStepCmd.VM_LOCATION_ID), is(vmLocationId));
 
     InOrder inOrder = inOrder(hostClient, vmBackend);
-    inOrder.verify(hostClient).createVm(reservationId, new HashMap<String, String>());
+    inOrder.verify(hostClient).createVm(reservationId, new HashMap<>());
     inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, agentId, agentIp, "datastore-1", "datastore-name", null);
 
     verifyNoMoreInteractions(vmBackend);
@@ -164,7 +170,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
   public void testFailedVmCreate() throws Throwable {
     VmCreateStepCmd command = getVmCreateStepCmd();
 
-    when(hostClient.createVm(reservationId, new HashMap<String, String>()))
+    when(hostClient.createVm(reservationId, new HashMap<>()))
         .thenThrow(new InvalidReservationException(null));
 
     try {
@@ -211,17 +217,13 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
   }
 
   private VmCreateStepCmd getVmCreateStepCmd() throws Throwable {
-    return getVmCreateStepCmd(false);
-  }
-
-  private VmCreateStepCmd getVmCreateStepCmd(boolean useVirtualNetwork) throws Throwable {
     when(hostClient.createVm(anyString(), anyMap())).thenReturn(createVmResponse);
 
     step = new StepEntity();
     step.setId(stepId);
     step.addResource(vm);
     VmCreateStepCmd cmd = new VmCreateStepCmd(taskCommand,
-        stepBackend, step, vmBackend, diskBackend, networkBackend, useVirtualNetwork);
+        stepBackend, step, vmBackend, diskBackend, networkHelper);
     return spy(cmd);
   }
 

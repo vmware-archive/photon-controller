@@ -73,6 +73,9 @@ import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.api.frontend.config.ImageConfig;
 import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
 import com.vmware.photon.controller.api.frontend.config.StatusConfig;
+import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
+import com.vmware.photon.controller.api.frontend.utils.PhysicalNetworkHelper;
+import com.vmware.photon.controller.api.frontend.utils.VirtualNetworkHelper;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.PhotonControllerServerSet;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -207,7 +210,7 @@ public class ApiFeModule extends AbstractModule {
     bindBackends();
     bindAuthSecurityGroupFetchers();
     bindListener(Matchers.any(), new RpcMetricListener());
-
+    bindNetworkHelper();
     bindConstant().annotatedWith(Names.named("useVirtualNetwork")).to(configuration.useVirtualNetwork());
 
     //These factories should be built using reflection. Annotate clients and commands and inject them in a loop
@@ -256,5 +259,13 @@ public class ApiFeModule extends AbstractModule {
     bind(SecurityGroupFetcher.class).annotatedWith(ResourceTicket.class).to(ResourceTicketSecurityGroupFetcher.class);
     bind(SecurityGroupFetcher.class).annotatedWith(Tenant.class).to(TenantSecurityGroupFetcher.class);
     bind(SecurityGroupFetcher.class).annotatedWith(Vm.class).to(VmSecurityGroupFetcher.class);
+  }
+
+  private void bindNetworkHelper() {
+    if (configuration.useVirtualNetwork()) {
+      bind(NetworkHelper.class).to(VirtualNetworkHelper.class);
+    } else {
+      bind(NetworkHelper.class).to(PhysicalNetworkHelper.class);
+    }
   }
 }

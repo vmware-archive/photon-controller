@@ -24,6 +24,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidNetw
 import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PortGroupsAlreadyAddedToSubnetException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PortGroupsDoNotExistException;
+import com.vmware.photon.controller.api.frontend.utils.PaginationUtils;
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.QuotaLineItem;
 import com.vmware.photon.controller.api.model.QuotaUnit;
@@ -43,9 +44,11 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import org.junit.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -301,7 +304,17 @@ public class NetworkXenonBackendTest {
           Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(networks.getItems().size(), is(1));
 
-      NetworkService.State network = networkBackend.getNetworkByPortGroup(Optional.of(spec.getPortGroups().get(0)));
+      final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+      termsBuilder.put(NetworkService.State.FIELD_PORT_GROUPS_QUERY_KEY, spec.getPortGroups().get(0));
+      ServiceDocumentQueryResult queryResult = apiFeXenonRestClient.queryDocuments(
+          NetworkService.State.class,
+          termsBuilder.build(),
+          Optional.absent(),
+          true);
+      ResourceList<NetworkService.State> networkStateList =
+          PaginationUtils.xenonQueryResultToResourceList(NetworkService.State.class, queryResult);
+
+      NetworkService.State network = networkStateList.getItems().get(0);
       assertThat(network, not(nullValue()));
       assertThat(network.name, is(spec.getName()));
     }

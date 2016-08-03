@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.api.frontend.commands.steps;
 
 import com.vmware.photon.controller.api.frontend.backends.DiskBackend;
-import com.vmware.photon.controller.api.frontend.backends.NetworkBackend;
 import com.vmware.photon.controller.api.frontend.backends.StepBackend;
 import com.vmware.photon.controller.api.frontend.backends.VmBackend;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
@@ -22,28 +21,26 @@ import com.vmware.photon.controller.api.frontend.entities.EphemeralDiskEntity;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
 import com.vmware.photon.controller.api.frontend.entities.VmEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.ApiFeException;
-import com.vmware.photon.controller.api.frontend.exceptions.external.PortGroupRepeatedInMultipleNetworksException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
+import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
 import com.vmware.photon.controller.api.model.DiskState;
 import com.vmware.photon.controller.api.model.EphemeralDisk;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.PersistentDisk;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmState;
-import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.host.gen.CreateVmResponse;
 import com.vmware.photon.controller.host.gen.VmNetworkInfo;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import org.apache.commons.collections.map.HashedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -58,18 +55,19 @@ public class VmCreateStepCmd extends StepCommand {
   private static Logger logger = LoggerFactory.getLogger(VmCreateStepCmd.class);
   private final VmBackend vmBackend;
   private final DiskBackend diskBackend;
-  private final NetworkBackend networkBackend;
-  private final Boolean useVirtualNetwork;
+  private final NetworkHelper networkHelper;
   private VmEntity vm;
 
-  public VmCreateStepCmd(TaskCommand taskCommand, StepBackend stepBackend,
-                         StepEntity step, VmBackend vmBackend, DiskBackend diskBackend,
-                         NetworkBackend networkBackend, Boolean useVirtualNetwork) {
+  public VmCreateStepCmd(TaskCommand taskCommand,
+                         StepBackend stepBackend,
+                         StepEntity step,
+                         VmBackend vmBackend,
+                         DiskBackend diskBackend,
+                         NetworkHelper networkHelper) {
     super(taskCommand, stepBackend, step);
     this.vmBackend = vmBackend;
     this.diskBackend = diskBackend;
-    this.networkBackend = networkBackend;
-    this.useVirtualNetwork = useVirtualNetwork;
+    this.networkHelper = networkHelper;
   }
 
   @Override
@@ -93,8 +91,8 @@ public class VmCreateStepCmd extends StepCommand {
       CreateVmResponse response = taskCommand.getHostClient().createVm(
           taskCommand.getReservation(), vm.getEnvironment());
 
-      // Need to pass the location of vm to the next step if virtual network is being used.
-      if (useVirtualNetwork) {
+      // Need to pass the location of vm to the next step if software defined network is being used.
+      if (networkHelper.isSdnEnabled()) {
         taskCommand.getTask().findStep(Operation.CONNECT_VM_SWITCH)
             .createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, response.getVm().getLocation_id());
       }
@@ -130,26 +128,17 @@ public class VmCreateStepCmd extends StepCommand {
     }
   }
 
-  private  Map<String, VmService.NetworkInfo> getNetworksFromCreateVMResponse(List<VmNetworkInfo> vmNetworkInfoList)
-          throws PortGroupRepeatedInMultipleNetworksException  {
-    if (vmNetworkInfoList == null) {
+  private  Map<String, VmService.NetworkInfo> getNetworksFromCreateVMResponse(List<VmNetworkInfo> agentNetworks)
+          throws ExternalException {
+    if (agentNetworks == null) {
       return null;
     }
 
-    Map<String, VmService.NetworkInfo> networkInfoList = new HashedMap();
-    for (VmNetworkInfo vmNetworkInfo : vmNetworkInfoList) {
-      NetworkService.State network =  networkBackend.getNetworkByPortGroup(Optional.of(vmNetworkInfo.getNetwork()));
+    Map<String, VmService.NetworkInfo> networkInfoList = new HashMap<>();
+    for (VmNetworkInfo agentNetwork : agentNetworks) {
+      VmService.NetworkInfo vmNetwork = networkHelper.convertAgentNetworkToVmNetwork(agentNetwork);
 
-      if (network == null) {
-        continue;
-      }
-
-      VmService.NetworkInfo networkInfo = new VmService.NetworkInfo();
-      networkInfo.id = ServiceUtils.getIDFromDocumentSelfLink(network.documentSelfLink);
-      networkInfo.dhcpAgentIP = network.dhcpAgentIP;
-      networkInfo.macAddress = vmNetworkInfo.getMac_address();
-
-      networkInfoList.put(networkInfo.id, networkInfo);
+      networkInfoList.put(vmNetwork.id, vmNetwork);
     }
 
     return networkInfoList;
