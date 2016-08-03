@@ -198,6 +198,7 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
      * The sub-states for this this.
      */
     public enum SubStage {
+      ENFORCE_QUOTA,
       ALLOCATE_IP_ADDRESS_SPACE,
       GET_IP_ADDRESS_SPACE,
       GET_NSX_CONFIGURATION,
