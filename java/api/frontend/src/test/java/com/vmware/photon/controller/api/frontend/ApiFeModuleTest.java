@@ -64,6 +64,9 @@ import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.api.frontend.config.ConfigurationUtils;
 import com.vmware.photon.controller.api.frontend.config.ImageConfig;
 import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
+import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
+import com.vmware.photon.controller.api.frontend.utils.PhysicalNetworkHelper;
+import com.vmware.photon.controller.api.frontend.utils.VirtualNetworkHelper;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -224,6 +227,18 @@ public class ApiFeModuleTest {
       this.clusterFetcher = clusterFetcher;
       this.diskFetcher = diskFetcher;
       this.vmFetcher = vmFetcher;
+    }
+  }
+
+  /**
+   * Helper class used to test network helper injection.
+   */
+  public static class NetworkHelperDummyClient {
+    public NetworkHelper networkHelper;
+
+    @Inject
+    public NetworkHelperDummyClient(NetworkHelper networkHelper) {
+      this.networkHelper = networkHelper;
     }
   }
 
@@ -464,6 +479,69 @@ public class ApiFeModuleTest {
 
       TestUseVirtualNetworkFlag configWrapper = injector.getInstance(TestUseVirtualNetworkFlag.class);
       assertThat(configWrapper.useVirtualNetwork, is(true));
+    }
+  }
+
+  /**
+   * Tests network helper injection.
+   */
+  public class TestNetworkHelperInjection {
+    /**
+     * Test that physical network helper can be injected successfully.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testPhysicalNetworkHelperInjection() throws Throwable {
+      ApiFeModule apiFeModule = new ApiFeModule();
+      ApiFeConfiguration apiFeConfiguration = ConfigurationUtils.parseConfiguration(
+          ApiFeConfigurationTest.class.getResource("/config_sdn_disabled.yml").getPath()
+      );
+
+      apiFeModule.setConfiguration(apiFeConfiguration);
+
+      Injector injector = Guice.createInjector(
+          apiFeModule,
+          new AbstractModule() {
+            @Override
+            protected void configure() {
+              bindScope(RequestScoped.class, Scopes.NO_SCOPE);
+            }
+          });
+
+      NetworkHelperDummyClient client = injector.getInstance(NetworkHelperDummyClient.class);
+      assertThat(client, notNullValue());
+      assertThat(client.networkHelper, notNullValue());
+      assertThat(client.networkHelper, instanceOf(PhysicalNetworkHelper.class));
+    }
+
+    /**
+     * Test that virtual network helper can be injected successfully.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testVirtualNetworkHelperInjection() throws Throwable {
+      ApiFeModule apiFeModule = new ApiFeModule();
+      ApiFeConfiguration apiFeConfiguration = ConfigurationUtils.parseConfiguration(
+          ApiFeConfigurationTest.class.getResource("/config_sdn_enabled.yml").getPath()
+      );
+
+      apiFeModule.setConfiguration(apiFeConfiguration);
+
+      Injector injector = Guice.createInjector(
+          apiFeModule,
+          new AbstractModule() {
+            @Override
+            protected void configure() {
+              bindScope(RequestScoped.class, Scopes.NO_SCOPE);
+            }
+          });
+
+      NetworkHelperDummyClient client = injector.getInstance(NetworkHelperDummyClient.class);
+      assertThat(client, notNullValue());
+      assertThat(client.networkHelper, notNullValue());
+      assertThat(client.networkHelper, instanceOf(VirtualNetworkHelper.class));
     }
   }
 }
