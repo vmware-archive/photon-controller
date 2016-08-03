@@ -39,13 +39,13 @@ public class DeploymentServiceFactory extends FactoryService {
 
   @Override
   public void handleStop(Operation stop) {
-    ServiceUtils.logWarning(this, "Stopping factory service %s", getSelfLink());
+    ServiceUtils.logWarning(this, "Stopping factory service %s", stop);
     super.handleStop(stop);
   }
 
   @Override
   public void handleDelete(Operation delete) {
-    ServiceUtils.logWarning(this, "Deleting factory service %s", getSelfLink());
+    ServiceUtils.logWarning(this, "Deleting factory service %s", delete);
     super.handleDelete(delete);
   }
 }
