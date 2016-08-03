@@ -412,7 +412,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               startState,
               CreateVirtualNetworkWorkflowDocument.class,
               (state) -> TaskState.TaskStage.STARTED == state.taskState.stage &&
-                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE
+                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA
                     == state.taskState.subStage);
 
       CreateVirtualNetworkWorkflowDocument patchState = buildPatch(patchStage, patchSubStage);
@@ -426,6 +426,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     @DataProvider(name = "ValidStageAndSubStagePatch")
     public Object[][] getValidStageAndSubStagePatch() {
       return new Object[][]{
+          {TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
           {TaskState.TaskStage.STARTED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
           {TaskState.TaskStage.STARTED,
@@ -459,12 +461,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               startState,
               CreateVirtualNetworkWorkflowDocument.class,
               (state) -> TaskState.TaskStage.STARTED == state.taskState.stage &&
-                  CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE
+                  CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA
                       == state.taskState.subStage);
 
       CreateVirtualNetworkWorkflowDocument patchState = buildPatch(firstPatchStage, firstPatchSubStage);
       if (firstPatchStage != TaskState.TaskStage.STARTED ||
-          firstPatchSubStage != CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE) {
+          firstPatchSubStage != CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA) {
         finalState = testEnvironment.sendPatchAndWait(finalState.documentSelfLink, patchState)
             .getBody(CreateVirtualNetworkWorkflowDocument.class);
       }
@@ -480,9 +482,18 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
       return new Object[][]{
           {TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE,
            TaskState.TaskStage.CREATED, null},
 
+          {TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
+              TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA},
           {TaskState.TaskStage.STARTED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
            TaskState.TaskStage.CREATED, null},
@@ -493,6 +504,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH,
            TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH,
+              TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA},
+          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH,
            TaskState.TaskStage.STARTED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
           {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH,
@@ -501,8 +515,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER,
            TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER,
-           TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
+              TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA},
           {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER,
            TaskState.TaskStage.STARTED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
@@ -511,6 +525,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
           {TaskState.TaskStage.FINISHED, null,
            TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA},
           {TaskState.TaskStage.FINISHED, null,
            TaskState.TaskStage.STARTED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
@@ -521,6 +538,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
           {TaskState.TaskStage.CANCELLED, null,
            TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA},
           {TaskState.TaskStage.CANCELLED, null,
            TaskState.TaskStage.STARTED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
@@ -531,6 +551,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
           {TaskState.TaskStage.FAILED, null,
            TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA},
           {TaskState.TaskStage.FAILED, null,
            TaskState.TaskStage.STARTED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
@@ -555,7 +578,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               startState,
               CreateVirtualNetworkWorkflowDocument.class,
               (state) -> TaskState.TaskStage.STARTED == state.taskState.stage &&
-                  CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE
+                  CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA
                       == state.taskState.subStage);
 
       CreateVirtualNetworkWorkflowDocument patchState = buildPatch(TaskState.TaskStage.STARTED,

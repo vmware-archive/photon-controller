@@ -159,6 +159,9 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
   private void processPatch(CreateVirtualNetworkWorkflowDocument state) {
     try {
       switch (state.taskState.subStage) {
+        case ENFORCE_QUOTA:
+          enforceQuotas(state);
+          break;
         case ALLOCATE_IP_ADDRESS_SPACE:
           allocateIpAddressSpace(state);
           break;
@@ -178,6 +181,20 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           setUpLogicalRouter(state);
           break;
       }
+    } catch (Throwable t) {
+      fail(state, t);
+    }
+  }
+
+  /**
+   * Enforce quotas for allocations.
+   */
+  private void enforceQuotas(CreateVirtualNetworkWorkflowDocument state) {
+    try {
+      CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
+          TaskState.TaskStage.STARTED,
+          CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE);
+      progress(state, patchState);
     } catch (Throwable t) {
       fail(state, t);
     }
