@@ -33,8 +33,10 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.HttpException;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.List;
 
@@ -45,8 +47,7 @@ public class AuthClientHandler {
   private static final String LOGIN_STATE = "L";
   private static final String LOGOUT_STATE = "E";
   private static final String LOGIN_REQUEST_NONCE = "1";
-  private static final String LOGOUT_URL_ID_TOKEN_START = "id_token_hint=";
-  private static final String LOGOUT_URL_ID_TOKEN_END = "&post_logout_redirect_uri=";
+  private static final String LOGOUT_URL_ID_TOKEN_START = "id_token_hint";
   private static final String LOGOUT_URL_ID_TOKEN_PLACEHOLDER = "[ID_TOKEN_PLACEHOLDER]";
 
   private final AuthOIDCClient oidcClient;
@@ -143,7 +144,7 @@ public class AuthClientHandler {
    * Build logout request URI for the given client. The client is expected to have exactly one post-logout URI.
    */
   private URI buildLogoutRequestURI(ClientID clientID, ClientIDToken idToken, URI postLogoutURI) throws AuthException,
-      URISyntaxException {
+      URISyntaxException, UnsupportedEncodingException {
     try {
       return replaceIdTokenWithPlaceholder(oidcClient.getOidcClient(clientID)
           .buildLogoutRequestURI(postLogoutURI, idToken, new State(LOGOUT_STATE)));
@@ -196,20 +197,32 @@ public class AuthClientHandler {
    * @throws AuthException
    */
   @VisibleForTesting
-  protected URI replaceIdTokenWithPlaceholder(URI logoutUri) throws URISyntaxException {
-    String logoutStr = logoutUri.toString();
-    int idTokenStartIndex = logoutStr.indexOf(LOGOUT_URL_ID_TOKEN_START) + LOGOUT_URL_ID_TOKEN_START.length();
-    int idTokenEndIndex = logoutStr.lastIndexOf(LOGOUT_URL_ID_TOKEN_END);
+  protected URI replaceIdTokenWithPlaceholder(URI logoutUri)
+          throws IllegalArgumentException, URISyntaxException, UnsupportedEncodingException{
+    String placeholderValue = "";
+    String keyToMatch = URLDecoder.decode(LOGOUT_URL_ID_TOKEN_START, "UTF-8");
+    final String urlQuery = logoutUri.getQuery();
 
-    if (idTokenStartIndex <= LOGOUT_URL_ID_TOKEN_START.length() || idTokenEndIndex < 0 ||
-        idTokenEndIndex < idTokenStartIndex) {
+    if (urlQuery == null) {
       throw new IllegalArgumentException(String.format("Logout URL %s has invalid format", logoutUri.toString()));
     }
 
-    StringBuilder replacedLogoutBuilder = new StringBuilder(logoutStr.substring(0, idTokenStartIndex));
-    replacedLogoutBuilder.append(LOGOUT_URL_ID_TOKEN_PLACEHOLDER);
-    replacedLogoutBuilder.append(logoutStr.substring(idTokenEndIndex));
-    return new URI(replacedLogoutBuilder.toString());
+    final String[] queryParams = urlQuery.split("&");
+
+    for (String param : queryParams) {
+      final String[] pairs = param.split("=");
+      if (pairs[0].equals(keyToMatch)) {
+        placeholderValue = pairs[1];
+        break;
+      }
+    }
+
+    if (placeholderValue == "") {
+      throw new IllegalArgumentException(String.format("Logout URL %s has invalid format", logoutUri.toString()));
+    }
+
+    String logoutStr = logoutUri.toString();
+    return new URI(logoutStr.replace(placeholderValue, LOGOUT_URL_ID_TOKEN_PLACEHOLDER));
   }
 
   /**
