@@ -265,7 +265,6 @@ public class AuthClientHandlerTest {
     return new Object[][]{
         {""},
         {"https://10.146.39.99/openidconnect/logout/esxcloud?"},
-        {"https://10.146.39.99/openidconnect/logout/esxcloud?id_token_hint=eyJhb"},
         {"https://10.146.39.99/openidconnect/logout/esxcloud?&post_logout_redirect_uri=https%3A%2F%2F10.118.97.239%2F" +
             "api%2Flogin-redirect.htm"},
     };
