@@ -26,6 +26,7 @@ import org.hibernate.validator.constraints.Range;
 
 import javax.validation.constraints.NotNull;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -112,6 +113,12 @@ public class DeployerContext {
 
   @JsonProperty("enableAuth")
   private final boolean enableAuth;
+
+  /**
+   * This list defines the order in which to un-install vibs that may be on the system.
+   * This may be important
+   */
+  private final List<String> vibUninstallOrder = new ArrayList<String>();
 
   @VisibleForTesting
   public DeployerContext() {
@@ -242,5 +249,9 @@ public class DeployerContext {
 
   public Collection<DeploymentMigrationInformation> getDeploymentMigrationInformation() {
     return MigrationUtils.findAllMigrationServices();
+  }
+
+  public List<String> getVibUninstallOrder() {
+    return vibUninstallOrder;
   }
 }

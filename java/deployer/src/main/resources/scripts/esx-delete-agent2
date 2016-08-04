@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 tools=$(readlink -nf $(dirname $0))
 source $tools/common.sh
@@ -22,24 +22,34 @@ username=$1
 shift
 password=$1
 shift
+vibname=$1
+shift
 
-# Remove agent if existed
-agent_existing=`sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list | grep "photon-controller-agent " | wc -l`
-if [ $agent_existing -ne 0 ]
-then
-  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} /etc/init.d/photon-controller-agent stop
-  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n photon-controller-agent
-fi
+echo `date`
+echo "vibname: $vibname"
+echo "host: $host_address"
 
-agent_ext_existing=`sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list | grep photon-controller-agent-ext | wc -l`
-if [ $agent_ext_existing -ne 0 ]
-then
-  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n photon-controller-agent-ext
-fi
+max_retires=3
 
-# Remove agent before envoy so that envoy libraries are not busy/locked
-envoy_existing=`sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list | grep envoy | wc -l`
-if [ $envoy_existing -ne 0 ]
-then
-  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n envoy
-fi
+function remove() {
+  retVal=0
+  vib_existing=`sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list | grep "$vibname " | wc -l`
+  if [ $vib_existing -ne 0 ]
+  then
+    sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n $vibname
+    retVal=$?
+  fi
+  return $retVal
+}
+
+
+for i in $(seq 1 $max_retires); do
+	remove
+	ret=$?
+	if [ $ret -eq 0 ]
+	then
+	  exit 0
+	fi
+done
+
+exit $ret

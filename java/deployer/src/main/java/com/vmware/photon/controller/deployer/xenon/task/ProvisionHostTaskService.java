@@ -45,6 +45,7 @@ import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VibService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
+import com.vmware.photon.controller.deployer.xenon.util.VibUtils;
 import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.photon.controller.nsxclient.models.FabricNode;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeCreateSpec;
@@ -76,6 +77,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
 import org.apache.commons.io.FileUtils;
 import org.apache.thrift.async.AsyncMethodCallback;
+
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -123,6 +125,7 @@ public class ProvisionHostTaskService extends StatefulService {
       CREATE_TRANSPORT_NODE,
       WAIT_FOR_TRANSPORT_NODE,
       CONFIGURE_SYSLOG,
+      REMOVE_VIBS,
       UPLOAD_VIBS,
       INSTALL_VIBS,
       WAIT_FOR_AGENT_START,
@@ -416,6 +419,7 @@ public class ProvisionHostTaskService extends StatefulService {
           case CREATE_TRANSPORT_NODE:
           case WAIT_FOR_TRANSPORT_NODE:
           case CONFIGURE_SYSLOG:
+          case REMOVE_VIBS:
           case UPLOAD_VIBS:
           case INSTALL_VIBS:
           case WAIT_FOR_AGENT_START:
@@ -456,6 +460,9 @@ public class ProvisionHostTaskService extends StatefulService {
       case CONFIGURE_SYSLOG:
         processConfigureSyslogSubStage(currentState);
         break;
+      case REMOVE_VIBS:
+        processRemoveVibSubStage(currentState);
+        break;
       case UPLOAD_VIBS:
         processUploadVibsSubStage(currentState);
         break;
@@ -480,7 +487,6 @@ public class ProvisionHostTaskService extends StatefulService {
   //
   // GET_NETWORK_MANAGER_INFO sub-stage routines
   //
-
   private void processGetNetworkManagerInfoSubStage(State currentState) {
 
     sendRequest(HostUtils
@@ -912,7 +918,7 @@ public class ProvisionHostTaskService extends StatefulService {
 
     if (deploymentState.syslogEndpoint == null) {
       ServiceUtils.logInfo(this, "Skipping syslog endpoint configuration (disabled)");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.REMOVE_VIBS);
       return;
     }
 
@@ -964,7 +970,7 @@ public class ProvisionHostTaskService extends StatefulService {
               if (result != 0) {
                 logSyslogConfigurationErrorAndFail(hostState, result, scriptLogFile);
               } else {
-                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.REMOVE_VIBS);
               }
             } catch (Throwable t) {
               failTask(t);
@@ -986,6 +992,40 @@ public class ProvisionHostTaskService extends StatefulService {
     ServiceUtils.logSevere(this, "Script output: " + FileUtils.readFileToString(scriptLogFile));
     throw new IllegalStateException("Configuring syslog on host " + hostState.hostAddress + " failed with exit code " +
         result);
+  }
+
+  //
+  // REMOVE_VIBS sub-stage routines
+  //
+
+  private void processRemoveVibSubStage(State currentState) {
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processRemoveVibSubStage(o.getBody(HostService.State.class), currentState);
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processRemoveVibSubStage(HostService.State hostState, State currentState) {
+    HostUtils.getListeningExecutorService(this).submit(
+      VibUtils.removeVibs(hostState,  this, (e) ->{
+        if (e != null) {
+          failTask(e);
+          return;
+        }
+        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
+      })
+    );
   }
 
   //
