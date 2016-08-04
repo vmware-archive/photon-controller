@@ -33,6 +33,7 @@ describe "Image Cleaner", housekeeper: true do
 
   def wait_for_existing_task
     tasks = client.get service_link + "?expand"
+    print_all_tasks tasks
     running_task_count = 0
     running_task = nil
     tasks["documents"].each do |document|
@@ -62,5 +63,12 @@ describe "Image Cleaner", housekeeper: true do
     end
     EsxCloud::Config.logger.debug "Image Cleaner Task: #{task.inspect}"
     task
+  end
+
+  def print_all_tasks(tasks)
+    puts "Existing image-cleaners count: #{tasks["documentCount"]}"
+    tasks["documents"].each do |document|
+      puts document.inspect
+    end
   end
 end
