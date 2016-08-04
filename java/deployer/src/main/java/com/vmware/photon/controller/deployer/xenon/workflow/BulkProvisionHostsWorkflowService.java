@@ -106,6 +106,12 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
      */
     @Immutable
     public QueryTask.QuerySpecification querySpecification;
+
+    /**
+     * This value represents whether the provisioning of the host is auth enabled or not.
+     */
+    @Immutable
+    public boolean authEnabled;
   }
 
   public BulkProvisionHostsWorkflowService() {
@@ -342,6 +348,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       ProvisionHostTaskService.State startState = new ProvisionHostTaskService.State();
       startState.deploymentServiceLink = currentState.deploymentServiceLink;
       startState.hostServiceLink = hostServiceLink.next();
+      startState.authEnabled = currentState.authEnabled;
 
       TaskUtils.startTaskAsync(
           this,

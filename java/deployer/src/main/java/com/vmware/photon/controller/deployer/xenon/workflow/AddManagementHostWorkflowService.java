@@ -455,6 +455,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     if (currentState.hostServiceLink != null) {
       startState.querySpecification = MiscUtils.generateHostQuerySpecification(currentState.hostServiceLink, null);
     }
+    startState.authEnabled = false;
 
     TaskUtils.startTaskAsync(
         this,
