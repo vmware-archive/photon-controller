@@ -451,10 +451,13 @@ public class AddManagementHostWorkflowService extends StatefulService {
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
+    startState.createCert = false;
     startState.usageTag = UsageTag.MGMT.name();
     if (currentState.hostServiceLink != null) {
+      startState.createCert = deploymentService.oAuthEnabled;
       startState.querySpecification = MiscUtils.generateHostQuerySpecification(currentState.hostServiceLink, null);
     }
+
 
     TaskUtils.startTaskAsync(
         this,

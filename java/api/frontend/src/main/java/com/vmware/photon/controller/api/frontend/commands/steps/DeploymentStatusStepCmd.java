@@ -57,8 +57,11 @@ public class DeploymentStatusStepCmd extends XenonTaskStatusStepCmd {
               DeploymentWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS.ordinal())
           .put(Operation.PROVISION_CONTROL_PLANE_VMS,
               DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE.ordinal())
+          // Provisioing all host in PROVISION_CLOUD_HOSTS step. This is due to because we cannot create certificate for
+          // management host in provision management host step since  lightwave instance is not running at that point.
+          // So reprovisioning all the host in step of PROVISION_CLOUD_HOSTS.
           .put(Operation.PROVISION_CLOUD_HOSTS,
-              DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS.ordinal())
+              DeploymentWorkflowService.TaskState.SubStage.PROVISION_ALL_HOSTS.ordinal())
           .put(Operation.PROVISION_CLUSTER_MANAGER,
               DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES.ordinal())
           .put(Operation.MIGRATE_DEPLOYMENT_DATA,
