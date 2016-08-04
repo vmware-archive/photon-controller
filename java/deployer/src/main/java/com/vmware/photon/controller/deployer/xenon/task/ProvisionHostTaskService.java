@@ -33,6 +33,7 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultString;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
@@ -296,6 +297,13 @@ public class ProvisionHostTaskService extends StatefulService {
      */
     @DefaultInteger(value = 0)
     public Integer hostStatusPollCount;
+
+    /**
+     * This value represents whether the provisioning of the host is auth enabled or not.
+     */
+    @Immutable
+    @DefaultBoolean(value = false)
+    public Boolean createCert;
   }
 
   public ProvisionHostTaskService() {
@@ -1153,6 +1161,7 @@ public class ProvisionHostTaskService extends StatefulService {
         .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT)
         .build();
 
+
     sendRequest(Operation
         .createPost(UriUtils.buildBroadcastRequestUri(
             UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
@@ -1164,7 +1173,8 @@ public class ProvisionHostTaskService extends StatefulService {
                 if (e != null) {
                   failTask(e);
                 } else {
-                  processInstallVibsSubStage(QueryTaskUtils.getBroadcastQueryDocuments(VibService.State.class, o));
+                  processInstallVibsSubStage(currentState,
+                      QueryTaskUtils.getBroadcastQueryDocuments(VibService.State.class, o));
                 }
               } catch (Throwable t) {
                 failTask(t);
@@ -1172,7 +1182,7 @@ public class ProvisionHostTaskService extends StatefulService {
             }));
   }
 
-  private void processInstallVibsSubStage(List<VibService.State> vibStateList) {
+  private void processInstallVibsSubStage(State currentState, List<VibService.State> vibStateList) {
 
     if (vibStateList.isEmpty()) {
       ServiceUtils.logInfo(this, "Found no remaining VIBs to install");
@@ -1184,6 +1194,54 @@ public class ProvisionHostTaskService extends StatefulService {
 
     VibService.State vibState = vibStateList.get(0);
 
+//    CloudStoreHelper cloudStoreHelper = HostUtils.getCloudStoreHelper(this);
+//    final DeploymentService.State deploymentService;
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  final DeploymentService.State deploymentState = o.getBody(DeploymentService.State.class);
+                  processInstallVibSubStage(vibState, deploymentState,
+                      currentState.createCert);
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+
+
+//    Operation deploymentGetOp = cloudStoreHelper.createGet(currentState.deploymentServiceLink);
+//    Operation hostGetOp = cloudStoreHelper.createGet(vibState.hostServiceLink);
+//
+//
+//    OperationJoin
+//        .create(deploymentGetOp, hostGetOp)
+//        .setCompletion(
+//            (ops, exs) -> {
+//              try {
+//                if (exs != null && !exs.isEmpty()) {
+//                  failTask(exs.values());
+//                } else {
+//                  processInstallVibsSubStage(vibState,
+//                      ops.get(deploymentGetOp.getId()).getBody(DeploymentService.State.class),
+//                      ops.get(hostGetOp.getId()).getBody(HostService.State.class),
+//                      currentState.createCert);
+//                }
+//              } catch (Throwable t) {
+//                failTask(t);
+//              }
+//            })
+//        .sendWith(this);
+  }
+
+  private void processInstallVibSubStage(VibService.State vibState, DeploymentService.State deploymentState,
+                                         Boolean createCert) {
     sendRequest(HostUtils
         .getCloudStoreHelper(this)
         .createGet(vibState.hostServiceLink)
@@ -1193,7 +1251,10 @@ public class ProvisionHostTaskService extends StatefulService {
                 if (e != null) {
                   failTask(e);
                 } else {
-                  processInstallVibsSubStage(vibState, o.getBody(HostService.State.class));
+                  processInstallVibsSubStage(vibState,
+                      deploymentState,
+                      o.getBody(HostService.State.class),
+                      createCert);
                 }
               } catch (Throwable t) {
                 failTask(t);
@@ -1201,14 +1262,31 @@ public class ProvisionHostTaskService extends StatefulService {
             }));
   }
 
-  private void processInstallVibsSubStage(VibService.State vibState, HostService.State hostState) {
+  private void processInstallVibsSubStage(VibService.State vibState, DeploymentService.State deploymentState,
+                                          HostService.State hostState, Boolean createCert) {
 
+    String oAuthDomain = "";
+    String oAuthAddress = "";
+    String oAuthPassword = "";
+    if (deploymentState.oAuthTenantName != null) {
+      oAuthDomain = deploymentState.oAuthTenantName;
+    }
+    if (deploymentState.oAuthTenantName != null) {
+      oAuthAddress = deploymentState.oAuthTenantName;
+    }
+    if (deploymentState.oAuthTenantName != null) {
+      oAuthPassword = deploymentState.oAuthTenantName;
+    }
     List<String> command = Arrays.asList(
         "./" + INSTALL_VIB_SCRIPT_NAME,
         hostState.hostAddress,
         hostState.userName,
         hostState.password,
-        vibState.uploadPath);
+        vibState.uploadPath,
+        createCert.toString(),
+        oAuthDomain,
+        oAuthAddress,
+        oAuthPassword);
 
     DeployerContext deployerContext = HostUtils.getDeployerContext(this);
 

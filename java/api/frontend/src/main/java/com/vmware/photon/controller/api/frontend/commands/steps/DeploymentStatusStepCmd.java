@@ -58,7 +58,7 @@ public class DeploymentStatusStepCmd extends XenonTaskStatusStepCmd {
           .put(Operation.PROVISION_CONTROL_PLANE_VMS,
               DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE.ordinal())
           .put(Operation.PROVISION_CLOUD_HOSTS,
-              DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS.ordinal())
+              DeploymentWorkflowService.TaskState.SubStage.PROVISION_ALL_HOSTS.ordinal())
           .put(Operation.PROVISION_CLUSTER_MANAGER,
               DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES.ordinal())
           .put(Operation.MIGRATE_DEPLOYMENT_DATA,

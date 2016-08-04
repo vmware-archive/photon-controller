@@ -168,6 +168,8 @@ public class TestHelper {
     startState.statsStorePort = 8081;
     startState.statsStoreType = StatsStoreType.GRAPHITE;
     startState.oAuthEnabled = authEnabled;
+    startState.oAuthTenantName = "OAUTH_ENDPOINT";
+    startState.oAuthPassword = "OAUTH_PASSWORD";
     startState.oAuthServerAddress = "OAUTH_ENDPOINT";
     if (startState.oAuthEnabled) {
       startState.oAuthServerPort = 433;
