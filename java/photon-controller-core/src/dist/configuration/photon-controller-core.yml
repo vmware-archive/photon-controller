@@ -27,6 +27,9 @@ deployer:
     vibDirectory: "{{{VIB_DIRECTORY}}}"
     sharedSecret: "{{{SHARED_SECRET}}}"
     enableAuth: {{{ENABLE_AUTH}}}
+    vibUninstallOrder:
+    - photon-controller-agent
+    - envoy
 
 photon_controller_logging:
   file:
