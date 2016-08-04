@@ -15,6 +15,10 @@ host_address=""
 username=""
 password=""
 vib_path=""
+create_cert=""
+lightwave_domain=""
+lightwave_address=""
+lightwave_password=""
 
 if [ "$#" -lt 4 ]
 then
@@ -29,6 +33,16 @@ password=$1
 shift
 vib_path=$1
 shift
+create_cert=$1
+shift
+lightwave_domain=$1
+shift
+lightwave_address=$1
+shift
+lightwave_password=$1
+shift
+
+
 
 while getopts d:l:n:h flag
 do
@@ -53,6 +67,39 @@ function install_vib() {
 	fi
 }
 
+function create_and_copy_certificate() {
+  # Add java home and other required binaries to path. We need this here even though we are doing this during container
+  # build because systemd service does not seem to honor the environment variables set at container build time.
+
+
+  export JAVA_HOME="/usr/java/default"
+  export PATH=$PATH:$JAVA_HOME/bin:/opt/esxcli:/opt/vmware/bin:/opt/likewise/bin
+
+  mkdir -p ./host_cert
+
+  #copying the config file to local directory which is going to be used in the cerficate generation.
+  cp /opt/vmware/share/config/certool.cfg ./host_cert/certool.cfg
+
+  # Fill in the ip address for generating a host certificate
+  sed -i s/IPAddress.*/"IPAddress = $host_address"/ /opt/vmware/share/config/certool.cfg
+
+  # Generate keys if they don't exist
+  if [ ! -f ./host_cert/host.privkey ] || [ ! -f ./host_cert/host.pubkey ]; then
+    certool --genkey --privkey=./host_cert/host.privkey --pubkey=./host_cert/host.pubkey \
+      --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} --server ${lightwave_address}
+  fi
+
+  # Generate certificate if it doesn't exist
+  if [ ! -f ./host_cert/host.crt ]; then
+    certool --gencert --privkey=./host_cert/host.privkey --cert=./host_cert/host.crt \
+      --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} \
+      --server ${lightwave_address} --config ./host_cert/certool.cfg
+  fi
+
+  sshpass -p "$password" scp -o StrictHostKeyChecking=no ./host_cert/host.crt ${username}@${host_address}:/etc/vmware/ssl
+  sshpass -p "$password" scp -o StrictHostKeyChecking=no ./host_cert/host.privkey ${username}@${host_address}:/etc/vmware/ssl
+
+}
 
 sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} date
 sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list
@@ -61,3 +108,8 @@ install_vib
 
 sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list
 sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} date
+
+if [ "$create_cert" == "true" ]
+then
+  create_and_copy_certificate
+fi

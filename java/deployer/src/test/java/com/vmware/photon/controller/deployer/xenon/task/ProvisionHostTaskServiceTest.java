@@ -413,6 +413,7 @@ public class ProvisionHostTaskServiceTest {
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
 
       deploymentState = TestHelper.createDeploymentService(cloudStoreEnvironment, true, true);
+
       hostState = TestHelper.createHostService(cloudStoreEnvironment, Collections.singleton(UsageTag.MGMT.name()),
           HostState.NOT_PROVISIONED);
 

@@ -162,7 +162,7 @@ public class DeploymentStatusStepCmdTest {
         state.taskState.failure = new ServiceErrorResponse();
         state.taskState.failure.message = "deployment failed";
       }
-      state.taskState.subStage = DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS;
+      state.taskState.subStage = DeploymentWorkflowService.TaskState.SubStage.PROVISION_ALL_HOSTS;
       when(deployerClient.getDeploymentStatus(any(String.class))).thenReturn(state);
     }
   }

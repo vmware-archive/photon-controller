@@ -16,6 +16,7 @@ package com.vmware.photon.controller.deployer.xenon.workflow;
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -91,7 +92,7 @@ public class DeploymentWorkflowService extends StatefulService {
     public enum SubStage {
       PROVISION_MANAGEMENT_HOSTS,
       CREATE_MANAGEMENT_PLANE,
-      PROVISION_CLOUD_HOSTS,
+      PROVISION_ALL_HOSTS,
       ALLOCATE_CM_RESOURCES,
       MIGRATE_DEPLOYMENT_DATA,
       SET_DEPLOYMENT_STATE
@@ -267,7 +268,7 @@ public class DeploymentWorkflowService extends StatefulService {
       switch (currentState.taskState.subStage) {
         case PROVISION_MANAGEMENT_HOSTS:
         case CREATE_MANAGEMENT_PLANE:
-        case PROVISION_CLOUD_HOSTS:
+        case PROVISION_ALL_HOSTS:
         case ALLOCATE_CM_RESOURCES:
         case MIGRATE_DEPLOYMENT_DATA:
         case SET_DEPLOYMENT_STATE:
@@ -382,8 +383,8 @@ public class DeploymentWorkflowService extends StatefulService {
       case CREATE_MANAGEMENT_PLANE:
         batchCreateManagementPlane(currentState);
         break;
-      case PROVISION_CLOUD_HOSTS:
-        processProvisionCloudHosts(currentState);
+      case PROVISION_ALL_HOSTS:
+        processProvisionAllHosts(currentState);
         break;
       case ALLOCATE_CM_RESOURCES:
         allocateClusterManagerResources(currentState);
@@ -479,7 +480,7 @@ public class DeploymentWorkflowService extends StatefulService {
             switch (result.taskState.stage) {
               case FINISHED:
                 TaskUtils.sendSelfPatch(service, buildPatch(
-                    TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_CLOUD_HOSTS, null));
+                    TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_ALL_HOSTS, null));
                 break;
               case FAILED:
                 State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
@@ -740,7 +741,7 @@ public class DeploymentWorkflowService extends StatefulService {
     }
   }
 
-  private void processProvisionCloudHosts(final State currentState) throws Throwable {
+  private void processProvisionAllHosts(final State currentState) throws Throwable {
 
     final Service service = this;
 
@@ -772,7 +773,32 @@ public class DeploymentWorkflowService extends StatefulService {
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  DeploymentService.State deploymentState = o.getBody(DeploymentService.State.class);
+                  startState.createCert = deploymentState.oAuthEnabled;
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+
     startState.usageTag = UsageTag.CLOUD.name();
+
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(HostService.State.class));
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+    startState.querySpecification = querySpecification;
 
     TaskUtils.startTaskAsync(
         this,
