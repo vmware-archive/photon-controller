@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -106,6 +107,13 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
      */
     @Immutable
     public QueryTask.QuerySpecification querySpecification;
+
+    /**
+     * This value represents whether to create cert while provisioning the host.
+     */
+    @Immutable
+    @DefaultBoolean(value = false)
+    public Boolean createCert;
   }
 
   public BulkProvisionHostsWorkflowService() {
@@ -342,6 +350,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       ProvisionHostTaskService.State startState = new ProvisionHostTaskService.State();
       startState.deploymentServiceLink = currentState.deploymentServiceLink;
       startState.hostServiceLink = hostServiceLink.next();
+      startState.createCert = currentState.createCert;
 
       TaskUtils.startTaskAsync(
           this,
