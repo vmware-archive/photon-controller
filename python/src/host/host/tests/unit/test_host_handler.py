@@ -46,6 +46,7 @@ from gen.host.ttypes import GetMonitoredImagesResultCode
 from gen.host.ttypes import GetResourcesRequest
 from gen.host.ttypes import GetResourcesResultCode
 from gen.host.ttypes import HostMode
+from gen.host.ttypes import PowerVmOp
 from gen.host.ttypes import PowerVmOpRequest
 from gen.host.ttypes import PowerVmOpResultCode
 from gen.host.ttypes import ReserveRequest
@@ -467,17 +468,19 @@ class HostHandlerTestCase(unittest.TestCase):
 
     def test_power_vm_op(self):
         handler = HostHandler(MagicMock())
+        handler.hypervisor.vm_manager.power_on_vm = MagicMock()
 
         # test power_vm_op under entering-maintenance-mode and maintenance mode
         state = common.services.get(ServiceName.MODE)
         state.set_mode(MODE.ENTERING_MAINTENANCE)
         request = MagicMock()
+        request.op = PowerVmOp.ON
         response = handler.power_vm_op(request)
-        assert_that(response.result, equal_to(PowerVmOpResultCode.OPERATION_NOT_ALLOWED))
+        assert_that(response.result, equal_to(PowerVmOpResultCode.OK))
 
         state.set_mode(MODE.MAINTENANCE)
         response = handler.power_vm_op(request)
-        assert_that(response.result, equal_to(PowerVmOpResultCode.OPERATION_NOT_ALLOWED))
+        assert_that(response.result, equal_to(PowerVmOpResultCode.OK))
 
     @parameterized.expand([
         (None, CreateDiskResultCode.PLACEMENT_NOT_FOUND)
