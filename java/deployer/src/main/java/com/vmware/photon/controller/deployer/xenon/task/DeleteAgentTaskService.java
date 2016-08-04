@@ -247,6 +247,7 @@ public class DeleteAgentTaskService extends StatefulService {
     command.add(hostState.hostAddress);
     command.add(hostState.userName);
     command.add(hostState.password);
+    command.add("photon-controller-agent");
 
     File scriptLogFile = new File(deployerContext.getScriptLogDirectory(),
         SCRIPT_NAME + "-" + currentState.uniqueID + ".log");
