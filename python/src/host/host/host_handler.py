@@ -249,8 +249,7 @@ class HostHandler(Host.Iface):
         :rtype: ReserveResponse
         """
         mode = common.services.get(ServiceName.MODE).get_mode()
-
-        if mode == MODE.ENTERING_MAINTENANCE or mode == MODE.MAINTENANCE:
+        if mode != MODE.NORMAL:
             return self._error_response(ReserveResultCode.OPERATION_NOT_ALLOWED,
                                         "reserve not allowed in {0} mode".format(mode.name), ReserveResponse())
 
@@ -312,8 +311,7 @@ class HostHandler(Host.Iface):
         :rtype: CreateVmResponse
         """
         mode = common.services.get(ServiceName.MODE).get_mode()
-
-        if mode == MODE.ENTERING_MAINTENANCE or mode == MODE.MAINTENANCE:
+        if mode != MODE.NORMAL:
             return self._error_response(CreateVmResultCode.OPERATION_NOT_ALLOWED,
                                         "create_vm not allowed in {0} mode".format(mode.name), CreateVmResponse())
 
@@ -571,8 +569,7 @@ class HostHandler(Host.Iface):
         response = PowerVmOpResponse()
 
         mode = common.services.get(ServiceName.MODE).get_mode()
-
-        if mode == MODE.ENTERING_MAINTENANCE or mode == MODE.MAINTENANCE:
+        if mode == MODE.MAINTENANCE:
             return self._error_response(PowerVmOpResultCode.OPERATION_NOT_ALLOWED,
                                         "power_vm_op not allowed in {0} mode".format(mode.name), response)
 
