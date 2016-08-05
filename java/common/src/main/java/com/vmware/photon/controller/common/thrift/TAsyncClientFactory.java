@@ -20,6 +20,7 @@ import org.apache.thrift.async.TAsyncClient;
 import org.apache.thrift.async.TAsyncClientManager;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TNonblockingTransport;
+import org.apache.thrift.transport.TTransport;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -55,7 +56,7 @@ public class TAsyncClientFactory<T extends TAsyncClient> {
    * @param transport       client transport
    * @return new client
    */
-  public T create(TProtocolFactory protocolFactory, TNonblockingTransport transport) {
+  public T create(TProtocolFactory protocolFactory, TTransport transport) {
     try {
       return constructor.newInstance(protocolFactory, clientManager, transport);
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
