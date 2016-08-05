@@ -13,26 +13,68 @@
 
 package com.vmware.photon.controller.apibackend.servicedocuments;
 
+import com.vmware.photon.controller.apibackend.annotations.TaskServiceEntityField;
+import com.vmware.photon.controller.apibackend.annotations.TaskServiceStateField;
+import com.vmware.photon.controller.apibackend.annotations.TaskStateField;
+import com.vmware.photon.controller.apibackend.annotations.TaskStateSubStageField;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
-import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 
 /**
  * Defines the document state associated with a single
- * {@link com.vmware.photon.controller.apibackend.tasks.AssignFloatingIpToVmTaskService}.
+ * {@link com.vmware.photon.controller.apibackend.workflows.AssignFloatingIpToVmWorkflowService}.
  */
-public class AssignFloatingIpToVmTask extends ServiceDocument {
+public class AssignFloatingIpToVmWorkflowDocument extends ServiceDocument {
+
+  /**
+   * Customized task state. Defines substages.
+   */
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
+    @TaskStateSubStageField
+    public SubStage subStage;
+
+    /**
+     * Definitions of substages.
+     */
+    public enum SubStage {
+      CREATE_NAT_RULE
+    }
+  }
+
+  ///
+  /// Controls Input
+  ///
+
+  /**
+   * State of the task.
+   */
+  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
+  @TaskStateField
+  public TaskState taskState;
+
+  /**
+   * Control flags that influences the behavior of the task.
+   */
+  @DefaultInteger(0)
+  @Immutable
+  public Integer controlFlags;
+
+  ///
+  /// Task Input
+  ///
 
   /**
    * Endpoint to the nsx manager.
    */
   @NotBlank
   @Immutable
-  public String nsxManagerEndpoint;
+  public String nsxAddress;
 
   /**
    * Username to access nsx manager.
@@ -40,7 +82,7 @@ public class AssignFloatingIpToVmTask extends ServiceDocument {
   @NotBlank
   @Immutable
   @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String username;
+  public String nsxUsername;
 
   /**
    * Password to access nsx manager.
@@ -48,14 +90,14 @@ public class AssignFloatingIpToVmTask extends ServiceDocument {
   @NotBlank
   @Immutable
   @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String password;
+  public String nsxPassword;
 
   /**
-   * ID of the logical tier1 router.
+   * ID of the network that this vm locates in.
    */
   @NotBlank
   @Immutable
-  public String logicalTier1RouterId;
+  public String networkId;
 
   /**
    * Private IP address of the VM.
@@ -71,44 +113,19 @@ public class AssignFloatingIpToVmTask extends ServiceDocument {
   @Immutable
   public String vmFloatingIpAddress;
 
-  /**
-   * ID of the network that this vm locates in.
-   */
-  @NotBlank
-  @Immutable
-  public String networkId;
+  ///
+  /// Task Output
+  ///
 
   /**
-   * ID of the NAT rule that translates the VM's floating IP to private IP.
+   * The VirtualNetworkService.State object.
    */
-  @WriteOnce
-  public String natRuleId;
+  @TaskServiceEntityField
+  public VirtualNetworkService.State taskServiceEntity;
 
   /**
-   * State of the task.
+   * The TaskService.State object.
    */
-  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
-  public TaskState taskState;
-
-  /**
-   * Control flags that influences the behavior of the task.
-   */
-  @DefaultInteger(0)
-  @Immutable
-  public Integer controlFlags;
-
-  /**
-   * Customized task state. Defines substages.
-   */
-  public static class TaskState extends com.vmware.xenon.common.TaskState {
-    public SubStage subStage;
-
-    /**
-     * Definitions of substages.
-     */
-    public enum SubStage {
-      CREATE_NAT_RULE,
-      UPDATE_VIRTUAL_NETWORK
-    }
-  }
+  @TaskServiceStateField
+  public TaskService.State taskServiceState;
 }

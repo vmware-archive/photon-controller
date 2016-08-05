@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apibackend;
 
-import com.vmware.photon.controller.apibackend.tasks.AssignFloatingIpToVmTaskService;
 import com.vmware.photon.controller.apibackend.tasks.ConfigureRoutingTaskService;
 import com.vmware.photon.controller.apibackend.tasks.ConnectVmToSwitchTaskService;
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalRouterTaskService;
@@ -23,6 +22,7 @@ import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalRouterTaskServ
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.tasks.DisconnectVmFromSwitchTaskService;
 import com.vmware.photon.controller.apibackend.tasks.RemoveFloatingIpFromVmTaskService;
+import com.vmware.photon.controller.apibackend.workflows.AssignFloatingIpToVmWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.ConfigureDhcpWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
@@ -53,12 +53,12 @@ public class ApiBackendFactory {
       .put(DeleteLogicalPortsTaskService.class, DeleteLogicalPortsTaskService::createFactory)
       .put(ConnectVmToSwitchTaskService.class, ConnectVmToSwitchTaskService::createFactory)
       .put(DisconnectVmFromSwitchTaskService.class, DisconnectVmFromSwitchTaskService::createFactory)
-      .put(AssignFloatingIpToVmTaskService.class, AssignFloatingIpToVmTaskService::createFactory)
       .put(RemoveFloatingIpFromVmTaskService.class, RemoveFloatingIpFromVmTaskService::createFactory)
 
       // workflows
       .put(CreateVirtualNetworkWorkflowService.class, CreateVirtualNetworkWorkflowService::createFactory)
       .put(DeleteVirtualNetworkWorkflowService.class, DeleteVirtualNetworkWorkflowService::createFactory)
       .put(ConfigureDhcpWorkflowService.class, ConfigureDhcpWorkflowService::createFactory)
+      .put(AssignFloatingIpToVmWorkflowService.class, AssignFloatingIpToVmWorkflowService::createFactory)
       .build();
 }
