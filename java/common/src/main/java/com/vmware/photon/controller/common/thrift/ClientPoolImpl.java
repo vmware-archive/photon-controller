@@ -26,7 +26,8 @@ import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import org.apache.thrift.async.TAsyncClient;
 import org.apache.thrift.protocol.TProtocolFactory;
-import org.apache.thrift.transport.TNonblockingTransport;
+import org.apache.thrift.transport.TTransport;
+import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +66,7 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
   private final ListMultimap<InetSocketAddress, C> availableClients;
   private final Map<C, InetSocketAddress> acquiredClients;
   private final Set<InetSocketAddress> availableServers;
-  private final Map<C, TNonblockingTransport> clientTransportMap;
+  private final Map<C, TTransport> clientTransportMap;
   private final Queue<Promise<C>> promises;
   private boolean closed;
 
@@ -102,7 +103,7 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
         canCreateClient()) {
       try {
         availableClients.put(address, createNewClient(address));
-      } catch (IOException ex) {
+      } catch (Throwable ex) {
         logger.error("Error occurred when createNewClient for {}", address);
       }
     }
@@ -242,8 +243,8 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
       if (client == null && canCreateClient()) {
         try {
           client = fulfillWithNewClient();
-        } catch (IOException ex) {
-          logger.error("fulfillWithNewClient has IOException", ex);
+        } catch (Throwable ex) {
+          logger.error("fulfillWithNewClient has exception", ex);
           promises.remove().setException(ex);
           break;
         }
@@ -285,7 +286,7 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
           newClient = createNewClient(address);
           removeClient(availableClients.get(availableClientAddress).remove(0));
           break;
-        } catch (IOException ex) {
+        } catch (Throwable ex) {
           logger.error("moveClient: fail to create new client for {}", address);
           return;
         }
@@ -302,7 +303,7 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
 
   private void removeClient(C client) {
     logger.debug("remove client {}", client);
-    TNonblockingTransport transport = clientTransportMap.remove(client);
+    TTransport transport = clientTransportMap.remove(client);
     transport.close();
   }
 
@@ -345,7 +346,7 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
     return client;
   }
 
-  private C fulfillWithNewClient() throws IOException {
+  private C fulfillWithNewClient() throws IOException, TTransportException {
     logger.debug("start fulfillWithNewClient");
     InetSocketAddress[] servers = availableServers.toArray(new InetSocketAddress[availableServers.size()]);
     int randomIndex = random.nextInt(servers.length);
@@ -356,7 +357,7 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
     return client;
   }
 
-  private C createNewClient(InetSocketAddress address) throws IOException {
+  private C createNewClient(InetSocketAddress address) throws IOException, TTransportException {
     return ClientPoolUtils.createNewClient(address, this.protocolFactory,
         this.options, this.thriftFactory, this.clientFactory, this.clientTransportMap);
   }
