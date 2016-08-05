@@ -39,14 +39,11 @@ import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Client for Agent's control service.
@@ -59,15 +56,7 @@ import java.util.concurrent.TimeUnit;
  * cheap to create a new client instance for each use.
  */
 @RpcClient
-public class AgentControlClient {
-
-  protected static final ClientPoolOptions CLIENT_POOL_OPTIONS = new ClientPoolOptions()
-      .setMaxClients(1)
-      .setMaxWaiters(100)
-      .setTimeout(30, TimeUnit.SECONDS)
-      .setServiceName("AgentControl");
-  private static final int DEFAULT_PORT_NUMBER = 8835;
-  private static final int MAX_RESERVED_PORT_NUMBER = 1023;
+public class AgentControlClient extends ThriftClient {
 
   private static final Logger logger = LoggerFactory.getLogger(AgentControlClient.class);
   private static final long PROVISION_TIMEOUT_MS = 60000;
@@ -80,8 +69,6 @@ public class AgentControlClient {
    * clientProxy acquires a new client from ClientPool for every thrift call.
    */
   private AgentControl.AsyncClient clientProxy;
-  private String hostIp;
-  private int port;
   private ClientPool<AgentControl.AsyncClient> clientPool;
 
   @Inject
@@ -91,32 +78,7 @@ public class AgentControlClient {
     this.clientPoolFactory = clientPoolFactory;
   }
 
-  public String getHostIp() {
-    return hostIp;
-  }
-
-  public void setHostIp(String hostIp) {
-    setIpAndPort(hostIp, DEFAULT_PORT_NUMBER);
-  }
-
-  public int getPort() {
-    return port;
-  }
-
-  public void setIpAndPort(String ip, int port) {
-    checkNotNull(ip, "IP can not be null");
-    checkArgument(port > MAX_RESERVED_PORT_NUMBER,
-        "Please set port above %s", MAX_RESERVED_PORT_NUMBER);
-
-    if (ip.equals(this.hostIp) && port == this.port) {
-      return;
-    }
-
-    this.close();
-    this.hostIp = ip;
-    this.port = port;
-  }
-
+  @Override
   public void close() {
     clientProxy = null;
 
@@ -149,9 +111,15 @@ public class AgentControlClient {
 
   private void createClientProxyWithIpAndPort() {
     logger.debug("Creating host async client of hostIp {} and port {}", this.getHostIp(), this.getPort());
+    ClientPoolOptions options = new ClientPoolOptions(CLIENT_POOL_OPTIONS);
+    options = options.setServiceName("AgentControl");
+    if (getKeyStorePath() != null) {
+      options.setKeyStorePassword(getKeyStorePath());
+      options.setKeyStorePassword(getKeyStorePassword());
+    }
     this.clientPool = this.clientPoolFactory.create(
         ImmutableSet.of(new InetSocketAddress(this.getHostIp(), this.getPort())),
-        CLIENT_POOL_OPTIONS);
+        options);
     this.clientProxy = clientProxyFactory.create(clientPool).get();
   }
 
