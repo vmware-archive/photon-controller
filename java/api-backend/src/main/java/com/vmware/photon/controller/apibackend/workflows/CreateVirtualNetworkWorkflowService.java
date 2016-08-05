@@ -13,6 +13,9 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
+import com.vmware.photon.controller.api.model.Project;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureRoutingTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalRouterTask;
@@ -24,6 +27,10 @@ import com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskServ
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.IpHelper;
@@ -43,6 +50,7 @@ import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.util.concurrent.FutureCallback;
 
+import java.util.HashMap;
 import java.util.Set;
 
 /**
@@ -54,6 +62,8 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
   public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/create-virtual-network";
 
   public static final String DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP = "192.168.0.1";
+  public static final String SDN_RESOURCE_TICKET_KEY = "sdn.size";
+
   public static final int DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP_PREFIX_LEN = 16;
 
   public static FactoryService createFactory() {
@@ -190,14 +200,67 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
    * Enforce quotas for allocations.
    */
   private void enforceQuotas(CreateVirtualNetworkWorkflowDocument state) {
-    try {
-      CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
-          TaskState.TaskStage.STARTED,
-          CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE);
-      progress(state, patchState);
-    } catch (Throwable t) {
-      fail(state, t);
+    String id = null;
+
+    switch (state.parentKind) {
+      case Project.KIND:
+        id = state.parentId;
+        break;
+      default:
+        throw new IllegalArgumentException("Unknown parentKind: " + state.parentKind);
     }
+
+    if (id == null) {
+      return;
+    }
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createGet(ProjectServiceFactory.SELF_LINK + "/" + id)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+          ProjectService.State project = op.getBody(ProjectService.State.class);
+          String resourceTicketId = project.resourceTicketId;
+
+          consumeQuota(state, resourceTicketId);
+        }).sendWith(this);
+  }
+
+  /**
+   * Consume quota.
+   */
+  private void consumeQuota(CreateVirtualNetworkWorkflowDocument state, String resourceTicketId) {
+    ResourceTicketService.Patch patch = new ResourceTicketService.Patch();
+    patch.patchtype = ResourceTicketService.Patch.PatchType.USAGE_CONSUME;
+    patch.cost = new HashMap<>();
+
+    QuotaLineItem costItem = new QuotaLineItem();
+    costItem.setKey(SDN_RESOURCE_TICKET_KEY);
+    costItem.setValue(state.size);
+    costItem.setUnit(QuotaUnit.COUNT);
+    patch.cost.put(costItem.getKey(), costItem);
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPatch(ResourceTicketServiceFactory.SELF_LINK + "/" + resourceTicketId)
+        .setBody(patch)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.STARTED,
+                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE);
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        })
+        .sendWith(this);
   }
 
   /**
