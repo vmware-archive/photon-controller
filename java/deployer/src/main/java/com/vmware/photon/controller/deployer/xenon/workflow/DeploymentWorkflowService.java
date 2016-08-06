@@ -16,6 +16,9 @@ package com.vmware.photon.controller.deployer.xenon.workflow;
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
+import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -53,12 +56,16 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.FutureCallback;
+import org.apache.commons.net.util.SubnetUtils;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -93,6 +100,8 @@ public class DeploymentWorkflowService extends StatefulService {
       CREATE_MANAGEMENT_PLANE,
       PROVISION_CLOUD_HOSTS,
       ALLOCATE_CM_RESOURCES,
+      CREATE_SUBNET_ALLOCATOR,
+      CREATE_DHCP_SUBNET,
       MIGRATE_DEPLOYMENT_DATA,
       SET_DEPLOYMENT_STATE
     }
@@ -269,6 +278,8 @@ public class DeploymentWorkflowService extends StatefulService {
         case CREATE_MANAGEMENT_PLANE:
         case PROVISION_CLOUD_HOSTS:
         case ALLOCATE_CM_RESOURCES:
+        case CREATE_SUBNET_ALLOCATOR:
+        case CREATE_DHCP_SUBNET:
         case MIGRATE_DEPLOYMENT_DATA:
         case SET_DEPLOYMENT_STATE:
           break;
@@ -387,6 +398,12 @@ public class DeploymentWorkflowService extends StatefulService {
         break;
       case ALLOCATE_CM_RESOURCES:
         allocateClusterManagerResources(currentState);
+        break;
+      case CREATE_SUBNET_ALLOCATOR:
+        createSubnetAllocator(currentState);
+        break;
+      case CREATE_DHCP_SUBNET:
+        createDhcpSubnet(currentState);
         break;
       case MIGRATE_DEPLOYMENT_DATA:
         migrateData(currentState);
@@ -555,7 +572,7 @@ public class DeploymentWorkflowService extends StatefulService {
               case FINISHED:
                 TaskUtils.sendSelfPatch(service, buildPatch(
                     TaskState.TaskStage.STARTED,
-                    TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
+                    TaskState.SubStage.CREATE_SUBNET_ALLOCATOR,
                     null));
                 break;
               case FAILED:
@@ -589,6 +606,124 @@ public class DeploymentWorkflowService extends StatefulService {
         AllocateClusterManagerResourcesTaskService.State.class,
         currentState.taskPollDelay,
         callback);
+  }
+
+  private void createSubnetAllocator(State currentState) {
+    ServiceUtils.logInfo(this, "Creating Subnet Allocator if sdn is enabled");
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.deploymentServiceLink)
+            .setCompletion(
+                (operation, throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
+
+                  DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+                  try {
+                    createSubnetAllocator(deploymentState);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            )
+    );
+  }
+
+  private void createSubnetAllocator(DeploymentService.State deploymentState) {
+    if (!deploymentState.sdnEnabled || deploymentState.ipRange == null || deploymentState.ipRange.isEmpty()) {
+      TaskUtils.sendSelfPatch(this, buildPatch(
+          TaskState.TaskStage.STARTED,
+          TaskState.SubStage.CREATE_DHCP_SUBNET,
+          null));
+      return;
+    }
+
+    SubnetAllocatorService.State subnetAllocatorServiceState = new SubnetAllocatorService.State();
+    subnetAllocatorServiceState.rootCidr = deploymentState.ipRange;
+
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createPost(SubnetAllocatorService.SINGLETON_LINK)
+        .setBody(subnetAllocatorServiceState)
+        .setCompletion(
+            (completedOp, failure) -> {
+              if (null != failure) {
+                failTask(failure);
+              } else {
+                TaskUtils.sendSelfPatch(this, buildPatch(
+                    TaskState.TaskStage.STARTED,
+                    TaskState.SubStage.CREATE_DHCP_SUBNET,
+                    null));
+              }
+            }
+        ));
+  }
+
+  private void createDhcpSubnet(State currentState) {
+    ServiceUtils.logInfo(this, "Creating Dhcp Subnet if sdn is enabled");
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.deploymentServiceLink)
+            .setCompletion(
+                (operation, throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
+
+                  DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+                  try {
+                    createDhcpSubnet(deploymentState);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            )
+    );
+  }
+
+  private void createDhcpSubnet(DeploymentService.State deploymentState) {
+    if (!deploymentState.sdnEnabled ||
+        deploymentState.floatingIpRange == null ||
+        deploymentState.floatingIpRange.isEmpty()) {
+      TaskUtils.sendSelfPatch(this, buildPatch(
+          TaskState.TaskStage.STARTED,
+          TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
+          null));
+      return;
+    }
+
+    DhcpSubnetService.State dhcpSubnetServiceState = createDhcpSubnetServiceState(deploymentState.floatingIpRange);
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createPost(DhcpSubnetService.SINGLETON_LINK)
+        .setBody(dhcpSubnetServiceState)
+        .setCompletion(
+            (completedOp, failure) -> {
+              if (null != failure) {
+                failTask(failure);
+              } else {
+                TaskUtils.sendSelfPatch(this, buildPatch(
+                    TaskState.TaskStage.STARTED,
+                    TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
+                    null));
+              }
+            }
+        ));
+  }
+
+  private static DhcpSubnetService.State createDhcpSubnetServiceState(String cidr) {
+    SubnetUtils subnetUtils = new SubnetUtils(cidr);
+    SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
+    InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
+    InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
+
+    DhcpSubnetService.State state = new DhcpSubnetService.State();
+    state.cidr = cidr;
+    state.lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
+    state.highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
+
+    return state;
   }
 
   private void migrateData(State currentState) {

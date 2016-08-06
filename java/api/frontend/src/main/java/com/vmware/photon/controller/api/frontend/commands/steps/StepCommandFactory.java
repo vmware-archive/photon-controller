@@ -202,6 +202,8 @@ public class StepCommandFactory {
       case PROVISION_CONTROL_PLANE_VMS:
       case PROVISION_CLOUD_HOSTS:
       case PROVISION_CLUSTER_MANAGER:
+      case CREATE_SUBNET_ALLOCATOR:
+      case CREATE_DHCP_SUBNET:
       case MIGRATE_DEPLOYMENT_DATA:
         return new DeploymentStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new DeploymentStatusStepCmd.DeploymentStatusStepPoller(taskCommand, taskBackend, deploymentBackend));

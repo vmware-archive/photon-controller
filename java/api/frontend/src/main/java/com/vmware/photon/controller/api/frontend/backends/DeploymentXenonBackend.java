@@ -583,6 +583,10 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.PROVISION_CLUSTER_MANAGER);
     this.taskBackend.getStepBackend().createQueuedStep(
+        taskEntity, deploymentEntity, Operation.CREATE_SUBNET_ALLOCATOR);
+    this.taskBackend.getStepBackend().createQueuedStep(
+        taskEntity, deploymentEntity, Operation.CREATE_DHCP_SUBNET);
+    this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.MIGRATE_DEPLOYMENT_DATA);
 
     taskEntity.getToBeLockedEntities().add(deploymentEntity);
