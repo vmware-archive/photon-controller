@@ -64,6 +64,10 @@ public class DeploymentStatusStepCmd extends XenonTaskStatusStepCmd {
               DeploymentWorkflowService.TaskState.SubStage.PROVISION_ALL_HOSTS.ordinal())
           .put(Operation.PROVISION_CLUSTER_MANAGER,
               DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES.ordinal())
+          .put(Operation.CREATE_SUBNET_ALLOCATOR,
+              DeploymentWorkflowService.TaskState.SubStage.CREATE_SUBNET_ALLOCATOR.ordinal())
+          .put(Operation.CREATE_DHCP_SUBNET,
+              DeploymentWorkflowService.TaskState.SubStage.CREATE_DHCP_SUBNET.ordinal())
           .put(Operation.MIGRATE_DEPLOYMENT_DATA,
               DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA.ordinal())
           .build();
