@@ -174,6 +174,8 @@ public enum Operation {
   CREATE_LOGICAL_SWITCH("CreateLogicalSwitch"),
   CREATE_LOGICAL_ROUTER("CreateLogicalRouter"),
   SET_UP_LOGICAL_ROUTER("SetupLogicalRouter"),
+  CREATE_SUBNET_ALLOCATOR("CreateSubnetAllocator"),
+  CREATE_DHCP_SUBNET("CreateDhcpSubnet"),
 
   WAIT_FOR_TASKS("WaitForTasks"),
 
