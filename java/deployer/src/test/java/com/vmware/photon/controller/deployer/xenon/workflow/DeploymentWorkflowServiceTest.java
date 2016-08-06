@@ -398,10 +398,24 @@ public class DeploymentWorkflowServiceTest {
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_SUBNET_ALLOCATOR},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_SUBNET_ALLOCATOR,
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_DHCP_SUBNET},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_SUBNET_ALLOCATOR,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_SUBNET_ALLOCATOR,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_DHCP_SUBNET,
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_DHCP_SUBNET,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_DHCP_SUBNET,
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,

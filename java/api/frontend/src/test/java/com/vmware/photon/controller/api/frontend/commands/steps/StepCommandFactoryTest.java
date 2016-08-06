@@ -149,6 +149,8 @@ public class StepCommandFactoryTest {
         {Operation.PROVISION_CONTROL_PLANE_VMS, DeploymentStatusStepCmd.class},
         {Operation.PROVISION_CLOUD_HOSTS, DeploymentStatusStepCmd.class},
         {Operation.PROVISION_CLUSTER_MANAGER, DeploymentStatusStepCmd.class},
+        {Operation.CREATE_SUBNET_ALLOCATOR, DeploymentStatusStepCmd.class},
+        {Operation.CREATE_DHCP_SUBNET, DeploymentStatusStepCmd.class},
         {Operation.MIGRATE_DEPLOYMENT_DATA, DeploymentStatusStepCmd.class},
         {Operation.SCHEDULE_DELETE_DEPLOYMENT, DeploymentDeleteStepCmd.class},
         {Operation.PERFORM_DELETE_DEPLOYMENT, DeploymentDeleteStatusStepCmd.class},
