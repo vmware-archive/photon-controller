@@ -181,6 +181,8 @@ public class TestHelper {
       startState.networkManagerAddress = "1.2.3.4";
       startState.networkManagerUsername = "networkManagerUsername";
       startState.networkManagerPassword = "networkManagerPassword";
+      startState.ipRange = "10.0.0.1/24";
+      startState.floatingIpRange = "192.168.0.1/28";
     }
     return startState;
   }

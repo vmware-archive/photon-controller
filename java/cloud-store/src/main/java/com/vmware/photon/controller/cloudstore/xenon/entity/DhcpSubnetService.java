@@ -47,6 +47,13 @@ public class DhcpSubnetService extends StatefulService {
 
   public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/dhcp-subnets";
 
+  /**
+   * This is the well known location for the single instance of this service.
+   * The single instance will be started at the time of configuration of virtual networking
+   * in the system which could be at deployment time or later.
+   */
+  public static final String SINGLETON_LINK = FACTORY_LINK + "/root-dhcp-subnet";
+
   public static final long MAX_IPV4 = 0xFFFFFFFFL; // this represents 255.255.255.255
 
   public DhcpSubnetService() {
