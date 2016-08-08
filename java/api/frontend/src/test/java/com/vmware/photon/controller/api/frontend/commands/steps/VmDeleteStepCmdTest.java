@@ -29,6 +29,7 @@ import com.vmware.photon.controller.api.frontend.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.entities.VmEntity;
+import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
 import com.vmware.photon.controller.api.model.DiskState;
 import com.vmware.photon.controller.api.model.Operation;
@@ -37,6 +38,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
+import com.vmware.photon.controller.common.clients.exceptions.VmNotPoweredOffException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.resource.gen.Datastore;
 
@@ -244,6 +246,19 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     vm.setAgent("agent-id");
 
     when(hostClient.deleteVm("vm-1", null)).thenThrow(new VmNotFoundException("Error"));
+
+    cmd.execute();
+  }
+
+  @Test(expectedExceptions = InvalidVmStateException.class,
+        expectedExceptionsMessageRegExp = "Error")
+  public void testDeletePoweredOnVm() throws Exception {
+    VmDeleteStepCmd cmd = getVmDeleteStepCmd();
+
+    vm.setState(VmState.STOPPED);
+    vm.setAgent("agent-id");
+
+    when(hostClient.deleteVm("vm-1", null)).thenThrow(new VmNotPoweredOffException("Error"));
 
     cmd.execute();
   }

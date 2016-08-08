@@ -20,7 +20,6 @@ import com.vmware.photon.controller.api.frontend.commands.steps.ResourceReserveS
 import com.vmware.photon.controller.api.frontend.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.api.frontend.entities.BaseDiskEntity;
 import com.vmware.photon.controller.api.frontend.entities.DiskStateChecks;
-import com.vmware.photon.controller.api.frontend.entities.EntityStateValidator;
 import com.vmware.photon.controller.api.frontend.entities.FlavorEntity;
 import com.vmware.photon.controller.api.frontend.entities.HostEntity;
 import com.vmware.photon.controller.api.frontend.entities.ImageEntity;
@@ -1031,7 +1030,6 @@ public class VmXenonBackend implements VmBackend {
   }
 
   private TaskEntity deleteTask(VmEntity vm) throws ExternalException {
-    EntityStateValidator.validateOperationState(vm, vm.getState(), Operation.DELETE_VM, VmState.OPERATION_PREREQ_STATE);
 
     List<StepEntity> stepEntities = new ArrayList<>();
     List<BaseEntity> entityList = new ArrayList<>();
