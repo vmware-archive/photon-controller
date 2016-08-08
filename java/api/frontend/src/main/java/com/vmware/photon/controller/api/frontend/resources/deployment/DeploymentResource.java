@@ -23,6 +23,7 @@ import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRo
 import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.model.DeploymentSize;
 import com.vmware.photon.controller.api.model.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
@@ -287,6 +288,16 @@ public class DeploymentResource {
         client.configureDhcp(id, spec),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
+  }
+
+  @GET
+  @Path(DeploymentResourceRoutes.DEPLOYMENT_SIZE_PATH)
+  @ApiOperation(value = "Gets size information of the deployment", response = DeploymentSize.class)
+  public Response getSize(@Context Request request,
+                          @PathParam("id") String id) throws ExternalException {
+    return generateCustomResponse(
+        Response.Status.OK,
+        client.getDeploymentSize(id));
   }
 
   private void validateDeploymentDeployOperation(DeploymentDeployOperation operation) throws ExternalException {

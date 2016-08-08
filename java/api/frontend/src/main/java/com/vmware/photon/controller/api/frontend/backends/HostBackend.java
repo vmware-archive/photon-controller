@@ -44,6 +44,8 @@ public interface HostBackend {
 
   ResourceList<Host> getHostsPage(String pageLink) throws PageExpiredException;
 
+  int getNumberHosts();
+
   ResourceList<Host> filterByUsage(UsageTag usageTag, Optional<Integer> pageSize);
 
   ResourceList<Host> filterByAddress(String address, Optional<Integer> pageSize);

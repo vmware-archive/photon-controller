@@ -49,4 +49,6 @@ public class DeploymentResourceRoutes {
   public static final String SET_IMAGE_DATASTORES_ACTION = "/set_image_datastores";
 
   public static final String ENABLE_DHCP_ACTION = "/enable_dhcp";
+
+  public static final String DEPLOYMENT_SIZE_PATH = "/size";
 }

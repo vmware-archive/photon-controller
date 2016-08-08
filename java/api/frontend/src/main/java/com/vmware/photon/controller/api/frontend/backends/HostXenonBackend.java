@@ -45,7 +45,11 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonClient;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.QueryTask.QuerySpecification.QueryOption;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -129,6 +133,20 @@ public class HostXenonBackend implements HostBackend {
   public ResourceList<Host> listAll(Optional<Integer> pageSize) {
 
     return findDocuments(new ImmutableMap.Builder<>(), pageSize);
+  }
+
+  @Override
+  public int getNumberHosts() {
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(HostService.State.class));
+    querySpec.query.addBooleanClause(kindClause);
+    querySpec.options.add(QueryOption.COUNT);
+
+    com.vmware.xenon.common.Operation result = xenonClient.query(querySpec, true);
+    ServiceDocumentQueryResult queryResult = result.getBody(QueryTask.class).results;
+    return queryResult.documentCount.intValue();
   }
 
   @Override
