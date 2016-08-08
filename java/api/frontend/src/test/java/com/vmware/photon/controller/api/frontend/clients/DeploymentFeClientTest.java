@@ -26,6 +26,7 @@ import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
 import com.vmware.photon.controller.api.frontend.entities.DeploymentEntity;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
+import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Auth;
 import com.vmware.photon.controller.api.model.AuthInfo;
@@ -33,6 +34,7 @@ import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.model.DeploymentSize;
 import com.vmware.photon.controller.api.model.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
@@ -55,6 +57,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
@@ -485,5 +488,41 @@ public class DeploymentFeClientTest {
 
       feClient.getAuth();
     }
+  }
+
+  /**
+   * Tests the getDeploymentSize method.
+   */
+  public class GetDeploymentSizeTest {
+    String deploymentId;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      setUpCommon();
+    }
+
+    @Test
+    public void testSuccess() throws Exception {
+      deploymentId = "deployment-id";
+      doReturn(null).when(deploymentBackend).findById(deploymentId);
+
+      DeploymentSize deploymentSize = new DeploymentSize();
+      deploymentSize.setNumberHosts(2);
+
+      doReturn(deploymentSize.getNumberHosts()).when(hostBackend).getNumberHosts();
+
+      DeploymentSize deploymentRetrievedSize = feClient.getDeploymentSize(deploymentId);
+      assertThat(deploymentRetrievedSize.getNumberHosts(), is(deploymentSize.getNumberHosts()));
+    }
+
+    @Test(expectedExceptions = DeploymentNotFoundException.class,
+        expectedExceptionsMessageRegExp = "Deployment #.* not found")
+    public void testFailure() throws Exception {
+      deploymentId = "invalid-deployment-id";
+      doThrow(new DeploymentNotFoundException(deploymentId)).when(deploymentBackend).findById(deploymentId);
+
+      feClient.getDeploymentSize(deploymentId);
+    }
+
   }
 }

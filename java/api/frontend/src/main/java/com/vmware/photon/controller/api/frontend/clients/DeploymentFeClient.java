@@ -35,6 +35,7 @@ import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.model.DeploymentSize;
 import com.vmware.photon.controller.api.model.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.Host;
@@ -278,5 +279,15 @@ public class DeploymentFeClient {
     deploymentBackend.findById(id);
     TaskEntity taskEntity = deploymentBackend.configureDhcp(spec);
     return taskBackend.getApiRepresentation(taskEntity);
+  }
+
+  public DeploymentSize getDeploymentSize(String id) throws ExternalException {
+    deploymentBackend.findById(id);
+
+    DeploymentSize deploymentSize = new DeploymentSize();
+    deploymentSize.setNumberHosts(hostBackend.getNumberHosts());
+
+    return deploymentSize;
+
   }
 }

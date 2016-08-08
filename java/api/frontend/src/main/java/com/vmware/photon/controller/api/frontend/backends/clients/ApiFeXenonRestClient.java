@@ -149,6 +149,17 @@ public class ApiFeXenonRestClient extends XenonRestClient {
   }
 
   @Override
+  public Operation query(QueryTask.QuerySpecification spec, boolean isDirect) {
+    try {
+      return super.query(spec, isDirect);
+    } catch (DocumentNotFoundException | BadRequestException e) {
+      throw new XenonRuntimeException(e);
+    } catch (TimeoutException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
   public <T extends ServiceDocument> List<T> queryDocuments(Class<T> documentType,
                                                             ImmutableMap<String, String> terms) {
     try {
