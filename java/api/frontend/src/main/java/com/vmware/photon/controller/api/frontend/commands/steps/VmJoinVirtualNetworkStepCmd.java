@@ -71,9 +71,9 @@ public class VmJoinVirtualNetworkStepCmd extends StepCommand {
     ConnectVmToSwitchTask startState = new ConnectVmToSwitchTask();
     startState.vmLocationId = vmLocationId;
     startState.toVmPortDisplayName = NameUtils.getLogicalSwitchDownlinkPortName(vmLocationId);
-    startState.nsxManagerEndpoint = deploymentServiceState.networkManagerAddress;
-    startState.username = deploymentServiceState.networkManagerUsername;
-    startState.password = deploymentServiceState.networkManagerPassword;
+    startState.nsxAddress = deploymentServiceState.networkManagerAddress;
+    startState.nsxUsername = deploymentServiceState.networkManagerUsername;
+    startState.nsxPassword = deploymentServiceState.networkManagerPassword;
     startState.logicalSwitchId = logicalSwitchId;
     startState.networkId = networkId;
     startState.vmId = vmId;

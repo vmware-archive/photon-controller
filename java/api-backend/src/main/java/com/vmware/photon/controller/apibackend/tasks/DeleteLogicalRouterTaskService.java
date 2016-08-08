@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.StatefulService;
@@ -140,8 +141,8 @@ public class DeleteLogicalRouterTaskService extends StatefulService {
     ServiceUtils.logInfo(this, "Deleting logical router %s", currentState.logicalRouterId);
 
     try {
-      ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint, currentState.username,
-          currentState.password).getLogicalRouterApi().deleteLogicalRouter(currentState.logicalRouterId,
+      ServiceHostUtils.getNsxClient(getHost(), currentState.nsxAddress, currentState.nsxUsername,
+          currentState.nsxPassword).getLogicalRouterApi().deleteLogicalRouter(currentState.logicalRouterId,
           new FutureCallback<Void>() {
             @Override
             public void onSuccess(Void v) {
@@ -160,12 +161,18 @@ public class DeleteLogicalRouterTaskService extends StatefulService {
   }
 
   private void waitDeleteLogicalRouter(DeleteLogicalRouterTask currentState) {
+    NsxClient nsxClient = ServiceHostUtils.getNsxClient(
+        getHost(),
+        currentState.nsxAddress,
+        currentState.nsxUsername,
+        currentState.nsxPassword);
+
     getHost().schedule(() -> {
       ServiceUtils.logInfo(this, "Wait for deleting logical router %s", currentState.logicalRouterId);
 
       try {
-        ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint, currentState.username,
-            currentState.password).getLogicalRouterApi().checkLogicalRouterExistence(currentState.logicalRouterId,
+        nsxClient.getLogicalRouterApi().checkLogicalRouterExistence(
+            currentState.logicalRouterId,
             new FutureCallback<Boolean>() {
               @Override
               public void onSuccess(Boolean successful) {
@@ -186,7 +193,7 @@ public class DeleteLogicalRouterTaskService extends StatefulService {
         failTask(t);
       }
 
-    }, currentState.executionDelay, TimeUnit.MILLISECONDS);
+    }, nsxClient.getDeleteLogicalRouterPollDelay(), TimeUnit.MILLISECONDS);
 
   }
 

@@ -180,9 +180,9 @@ public class ConfigureRoutingTaskService extends StatefulService {
 
     LogicalPortCreateSpec spec = new LogicalPortCreateSpecBuilder()
         .logicalSwitchId(currentState.logicalSwitchId)
-        .displayName(NameUtils.getLogicalSwitchUplinkPortName(currentState.virtualNetworkId))
-        .description(NameUtils.getLogicalSwitchUplinkPortDescription(currentState.virtualNetworkId))
-        .tags(TagUtils.getLogicalSwitchUplinkPortTags(currentState.virtualNetworkId))
+        .displayName(NameUtils.getLogicalSwitchUplinkPortName(currentState.networkId))
+        .description(NameUtils.getLogicalSwitchUplinkPortDescription(currentState.networkId))
+        .tags(TagUtils.getLogicalSwitchUplinkPortTags(currentState.networkId))
         .build();
     logicalSwitchApi.createLogicalPort(spec,
         new FutureCallback<LogicalPort>() {
@@ -230,14 +230,14 @@ public class ConfigureRoutingTaskService extends StatefulService {
     }
 
     LogicalRouterDownLinkPortCreateSpec spec = new LogicalRouterDownLinkPortCreateSpecBuilder()
-        .displayName(NameUtils.getLogicalRouterDownlinkPortName(currentState.virtualNetworkId))
-        .description(NameUtils.getLogicalRouterDownlinkPortDescription(currentState.virtualNetworkId))
+        .displayName(NameUtils.getLogicalRouterDownlinkPortName(currentState.networkId))
+        .description(NameUtils.getLogicalRouterDownlinkPortDescription(currentState.networkId))
         .logicalRouterId(currentState.logicalTier1RouterId)
         .resourceType(NsxRouter.PortType.DOWN_LINK_PORT)
         .subnets(ImmutableList.of(ipSubnet))
         .linkedLogicalSwitchPortId(logicalSwitchPortReference)
         .serviceBindings(serviceBindings)
-        .tags(TagUtils.getLogicalRouterDownlinkPortTags(currentState.virtualNetworkId))
+        .tags(TagUtils.getLogicalRouterDownlinkPortTags(currentState.networkId))
         .build();
 
     logicalRouterApi.createLogicalRouterDownLinkPort(spec,
@@ -271,11 +271,11 @@ public class ConfigureRoutingTaskService extends StatefulService {
         currentState.nsxUsername, currentState.nsxPassword).getLogicalRouterApi();
 
     LogicalRouterLinkPortOnTier0CreateSpec spec = new LogicalRouterLinkPortOnTier0CreateSpecBuilder()
-        .displayName(NameUtils.getTier0RouterDownlinkPortName(currentState.virtualNetworkId))
-        .description(NameUtils.getTier0RouterDownlinkPortDescription(currentState.virtualNetworkId))
+        .displayName(NameUtils.getTier0RouterDownlinkPortName(currentState.networkId))
+        .description(NameUtils.getTier0RouterDownlinkPortDescription(currentState.networkId))
         .logicalRouterId(currentState.logicalTier0RouterId)
         .resourceType(NsxRouter.PortType.LINK_PORT_ON_TIER0)
-        .tags(TagUtils.getTier0RouterDownlinkPortTags(currentState.virtualNetworkId))
+        .tags(TagUtils.getTier0RouterDownlinkPortTags(currentState.networkId))
         .build();
 
     logicalRouterApi.createLogicalRouterLinkPortTier0(spec,
@@ -308,12 +308,12 @@ public class ConfigureRoutingTaskService extends StatefulService {
     resourceReference.setTargetId(currentState.logicalLinkPortOnTier0Router);
 
     LogicalRouterLinkPortOnTier1CreateSpec spec = new LogicalRouterLinkPortOnTier1CreateSpecBuilder()
-        .displayName(NameUtils.getLogicalRouterUplinkPortName(currentState.virtualNetworkId))
-        .description(NameUtils.getLogicalRouterUplinkdPortDescription(currentState.virtualNetworkId))
+        .displayName(NameUtils.getLogicalRouterUplinkPortName(currentState.networkId))
+        .description(NameUtils.getLogicalRouterUplinkdPortDescription(currentState.networkId))
         .logicalRouterId(currentState.logicalTier1RouterId)
         .resourceType(NsxRouter.PortType.LINK_PORT_ON_TIER1)
         .linkedLogicalRouterPortId(resourceReference)
-        .tags(TagUtils.getLogicalRouterUplinkPortTags(currentState.virtualNetworkId))
+        .tags(TagUtils.getLogicalRouterUplinkPortTags(currentState.networkId))
         .build();
 
     logicalRouterApi.createLogicalRouterLinkPortTier1(spec,

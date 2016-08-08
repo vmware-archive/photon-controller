@@ -17,7 +17,6 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
-import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
@@ -78,7 +77,7 @@ public class CreateLogicalSwitchTask extends ServiceDocument {
    */
   @NotBlank
   @Immutable
-  public String virtualNetworkId;
+  public String networkId;
 
   /**
    * ID of the transport zone.
@@ -86,13 +85,6 @@ public class CreateLogicalSwitchTask extends ServiceDocument {
   @NotBlank
   @Immutable
   public String transportZoneId;
-
-  /**
-   * Execution delay time to verify the state of logical switch.
-   */
-  @NotNull
-  @Immutable
-  public Integer executionDelay;
 
   ///
   /// Task Output

@@ -216,7 +216,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   private void checkVmExistence(DeleteVirtualNetworkWorkflowDocument state) {
     ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     termsBuilder.put(QueryTask.QuerySpecification.buildCollectionItemName(VmService.State.FIELD_NAME_NETWORKS),
-        state.virtualNetworkId);
+        state.networkId);
 
     QueryTask.QuerySpecification querySpecification = QueryTaskUtils.buildQuerySpec(VmService.State.class,
         termsBuilder.build());
@@ -308,9 +308,9 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
             DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
                 DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
-            patchState.nsxManagerEndpoint = deploymentState.networkManagerAddress;
-            patchState.username = deploymentState.networkManagerUsername;
-            patchState.password = deploymentState.networkManagerPassword;
+            patchState.nsxAddress = deploymentState.networkManagerAddress;
+            patchState.nsxUsername = deploymentState.networkManagerUsername;
+            patchState.nsxPassword = deploymentState.networkManagerPassword;
             progress(state, patchState);
           } catch (Throwable t) {
             fail(state, t);
@@ -325,9 +325,9 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   private void deleteLogicalPorts(DeleteVirtualNetworkWorkflowDocument state) {
 
     DeleteLogicalPortsTask deleteLogicalPortsTask = new DeleteLogicalPortsTask();
-    deleteLogicalPortsTask.nsxManagerEndpoint = state.nsxManagerEndpoint;
-    deleteLogicalPortsTask.username = state.username;
-    deleteLogicalPortsTask.password = state.password;
+    deleteLogicalPortsTask.nsxAddress = state.nsxAddress;
+    deleteLogicalPortsTask.nsxUsername = state.nsxUsername;
+    deleteLogicalPortsTask.nsxPassword = state.nsxPassword;
     deleteLogicalPortsTask.logicalTier1RouterId = state.taskServiceEntity.logicalRouterId;
     deleteLogicalPortsTask.logicalTier0RouterId = state.taskServiceEntity.tier0RouterId;
     deleteLogicalPortsTask.logicalSwitchId = state.taskServiceEntity.logicalSwitchId;
@@ -368,9 +368,9 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   private void deleteLogicalRouter(DeleteVirtualNetworkWorkflowDocument state) {
 
     DeleteLogicalRouterTask deleteLogicalRouterTask = new DeleteLogicalRouterTask();
-    deleteLogicalRouterTask.nsxManagerEndpoint = state.nsxManagerEndpoint;
-    deleteLogicalRouterTask.username = state.username;
-    deleteLogicalRouterTask.password = state.password;
+    deleteLogicalRouterTask.nsxAddress = state.nsxAddress;
+    deleteLogicalRouterTask.nsxUsername = state.nsxUsername;
+    deleteLogicalRouterTask.nsxPassword = state.nsxPassword;
     deleteLogicalRouterTask.logicalRouterId = state.taskServiceEntity.logicalRouterId;
 
     TaskUtils.startTaskAsync(
@@ -408,9 +408,9 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
    */
   private void deleteLogicalSwitch(DeleteVirtualNetworkWorkflowDocument state) {
     DeleteLogicalSwitchTask deleteLogicalSwitchTask = new DeleteLogicalSwitchTask();
-    deleteLogicalSwitchTask.nsxManagerEndpoint = state.nsxManagerEndpoint;
-    deleteLogicalSwitchTask.username = state.username;
-    deleteLogicalSwitchTask.password = state.password;
+    deleteLogicalSwitchTask.nsxAddress = state.nsxAddress;
+    deleteLogicalSwitchTask.nsxUsername = state.nsxUsername;
+    deleteLogicalSwitchTask.nsxPassword = state.nsxPassword;
     deleteLogicalSwitchTask.logicalSwitchId = state.taskServiceEntity.logicalSwitchId;
 
     TaskUtils.startTaskAsync(
@@ -453,7 +453,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   private void releaseIpAddressSpace(DeleteVirtualNetworkWorkflowDocument state) {
 
     SubnetAllocatorService.ReleaseSubnet releaseSubnet =
-        new SubnetAllocatorService.ReleaseSubnet(state.virtualNetworkId);
+        new SubnetAllocatorService.ReleaseSubnet(state.networkId);
 
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createPatch(SubnetAllocatorService.SINGLETON_LINK)
@@ -496,7 +496,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
    */
   private void createTombstoneTask(DeleteVirtualNetworkWorkflowDocument state) {
     TombstoneService.State tombstoneStartState = new TombstoneService.State();
-    tombstoneStartState.entityId = state.virtualNetworkId;
+    tombstoneStartState.entityId = state.networkId;
     tombstoneStartState.entityKind = VirtualSubnet.KIND;
     tombstoneStartState.tombstoneTime = System.currentTimeMillis();
 
@@ -527,7 +527,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
    */
   private void getVirtualNetwork(DeleteVirtualNetworkWorkflowDocument state, Operation operation) {
     ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createGet(VirtualNetworkService.FACTORY_LINK + "/" + state.virtualNetworkId)
+        .createGet(VirtualNetworkService.FACTORY_LINK + "/" + state.networkId)
         .setCompletion((op, ex) -> {
           if (ex != null) {
             operation.fail(ex);
