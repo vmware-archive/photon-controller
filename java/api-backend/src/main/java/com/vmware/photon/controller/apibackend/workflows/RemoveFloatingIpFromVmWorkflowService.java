@@ -13,7 +13,8 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
-import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIpToVmWorkflowDocument;
+import com.vmware.photon.controller.apibackend.exceptions.RemoveFloatingIpFromVmException;
+import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -21,40 +22,36 @@ import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.nsxclient.apis.LogicalRouterApi;
-import com.vmware.photon.controller.nsxclient.models.NatRule;
-import com.vmware.photon.controller.nsxclient.models.NatRuleCreateSpec;
-import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.TaskState;
 
 import com.google.common.util.concurrent.FutureCallback;
 
-import java.util.HashMap;
-
 /**
- * Implements an Xenon service that represents a workflow to assign a floating IP to a VM.
+ * Implements an Xenon service that represents a workflow to remove the floating IP from a VM.
  */
-public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<AssignFloatingIpToVmWorkflowDocument,
-    AssignFloatingIpToVmWorkflowDocument.TaskState, AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage> {
+public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<RemoveFloatingIpFromVmWorkflowDocument,
+    RemoveFloatingIpFromVmWorkflowDocument.TaskState, RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage> {
 
-  public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/assign-floating-ip";
+  public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/remove-floating-ip";
 
   public static FactoryService createFactory() {
-    return FactoryService.create(AssignFloatingIpToVmWorkflowService.class, AssignFloatingIpToVmWorkflowDocument.class);
+    return FactoryService.create(RemoveFloatingIpFromVmWorkflowService.class,
+        RemoveFloatingIpFromVmWorkflowDocument.class);
   }
 
-  public AssignFloatingIpToVmWorkflowService() {
-    super(AssignFloatingIpToVmWorkflowDocument.class,
-        AssignFloatingIpToVmWorkflowDocument.TaskState.class,
-        AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.class);
+  public RemoveFloatingIpFromVmWorkflowService() {
+    super(RemoveFloatingIpFromVmWorkflowDocument.class,
+        RemoveFloatingIpFromVmWorkflowDocument.TaskState.class,
+        RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.class);
   }
 
   @Override
   public void handleCreate(Operation createOperation) {
     ServiceUtils.logInfo(this, "Creating service %s", getSelfLink());
-    AssignFloatingIpToVmWorkflowDocument state =
-        createOperation.getBody(AssignFloatingIpToVmWorkflowDocument.class);
+    RemoveFloatingIpFromVmWorkflowDocument state =
+        createOperation.getBody(RemoveFloatingIpFromVmWorkflowDocument.class);
 
     try {
       initializeState(state);
@@ -79,7 +76,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
   @Override
   public void handleStart(Operation startOperation) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
-    AssignFloatingIpToVmWorkflowDocument state = startOperation.getBody(AssignFloatingIpToVmWorkflowDocument.class);
+    RemoveFloatingIpFromVmWorkflowDocument state = startOperation.getBody(RemoveFloatingIpFromVmWorkflowDocument.class);
 
     try {
       initializeState(state);
@@ -107,9 +104,9 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
     ServiceUtils.logInfo(this, "Handling patch %s", getSelfLink());
 
     try {
-      AssignFloatingIpToVmWorkflowDocument currentState = getState(patchOperation);
-      AssignFloatingIpToVmWorkflowDocument patchState =
-          patchOperation.getBody(AssignFloatingIpToVmWorkflowDocument.class);
+      RemoveFloatingIpFromVmWorkflowDocument currentState = getState(patchOperation);
+      RemoveFloatingIpFromVmWorkflowDocument patchState =
+          patchOperation.getBody(RemoveFloatingIpFromVmWorkflowDocument.class);
       validatePatchState(currentState, patchState);
 
       applyPatch(currentState, patchState);
@@ -132,46 +129,36 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
     }
   }
 
-  private void processPatch(AssignFloatingIpToVmWorkflowDocument state) {
+  private void processPatch(RemoveFloatingIpFromVmWorkflowDocument state) {
     try {
+
       switch (state.taskState.subStage) {
-        case CREATE_NAT_RULE:
-          createNatRule(state);
+        case REMOVE_NAT_RULE:
+          removeNatRule(state);
           break;
+
+        default:
+          throw new RemoveFloatingIpFromVmException("Invalid task substage " + state.taskState.subStage);
       }
     } catch (Throwable t) {
       fail(state, t);
     }
   }
 
-  private void createNatRule(AssignFloatingIpToVmWorkflowDocument state) throws Throwable {
+  private void removeNatRule(RemoveFloatingIpFromVmWorkflowDocument state) throws Throwable {
     LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(),
         state.nsxAddress,
         state.nsxUsername,
         state.nsxPassword)
         .getLogicalRouterApi();
 
-    NatRuleCreateSpec natRuleCreateSpec = new NatRuleCreateSpec();
-    natRuleCreateSpec.setDisplayName(NameUtils.getDnatRuleName(state.vmPrivateIpAddress));
-    natRuleCreateSpec.setDescription(NameUtils.getDnatRuleDescription(state.vmPrivateIpAddress));
-    natRuleCreateSpec.setMatchDestinationNetwork(state.vmFloatingIpAddress);
-    natRuleCreateSpec.setTranslatedNetwork(state.vmPrivateIpAddress);
-
-    logicalRouterApi.createNatRule(state.taskServiceEntity.logicalRouterId,
-        natRuleCreateSpec,
-        new FutureCallback<NatRule>() {
+    logicalRouterApi.deleteNatRule(state.taskServiceEntity.logicalRouterId,
+        state.natRuleId,
+        new FutureCallback<Void>() {
           @Override
-          public void onSuccess(NatRule result) {
-            try {
-              if (state.taskServiceEntity.natRuleToFloatingIpMap == null) {
-                state.taskServiceEntity.natRuleToFloatingIpMap = new HashMap<>();
-              }
-
-              state.taskServiceEntity.natRuleToFloatingIpMap.put(result.getId(), state.vmFloatingIpAddress);
-              updateVirtualNetwork(state);
-            } catch (Throwable t) {
-              fail(state, t);
-            }
+          public void onSuccess(Void result) {
+            state.taskServiceEntity.natRuleToFloatingIpMap.remove(state.natRuleId);
+            updateVirtualNetwork(state);
           }
 
           @Override
@@ -185,7 +172,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
    * Gets a VirtualNetworkService.State from {@link com.vmware.photon.controller.cloudstore.xenon.entity
    * .VirtualNetworkService.State} entity in cloud-store.
    */
-  private void getVirtualNetwork(AssignFloatingIpToVmWorkflowDocument state, Operation operation) {
+  private void getVirtualNetwork(RemoveFloatingIpFromVmWorkflowDocument state, Operation operation) {
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createGet(VirtualNetworkService.FACTORY_LINK + "/" + state.networkId)
         .setCompletion((op, ex) -> {
@@ -204,7 +191,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
   /**
    * Updates a VirtualNetworkService.State entity in cloud-store.
    */
-  private void updateVirtualNetwork(AssignFloatingIpToVmWorkflowDocument state) {
+  private void updateVirtualNetwork(RemoveFloatingIpFromVmWorkflowDocument state) {
     VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
     virtualNetworkPatchState.natRuleToFloatingIpMap = state.taskServiceEntity.natRuleToFloatingIpMap;
 
@@ -218,7 +205,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
           }
 
           try {
-            AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
+            RemoveFloatingIpFromVmWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.FINISHED,
                 null);
             patchState.taskServiceEntity = state.taskServiceEntity;

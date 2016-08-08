@@ -21,11 +21,11 @@ import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalPortsTaskServi
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalRouterTaskService;
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.tasks.DisconnectVmFromSwitchTaskService;
-import com.vmware.photon.controller.apibackend.tasks.RemoveFloatingIpFromVmTaskService;
 import com.vmware.photon.controller.apibackend.workflows.AssignFloatingIpToVmWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.ConfigureDhcpWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.apibackend.workflows.RemoveFloatingIpFromVmWorkflowService;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
@@ -53,12 +53,12 @@ public class ApiBackendFactory {
       .put(DeleteLogicalPortsTaskService.class, DeleteLogicalPortsTaskService::createFactory)
       .put(ConnectVmToSwitchTaskService.class, ConnectVmToSwitchTaskService::createFactory)
       .put(DisconnectVmFromSwitchTaskService.class, DisconnectVmFromSwitchTaskService::createFactory)
-      .put(RemoveFloatingIpFromVmTaskService.class, RemoveFloatingIpFromVmTaskService::createFactory)
 
       // workflows
       .put(CreateVirtualNetworkWorkflowService.class, CreateVirtualNetworkWorkflowService::createFactory)
       .put(DeleteVirtualNetworkWorkflowService.class, DeleteVirtualNetworkWorkflowService::createFactory)
       .put(ConfigureDhcpWorkflowService.class, ConfigureDhcpWorkflowService::createFactory)
       .put(AssignFloatingIpToVmWorkflowService.class, AssignFloatingIpToVmWorkflowService::createFactory)
+      .put(RemoveFloatingIpFromVmWorkflowService.class, RemoveFloatingIpFromVmWorkflowService::createFactory)
       .build();
 }
