@@ -13,12 +13,6 @@
 
 package com.vmware.photon.controller.api.model;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
-
-import java.util.Map;
-import java.util.Set;
-
 /**
  * The state transitions are:
  * <p>
@@ -59,14 +53,4 @@ public enum VmState {
   STOPPED,
   ERROR,
   DELETED;
-
-  /**
-   * The operation prerequisite states. To perform an operation (key) the VM has to be in one of the specified states
-   * (value).
-   */
-  public static final Map<Operation, Set<VmState>> OPERATION_PREREQ_STATE =
-      ImmutableMap.<Operation, Set<VmState>>builder()
-          .put(Operation.DELETE_VM, Sets.immutableEnumSet(VmState.CREATING, VmState.STOPPED, VmState.ERROR,
-              VmState.DELETED))
-          .build();
 }
