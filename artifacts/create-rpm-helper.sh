@@ -21,10 +21,6 @@ else
     --define="pkg_commit $COMMIT" \
     --define="pkg_commit_count $COMMIT_COUNT" \
     ./SPECS/photon-controller.spec
-
-  createrepo --database /usr/src/photon/RPMS
-
-  tar -czf ../build/photon-controller-rpmrepo-"$VERSION".tar.gz -C /usr/src/photon/ RPMS
 fi
 
 chown -R ${USER}:${GROUP} ./SPECS/*
