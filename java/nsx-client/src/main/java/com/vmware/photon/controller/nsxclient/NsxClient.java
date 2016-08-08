@@ -34,6 +34,11 @@ import java.security.cert.X509Certificate;
  */
 public class NsxClient {
 
+  private final static int CREATE_LOGICAL_SWITCH_POLL_DELAY = 5000;
+  private final static int DELETE_LOGICAL_SWITCH_POLL_DELAY = 10;
+  private final static int DELETE_LOGICAL_ROUTER_POLL_DELAY = 10;
+  private final static int DELETE_LOGICAL_PORT_POLL_DELAY = 1000;
+
   private final RestClient restClient;
 
   private final FabricApi fabricApi;
@@ -41,6 +46,9 @@ public class NsxClient {
   private final LogicalRouterApi logicalRouterApi;
   private final DhcpServiceApi dhcpServiceApi;
 
+  /**
+   * Constructs a NSX client.
+   */
   public NsxClient(String target,
                    String username,
                    String password) {
@@ -56,20 +64,64 @@ public class NsxClient {
     this.dhcpServiceApi = new DhcpServiceApi(restClient);
   }
 
+  /**
+   * Returns NSX fabric API client.
+   */
   public FabricApi getFabricApi() {
     return this.fabricApi;
   }
 
+  /**
+   * Returns NSX logical switch API client.
+   */
   public LogicalSwitchApi getLogicalSwitchApi() {
     return this.logicalSwitchApi;
   }
 
+  /**
+   * Return NSX logical router API client.
+   */
   public LogicalRouterApi getLogicalRouterApi() {
     return this.logicalRouterApi;
   }
 
+  /**
+   * Returns NSX DHCP service API client.
+   */
   public DhcpServiceApi getDhcpServiceApi() {
     return this.dhcpServiceApi;
+  }
+
+  /**
+   * Returns a poll delay value in milliseconds. The delay is used as the interval to poll
+   * the status of a created logical switch before we can claim the creation successful.
+   */
+  public int getCreateLogicalSwitchPollDelay() {
+    return CREATE_LOGICAL_SWITCH_POLL_DELAY;
+  }
+
+  /**
+   * Returns a poll delay value in milliseconds. The delay is used as the interval to poll
+   * the status of a deleted logical switch before we can claim deletion successful.
+   */
+  public int getDeleteLogicalSwitchPollDelay() {
+    return DELETE_LOGICAL_SWITCH_POLL_DELAY;
+  }
+
+  /**
+   * Returns a poll delay value in milliseconds. The delay is used as the interval to poll
+   * the status of a deleted logical router before we can claim deletion successful.
+   */
+  public int getDeleteLogicalRouterPollDelay() {
+    return DELETE_LOGICAL_ROUTER_POLL_DELAY;
+  }
+
+  /**
+   * Returns a poll delay value in milliseconds. The delay is used as the interval to poll
+   * the status of a deleted logical port before we can claim deletion successful.
+   */
+  public int getDeleteLogicalPortPollDelay() {
+    return DELETE_LOGICAL_PORT_POLL_DELAY;
   }
 
   public String getHostThumbprint(String ipAddress, int port) throws Throwable {

@@ -26,18 +26,49 @@ import com.vmware.xenon.common.ServiceDocumentDescription;
  * {@link com.vmware.photon.controller.apibackend.tasks.ConnectVmToSwitchTaskService}.
  */
 public class ConnectVmToSwitchTask extends ServiceDocument {
+
   /**
-   * Id of the created port that connects to VM.
+   * Customized task state. Defines substages.
    */
-  @WriteOnce
-  public String toVmPortId;
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
+    public SubStage subStage;
+
+    /**
+     * Definitions of substages.
+     */
+    public enum SubStage {
+      CONNECT_VM_TO_SWITCH,
+      UPDATE_VIRTUAL_NETWORK
+    }
+  }
+
+  ///
+  /// Controls Input
+  ///
+
+  /**
+   * State of this task.
+   */
+  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
+  public TaskState taskState;
+
+  /**
+   * Control flags that influences the behavior of the task.
+   */
+  @DefaultInteger(0)
+  @Immutable
+  public Integer controlFlags;
+
+  ///
+  /// Task Input
+  ///
 
   /**
    * Endpoint to the nsx manager.
    */
   @NotBlank
   @Immutable
-  public String nsxManagerEndpoint;
+  public String nsxAddress;
 
   /**
    * Username to access nsx manager.
@@ -45,7 +76,7 @@ public class ConnectVmToSwitchTask extends ServiceDocument {
   @NotBlank
   @Immutable
   @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String username;
+  public String nsxUsername;
 
   /**
    * Password to access nsx manager.
@@ -53,7 +84,14 @@ public class ConnectVmToSwitchTask extends ServiceDocument {
   @NotBlank
   @Immutable
   @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String password;
+  public String nsxPassword;
+
+  /**
+   * The id of the network that this vm locates in.
+   */
+  @NotBlank
+  @Immutable
+  public String networkId;
 
   /**
    * Id of the switch to which the VM is going to connect.
@@ -70,13 +108,6 @@ public class ConnectVmToSwitchTask extends ServiceDocument {
   public String toVmPortDisplayName;
 
   /**
-   * The location id of the VM to be connected to switch.
-   */
-  @NotBlank
-  @Immutable
-  public String vmLocationId;
-
-  /**
    * The id of the vm to be connected to switch.
    */
   @NotBlank
@@ -84,37 +115,19 @@ public class ConnectVmToSwitchTask extends ServiceDocument {
   public String vmId;
 
   /**
-   * The id of the network that this vm locates in.
+   * The location id of the VM to be connected to switch.
    */
   @NotBlank
   @Immutable
-  public String networkId;
+  public String vmLocationId;
+
+  ///
+  /// Task Output
+  ///
 
   /**
-   * State of this task.
+   * Id of the created port that connects to VM.
    */
-  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
-  public TaskState taskState;
-
-  /**
-   * Control flags that influences the behavior of the task.
-   */
-  @DefaultInteger(0)
-  @Immutable
-  public Integer controlFlags;
-
-  /**
-   * Customized task state. Defines substages.
-   */
-  public static class TaskState extends com.vmware.xenon.common.TaskState {
-    public SubStage subStage;
-
-    /**
-     * Definitions of substages.
-     */
-    public enum SubStage {
-      CONNECT_VM_TO_SWITCH,
-      UPDATE_VIRTUAL_NETWORK
-    }
-  }
+  @WriteOnce
+  public String toVmPortId;
 }

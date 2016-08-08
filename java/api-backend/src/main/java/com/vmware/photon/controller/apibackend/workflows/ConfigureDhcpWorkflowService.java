@@ -166,7 +166,7 @@ public class ConfigureDhcpWorkflowService extends BaseWorkflowService<ConfigureD
     request.setDescription(NameUtils.getDhcpRelayProfileDescription(getDeploymentId(state)));
 
     try {
-      ServiceHostUtils.getNsxClient(getHost(), state.nsxManagerEndpoint, state.username, state.password)
+      ServiceHostUtils.getNsxClient(getHost(), state.nsxAddress, state.nsxUsername, state.nsxPassword)
           .getDhcpServiceApi()
           .createDhcpRelayProfile(request,
               new FutureCallback<DhcpRelayProfile>() {
@@ -205,7 +205,7 @@ public class ConfigureDhcpWorkflowService extends BaseWorkflowService<ConfigureD
     request.setDescription(NameUtils.getDhcpRelayServiceDescription(getDeploymentId(state)));
 
     try {
-      ServiceHostUtils.getNsxClient(getHost(), state.nsxManagerEndpoint, state.username, state.password)
+      ServiceHostUtils.getNsxClient(getHost(), state.nsxAddress, state.nsxUsername, state.nsxPassword)
           .getDhcpServiceApi()
           .createDhcpRelayService(request,
               new FutureCallback<DhcpRelayService>() {
@@ -308,9 +308,9 @@ public class ConfigureDhcpWorkflowService extends BaseWorkflowService<ConfigureD
             DeploymentService.State deploymentState = op.getBody(DeploymentService.State.class);
 
             state.taskServiceEntity = deploymentState;
-            state.nsxManagerEndpoint = deploymentState.networkManagerAddress;
-            state.username = deploymentState.networkManagerUsername;
-            state.password = deploymentState.networkManagerPassword;
+            state.nsxAddress = deploymentState.networkManagerAddress;
+            state.nsxUsername = deploymentState.networkManagerUsername;
+            state.nsxPassword = deploymentState.networkManagerPassword;
 
             create(state, operation);
           } catch (Throwable t) {

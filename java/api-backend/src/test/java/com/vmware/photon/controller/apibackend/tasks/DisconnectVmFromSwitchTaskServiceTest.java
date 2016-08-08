@@ -370,9 +370,9 @@ public class DisconnectVmFromSwitchTaskServiceTest {
     @DataProvider(name = "writeOnceFields")
     public Object[][] getWriteOnceFields() {
       return new Object[][] {
-          {"nsxManagerEndpoint"},
-          {"username"},
-          {"password"},
+          {"nsxAddress"},
+          {"nsxUsername"},
+          {"nsxPassword"},
           {"logicalSwitchId"},
           {"logicalSwitchDownlinkPortIds"}
       };

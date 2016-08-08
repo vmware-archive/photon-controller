@@ -72,9 +72,9 @@ public class ConfigureDhcpWorkflowServiceTest {
     startState.taskState.subStage = subStage;
     startState.controlFlags = controlFlag;
 
-    startState.nsxManagerEndpoint = "https://192.168.1.1";
-    startState.username = "username";
-    startState.password = "password";
+    startState.nsxAddress = "https://192.168.1.1";
+    startState.nsxUsername = "username";
+    startState.nsxPassword = "password";
     startState.dhcpServerAddresses = new ArrayList<>();
     startState.dhcpServerAddresses.add("1.2.3.4");
 
@@ -512,7 +512,6 @@ public class ConfigureDhcpWorkflowServiceTest {
     private static final String NETWORK_MANAGER_ADDRESS = "networkManagerAddress";
     private static final String NETWORK_MANAGER_USERNAME = "networkManagerUsername";
     private static final String NETWORK_MANAGER_PASSWORD = "networkManagerPassword";
-    private static final String DHCP_SERVER_ADDRESS = "1.2.3.4";
     private static final String DHCP_RELAY_PROFILE_ID = "dhcpRelayProfileId";
     private static final String DHCP_RELAY_SERVICE_ID = "dhcpRelayServiceId";
 
@@ -566,9 +565,9 @@ public class ConfigureDhcpWorkflowServiceTest {
           (state) -> TaskState.TaskStage.FINISHED == state.taskState.stage);
 
       // Verifies that NSX configuration is cached in the service document.
-      assertThat(finalState.nsxManagerEndpoint, Matchers.is(NETWORK_MANAGER_ADDRESS));
-      assertThat(finalState.username, Matchers.is(NETWORK_MANAGER_USERNAME));
-      assertThat(finalState.password, Matchers.is(NETWORK_MANAGER_PASSWORD));
+      assertThat(finalState.nsxAddress, Matchers.is(NETWORK_MANAGER_ADDRESS));
+      assertThat(finalState.nsxUsername, Matchers.is(NETWORK_MANAGER_USERNAME));
+      assertThat(finalState.nsxPassword, Matchers.is(NETWORK_MANAGER_PASSWORD));
 
       // Verifies that the DHCP relay profile ID and service ID are cached in the service document,
       // and persisted in the deployment entity.

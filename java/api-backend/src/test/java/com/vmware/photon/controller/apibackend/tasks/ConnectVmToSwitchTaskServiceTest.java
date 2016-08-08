@@ -163,9 +163,9 @@ public class ConnectVmToSwitchTaskServiceTest {
     @DataProvider(name = "notEmptyFields")
     private Object[][] getNotEmptyFields() {
       return new Object[][]{
-          {"nsxManagerEndpoint", "nsxManagerEndpoint cannot be null"},
-          {"username", "username cannot be null"},
-          {"password", "password cannot be null"},
+          {"nsxAddress", "nsxAddress cannot be null"},
+          {"nsxUsername", "nsxUsername cannot be null"},
+          {"nsxPassword", "nsxPassword cannot be null"},
           {"logicalSwitchId", "logicalSwitchId cannot be null"},
           {"toVmPortDisplayName", "toVmPortDisplayName cannot be null"},
           {"vmLocationId", "vmLocationId cannot be null"},
@@ -372,9 +372,9 @@ public class ConnectVmToSwitchTaskServiceTest {
     public Object[][] getImmutableFields() {
       return new Object[][] {
           {"controlFlags"},
-          {"nsxManagerEndpoint"},
-          {"username"},
-          {"password"},
+          {"nsxAddress"},
+          {"nsxUsername"},
+          {"nsxPassword"},
           {"logicalSwitchId"},
           {"toVmPortDisplayName"},
           {"vmLocationId"},
@@ -532,9 +532,9 @@ public class ConnectVmToSwitchTaskServiceTest {
     startState.vmLocationId = "vm-location-id";
     startState.vmId = "vm-id";
     startState.networkId = networkId;
-    startState.nsxManagerEndpoint = "https://192.168.1.1";
-    startState.username = "username";
-    startState.password = "password";
+    startState.nsxAddress = "https://192.168.1.1";
+    startState.nsxUsername = "nsxUsername";
+    startState.nsxPassword = "nsxPassword";
 
     return startState;
   }

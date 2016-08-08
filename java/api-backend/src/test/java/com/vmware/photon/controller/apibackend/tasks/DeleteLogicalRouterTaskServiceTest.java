@@ -165,9 +165,9 @@ public class DeleteLogicalRouterTaskServiceTest {
     private Object[][] getNotEmptyFields() {
       return new Object[][] {
           {"logicalRouterId", "logicalRouterId cannot be null"},
-          {"nsxManagerEndpoint", "nsxManagerEndpoint cannot be null"},
-          {"username", "username cannot be null"},
-          {"password", "password cannot be null"}
+          {"nsxAddress", "nsxAddress cannot be null"},
+          {"nsxUsername", "nsxUsername cannot be null"},
+          {"nsxPassword", "nsxPassword cannot be null"}
       };
     }
   }
@@ -319,11 +319,10 @@ public class DeleteLogicalRouterTaskServiceTest {
     public Object[][] getImmutableFields() {
       return new Object[][] {
           {"controlFlags", "controlFlags is immutable"},
-          {"nsxManagerEndpoint", "nsxManagerEndpoint is immutable"},
-          {"username", "username is immutable"},
-          {"password", "password is immutable"},
+          {"nsxAddress", "nsxAddress is immutable"},
+          {"nsxUsername", "nsxUsername is immutable"},
+          {"nsxPassword", "nsxPassword is immutable"},
           {"logicalRouterId", "logicalRouterId is immutable"},
-          {"executionDelay",  "executionDelay is immutable"},
       };
     }
 
@@ -433,9 +432,9 @@ public class DeleteLogicalRouterTaskServiceTest {
     startState.taskState.stage = startStage;
     startState.taskState.subStage = startSubStage;
     startState.controlFlags = controlFlags;
-    startState.nsxManagerEndpoint = "https://192.168.1.1";
-    startState.username = "username";
-    startState.password = "password";
+    startState.nsxAddress = "https://192.168.1.1";
+    startState.nsxUsername = "nsxUsername";
+    startState.nsxPassword = "nsxPassword";
     startState.logicalRouterId = "logicalRouterId";
 
     return startState;

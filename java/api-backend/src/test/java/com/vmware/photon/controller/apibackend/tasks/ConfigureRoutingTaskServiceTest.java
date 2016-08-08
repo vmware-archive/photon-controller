@@ -169,7 +169,7 @@ public class ConfigureRoutingTaskServiceTest {
           {"nsxAddress", "nsxAddress cannot be null"},
           {"nsxUsername", "nsxUsername cannot be null"},
           {"nsxPassword", "nsxPassword cannot be null"},
-          {"virtualNetworkId", "virtualNetworkId cannot be null"},
+          {"networkId", "networkId cannot be null"},
           {"logicalSwitchId", "logicalSwitchId cannot be null"},
           {"logicalTier1RouterId", "logicalTier1RouterId cannot be null"},
           {"logicalTier1RouterDownLinkPortIp", "logicalTier1RouterDownLinkPortIp cannot be null"},
@@ -579,9 +579,9 @@ public class ConfigureRoutingTaskServiceTest {
 
     startState.routingType = routingType;
     startState.nsxAddress = "https://192.168.1.1";
-    startState.nsxUsername = "username";
-    startState.nsxPassword = "password";
-    startState.virtualNetworkId = "virtualNetworkId";
+    startState.nsxUsername = "nsxUsername";
+    startState.nsxPassword = "nsxPassword";
+    startState.networkId = "virtualNetworkId";
     startState.dhcpRelayServiceId = "dhcpRelayServiceId";
     startState.logicalSwitchId = UUID.randomUUID().toString();
     startState.logicalTier1RouterId = UUID.randomUUID().toString();

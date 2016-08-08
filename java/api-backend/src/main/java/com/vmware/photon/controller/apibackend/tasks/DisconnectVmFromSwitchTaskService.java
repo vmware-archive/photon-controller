@@ -204,9 +204,9 @@ public class DisconnectVmFromSwitchTaskService extends StatefulService {
             DisconnectVmFromSwitchTask patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
                 TaskState.SubStage.GET_VIRTUAL_NETWORK);
-            patchState.nsxManagerEndpoint = deploymentState.networkManagerAddress;
-            patchState.username = deploymentState.networkManagerUsername;
-            patchState.password = deploymentState.networkManagerPassword;
+            patchState.nsxAddress = deploymentState.networkManagerAddress;
+            patchState.nsxUsername = deploymentState.networkManagerUsername;
+            patchState.nsxPassword = deploymentState.networkManagerPassword;
 
             TaskUtils.sendSelfPatch(DisconnectVmFromSwitchTaskService.this, patchState);
           } catch (Throwable t) {
@@ -255,8 +255,8 @@ public class DisconnectVmFromSwitchTaskService extends StatefulService {
 
       String toVmPortId = currentState.logicalSwitchDownlinkPortIds.get(currentState.vmId);
 
-      LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
-          currentState.username, currentState.password).getLogicalSwitchApi();
+      LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxAddress,
+          currentState.nsxUsername, currentState.nsxPassword).getLogicalSwitchApi();
 
       logicalSwitchApi.deleteLogicalPort(toVmPortId, new FutureCallback<Void>() {
         @Override

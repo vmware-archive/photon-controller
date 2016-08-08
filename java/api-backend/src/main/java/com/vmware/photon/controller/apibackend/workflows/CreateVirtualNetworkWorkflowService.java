@@ -380,9 +380,9 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
             CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
                 CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH);
-            patchState.nsxManagerEndpoint = deploymentState.networkManagerAddress;
-            patchState.username = deploymentState.networkManagerUsername;
-            patchState.password = deploymentState.networkManagerPassword;
+            patchState.nsxAddress = deploymentState.networkManagerAddress;
+            patchState.nsxUsername = deploymentState.networkManagerUsername;
+            patchState.nsxPassword = deploymentState.networkManagerPassword;
             patchState.transportZoneId = deploymentState.networkZoneId;
             patchState.tier0RouterId = deploymentState.networkTopRouterId;
             patchState.dhcpRelayServiceId = deploymentState.dhcpRelayServiceId;
@@ -400,12 +400,11 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
    */
   private void createLogicalSwitch(CreateVirtualNetworkWorkflowDocument state) {
     CreateLogicalSwitchTask createLogicalSwitchTask = new CreateLogicalSwitchTask();
-    createLogicalSwitchTask.nsxAddress = state.nsxManagerEndpoint;
-    createLogicalSwitchTask.nsxUsername = state.username;
-    createLogicalSwitchTask.nsxPassword = state.password;
-    createLogicalSwitchTask.virtualNetworkId = getVirtualNetworkId(state);
+    createLogicalSwitchTask.nsxAddress = state.nsxAddress;
+    createLogicalSwitchTask.nsxUsername = state.nsxUsername;
+    createLogicalSwitchTask.nsxPassword = state.nsxPassword;
+    createLogicalSwitchTask.networkId = getVirtualNetworkId(state);
     createLogicalSwitchTask.transportZoneId = state.transportZoneId;
-    createLogicalSwitchTask.executionDelay = state.executionDelay;
 
     TaskUtils.startTaskAsync(
         this,
@@ -452,10 +451,10 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
    */
   private void createLogicalRouter(CreateVirtualNetworkWorkflowDocument state) {
     CreateLogicalRouterTask createLogicalRouterTask = new CreateLogicalRouterTask();
-    createLogicalRouterTask.nsxAddress = state.nsxManagerEndpoint;
-    createLogicalRouterTask.nsxUsername = state.username;
-    createLogicalRouterTask.nsxPassword = state.password;
-    createLogicalRouterTask.virtualNetworkId = getVirtualNetworkId(state);
+    createLogicalRouterTask.nsxAddress = state.nsxAddress;
+    createLogicalRouterTask.nsxUsername = state.nsxUsername;
+    createLogicalRouterTask.nsxPassword = state.nsxPassword;
+    createLogicalRouterTask.networkId = getVirtualNetworkId(state);
 
     TaskUtils.startTaskAsync(
         this,
@@ -502,10 +501,10 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
   private void setUpLogicalRouter(CreateVirtualNetworkWorkflowDocument state) {
     ConfigureRoutingTask configureRoutingTask = new ConfigureRoutingTask();
     configureRoutingTask.routingType = state.routingType;
-    configureRoutingTask.nsxAddress = state.nsxManagerEndpoint;
-    configureRoutingTask.nsxUsername = state.username;
-    configureRoutingTask.nsxPassword = state.password;
-    configureRoutingTask.virtualNetworkId = getVirtualNetworkId(state);
+    configureRoutingTask.nsxAddress = state.nsxAddress;
+    configureRoutingTask.nsxUsername = state.nsxUsername;
+    configureRoutingTask.nsxPassword = state.nsxPassword;
+    configureRoutingTask.networkId = getVirtualNetworkId(state);
     configureRoutingTask.dhcpRelayServiceId = state.dhcpRelayServiceId;
     configureRoutingTask.logicalSwitchId = state.taskServiceEntity.logicalSwitchId;
     configureRoutingTask.logicalTier1RouterId = state.taskServiceEntity.logicalRouterId;
