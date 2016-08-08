@@ -615,6 +615,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     postState.description = state.description;
     postState.state = SubnetState.CREATING;
     postState.routingType = state.routingType;
+    postState.size = state.size;
 
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createPost(VirtualNetworkService.FACTORY_LINK)

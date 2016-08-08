@@ -140,6 +140,13 @@ public class VirtualNetworkService extends StatefulService {
     public String parentKind;
 
     /**
+     * This value represents requested IP count for the network.
+     */
+    @NotNull
+    @Immutable
+    public Integer size;
+
+    /**
      * Indicates whether this network is the default one, confined in the level of its parentId.
      */
     public Boolean isDefault;
@@ -249,6 +256,7 @@ public class VirtualNetworkService extends StatefulService {
           .add("state", state)
           .add("parentId", parentId)
           .add("parentKind", parentKind)
+          .add("size", size)
           .add("routingType", routingType)
           .add("cidr", cidr)
           .add("lowIpDynamic", lowIpDynamic)
@@ -262,7 +270,6 @@ public class VirtualNetworkService extends StatefulService {
           .add("logicalSwitchUplinkPortId", logicalSwitchUplinkPortId)
           .add("logicalSwitchDownlinkPortIds", logicalSwitchDownlinkPortIds)
           .add("logicalRouterDownlinkPortId", logicalRouterDownlinkPortId)
-          .add("logicalRouterUplinkPortId", logicalRouterUplinkPortId)
           .add("logicalRouterUplinkPortId", logicalRouterUplinkPortId)
           .add("tier0RouterDownlinkPortId", tier0RouterDownlinkPortId)
           .add("documentSelfLink", documentSelfLink)
