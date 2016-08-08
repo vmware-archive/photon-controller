@@ -523,6 +523,7 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     virtualNetwork.natRuleToFloatingIpMap = new HashMap<>();
     virtualNetwork.natRuleToFloatingIpMap.put("natRuleId", "1.2.3.4");
     virtualNetwork.natRuleToFloatingIpMap.put("natRuleId2", "5.6.7.8");
+    virtualNetwork.size = 16;
 
     Operation result = testEnvironment.sendPostAndWait(VirtualNetworkService.FACTORY_LINK, virtualNetwork);
     assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));

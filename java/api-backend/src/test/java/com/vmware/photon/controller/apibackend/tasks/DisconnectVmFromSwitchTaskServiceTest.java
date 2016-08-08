@@ -545,6 +545,7 @@ public class DisconnectVmFromSwitchTaskServiceTest {
       virtualNetwork.logicalSwitchId = "logical_switch_id";
       virtualNetwork.logicalSwitchDownlinkPortIds = new HashMap<>();
       virtualNetwork.logicalSwitchDownlinkPortIds.put("vm-1", "port1");
+      virtualNetwork.size = 16;
 
       Operation result = testEnvironment.sendPostAndWait(VirtualNetworkService.FACTORY_LINK, virtualNetwork);
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
