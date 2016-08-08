@@ -13,6 +13,9 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
+import com.vmware.photon.controller.api.model.Project;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.api.model.VmState;
@@ -22,6 +25,10 @@ import com.vmware.photon.controller.apibackend.helpers.TestHelper;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TombstoneService;
@@ -64,6 +71,7 @@ import static org.testng.Assert.fail;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Set;
 
 /**
@@ -122,11 +130,12 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     virtualNetwork.name = "virtual_network_name";
     virtualNetwork.state = SubnetState.CREATING;
     virtualNetwork.routingType = RoutingType.ROUTED;
-    virtualNetwork.parentId = "parentId";
-    virtualNetwork.parentKind = "parentKind";
+    virtualNetwork.parentId = "project-id";
+    virtualNetwork.parentKind = Project.KIND;
     virtualNetwork.tier0RouterId = "logical_tier0_router_id";
     virtualNetwork.logicalRouterId = "logical_tier1_router_id";
     virtualNetwork.logicalSwitchId = "logical_switch_id";
+    virtualNetwork.size = 16;
 
     Operation result = testEnvironment.sendPostAndWait(VirtualNetworkService.FACTORY_LINK, virtualNetwork);
     assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
@@ -314,9 +323,9 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
         throws Throwable {
 
       startState = buildValidStartState(stage, subStage, new ControlFlags.Builder()
-          .disableOperationProcessingOnHandleStart()
-          .disableOperationProcessingOnHandlePatch()
-          .build(),
+              .disableOperationProcessingOnHandleStart()
+              .disableOperationProcessingOnHandlePatch()
+              .build(),
           ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink));
 
       testEnvironment.callServiceAndWaitForState(
@@ -459,7 +468,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
         DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage currentSubStage,
         TaskState.TaskStage patchStage,
         DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage patchSubStage
-        ) throws Throwable {
+    ) throws Throwable {
 
       DeleteVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -467,8 +476,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
               startState,
               DeleteVirtualNetworkWorkflowDocument.class,
               (state) -> TaskState.TaskStage.STARTED == state.taskState.stage &&
-                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE
-                    == state.taskState.subStage);
+                  DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE
+                      == state.taskState.subStage);
 
       patchTaskToState(finalState.documentSelfLink, currentStage, currentSubStage);
 
@@ -604,132 +613,166 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
 
       return new Object[][]{
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE,
-           TaskState.TaskStage.CREATED, null},
+              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE,
-           TaskState.TaskStage.CREATED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
+              TaskState.TaskStage.CREATED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE,
-           TaskState.TaskStage.CREATED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
+              TaskState.TaskStage.CREATED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE,
-           TaskState.TaskStage.CREATED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
+              TaskState.TaskStage.CREATED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
 
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
-           TaskState.TaskStage.CREATED, null},
+              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
+              TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
-           TaskState.TaskStage.FINISHED, null},
+              TaskState.TaskStage.FINISHED, null},
 
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS,
-           TaskState.TaskStage.CREATED, null},
+              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED,
-           DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE,
-           TaskState.TaskStage.CREATED, null},
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE,
+              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
+              TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS,
-           TaskState.TaskStage.FINISHED, null},
+              TaskState.TaskStage.FINISHED, null},
 
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER,
-           TaskState.TaskStage.CREATED, null},
+              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
+              TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER,
-           TaskState.TaskStage.FINISHED, null},
+              TaskState.TaskStage.FINISHED, null},
 
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH,
-           TaskState.TaskStage.CREATED, null},
+              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
+              TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
           {TaskState.TaskStage.STARTED,
-           DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE,
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
 
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY,
-           TaskState.TaskStage.CREATED, null},
+              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
+              TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
 
           {TaskState.TaskStage.FINISHED, null,
-           TaskState.TaskStage.CREATED, null},
+              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FINISHED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
+              TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
           {TaskState.TaskStage.FINISHED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
           {TaskState.TaskStage.FINISHED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
           {TaskState.TaskStage.FINISHED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
           {TaskState.TaskStage.FINISHED, null,
-           TaskState.TaskStage.STARTED,
-           DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
           {TaskState.TaskStage.FINISHED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
 
           {TaskState.TaskStage.CANCELLED, null,
-           TaskState.TaskStage.CREATED, null},
+              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.CANCELLED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
+              TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
           {TaskState.TaskStage.CANCELLED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
           {TaskState.TaskStage.CANCELLED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
           {TaskState.TaskStage.CANCELLED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
           {TaskState.TaskStage.CANCELLED, null,
-           TaskState.TaskStage.STARTED,
-           DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
           {TaskState.TaskStage.CANCELLED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
 
           {TaskState.TaskStage.FAILED, null,
-           TaskState.TaskStage.CREATED, null},
+              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FAILED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
           {TaskState.TaskStage.FAILED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
           {TaskState.TaskStage.FAILED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
           {TaskState.TaskStage.FAILED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
           {TaskState.TaskStage.FAILED, null,
-           TaskState.TaskStage.STARTED,
-           DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
           {TaskState.TaskStage.FAILED, null,
-           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
       };
     }
 
@@ -804,9 +847,9 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
               DeleteVirtualNetworkWorkflowDocument.class, WriteOnce.class));
     }
 
-    private void patchTaskToState(String documentSelfLink,
-        TaskState.TaskStage targetStage,
-        DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage targetSubStage) throws Throwable {
+    private void patchTaskToState(String documentSelfLink, TaskState.TaskStage targetStage,
+                                  DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage targetSubStage)
+        throws Throwable {
 
       if (targetStage == TaskState.TaskStage.FAILED || targetStage == TaskState.TaskStage.CANCELLED) {
         DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(targetStage, targetSubStage);
@@ -859,6 +902,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     private DeleteVirtualNetworkWorkflowDocument startState;
     private DeploymentService.State deploymentStartState;
     private SubnetAllocatorService.State subnetAllocatorServiceState;
+    private ProjectService.State projectState;
+    private ResourceTicketService.State resourceTicketState;
     private NsxClientFactory nsxClientFactory;
     private NsxClientMock nsxClientMock;
     private TestEnvironment testEnvironment;
@@ -877,6 +922,30 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
       subnetAllocatorServiceState = new SubnetAllocatorService.State();
       subnetAllocatorServiceState.rootCidr = "192.168.1.1/24";
       subnetAllocatorServiceState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
+
+      projectState = new ProjectService.State();
+      projectState.resourceTicketId = "resource-ticket-id";
+      projectState.name = "project-name";
+      projectState.tenantId = "tenant-id";
+      projectState.documentSelfLink = "project-id";
+
+      resourceTicketState = new ResourceTicketService.State();
+      resourceTicketState.name = "resource-ticket-name";
+      resourceTicketState.tenantId = "tenant-id";
+      resourceTicketState.parentId = "parent-id";
+      resourceTicketState.documentSelfLink = "resource-ticket-id";
+      resourceTicketState.limitMap = new HashMap<>();
+      QuotaLineItem costItem = new QuotaLineItem();
+      costItem.setKey(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY);
+      costItem.setValue(20);
+      costItem.setUnit(QuotaUnit.COUNT);
+      resourceTicketState.limitMap.put(costItem.getKey(), costItem);
+      resourceTicketState.usageMap = new HashMap<>();
+      costItem = new QuotaLineItem();
+      costItem.setKey(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY);
+      costItem.setValue(16);
+      costItem.setUnit(QuotaUnit.COUNT);
+      resourceTicketState.usageMap.put(costItem.getKey(), costItem);
 
       nsxClientFactory = mock(NsxClientFactory.class);
     }
@@ -927,13 +996,25 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           (state) -> true);
 
       testEnvironment.callServiceAndWaitForState(
+          ProjectServiceFactory.SELF_LINK,
+          projectState,
+          ProjectService.State.class,
+          (state) -> true);
+
+      testEnvironment.callServiceAndWaitForState(
+          ResourceTicketServiceFactory.SELF_LINK,
+          resourceTicketState,
+          ResourceTicketService.State.class,
+          (state) -> true);
+
+      testEnvironment.callServiceAndWaitForState(
           SubnetAllocatorService.FACTORY_LINK,
           subnetAllocatorServiceState,
           SubnetAllocatorService.State.class,
           (state) -> true);
 
       DeleteVirtualNetworkWorkflowDocument finalState =
-           testEnvironment.callServiceAndWaitForState(
+          testEnvironment.callServiceAndWaitForState(
               DeleteVirtualNetworkWorkflowService.FACTORY_LINK,
               startState,
               DeleteVirtualNetworkWorkflowDocument.class,
@@ -959,6 +1040,15 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
 
       // Verify tombstone task was created
       assertThat(getTombstoneTaskCount(finalState.virtualNetworkId), CoreMatchers.is(1));
+
+      // Verify resource ticket was updated
+      ResourceTicketService.State finalResourceTicket = testEnvironment.getServiceState(ResourceTicketServiceFactory
+              .SELF_LINK + "/resource-ticket-id",
+          ResourceTicketService.State.class);
+      assertThat(finalResourceTicket.usageMap.get(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY),
+          notNullValue());
+      assertThat(finalResourceTicket.usageMap
+          .get(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY).getValue(), is(0.0));
     }
 
     /**
@@ -1270,50 +1360,50 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     @Test(dataProvider = "hostCount")
     public void failsToWaitForDeleteLogicalSwitch(int hostCount) throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
-              .listLogicalRouterPorts(true)
-              .deleteLogicalRouterPort(true)
-              .deleteLogicalPort(true)
-              .deleteLogicalRouter(true)
-              .deleteLogicalSwitch(true)
-              .checkLogicalRouterPortExistence(true)
-              .checkLogicalSwitchPortExistence(true)
-              .checkLogicalRouterExistence(true)
-              .checkLogicalSwitchExistence(false)
-              .build();
+          .listLogicalRouterPorts(true)
+          .deleteLogicalRouterPort(true)
+          .deleteLogicalPort(true)
+          .deleteLogicalRouter(true)
+          .deleteLogicalSwitch(true)
+          .checkLogicalRouterPortExistence(true)
+          .checkLogicalSwitchPortExistence(true)
+          .checkLogicalRouterExistence(true)
+          .checkLogicalSwitchExistence(false)
+          .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
       testEnvironment = new TestEnvironment.Builder()
-              .hostCount(hostCount)
-              .cloudStoreHelper(new CloudStoreHelper())
-              .nsxClientFactory(nsxClientFactory)
-              .build();
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
 
       VirtualNetworkService.State virtualNetworkDocument = createVirtualNetworkDocumentInCloudStore(testEnvironment);
       startState = buildValidStartState(
-              TaskState.TaskStage.CREATED,
-              null,
-              new ControlFlags.Builder().build(),
-              ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink));
+          TaskState.TaskStage.CREATED,
+          null,
+          new ControlFlags.Builder().build(),
+          ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink));
 
       testEnvironment.callServiceAndWaitForState(
-              DeploymentServiceFactory.SELF_LINK,
-              deploymentStartState,
-              DeploymentService.State.class,
-              (state) -> true);
+          DeploymentServiceFactory.SELF_LINK,
+          deploymentStartState,
+          DeploymentService.State.class,
+          (state) -> true);
 
       DeleteVirtualNetworkWorkflowDocument finalState =
-              testEnvironment.callServiceAndWaitForState(
-                      DeleteVirtualNetworkWorkflowService.FACTORY_LINK,
-                      startState,
-                      DeleteVirtualNetworkWorkflowDocument.class,
-                      (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
+          testEnvironment.callServiceAndWaitForState(
+              DeleteVirtualNetworkWorkflowService.FACTORY_LINK,
+              startState,
+              DeleteVirtualNetworkWorkflowDocument.class,
+              (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
 
       // Verifies the cached task entity document.
       assertThat(finalState.taskServiceState.state, is(TaskService.State.TaskState.ERROR));
 
       // Verifies that the task entity document is set to ERROR in cloud-store.
       TaskService.State taskServiceState = testEnvironment.getServiceState(finalState.taskServiceState.documentSelfLink,
-              TaskService.State.class);
+          TaskService.State.class);
       assertThat(taskServiceState, notNullValue());
       assertThat(taskServiceState.state, is(TaskService.State.TaskState.ERROR));
     }

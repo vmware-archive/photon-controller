@@ -140,6 +140,13 @@ public class VirtualNetworkService extends StatefulService {
     public String parentKind;
 
     /**
+     * This value represents requested IP count for the network.
+     */
+    @NotNull
+    @Immutable
+    public Integer size;
+
+    /**
      * Indicates whether this network is the default one, confined in the level of its parentId.
      */
     public Boolean isDefault;

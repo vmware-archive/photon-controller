@@ -826,6 +826,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertEquals(actualVirtualNetworkServiceState.lowIpStatic, expectedVirtualNetworkServiceState.lowIpStatic);
       assertEquals(actualVirtualNetworkServiceState.highIpStatic, expectedVirtualNetworkServiceState.highIpStatic);
       assertEquals(actualVirtualNetworkServiceState.reservedIpList, expectedVirtualNetworkServiceState.reservedIpList);
+      assertEquals(actualVirtualNetworkServiceState.size, expectedVirtualNetworkServiceState.size);
     }
 
     /**
@@ -954,6 +955,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertEquals(actualVirtualNetworkServiceState.lowIpStatic, expectedVirtualNetworkServiceState.lowIpStatic);
       assertEquals(actualVirtualNetworkServiceState.highIpStatic, expectedVirtualNetworkServiceState.highIpStatic);
       assertEquals(actualVirtualNetworkServiceState.reservedIpList, expectedVirtualNetworkServiceState.reservedIpList);
+      assertEquals(actualVirtualNetworkServiceState.size, expectedVirtualNetworkServiceState.size);
     }
 
     /**
