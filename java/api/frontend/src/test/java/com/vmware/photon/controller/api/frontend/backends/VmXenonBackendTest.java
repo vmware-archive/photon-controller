@@ -1548,6 +1548,7 @@ public class VmXenonBackendTest {
       startState.tier0RouterId = "logical_tier0_router_id";
       startState.logicalRouterId = "logical_tier1_router_id";
       startState.logicalSwitchId = "logical_switch_id";
+      startState.size = 16;
 
       Operation operation = Operation.createPost(UriUtils.buildUri(host, VirtualNetworkService.FACTORY_LINK))
           .setBody(startState);
