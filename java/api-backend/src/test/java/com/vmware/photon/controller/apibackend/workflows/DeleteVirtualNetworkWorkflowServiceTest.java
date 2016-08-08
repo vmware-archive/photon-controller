@@ -13,6 +13,9 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
+import com.vmware.photon.controller.api.model.Project;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.api.model.VmState;
@@ -23,6 +26,9 @@ import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNet
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TombstoneService;
@@ -65,6 +71,7 @@ import static org.testng.Assert.fail;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Set;
 
 /**
@@ -123,11 +130,12 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     virtualNetwork.name = "virtual_network_name";
     virtualNetwork.state = SubnetState.CREATING;
     virtualNetwork.routingType = RoutingType.ROUTED;
-    virtualNetwork.parentId = "parentId";
-    virtualNetwork.parentKind = "parentKind";
+    virtualNetwork.parentId = "project-id";
+    virtualNetwork.parentKind = Project.KIND;
     virtualNetwork.tier0RouterId = "logical_tier0_router_id";
     virtualNetwork.logicalRouterId = "logical_tier1_router_id";
     virtualNetwork.logicalSwitchId = "logical_switch_id";
+    virtualNetwork.size = 16;
 
     Operation result = testEnvironment.sendPostAndWait(VirtualNetworkService.FACTORY_LINK, virtualNetwork);
     assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
@@ -897,6 +905,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     private DeleteVirtualNetworkWorkflowDocument startState;
     private DeploymentService.State deploymentStartState;
     private SubnetAllocatorService.State subnetAllocatorServiceState;
+    private ProjectService.State projectState;
+    private ResourceTicketService.State resourceTicketState;
     private NsxClientFactory nsxClientFactory;
     private NsxClientMock nsxClientMock;
     private TestEnvironment testEnvironment;
@@ -915,6 +925,30 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
       subnetAllocatorServiceState = new SubnetAllocatorService.State();
       subnetAllocatorServiceState.rootCidr = "192.168.1.1/24";
       subnetAllocatorServiceState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
+
+      projectState = new ProjectService.State();
+      projectState.resourceTicketId = "resource-ticket-id";
+      projectState.name = "project-name";
+      projectState.tenantId = "tenant-id";
+      projectState.documentSelfLink = "project-id";
+
+      resourceTicketState = new ResourceTicketService.State();
+      resourceTicketState.name = "resource-ticket-name";
+      resourceTicketState.tenantId = "tenant-id";
+      resourceTicketState.parentId = "parent-id";
+      resourceTicketState.documentSelfLink = "resource-ticket-id";
+      resourceTicketState.limitMap = new HashMap<>();
+      QuotaLineItem costItem = new QuotaLineItem();
+      costItem.setKey(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY);
+      costItem.setValue(20);
+      costItem.setUnit(QuotaUnit.COUNT);
+      resourceTicketState.limitMap.put(costItem.getKey(), costItem);
+      resourceTicketState.usageMap = new HashMap<>();
+      costItem = new QuotaLineItem();
+      costItem.setKey(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY);
+      costItem.setValue(16);
+      costItem.setUnit(QuotaUnit.COUNT);
+      resourceTicketState.usageMap.put(costItem.getKey(), costItem);
 
       nsxClientFactory = mock(NsxClientFactory.class);
     }
@@ -1015,6 +1049,15 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
 
       // Verify tombstone task was created
       assertThat(getTombstoneTaskCount(finalState.networkId), CoreMatchers.is(1));
+
+      // Verify resource ticket was updated
+      ResourceTicketService.State finalResourceTicket = testEnvironment.getServiceState(ResourceTicketServiceFactory
+              .SELF_LINK + "/resource-ticket-id",
+          ResourceTicketService.State.class);
+      assertThat(finalResourceTicket.usageMap.get(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY),
+          notNullValue());
+      assertThat(finalResourceTicket.usageMap
+          .get(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY).getValue(), is(0.0));
     }
 
     /**

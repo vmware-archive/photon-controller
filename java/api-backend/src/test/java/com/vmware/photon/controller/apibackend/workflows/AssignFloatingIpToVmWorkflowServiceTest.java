@@ -520,6 +520,7 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
     virtualNetwork.tier0RouterId = "logical_tier0_router_id";
     virtualNetwork.logicalRouterId = "logical_tier1_router_id";
     virtualNetwork.logicalSwitchId = "logical_switch_id";
+    virtualNetwork.size = 16;
 
     Operation result = testEnvironment.sendPostAndWait(VirtualNetworkService.FACTORY_LINK, virtualNetwork);
     assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));

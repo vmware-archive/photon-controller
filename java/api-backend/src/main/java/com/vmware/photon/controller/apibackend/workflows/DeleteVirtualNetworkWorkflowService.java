@@ -13,6 +13,9 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
+import com.vmware.photon.controller.api.model.Project;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.api.model.VirtualSubnet;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalPortsTask;
@@ -24,6 +27,10 @@ import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalRouterTaskServ
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TombstoneService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TombstoneServiceFactory;
@@ -46,7 +53,9 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
+import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.HashMap;
 import java.util.Set;
 
 /**
@@ -166,7 +175,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
     if (patchState.stage == TaskState.TaskStage.FINISHED) {
       Preconditions.checkState(startState.stage == TaskState.TaskStage.STARTED &&
           (startState.subStage == DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY
-            || startState.subStage == DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE));
+              || startState.subStage == DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE));
     }
 
     if (patchState.stage == TaskState.TaskStage.STARTED) {
@@ -244,10 +253,10 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
 
               finish(state, patchState);
             } else {
-                DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
-                    TaskState.TaskStage.STARTED,
-                    DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
-                progress(state, patchState);
+              DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
+                  TaskState.TaskStage.STARTED,
+                  DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
+              progress(state, patchState);
             }
           } catch (Throwable t) {
             fail(state, t);
@@ -478,8 +487,65 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
    * from cloud-store.
    */
   private void deleteVirtualNetwork(DeleteVirtualNetworkWorkflowDocument state) {
+
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createDelete(state.taskServiceEntity.documentSelfLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          retrieveResourceTicket(state);
+        })
+        .sendWith(this);
+  }
+
+  /**
+   * Retrieve the resource ticket from parent id.
+   */
+  private void retrieveResourceTicket(DeleteVirtualNetworkWorkflowDocument state) {
+    checkArgument(state.taskServiceEntity.parentId != null, "parentId should not be null.");
+
+    switch (state.taskServiceEntity.parentKind) {
+      case Project.KIND:
+        String id = state.taskServiceEntity.parentId;
+        ServiceHostUtils.getCloudStoreHelper(getHost())
+            .createGet(ProjectServiceFactory.SELF_LINK + "/" + id)
+            .setCompletion((op, ex) -> {
+              if (ex != null) {
+                fail(state, ex);
+                return;
+              }
+              ProjectService.State project = op.getBody(ProjectService.State.class);
+              String resourceTicketId = project.resourceTicketId;
+
+              returnQuota(state, resourceTicketId);
+            }).sendWith(this);
+        break;
+      default:
+        throw new IllegalArgumentException("Unknown parentKind: " + state.taskServiceEntity.parentKind);
+    }
+  }
+
+  /**
+   * Return quota to the resource ticket.
+   */
+  private void returnQuota(DeleteVirtualNetworkWorkflowDocument state, String resourceTicketId) {
+
+    ResourceTicketService.Patch patch = new ResourceTicketService.Patch();
+    patch.patchtype = ResourceTicketService.Patch.PatchType.USAGE_RETURN;
+    patch.cost = new HashMap<>();
+
+    QuotaLineItem costItem = new QuotaLineItem();
+    costItem.setKey(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY);
+    costItem.setValue(state.taskServiceEntity.size);
+    costItem.setUnit(QuotaUnit.COUNT);
+    patch.cost.put(costItem.getKey(), costItem);
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPatch(ResourceTicketServiceFactory.SELF_LINK + "/" + resourceTicketId)
+        .setBody(patch)
         .setCompletion((op, ex) -> {
           if (ex != null) {
             fail(state, ex);
