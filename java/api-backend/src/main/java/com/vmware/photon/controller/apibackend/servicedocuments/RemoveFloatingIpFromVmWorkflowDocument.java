@@ -13,6 +13,12 @@
 
 package com.vmware.photon.controller.apibackend.servicedocuments;
 
+import com.vmware.photon.controller.apibackend.annotations.TaskServiceEntityField;
+import com.vmware.photon.controller.apibackend.annotations.TaskServiceStateField;
+import com.vmware.photon.controller.apibackend.annotations.TaskStateField;
+import com.vmware.photon.controller.apibackend.annotations.TaskStateSubStageField;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -22,22 +28,22 @@ import com.vmware.xenon.common.ServiceDocumentDescription;
 
 /**
  * Defines the document state associated with a single
- * {@link com.vmware.photon.controller.apibackend.tasks.RemoveFloatingIpFromVmTaskService}.
+ * {@link com.vmware.photon.controller.apibackend.workflows.RemoveFloatingIpFromVmWorkflowService}.
  */
-public class RemoveFloatingIpFromVmTask extends ServiceDocument {
+public class RemoveFloatingIpFromVmWorkflowDocument extends ServiceDocument {
 
   /**
    * Customized task state. Defines substages.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
+    @TaskStateSubStageField
     public SubStage subStage;
 
     /**
      * Definitions of substages.
      */
     public enum SubStage {
-      REMOVE_NAT_RULE,
-      UPDATE_VIRTUAL_NETWORK
+      REMOVE_NAT_RULE
     }
   }
 
@@ -49,6 +55,7 @@ public class RemoveFloatingIpFromVmTask extends ServiceDocument {
    * The state of the current task.
    */
   @DefaultTaskState(value = TaskState.TaskStage.CREATED)
+  @TaskStateField
   public TaskState taskState;
 
   /**
@@ -90,14 +97,7 @@ public class RemoveFloatingIpFromVmTask extends ServiceDocument {
    */
   @NotBlank
   @Immutable
-  public String virtualNetworkId;
-
-  /**
-   * ID of the logical tier1 router.
-   */
-  @NotBlank
-  @Immutable
-  public String logicalTier1RouterId;
+  public String networkId;
 
   /**
    * ID of the NAT rule that translates the VM's floating IP to private IP.
@@ -105,4 +105,20 @@ public class RemoveFloatingIpFromVmTask extends ServiceDocument {
   @NotBlank
   @Immutable
   public String natRuleId;
+
+  ///
+  /// Task Output
+  ///
+
+  /**
+   * The VirtualNetworkService.State object.
+   */
+  @TaskServiceEntityField
+  public VirtualNetworkService.State taskServiceEntity;
+
+  /**
+   * The TaskService.State object.
+   */
+  @TaskServiceStateField
+  public TaskService.State taskServiceState;
 }
