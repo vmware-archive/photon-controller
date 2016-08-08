@@ -78,7 +78,7 @@ public class CreateLogicalSwitchTask extends ServiceDocument {
    */
   @NotBlank
   @Immutable
-  public String virtualNetworkId;
+  public String networkId;
 
   /**
    * ID of the transport zone.
@@ -86,13 +86,6 @@ public class CreateLogicalSwitchTask extends ServiceDocument {
   @NotBlank
   @Immutable
   public String transportZoneId;
-
-  /**
-   * Execution delay time to verify the state of logical switch.
-   */
-  @NotNull
-  @Immutable
-  public Integer executionDelay;
 
   ///
   /// Task Output

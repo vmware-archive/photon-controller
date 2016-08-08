@@ -37,63 +37,6 @@ import java.util.List;
 public class ConfigureDhcpWorkflowDocument extends ServiceDocument {
 
   /**
-   * State of the task.
-   */
-  @TaskStateField
-  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
-  public TaskState taskState;
-
-  /**
-   * Control flags that influences the behavior of the task.
-   */
-  @ControlFlagsField
-  @DefaultInteger(0)
-  @Immutable
-  public Integer controlFlags;
-
-  /**
-   * Endpoint to the nsx manager.
-   */
-  @NotBlank
-  @Immutable
-  public String nsxManagerEndpoint;
-
-  /**
-   * Username to access nsx manager.
-   */
-  @NotBlank
-  @Immutable
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String username;
-
-  /**
-   * Password to access nsx manager.
-   */
-  @NotBlank
-  @Immutable
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String password;
-
-  /**
-   * The IP addresses of the DHCP server.
-   */
-  @NotEmpty
-  @Immutable
-  public List<String> dhcpServerAddresses;
-
-  /**
-   * The DeploymentService.State object.
-   */
-  @TaskServiceEntityField
-  public DeploymentService.State taskServiceEntity;
-
-  /**
-   * The TaskService.State object.
-   */
-  @TaskServiceStateField
-  public TaskService.State taskServiceState;
-
-  /**
    * Customized task state. Defines the substages.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
@@ -112,4 +55,73 @@ public class ConfigureDhcpWorkflowDocument extends ServiceDocument {
       CREATE_DHCP_RELAY_SERVICE
     }
   }
+
+  ///
+  /// Controls Input
+  ///
+
+  /**
+   * State of the task.
+   */
+  @TaskStateField
+  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
+  public TaskState taskState;
+
+  /**
+   * Control flags that influences the behavior of the task.
+   */
+  @ControlFlagsField
+  @DefaultInteger(0)
+  @Immutable
+  public Integer controlFlags;
+
+  ///
+  /// Task Input
+  ///
+
+  /**
+   * Endpoint to the nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  public String nsxAddress;
+
+  /**
+   * Username to access nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxUsername;
+
+  /**
+   * Password to access nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxPassword;
+
+  /**
+   * The IP addresses of the DHCP server.
+   */
+  @NotEmpty
+  @Immutable
+  public List<String> dhcpServerAddresses;
+
+  ///
+  /// Task Output
+  ///
+
+  /**
+   * The DeploymentService.State object.
+   */
+  @TaskServiceEntityField
+  public DeploymentService.State taskServiceEntity;
+
+  /**
+   * The TaskService.State object.
+   */
+  @TaskServiceStateField
+  public TaskService.State taskServiceState;
 }

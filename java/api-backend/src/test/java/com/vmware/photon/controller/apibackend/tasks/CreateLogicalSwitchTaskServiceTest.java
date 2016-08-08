@@ -157,8 +157,7 @@ public class CreateLogicalSwitchTaskServiceTest {
           {"nsxUsername", "nsxUsername cannot be null"},
           {"nsxPassword", "nsxPassword cannot be null"},
           {"transportZoneId", "transportZoneId cannot be null"},
-          {"virtualNetworkId", "virtualNetworkId cannot be null"},
-          {"executionDelay", "executionDelay cannot be null"}
+          {"networkId", "networkId cannot be null"},
       };
     }
   }
@@ -320,8 +319,7 @@ public class CreateLogicalSwitchTaskServiceTest {
           {"nsxUsername", "nsxUsername is immutable"},
           {"nsxPassword", "nsxPassword is immutable"},
           {"transportZoneId", "transportZoneId is immutable"},
-          {"virtualNetworkId", "virtualNetworkId is immutable"},
-          {"executionDelay", "executionDelay is immutable"}
+          {"networkId", "networkId is immutable"},
       };
     }
 
@@ -418,11 +416,10 @@ public class CreateLogicalSwitchTaskServiceTest {
     startState.taskState.stage = startStage;
     startState.controlFlags = controlFlags;
     startState.nsxAddress = "https://192.168.1.1";
-    startState.nsxUsername = "username";
-    startState.nsxPassword = "password";
-    startState.virtualNetworkId = "virtualNetworkId";
+    startState.nsxUsername = "nsxUsername";
+    startState.nsxPassword = "nsxPassword";
+    startState.networkId = "virtualNetworkId";
     startState.transportZoneId = UUID.randomUUID().toString();
-    startState.executionDelay = 100;
 
     return startState;
   }

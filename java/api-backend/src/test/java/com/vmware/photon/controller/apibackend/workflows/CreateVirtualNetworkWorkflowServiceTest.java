@@ -89,7 +89,6 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     startState.description = "desc";
     startState.size = 16;
     startState.reservedStaticIpSize = 4;
-    startState.executionDelay = 10;
     startState.routingType = RoutingType.ROUTED;
     startState.parentId = "project-id";
     startState.parentKind = Project.KIND;
@@ -784,9 +783,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           .getValue(), is(16.0));
 
       // Verifies that NSX configuration is cached in the service document.
-      assertThat(finalState.nsxManagerEndpoint, is(NETWORK_MANAGER_ADDRESS));
-      assertThat(finalState.username, is(NETWORK_MANAGER_USERNAME));
-      assertThat(finalState.password, is(NETWORK_MANAGER_PASSWORD));
+      assertThat(finalState.nsxAddress, is(NETWORK_MANAGER_ADDRESS));
+      assertThat(finalState.nsxUsername, is(NETWORK_MANAGER_USERNAME));
+      assertThat(finalState.nsxPassword, is(NETWORK_MANAGER_PASSWORD));
       assertThat(finalState.transportZoneId, is(NETWORK_ZONE_ID));
       assertThat(finalState.tier0RouterId, is(NETWORK_TOP_ROUTER_ID));
       assertThat(finalState.dhcpRelayServiceId, is(DHCP_RELAY_SERVICE_ID));
@@ -912,9 +911,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), is(1));
 
       // Verifies that NSX configuration is cached in the service document.
-      assertThat(finalState.nsxManagerEndpoint, is(NETWORK_MANAGER_ADDRESS));
-      assertThat(finalState.username, is(NETWORK_MANAGER_USERNAME));
-      assertThat(finalState.password, is(NETWORK_MANAGER_PASSWORD));
+      assertThat(finalState.nsxAddress, is(NETWORK_MANAGER_ADDRESS));
+      assertThat(finalState.nsxUsername, is(NETWORK_MANAGER_USERNAME));
+      assertThat(finalState.nsxPassword, is(NETWORK_MANAGER_PASSWORD));
       assertThat(finalState.transportZoneId, is(NETWORK_ZONE_ID));
       assertThat(finalState.tier0RouterId, is(NETWORK_TOP_ROUTER_ID));
       assertThat(finalState.dhcpRelayServiceId, is(DHCP_RELAY_SERVICE_ID));
@@ -994,9 +993,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
 
       // Verifies that NSX configuration is empty in the service document.
-      assertThat(finalState.nsxManagerEndpoint, nullValue());
-      assertThat(finalState.username, nullValue());
-      assertThat(finalState.password, nullValue());
+      assertThat(finalState.nsxAddress, nullValue());
+      assertThat(finalState.nsxUsername, nullValue());
+      assertThat(finalState.nsxUsername, nullValue());
       assertThat(finalState.transportZoneId, nullValue());
       assertThat(finalState.tier0RouterId, nullValue());
     }

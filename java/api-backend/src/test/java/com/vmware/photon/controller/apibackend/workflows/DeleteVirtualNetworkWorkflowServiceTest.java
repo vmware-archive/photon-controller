@@ -94,7 +94,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     startState.taskState.stage = stage;
     startState.taskState.subStage = subStage;
     startState.controlFlags = controlFlags;
-    startState.virtualNetworkId = virtualNetworkId;
+    startState.networkId = virtualNetworkId;
 
     return startState;
   }
@@ -236,7 +236,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     @Test
     public void failsWithNullMandatoryFields() throws Throwable {
 
-      startState.virtualNetworkId = null;
+      startState.networkId = null;
       try {
         testEnvironment.callServiceAndWaitForState(
             DeleteVirtualNetworkWorkflowService.FACTORY_LINK,
@@ -244,7 +244,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
             DeleteVirtualNetworkWorkflowDocument.class,
             (state) -> TaskState.TaskStage.CREATED == state.taskState.stage);
       } catch (XenonRuntimeException ex) {
-        assertThat(ex.getMessage(), containsString("virtualNetworkId cannot be null"));
+        assertThat(ex.getMessage(), containsString("networkId cannot be null"));
       }
 
     }
@@ -940,9 +940,9 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
               (state) -> TaskState.TaskStage.FINISHED == state.taskState.stage);
 
       // Verifies the DeleteVirtualNetworkWorkflowDocument.
-      assertThat(finalState.nsxManagerEndpoint, is(NETWORK_MANAGER_ADDRESS));
-      assertThat(finalState.username, is(NETWORK_MANAGER_USERNAME));
-      assertThat(finalState.password, is(NETWORK_MANAGER_PASSWORD));
+      assertThat(finalState.nsxAddress, is(NETWORK_MANAGER_ADDRESS));
+      assertThat(finalState.nsxUsername, is(NETWORK_MANAGER_USERNAME));
+      assertThat(finalState.nsxPassword, is(NETWORK_MANAGER_PASSWORD));
       assertThat(finalState.taskServiceEntity, notNullValue());
       assertThat(finalState.taskServiceEntity.documentSelfLink, notNullValue());
       assertThat(finalState.taskServiceEntity.state, is(SubnetState.DELETED));
@@ -958,7 +958,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
       }
 
       // Verify tombstone task was created
-      assertThat(getTombstoneTaskCount(finalState.virtualNetworkId), CoreMatchers.is(1));
+      assertThat(getTombstoneTaskCount(finalState.networkId), CoreMatchers.is(1));
     }
 
     /**
@@ -1008,9 +1008,9 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
               (state) -> TaskState.TaskStage.FINISHED == state.taskState.stage);
 
       // Verifies the DeleteVirtualNetworkWorkflowDocument.
-      assertThat(finalState.nsxManagerEndpoint, nullValue());
-      assertThat(finalState.username, nullValue());
-      assertThat(finalState.password, nullValue());
+      assertThat(finalState.nsxAddress, nullValue());
+      assertThat(finalState.nsxUsername, nullValue());
+      assertThat(finalState.nsxPassword, nullValue());
       assertThat(finalState.taskServiceEntity, notNullValue());
       assertThat(finalState.taskServiceEntity.documentSelfLink, notNullValue());
       assertThat(finalState.taskServiceEntity.state, is(SubnetState.PENDING_DELETE));
@@ -1022,7 +1022,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           finalState.taskServiceEntity.documentSelfLink, VirtualNetworkService.State.class);
 
       // Verify the no tombstone task was created
-      assertThat(getTombstoneTaskCount(finalState.virtualNetworkId), is(0));
+      assertThat(getTombstoneTaskCount(finalState.networkId), is(0));
     }
 
     /**
@@ -1052,9 +1052,9 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
               (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
 
       // Verifies that NSX configuration is empty in the service document.
-      assertThat(finalState.nsxManagerEndpoint, nullValue());
-      assertThat(finalState.username, nullValue());
-      assertThat(finalState.password, nullValue());
+      assertThat(finalState.nsxAddress, nullValue());
+      assertThat(finalState.nsxUsername, nullValue());
+      assertThat(finalState.nsxPassword, nullValue());
     }
 
     /**

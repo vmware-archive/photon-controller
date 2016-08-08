@@ -27,57 +27,6 @@ import com.vmware.xenon.common.ServiceDocumentDescription;
 public class DeleteLogicalRouterTask extends ServiceDocument {
 
   /**
-   * State of this task.
-   */
-  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
-  public TaskState taskState;
-
-  /**
-   * Id of the logical switch.
-   */
-  @NotBlank
-  @Immutable
-  public String logicalRouterId;
-
-  /**
-   * Endpoint to the nsx manager.
-   */
-  @NotBlank
-  @Immutable
-  public String nsxManagerEndpoint;
-
-  /**
-   * Username to access nsx manager.
-   */
-  @NotBlank
-  @Immutable
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String username;
-
-  /**
-   * Password to access nsx manager.
-   */
-  @NotBlank
-  @Immutable
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String password;
-
-  /**
-   * Control flags that influences the behavior of the task.
-   */
-  @DefaultInteger(0)
-  @Immutable
-  public Integer controlFlags;
-
-  /**
-   * Execution delay time to verify the router has been deleted.
-   */
-  @DefaultInteger(10)
-  @Immutable
-  public Integer executionDelay;
-
-
-  /**
    * Customized task state. Defines the sub-stages.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
@@ -91,4 +40,55 @@ public class DeleteLogicalRouterTask extends ServiceDocument {
       WAIT_DELETE_ROUTER,
     }
   }
+
+  ///
+  /// Controls Input
+  ///
+
+  /**
+   * State of this task.
+   */
+  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
+  public TaskState taskState;
+
+  /**
+   * Control flags that influences the behavior of the task.
+   */
+  @DefaultInteger(0)
+  @Immutable
+  public Integer controlFlags;
+
+  ///
+  /// Task Input
+  ///
+
+  /**
+   * Endpoint to the nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  public String nsxAddress;
+
+  /**
+   * Username to access nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxUsername;
+
+  /**
+   * Password to access nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxPassword;
+
+  /**
+   * Id of the logical switch.
+   */
+  @NotBlank
+  @Immutable
+  public String logicalRouterId;
 }

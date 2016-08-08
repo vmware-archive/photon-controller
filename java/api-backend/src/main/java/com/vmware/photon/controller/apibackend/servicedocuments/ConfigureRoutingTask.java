@@ -68,13 +68,6 @@ public class ConfigureRoutingTask extends ServiceDocument {
   ///
 
   /**
-   * Whether this network is isolated or connected to outside.
-   */
-  @NotNull
-  @Immutable
-  public RoutingType routingType;
-
-  /**
    * Endpoint to the nsx manager.
    */
   @NotBlank
@@ -102,7 +95,14 @@ public class ConfigureRoutingTask extends ServiceDocument {
    */
   @NotBlank
   @Immutable
-  public String virtualNetworkId;
+  public String networkId;
+
+  /**
+   * Whether this network is isolated or connected to outside.
+   */
+  @NotNull
+  @Immutable
+  public RoutingType routingType;
 
   /**
    * ID of the nsx DHCP relay service.

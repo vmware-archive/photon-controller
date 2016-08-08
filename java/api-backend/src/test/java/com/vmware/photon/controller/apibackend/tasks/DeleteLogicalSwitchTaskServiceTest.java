@@ -169,9 +169,9 @@ public class DeleteLogicalSwitchTaskServiceTest {
     private Object[][] getNotEmptyFields() {
       return new Object[][] {
           {"logicalSwitchId", "logicalSwitchId cannot be null"},
-          {"nsxManagerEndpoint", "nsxManagerEndpoint cannot be null"},
-          {"username", "username cannot be null"},
-          {"password", "password cannot be null"}
+          {"nsxAddress", "nsxAddress cannot be null"},
+          {"nsxUsername", "nsxUsername cannot be null"},
+          {"nsxPassword", "nsxPassword cannot be null"}
       };
     }
   }
@@ -323,11 +323,10 @@ public class DeleteLogicalSwitchTaskServiceTest {
     public Object[][] getImmutableFields() {
       return new Object[][] {
           {"controlFlags", "controlFlags is immutable"},
-          {"nsxManagerEndpoint", "nsxManagerEndpoint is immutable"},
-          {"username", "username is immutable"},
-          {"password", "password is immutable"},
+          {"nsxAddress", "nsxAddress is immutable"},
+          {"nsxUsername", "nsxUsername is immutable"},
+          {"nsxPassword", "nsxPassword is immutable"},
           {"logicalSwitchId", "logicalSwitchId is immutable"},
-          {"executionDelay", "executionDelay is immutable"},
       };
     }
 
@@ -436,9 +435,9 @@ public class DeleteLogicalSwitchTaskServiceTest {
     startState.taskState.stage = startStage;
     startState.taskState.subStage = subStage;
     startState.controlFlags = controlFlags;
-    startState.nsxManagerEndpoint = "https://192.168.1.1";
-    startState.username = "username";
-    startState.password = "password";
+    startState.nsxAddress = "https://192.168.1.1";
+    startState.nsxUsername = "nsxUsername";
+    startState.nsxPassword = "nsxPassword";
     startState.logicalSwitchId = "logicalSwitchId";
 
     return startState;
