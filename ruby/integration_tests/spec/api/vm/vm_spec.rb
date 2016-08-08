@@ -100,9 +100,9 @@ describe "vm", management: true, image: true do
       e.response_code.should == 400
       e.errors.size.should == 1
       e.errors[0].code.should == "StateError"
-      e.errors[0].message.should match /Invalid operation DELETE_VM for vm[\/\w\-\#]+ in state STARTED/
+      e.errors[0].message.should match /VM [\/\w\-\#]+ not powered off/
     rescue EsxCloud::CliError => e
-      e.output.should match /Invalid operation DELETE_VM for vm[\/\w\-\#]+ in state STARTED/
+      e.output.should match /VM [\/\w\-\#]+ not powered off/
     ensure
       vm.stop!
       vm.delete
