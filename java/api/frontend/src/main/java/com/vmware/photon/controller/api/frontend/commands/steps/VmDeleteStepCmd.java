@@ -23,6 +23,7 @@ import com.vmware.photon.controller.api.frontend.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
 import com.vmware.photon.controller.api.model.EphemeralDisk;
@@ -30,6 +31,7 @@ import com.vmware.photon.controller.api.model.PersistentDisk;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.common.clients.exceptions.VmNotPoweredOffException;
 
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
@@ -89,12 +91,15 @@ public class VmDeleteStepCmd extends StepCommand {
   }
 
   private void deleteVm()
-      throws VmNotFoundException, DiskNotFoundException, InterruptedException, InternalException, RpcException {
+      throws VmNotFoundException, InvalidVmStateException, DiskNotFoundException, InterruptedException,
+      InternalException, RpcException {
     if (vm.getState() == VmState.DELETED) {
       return;
     }
     try {
       taskCommand.getHostClient(vm).deleteVm(vm.getId(), null);
+    } catch (VmNotPoweredOffException ex) {
+      throw new InvalidVmStateException(ex.getMessage());
     } catch (com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException ex) {
       taskCommand.getHostClient(vm, false).deleteVm(vm.getId(), null);
     }

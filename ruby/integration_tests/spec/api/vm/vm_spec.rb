@@ -97,12 +97,14 @@ describe "vm", management: true, image: true do
       vm.delete
       fail("Fail to delete vm with power on")
     rescue EsxCloud::ApiError => e
-      e.response_code.should == 400
-      e.errors.size.should == 1
-      e.errors[0].code.should == "StateError"
-      e.errors[0].message.should match /Invalid operation DELETE_VM for vm[\/\w\-\#]+ in state STARTED/
+      expect(e.response_code).to eq(200)
+      expect(e.errors.size).to eq(1)
+      expect(e.errors.first.size).to eq(1)
+      step_error = e.errors.first.first
+      expect(step_error.code).to eq("StateError")
+      expect(step_error.message).to eq("VM #{vm.id} not powered off")
     rescue EsxCloud::CliError => e
-      e.output.should match /Invalid operation DELETE_VM for vm[\/\w\-\#]+ in state STARTED/
+      e.output.should match /VM [\/\w\-\#]+ not powered off/
     ensure
       vm.stop!
       vm.delete
