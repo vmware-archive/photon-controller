@@ -1014,7 +1014,6 @@ public class VmXenonBackend implements VmBackend {
   }
 
   private TaskEntity deleteTask(VmEntity vm) throws ExternalException {
-    EntityStateValidator.validateOperationState(vm, vm.getState(), Operation.DELETE_VM, VmState.OPERATION_PREREQ_STATE);
 
     List<StepEntity> stepEntities = new ArrayList<>();
     List<BaseEntity> entityList = new ArrayList<>();
