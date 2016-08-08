@@ -316,6 +316,7 @@ public class VirtualNetworkServiceTest {
     startState.routingType = RoutingType.ROUTED;
     startState.parentId = "parentId";
     startState.parentKind = "parentKind";
+    startState.size = 16;
 
     return startState;
   }
