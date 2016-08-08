@@ -73,9 +73,9 @@ public class CreateLogicalRouterTaskServiceTest {
     state.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
     state.edgeClusterId = "edgeClusterId";
     state.nsxAddress = "nsxAddress";
-    state.nsxUsername = "username";
-    state.nsxPassword = "password";
-    state.virtualNetworkId = "virtualNetworkId";
+    state.nsxUsername = "nsxUsername";
+    state.nsxPassword = "nsxPassword";
+    state.networkId = "virtualNetworkId";
 
     return state;
   }

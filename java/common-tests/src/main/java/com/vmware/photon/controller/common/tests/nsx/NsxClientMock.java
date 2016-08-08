@@ -106,6 +106,23 @@ public class NsxClientMock extends NsxClient {
   }
 
   @Override
+  public int getCreateLogicalSwitchPollDelay() {
+    return 10;
+  }
+
+  public int getDeleteLogicalSwitchPollDelay() {
+    return 10;
+  }
+
+  public int getDeleteLogicalRouterPollDelay() {
+    return 10;
+  }
+
+  public int getDeleteLogicalPortPollDelay() {
+    return 10;
+  }
+
+  @Override
   public String getHostThumbprint(String ipAddress, int port) {
     return "hostThumbprint";
   }

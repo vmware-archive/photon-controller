@@ -77,7 +77,7 @@ public class CreateLogicalRouterTask extends ServiceDocument {
    */
   @NotBlank
   @Immutable
-  public String virtualNetworkId;
+  public String networkId;
 
   /**
    * The ID of the Edge cluster.

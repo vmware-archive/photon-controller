@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
@@ -142,8 +143,8 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
     ServiceUtils.logInfo(this, "Deleting logical switch %s", currentState.logicalSwitchId);
 
     try {
-      LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
-          currentState.username, currentState.password).getLogicalSwitchApi();
+      LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxAddress,
+          currentState.nsxUsername, currentState.nsxPassword).getLogicalSwitchApi();
 
       logicalSwitchApi.deleteLogicalSwitch(currentState.logicalSwitchId,
           new FutureCallback<Void>() {
@@ -164,14 +165,18 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
   }
 
   private void waitDeleteLogicalSwitch(DeleteLogicalSwitchTask currentState) {
+    NsxClient nsxClient = ServiceHostUtils.getNsxClient(
+        getHost(),
+        currentState.nsxAddress,
+        currentState.nsxUsername,
+        currentState.nsxPassword);
+
     getHost().schedule(() -> {
       ServiceUtils.logInfo(this, "Wait for deleting logical switch %s", currentState.logicalSwitchId);
 
       try {
-        LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
-            currentState.username, currentState.password).getLogicalSwitchApi();
-
-        logicalSwitchApi.checkLogicalSwitchExistence(currentState.logicalSwitchId,
+        nsxClient.getLogicalSwitchApi().checkLogicalSwitchExistence(
+            currentState.logicalSwitchId,
             new FutureCallback<Boolean>() {
               @Override
               public void onSuccess(Boolean successful) {
@@ -191,7 +196,7 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
       } catch (Throwable t) {
         failTask(t);
       }
-    }, currentState.executionDelay, TimeUnit.MILLISECONDS);
+    }, nsxClient.getDeleteLogicalSwitchPollDelay(), TimeUnit.MILLISECONDS);
   }
 
   private void validateStartState(DeleteLogicalSwitchTask startState) {

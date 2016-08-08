@@ -35,67 +35,6 @@ import com.vmware.xenon.common.ServiceDocumentDescription;
 public class DeleteVirtualNetworkWorkflowDocument extends ServiceDocument{
 
   /**
-   * The state of the current workflow.
-   */
-  @TaskStateField
-  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
-  public TaskState taskState;
-
-  /**
-   * This value represents control flags influencing the behavior of the workflow.
-   */
-  @ControlFlagsField
-  @DefaultInteger(0)
-  @Immutable
-  public Integer controlFlags;
-
-  /**
-   * This value represents the poll interval for the sub-task in milliseconds.
-   */
-  @DefaultInteger(5000)
-  @Immutable
-  public Integer subTaskPollIntervalInMilliseconds;
-
-  /**
-   * The id of the logical network.
-   */
-  @NotBlank
-  @WriteOnce
-  public String virtualNetworkId;
-
-  /**
-   * Endpoint to the nsx manager.
-   */
-  @WriteOnce
-  public String nsxManagerEndpoint;
-
-  /**
-   * Username to access nsx manager.
-   */
-  @WriteOnce
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String username;
-
-  /**
-   * Password to access nsx manager.
-   */
-  @WriteOnce
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String password;
-
-  /**
-   * The VirtualNetworkService.State object.
-   */
-  @TaskServiceEntityField
-  public VirtualNetworkService.State taskServiceEntity;
-
-  /**
-   * The TaskService.State object.
-   */
-  @TaskServiceStateField
-  public TaskService.State taskServiceState;
-
-  /**
    * This class defines the state of a DeleteVirtualNetworkWorkflowService instance.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
@@ -118,4 +57,77 @@ public class DeleteVirtualNetworkWorkflowDocument extends ServiceDocument{
       DELETE_NETWORK_ENTITY
     }
   }
+
+  ///
+  /// Controls Input
+  ///
+
+  /**
+   * The state of the current workflow.
+   */
+  @TaskStateField
+  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
+  public TaskState taskState;
+
+  /**
+   * This value represents control flags influencing the behavior of the workflow.
+   */
+  @ControlFlagsField
+  @DefaultInteger(0)
+  @Immutable
+  public Integer controlFlags;
+
+  /**
+   * This value represents the poll interval for the sub-task in milliseconds.
+   */
+  @DefaultInteger(5000)
+  @Immutable
+  public Integer subTaskPollIntervalInMilliseconds;
+
+  ///
+  /// Task Input
+  ///
+
+  /**
+   * Endpoint to the nsx manager.
+   */
+  @WriteOnce
+  public String nsxAddress;
+
+  /**
+   * Username to access nsx manager.
+   */
+  @WriteOnce
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxUsername;
+
+  /**
+   * Password to access nsx manager.
+   */
+  @WriteOnce
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxPassword;
+
+  /**
+   * The id of the logical network.
+   */
+  @NotBlank
+  @WriteOnce
+  public String networkId;
+
+  ///
+  /// Task Output
+  ///
+
+  /**
+   * The VirtualNetworkService.State object.
+   */
+  @TaskServiceEntityField
+  public VirtualNetworkService.State taskServiceEntity;
+
+  /**
+   * The TaskService.State object.
+   */
+  @TaskServiceStateField
+  public TaskService.State taskServiceState;
 }
