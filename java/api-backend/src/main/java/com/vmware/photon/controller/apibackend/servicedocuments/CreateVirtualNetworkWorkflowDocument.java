@@ -37,6 +37,34 @@ import com.vmware.xenon.common.ServiceDocumentDescription;
 public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
 
   /**
+   * This class defines the state of a CreateVirtualNetworkWorkflowService instance.
+   */
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
+    /**
+     * The current sub-stage of the task.
+     */
+    @TaskStateSubStageField
+    public SubStage subStage;
+
+    /**
+     * The sub-states for this this.
+     */
+    public enum SubStage {
+      ENFORCE_QUOTA,
+      ALLOCATE_IP_ADDRESS_SPACE,
+      GET_IP_ADDRESS_SPACE,
+      GET_NSX_CONFIGURATION,
+      CREATE_LOGICAL_SWITCH,
+      CREATE_LOGICAL_ROUTER,
+      SET_UP_LOGICAL_ROUTER
+    }
+  }
+
+  ///
+  /// Controls Input
+  ///
+
+  /**
    * The state of the current workflow.
    */
   @TaskStateField
@@ -57,6 +85,30 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   @DefaultInteger(5000)
   @Immutable
   public Integer subTaskPollIntervalInMilliseconds;
+
+  ///
+  /// Task Input
+  ///
+
+  /**
+   * Endpoint to the nsx manager.
+   */
+  @WriteOnce
+  public String nsxAddress;
+
+  /**
+   * Username to access nsx manager.
+   */
+  @WriteOnce
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxUsername;
+
+  /**
+   * Password to access nsx manager.
+   */
+  @WriteOnce
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxPassword;
 
   /**
    * ID of the parent object this virtual network belongs to.
@@ -103,25 +155,9 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   @Immutable
   public Integer reservedStaticIpSize;
 
-  /**
-   * Endpoint to the nsx manager.
-   */
-  @WriteOnce
-  public String nsxManagerEndpoint;
-
-  /**
-   * Username to access nsx manager.
-   */
-  @WriteOnce
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String username;
-
-  /**
-   * Password to access nsx manager.
-   */
-  @WriteOnce
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String password;
+  ///
+  /// Task Output
+  ///
 
   /**
    * ID of the nsx transport zone.
@@ -152,59 +188,4 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
    */
   @TaskServiceStateField
   public TaskService.State taskServiceState;
-
-  /**
-   * Execution delay time for NSX API calls.
-   */
-  @NotNull
-  @Immutable
-  @DefaultInteger(5000)
-  public Integer executionDelay;
-
-  @Override
-  public String toString() {
-    // NOTE: Do not include username or password,
-    // to avoid having usernames or passwords in log files
-    return com.google.common.base.Objects.toStringHelper(this)
-        .add("stage", taskState.stage)
-        .add("subStage", taskState.subStage)
-        .add("parentId", parentId)
-        .add("parentKind", parentKind)
-        .add("name", name)
-        .add("description", description)
-        .add("routingType", routingType)
-        .add("size", size)
-        .add("reservedStaticIpSize", reservedStaticIpSize)
-        .add("nsxManagerEndpoint", nsxManagerEndpoint)
-        .add("transportZoneId", transportZoneId)
-        .add("tier0RouterId", tier0RouterId)
-        .add("taskServiceEntity", taskServiceEntity.toString())
-        .add("taskServiceState", taskServiceState.toString())
-        .add("documentSelfLink", documentSelfLink)
-        .toString();
-  }
-
-  /**
-   * This class defines the state of a CreateVirtualNetworkWorkflowService instance.
-   */
-  public static class TaskState extends com.vmware.xenon.common.TaskState {
-    /**
-     * The current sub-stage of the task.
-     */
-    @TaskStateSubStageField
-    public SubStage subStage;
-
-    /**
-     * The sub-states for this this.
-     */
-    public enum SubStage {
-      ENFORCE_QUOTA,
-      ALLOCATE_IP_ADDRESS_SPACE,
-      GET_IP_ADDRESS_SPACE,
-      GET_NSX_CONFIGURATION,
-      CREATE_LOGICAL_SWITCH,
-      CREATE_LOGICAL_ROUTER,
-      SET_UP_LOGICAL_ROUTER
-    }
-  }
 }

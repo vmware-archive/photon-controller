@@ -28,65 +28,6 @@ import java.util.Map;
  * {@link com.vmware.photon.controller.apibackend.tasks.DisconnectVmFromSwitchTaskService}.
  */
 public class DisconnectVmFromSwitchTask extends ServiceDocument {
-  /**
-   * The network id that the vm locates in.
-   */
-  @NotBlank
-  @Immutable
-  public String networkId;
-
-  /**
-   * The id of the vm whose connecting port to the logical switch
-   * is going to be deleted.
-   */
-  @NotBlank
-  @Immutable
-  public String vmId;
-
-  /**
-   * Endpoint to the nsx manager.
-   */
-  @WriteOnce
-  public String nsxManagerEndpoint;
-
-  /**
-   * Username to access nsx manager.
-   */
-  @WriteOnce
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String username;
-
-  /**
-   * Password to access nsx manager.
-   */
-  @WriteOnce
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String password;
-
-  /**
-   * Logical switch Id.
-   */
-  @WriteOnce
-  public String logicalSwitchId;
-
-  /**
-   * The downlink port Ids on this switch.
-   */
-  @WriteOnce
-  public Map<String, String> logicalSwitchDownlinkPortIds;
-
-  /**
-   * State of this task.
-   */
-  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
-  public TaskState taskState;
-
-  /**
-   * Control flags that influences the behavior of the task.
-   */
-  @DefaultInteger(0)
-  @Immutable
-  public Integer controlFlags;
 
   /**
    * Customized task state. Defines substages.
@@ -104,4 +45,76 @@ public class DisconnectVmFromSwitchTask extends ServiceDocument {
       UPDATE_VIRTUAL_NETWORK
     }
   }
- }
+
+  ///
+  /// Controls Input
+  ///
+
+  /**
+   * State of this task.
+   */
+  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
+  public TaskState taskState;
+
+  /**
+   * Control flags that influences the behavior of the task.
+   */
+  @DefaultInteger(0)
+  @Immutable
+  public Integer controlFlags;
+
+  ///
+  /// Task Input
+  ///
+
+  /**
+   * Endpoint to the nsx manager.
+   */
+  @WriteOnce
+  public String nsxAddress;
+
+  /**
+   * Username to access nsx manager.
+   */
+  @WriteOnce
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxUsername;
+
+  /**
+   * Password to access nsx manager.
+   */
+  @WriteOnce
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxPassword;
+
+  /**
+   * The network id that the vm locates in.
+   */
+  @NotBlank
+  @Immutable
+  public String networkId;
+
+  /**
+   * The id of the vm whose connecting port to the logical switch
+   * is going to be deleted.
+   */
+  @NotBlank
+  @Immutable
+  public String vmId;
+
+  ///
+  /// Task Output
+  ///
+
+  /**
+   * Logical switch Id.
+   */
+  @WriteOnce
+  public String logicalSwitchId;
+
+  /**
+   * The downlink port Ids on this switch.
+   */
+  @WriteOnce
+  public Map<String, String> logicalSwitchDownlinkPortIds;
+}

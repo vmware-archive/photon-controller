@@ -28,94 +28,6 @@ import com.vmware.xenon.common.ServiceDocumentDescription;
 public class DeleteLogicalPortsTask extends ServiceDocument {
 
   /**
-   * Endpoint to the nsx manager.
-   */
-  @NotBlank
-  @Immutable
-  public String nsxManagerEndpoint;
-
-  /**
-   * Username to access nsx manager.
-   */
-  @NotBlank
-  @Immutable
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String username;
-
-  /**
-   * Password to access nsx manager.
-   */
-  @NotBlank
-  @Immutable
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String password;
-
-  /**
-   * ID of the logical tier0 router.
-   */
-  @NotBlank
-  @Immutable
-  public String logicalTier0RouterId;
-
-  /**
-   * Id of the logical port on tier0 router to tier1 router.
-   */
-  @WriteOnce
-  public String logicalLinkPortOnTier0Router;
-
-  /**
-   * ID of the logical tier1 router.
-   */
-  @NotBlank
-  @Immutable
-  public String logicalTier1RouterId;
-
-  /**
-   * Id of the logical port on tier1 router to tier0 router.
-   */
-  @WriteOnce
-  public String logicalLinkPortOnTier1Router;
-
-  /**
-   * Id of the logical port on tier1 router to switch.
-   */
-  @WriteOnce
-  public String logicalDownLinkPortOnTier1Router;
-
-  /**
-   * ID of the logical switch.
-   */
-  @NotBlank
-  @Immutable
-  public String logicalSwitchId;
-
-  /**
-   * Id of the logical switch port.
-   */
-  @WriteOnce
-  public String logicalPortOnSwitch;
-
-  /**
-   * State of the task.
-   */
-  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
-  public TaskState taskState;
-
-  /**
-   * Control flags that influences the behavior of the task.
-   */
-  @DefaultInteger(0)
-  @Immutable
-  public Integer controlFlags;
-
-  /**
-   * Execution delay time to verify a port has been deleted.
-   */
-  @DefaultInteger(1000)
-  @Immutable
-  public Integer executionDelay;
-
-  /**
    * Customized task state. Defines the sub-stages.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
@@ -136,4 +48,97 @@ public class DeleteLogicalPortsTask extends ServiceDocument {
       WAIT_DELETE_SWITCH_PORT,
     }
   }
+
+  ///
+  /// Controls Input
+  ///
+
+  /**
+   * State of the task.
+   */
+  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
+  public TaskState taskState;
+
+  /**
+   * Control flags that influences the behavior of the task.
+   */
+  @DefaultInteger(0)
+  @Immutable
+  public Integer controlFlags;
+
+  ///
+  /// Task Input
+  ///
+
+  /**
+   * Endpoint to the nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  public String nsxAddress;
+
+  /**
+   * Username to access nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxUsername;
+
+  /**
+   * Password to access nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxPassword;
+
+  /**
+   * ID of the logical switch.
+   */
+  @NotBlank
+  @Immutable
+  public String logicalSwitchId;
+
+  /**
+   * ID of the logical tier0 router.
+   */
+  @NotBlank
+  @Immutable
+  public String logicalTier0RouterId;
+
+  /**
+   * ID of the logical tier1 router.
+   */
+  @NotBlank
+  @Immutable
+  public String logicalTier1RouterId;
+
+  ///
+  /// Task Output
+  ///
+
+  /**
+   * Id of the logical port on tier0 router to tier1 router.
+   */
+  @WriteOnce
+  public String logicalLinkPortOnTier0Router;
+
+  /**
+   * Id of the logical switch port.
+   */
+  @WriteOnce
+  public String logicalPortOnSwitch;
+
+  /**
+   * Id of the logical port on tier1 router to tier0 router.
+   */
+  @WriteOnce
+  public String logicalLinkPortOnTier1Router;
+
+  /**
+   * Id of the logical port on tier1 router to switch.
+   */
+  @WriteOnce
+  public String logicalDownLinkPortOnTier1Router;
 }

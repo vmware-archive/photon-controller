@@ -365,7 +365,7 @@ public class VmXenonBackend implements VmBackend {
       // Virtual network
       for (String network : vm.getNetworks()) {
         DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
-        startState.virtualNetworkId = network;
+        startState.networkId = network;
 
         // Do not wait for the task to finish
         photonControllerXenonRestClient.post(DeleteVirtualNetworkWorkflowService.FACTORY_LINK, startState);

@@ -152,8 +152,8 @@ public class ConnectVmToSwitchTaskService extends StatefulService {
         currentState.logicalSwitchId);
 
     try {
-      LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
-          currentState.username, currentState.password).getLogicalSwitchApi();
+      LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxAddress,
+          currentState.nsxUsername, currentState.nsxPassword).getLogicalSwitchApi();
 
       LogicalPortAttachment logicalPortAttachment = new LogicalPortAttachment();
       logicalPortAttachment.setId(currentState.vmLocationId);

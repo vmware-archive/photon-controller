@@ -146,7 +146,7 @@ public class VirtualNetworkFeClientTest {
 
     String networkId = UUID.randomUUID().toString();
     DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
-    startState.virtualNetworkId = networkId;
+    startState.networkId = networkId;
 
     doReturn(operation).when(backendClient).post(
         eq(DeleteVirtualNetworkWorkflowService.FACTORY_LINK),

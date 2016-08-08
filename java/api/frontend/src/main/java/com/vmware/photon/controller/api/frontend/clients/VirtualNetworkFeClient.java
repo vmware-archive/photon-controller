@@ -121,7 +121,7 @@ public class VirtualNetworkFeClient {
     this.patchNetworkService(networkId, networkState);
 
     DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
-    startState.virtualNetworkId = networkId;
+    startState.networkId = networkId;
 
     DeleteVirtualNetworkWorkflowDocument finalState = backendClient
         .post(DeleteVirtualNetworkWorkflowService.FACTORY_LINK, startState)
