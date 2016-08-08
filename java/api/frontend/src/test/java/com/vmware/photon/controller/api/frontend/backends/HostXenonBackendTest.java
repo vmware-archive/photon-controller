@@ -415,6 +415,12 @@ public class HostXenonBackendTest {
     }
 
     @Test
+    public void testGetNumberHosts() throws Throwable {
+      int num = hostBackend.getNumberHosts();
+      assertThat(num, is(2));
+    }
+
+    @Test
     public void testFilterByIp() {
       ResourceList<Host> hosts = hostBackend.filterByAddress(HOST_ADDRESS, Optional.absent());
       assertThat(hosts, notNullValue());

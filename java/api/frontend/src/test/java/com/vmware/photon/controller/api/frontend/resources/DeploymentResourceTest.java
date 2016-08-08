@@ -24,6 +24,7 @@ import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.model.DeploymentSize;
 import com.vmware.photon.controller.api.model.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
@@ -436,6 +437,48 @@ public class DeploymentResourceTest extends ResourceTest {
     assertThat(responseTask, is(task));
     assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
     assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
+  }
+
+  @Test
+  public void testGetSizeByValidId() throws Exception {
+    DeploymentSize deploymentSize = new DeploymentSize();
+    deploymentSize.setNumberHosts(2);
+
+    String uri = UriBuilder.fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
+        DeploymentResourceRoutes.DEPLOYMENT_SIZE_PATH)
+        .build(deploymentId)
+        .toString();
+
+    when(feClient.getDeploymentSize(deploymentId)).thenReturn(deploymentSize);
+
+    Response response = client()
+        .target(uri)
+        .request()
+        .get();
+    assertThat(response.getStatus(), is(200));
+
+    DeploymentSize deploymentSizeRetrieved = response.readEntity(DeploymentSize.class);
+    assertThat(deploymentSizeRetrieved.getNumberHosts(), is(deploymentSize.getNumberHosts()));
+  }
+
+  @Test
+  public void testGetSizeByInvalidId() throws Exception {
+    String uri = UriBuilder.fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
+        DeploymentResourceRoutes.DEPLOYMENT_SIZE_PATH)
+        .build(deploymentId)
+        .toString();
+
+    when(feClient.getDeploymentSize(deploymentId)).thenThrow(new DeploymentNotFoundException(deploymentId));
+
+    Response response = client()
+        .target(uri)
+        .request()
+        .get();
+    assertThat(response.getStatus(), is(404));
+
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), equalTo("DeploymentNotFound"));
+    assertThat(errors.getMessage(), containsString("Deployment #" + deploymentId + " not found"));
   }
 
   private String buildConfig(String key, String value) {
