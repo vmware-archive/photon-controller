@@ -228,5 +228,15 @@ public class VmService extends StatefulService {
      * IP address for the DHCP agent on this network.
      * */
     public String dhcpAgentIP;
+
+    /**
+     * IP address of the VM on this network.
+     */
+    public String ipAddress;
+
+    /**
+     * Netmask of the VM on this network.
+     */
+    public String netmask;
   }
 }

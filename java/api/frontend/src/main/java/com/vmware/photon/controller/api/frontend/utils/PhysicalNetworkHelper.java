@@ -75,6 +75,10 @@ public class PhysicalNetworkHelper implements NetworkHelper {
     vmNetwork.id = ServiceUtils.getIDFromDocumentSelfLink(networkState.documentSelfLink);
     vmNetwork.dhcpAgentIP = networkState.dhcpAgentIP;
     vmNetwork.macAddress = agentNetwork.getMac_address();
+    if (agentNetwork.getIp_address() != null) {
+      vmNetwork.ipAddress = agentNetwork.getIp_address().getIp_address();
+      vmNetwork.netmask = agentNetwork.getIp_address().getNetmask();
+    }
 
     return vmNetwork;
   }

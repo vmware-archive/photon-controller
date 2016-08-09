@@ -66,6 +66,10 @@ public class VirtualNetworkHelper implements NetworkHelper {
     // TODO(ysheng): we need to figure out what this means in virtual network.
     vmNetwork.dhcpAgentIP = null;
     vmNetwork.macAddress = agentNetwork.getMac_address();
+    if (agentNetwork.getIp_address() != null) {
+      vmNetwork.ipAddress = agentNetwork.getIp_address().getIp_address();
+      vmNetwork.netmask = agentNetwork.getIp_address().getNetmask();
+    }
 
     return vmNetwork;
   }
