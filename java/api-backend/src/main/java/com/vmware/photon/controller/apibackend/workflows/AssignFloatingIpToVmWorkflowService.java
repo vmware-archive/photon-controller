@@ -13,9 +13,12 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
+import com.vmware.photon.controller.apibackend.exceptions.AssignFloatingIpToVmException;
 import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIpToVmWorkflowDocument;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
@@ -29,6 +32,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.TaskState;
 
 import com.google.common.util.concurrent.FutureCallback;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
 
@@ -135,6 +139,9 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
   private void processPatch(AssignFloatingIpToVmWorkflowDocument state) {
     try {
       switch (state.taskState.subStage) {
+        case GET_VM_PRIVATE_IP:
+          getVmPrivateIp(state);
+          break;
         case CREATE_NAT_RULE:
           createNatRule(state);
           break;
@@ -142,6 +149,41 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
     } catch (Throwable t) {
       fail(state, t);
     }
+  }
+
+  private void getVmPrivateIp(AssignFloatingIpToVmWorkflowDocument state) throws Throwable {
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createGet(VmServiceFactory.SELF_LINK + "/" + state.vmId)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            VmService.State vmState = op.getBody(VmService.State.class);
+            if (!vmState.networkInfo.containsKey(state.networkId)) {
+              throw new AssignFloatingIpToVmException(
+                  "VM " + state.vmId + " does not belong to network " + state.networkId);
+            }
+
+            if (StringUtils.isBlank(vmState.networkInfo.get(state.networkId).privateIpAddress)) {
+              throw new AssignFloatingIpToVmException(
+                  "VM " + state.vmId + " does not have private IP on network " + state.networkId);
+            }
+
+            AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.STARTED,
+                AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.CREATE_NAT_RULE);
+            patchState.vmPrivateIpAddress =
+                vmState.networkInfo.get(state.networkId).privateIpAddress;
+
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        })
+        .sendWith(this);
   }
 
   private void createNatRule(AssignFloatingIpToVmWorkflowDocument state) throws Throwable {
