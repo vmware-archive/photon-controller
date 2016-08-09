@@ -64,7 +64,7 @@
     },
     {
       "type": "shell",
-      "inline": "echo 'changing umaks' && sed -i '/umask 027/d' /etc/profile"
+      "inline": "echo 'changing umask' && sed -i '/umask 027/d' /etc/profile"
     },
     {
       "type": "shell",
