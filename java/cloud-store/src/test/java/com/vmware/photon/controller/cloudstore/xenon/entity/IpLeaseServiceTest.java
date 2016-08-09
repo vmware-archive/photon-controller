@@ -20,7 +20,10 @@ import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
+import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.UriUtils;
 
 import org.apache.http.HttpStatus;
 import org.testng.annotations.AfterMethod;
@@ -28,7 +31,9 @@ import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetSocketAddress;
@@ -162,6 +167,70 @@ public class IpLeaseServiceTest {
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE)
       );
+    }
+  }
+
+  /**
+   * Tests for the handlePatch method.
+   */
+  public class HandlePatchTest {
+    private IpLeaseService.State startState;
+
+    @BeforeMethod
+    public void beforeMethod() throws Throwable {
+      startState = createInitialState();
+    }
+
+    @AfterMethod
+    public void afterMethod() throws Throwable {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+
+    @Test
+    public void testCleanIpLease() throws Throwable {
+      startState.vmId = "vm-id";
+      Operation result = xenonClient.post(IpLeaseService.FACTORY_LINK, startState);
+      assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
+      startState = result.getBody(IpLeaseService.State.class);
+
+      IpLeaseService.IpLeaseOperationPatch ipLeaseOperationPatch =
+          new IpLeaseService.IpLeaseOperationPatch(
+              IpLeaseService.IpLeaseOperationPatch.Kind.cleanIpLease,
+              "vm-id");
+      Operation patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(ipLeaseOperationPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      host.sendRequestAndWait(patchOperation);
+
+      IpLeaseService.State currentState = host.getServiceState(IpLeaseService.State.class,
+          startState.documentSelfLink);
+
+      assertThat(currentState.vmId, nullValue());
+    }
+
+    @Test
+    public void testCleanIpLeaseWrongVmid() throws Throwable {
+      startState.vmId = "vm-wrong-id";
+      Operation result = xenonClient.post(IpLeaseService.FACTORY_LINK, startState);
+      assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
+      startState = result.getBody(IpLeaseService.State.class);
+
+      IpLeaseService.IpLeaseOperationPatch ipLeaseOperationPatch =
+          new IpLeaseService.IpLeaseOperationPatch(
+              IpLeaseService.IpLeaseOperationPatch.Kind.cleanIpLease,
+              "vm-id");
+      Operation patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(ipLeaseOperationPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      try {
+        host.sendRequestAndWait(patchOperation);
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), containsString("Current vmId: vm-wrong-id, Request vmId: vm-id"));
+      }
     }
   }
 

@@ -19,13 +19,20 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationProcessingChain;
+import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+
+import org.apache.commons.lang3.StringUtils;
+import static com.google.common.base.Preconditions.checkArgument;
 
 
 /**
@@ -69,9 +76,84 @@ public class IpLeaseService extends StatefulService {
   }
 
   @Override
+  public OperationProcessingChain getOperationProcessingChain() {
+    if (super.getOperationProcessingChain() != null) {
+      return super.getOperationProcessingChain();
+    }
+
+    RequestRouter myRouter = new RequestRouter();
+    myRouter.register(
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<>(
+            IpLeaseOperationPatch.class, "kind", IpLeaseOperationPatch.Kind.cleanIpLease),
+        this::handleCleanIpLease, "Clean Ip lease");
+
+    OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
+    opProcessingChain.add(myRouter);
+    setOperationProcessingChain(opProcessingChain);
+    return opProcessingChain;
+  }
+
+  @Override
   public void handleDelete(Operation deleteOperation) {
     ServiceUtils.logInfo(this, "Deleting service %s", getSelfLink());
     ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
+  }
+
+  public void handleCleanIpLease(Operation patchOperation) {
+    ServiceUtils.logInfo(this, "Patching service with kind - cleanIpLease %s", getSelfLink());
+    IpLeaseOperationPatch subnetOperationPatch = patchOperation.getBody(IpLeaseOperationPatch.class);
+
+    State currentState = getState(patchOperation);
+    if (StringUtils.isBlank(currentState.vmId)) {
+      // the vmId is already cleaned up
+      patchOperation.setStatusCode(Operation.STATUS_CODE_NOT_MODIFIED);
+    } else {
+      // if the release requester does not have the same vmId of the IpLease then throw BadRequestException
+      checkArgument(currentState.vmId.equalsIgnoreCase(subnetOperationPatch.vmId),
+          "Current vmId: %s, Request vmId: %s, selflink: %s",
+          currentState.vmId, subnetOperationPatch.vmId, currentState.documentSelfLink);
+
+      //release vmId of the ip lease
+      currentState.vmId = null;
+    }
+
+    setState(patchOperation, currentState);
+    patchOperation.complete();
+  }
+
+  /**
+   * Class for defining operations on ip lease.
+   */
+  @NoMigrationDuringUpgrade
+  @NoMigrationDuringDeployment
+  public static class IpLeaseOperationPatch extends ServiceDocument {
+    public final Kind kind;
+    public final String vmId;
+
+    private IpLeaseOperationPatch() {
+      kind = null;
+      vmId = null;
+    }
+
+    public IpLeaseOperationPatch(Kind kind, String vmId) {
+      if (kind == null) {
+        throw new IllegalArgumentException("kind cannot be null");
+      }
+
+      if (vmId == null) {
+        throw new IllegalArgumentException("vmId cannot be null");
+      }
+      this.kind = kind;
+      this.vmId = vmId;
+    }
+
+    /**
+     * Defines type of IP lease operations that are supported.
+     */
+    public enum Kind {
+      cleanIpLease,
+    }
   }
 
   /**

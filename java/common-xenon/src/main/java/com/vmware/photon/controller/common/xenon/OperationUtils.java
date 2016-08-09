@@ -103,6 +103,7 @@ public class OperationUtils {
     switch (completedOperation.getStatusCode()) {
       case Operation.STATUS_CODE_OK:
       case Operation.STATUS_CODE_ACCEPTED:
+      case Operation.STATUS_CODE_NOT_MODIFIED:
         return completedOperation;
       case Operation.STATUS_CODE_NOT_FOUND:
         logger.info("Requested Operation failed, document not found: {}", Utils.toJson(true, false,
