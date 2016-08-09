@@ -1,0 +1,12 @@
+[Unit]
+Description=Configure Guest Properties
+
+[Service]
+Type=oneshot
+ExecStart=/etc/photon/configure-guest.sh
+ExecStop=
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+RequiredBy=docker.service
