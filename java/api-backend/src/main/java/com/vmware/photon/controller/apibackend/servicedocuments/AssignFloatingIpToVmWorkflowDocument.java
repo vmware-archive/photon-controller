@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.servicedocuments;
 
+import com.vmware.photon.controller.apibackend.annotations.ControlFlagsField;
 import com.vmware.photon.controller.apibackend.annotations.TaskServiceEntityField;
 import com.vmware.photon.controller.apibackend.annotations.TaskServiceStateField;
 import com.vmware.photon.controller.apibackend.annotations.TaskStateField;
@@ -23,6 +24,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 
@@ -43,6 +45,7 @@ public class AssignFloatingIpToVmWorkflowDocument extends ServiceDocument {
      * Definitions of substages.
      */
     public enum SubStage {
+      GET_VM_PRIVATE_IP,
       CREATE_NAT_RULE
     }
   }
@@ -63,6 +66,7 @@ public class AssignFloatingIpToVmWorkflowDocument extends ServiceDocument {
    */
   @DefaultInteger(0)
   @Immutable
+  @ControlFlagsField
   public Integer controlFlags;
 
   ///
@@ -100,11 +104,11 @@ public class AssignFloatingIpToVmWorkflowDocument extends ServiceDocument {
   public String networkId;
 
   /**
-   * Private IP address of the VM.
+   * ID of the vm to be assigned a floating IP.
    */
   @NotBlank
   @Immutable
-  public String vmPrivateIpAddress;
+  public String vmId;
 
   /**
    * Floating IP address of the VM.
@@ -128,4 +132,10 @@ public class AssignFloatingIpToVmWorkflowDocument extends ServiceDocument {
    */
   @TaskServiceStateField
   public TaskService.State taskServiceState;
+
+  /**
+   * Private IP address of the VM.
+   */
+  @WriteOnce
+  public String vmPrivateIpAddress;
 }
