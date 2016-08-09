@@ -75,6 +75,7 @@ function create_and_copy_certificate() {
   export JAVA_HOME="/usr/java/default"
   export PATH=$PATH:$JAVA_HOME/bin:/opt/esxcli:/opt/vmware/bin:/opt/likewise/bin
 
+  rm -rf ./host_cert
   mkdir -p ./host_cert
 
   #copying the config file to local directory which is going to be used in the cerficate generation.
