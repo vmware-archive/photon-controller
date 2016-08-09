@@ -75,29 +75,39 @@ function create_and_copy_certificate() {
   export JAVA_HOME="/usr/java/default"
   export PATH=$PATH:$JAVA_HOME/bin:/opt/esxcli:/opt/vmware/bin:/opt/likewise/bin
 
-  mkdir -p ./host_cert
+  cert_dir="./host_cert_${host_address}"
 
-  #copying the config file to local directory which is going to be used in the cerficate generation.
-  cp /opt/vmware/share/config/certool.cfg ./host_cert/certool.cfg
+  if [ ! -d "${cert_dir}" ]; then
+    mkdir -p ${cert_dir}
 
-  # Fill in the ip address for generating a host certificate
-  sed -i s/IPAddress.*/"IPAddress = $host_address"/ /opt/vmware/share/config/certool.cfg
+    #copying the config file to local directory which is going to be used in the cerficate generation.
+    config_file_path="${cert_dir}/certool.cfg"
+    cp /opt/vmware/share/config/certool.cfg "${config_file_path}"
 
-  # Generate keys if they don't exist
-  if [ ! -f ./host_cert/host.privkey ] || [ ! -f ./host_cert/host.pubkey ]; then
-    certool --genkey --privkey=./host_cert/host.privkey --pubkey=./host_cert/host.pubkey \
-      --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} --server ${lightwave_address}
+    # Fill in the ip address for generating a host certificate
+    sed -i s/IPAddress.*/"IPAddress = ${host_address}"/ "${config_file_path}"
+
+    # Generate keys if they don't exist
+    priv_key_path="${cert_dir}/host.privkey"
+    pub_key_path="${cert_dir}/host.pubkey"
+    if [ ! -f "${priv_key_path}" ] || [ ! -f "${pub_key_path}" ]; then
+      certool --genkey --privkey="${priv_key_path}" --pubkey="${pub_key_path}" \
+        --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} --server ${lightwave_address}
+    fi
+
+    # Generate certificate if it doesn't exist
+    host_crt_path="${cert_dir}/host.crt"
+    if [ ! -f "${host_crt_path}" ]; then
+      certool --gencert --privkey="${priv_key_path}" --cert="${host_crt_path}" \
+        --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} \
+        --server ${lightwave_address} --config "${config_file_path}"
+    fi
+
+    sshpass -p "$password" scp -o StrictHostKeyChecking=no ${host_crt_path} ${username}@${host_address}:/etc/vmware/ssl
+    sshpass -p "$password" scp -o StrictHostKeyChecking=no ${priv_key_path} ${username}@${host_address}:/etc/vmware/ssl
+
+    rm -rf "${cert_dir}"
   fi
-
-  # Generate certificate if it doesn't exist
-  if [ ! -f ./host_cert/host.crt ]; then
-    certool --gencert --privkey=./host_cert/host.privkey --cert=./host_cert/host.crt \
-      --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} \
-      --server ${lightwave_address} --config ./host_cert/certool.cfg
-  fi
-
-  sshpass -p "$password" scp -o StrictHostKeyChecking=no ./host_cert/host.crt ${username}@${host_address}:/etc/vmware/ssl
-  sshpass -p "$password" scp -o StrictHostKeyChecking=no ./host_cert/host.privkey ${username}@${host_address}:/etc/vmware/ssl
 
 }
 
