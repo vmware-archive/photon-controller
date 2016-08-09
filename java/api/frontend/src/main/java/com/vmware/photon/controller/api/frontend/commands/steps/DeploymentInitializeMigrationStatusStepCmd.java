@@ -117,7 +117,7 @@ public class DeploymentInitializeMigrationStatusStepCmd extends XenonTaskStatusS
 
     @Override
     public int getTargetSubStage(Operation op) {
-      return 0;
+      return InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.values().length;
     }
 
     @Override
