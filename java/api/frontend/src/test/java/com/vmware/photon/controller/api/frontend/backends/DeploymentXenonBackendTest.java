@@ -680,6 +680,7 @@ public class DeploymentXenonBackendTest {
    */
   @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
   public static class ToApiRepresentationTest {
+    private static final int OAUTH_SERVER_PORT = 443;
 
     @Inject
     private BasicServiceHost basicServiceHost;
@@ -716,6 +717,7 @@ public class DeploymentXenonBackendTest {
 
     @Test
     public void testSuccess() throws Throwable {
+      setAuthPort(OAUTH_SERVER_PORT);
       Deployment deployment = deploymentBackend.toApiRepresentation(entity.getId());
       assertThat(deployment, is(notNullValue()));
       assertThat(deployment.getState(), is(entity.getState()));
@@ -731,6 +733,7 @@ public class DeploymentXenonBackendTest {
       AuthInfo authInfo = deployment.getAuth();
       assertThat(authInfo.getEnabled(), is(entity.getAuthEnabled()));
       assertThat(authInfo.getEndpoint(), is(entity.getOauthEndpoint()));
+      assertThat(authInfo.getPort(), is(OAUTH_SERVER_PORT));
       assertThat(authInfo.getTenant(), is(entity.getOauthTenant()));
       assertThat(authInfo.getUsername(), nullValue());
       assertThat(authInfo.getPassword(), nullValue());
@@ -777,6 +780,14 @@ public class DeploymentXenonBackendTest {
     private void setDeploymentState(DeploymentState state) throws Throwable {
       DeploymentService.State patch = new DeploymentService.State();
       patch.state = state;
+      xenonClient.patch(DeploymentServiceFactory.SELF_LINK + "/" + entity.getId(), patch);
+
+      entity = deploymentBackend.findById(entity.getId());
+    }
+
+    private void setAuthPort(int port) throws Throwable {
+      DeploymentService.State patch = new DeploymentService.State();
+      patch.oAuthServerPort = port;
       xenonClient.patch(DeploymentServiceFactory.SELF_LINK + "/" + entity.getId(), patch);
 
       entity = deploymentBackend.findById(entity.getId());

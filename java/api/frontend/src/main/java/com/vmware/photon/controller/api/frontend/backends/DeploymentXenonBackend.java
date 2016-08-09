@@ -293,6 +293,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     AuthInfo authInfo = new AuthInfo();
     authInfo.setEnabled(deploymentEntity.getAuthEnabled());
     authInfo.setEndpoint(deploymentEntity.getOauthEndpoint());
+    authInfo.setPort(deploymentEntity.getOauthPort());
     authInfo.setTenant(deploymentEntity.getOauthTenant());
     authInfo.setSecurityGroups(deploymentEntity.getOauthSecurityGroups());
     deployment.setAuth(authInfo);
