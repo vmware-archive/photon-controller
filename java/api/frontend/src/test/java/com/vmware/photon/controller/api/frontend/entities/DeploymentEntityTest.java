@@ -69,7 +69,6 @@ public class DeploymentEntityTest {
       entity.setNetworkTopRouterId("networkTopRouterId");
       entity.setIpRange("10.0.0.1/24");
       entity.setFloatingIpRange("192.168.0.1/28");
-      entity.setFloatingAddressSpaceSubnetId("floatingAddressSpaceSubnetId");
       entity.setNtpEndpoint("http://ntp");
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);
@@ -93,7 +92,6 @@ public class DeploymentEntityTest {
       assertThat(entity.getNetworkTopRouterId(), is("networkTopRouterId"));
       assertThat(entity.getIpRange(), is("10.0.0.1/24"));
       assertThat(entity.getFloatingIpRange(), is("192.168.0.1/28"));
-      assertThat(entity.getFloatingAddressSpaceSubnetId(), is("floatingAddressSpaceSubnetId"));
       assertThat(entity.getNtpEndpoint(), is("http://ntp"));
       Assert.assertTrue(entity.getImageDatastores().contains("datastore1"));
       assertThat(entity.getUseImageDatastoreForVms(), is(true));
@@ -128,7 +126,6 @@ public class DeploymentEntityTest {
       entity.setNetworkTopRouterId("networkTopRouterId");
       entity.setIpRange("10.0.0.1/24");
       entity.setFloatingIpRange("192.168.0.1/28");
-      entity.setFloatingAddressSpaceSubnetId("floatingAddressSpaceSubnetId");
       entity.setNtpEndpoint("http://ntp");
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);

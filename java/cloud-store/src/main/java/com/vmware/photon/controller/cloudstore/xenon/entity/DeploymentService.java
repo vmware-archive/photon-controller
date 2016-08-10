@@ -318,11 +318,6 @@ public class DeploymentService extends StatefulService {
     public String floatingIpRange;
 
     /**
-     * This value represents the subnet against global floating ip range.
-     */
-    public String floatingAddressSpaceSubnetId;
-
-    /**
      * This value represents the syslog endpoint for the deployment.
      */
     @Immutable
