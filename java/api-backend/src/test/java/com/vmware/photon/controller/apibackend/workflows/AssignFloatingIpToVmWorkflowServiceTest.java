@@ -450,14 +450,14 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
       assertThat(savedState.taskServiceEntity, notNullValue());
       assertThat(savedState.taskServiceEntity.documentSelfLink, notNullValue());
 
-      Map<String, String> expectedFloatingIpToNatRuleMap = new HashMap<>();
-      expectedFloatingIpToNatRuleMap.put("natRuleId", "5.6.7.8");
+      Map<String, String> expectedVmIdToNatRuleIdMap = new HashMap<>();
+      expectedVmIdToNatRuleIdMap.put(savedState.vmId, "natRuleId");
 
       VirtualNetworkService.State virtualNetwork = testEnvironment.getServiceState(
           savedState.taskServiceEntity.documentSelfLink,
           VirtualNetworkService.State.class);
-      assertThat(virtualNetwork.natRuleToFloatingIpMap.size(), is(1));
-      assertThat(virtualNetwork.natRuleToFloatingIpMap, equalTo(expectedFloatingIpToNatRuleMap));
+      assertThat(virtualNetwork.vmIdToNatRuleIdMap.size(), is(1));
+      assertThat(virtualNetwork.vmIdToNatRuleIdMap, equalTo(expectedVmIdToNatRuleIdMap));
     }
 
     private AssignFloatingIpToVmWorkflowDocument startService() throws Throwable {

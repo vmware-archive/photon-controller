@@ -205,11 +205,11 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
           @Override
           public void onSuccess(NatRule result) {
             try {
-              if (state.taskServiceEntity.natRuleToFloatingIpMap == null) {
-                state.taskServiceEntity.natRuleToFloatingIpMap = new HashMap<>();
+              if (state.taskServiceEntity.vmIdToNatRuleIdMap == null) {
+                state.taskServiceEntity.vmIdToNatRuleIdMap = new HashMap<>();
               }
 
-              state.taskServiceEntity.natRuleToFloatingIpMap.put(result.getId(), state.vmFloatingIpAddress);
+              state.taskServiceEntity.vmIdToNatRuleIdMap.put(state.vmId, result.getId());
               updateVirtualNetwork(state);
             } catch (Throwable t) {
               fail(state, t);
@@ -248,7 +248,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
    */
   private void updateVirtualNetwork(AssignFloatingIpToVmWorkflowDocument state) {
     VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
-    virtualNetworkPatchState.natRuleToFloatingIpMap = state.taskServiceEntity.natRuleToFloatingIpMap;
+    virtualNetworkPatchState.vmIdToNatRuleIdMap = state.taskServiceEntity.vmIdToNatRuleIdMap;
 
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createPatch(state.taskServiceEntity.documentSelfLink)
