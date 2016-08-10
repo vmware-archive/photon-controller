@@ -21,6 +21,7 @@ import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
+import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
@@ -29,16 +30,20 @@ import com.vmware.xenon.common.UriUtils;
 import com.google.common.net.InetAddresses;
 import org.apache.commons.net.util.SubnetUtils;
 import org.apache.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -47,11 +52,13 @@ import java.util.concurrent.TimeUnit;
  * Tests {@link SubnetAllocatorService}.
  */
 public class SubnetAllocatorServiceTest {
+
+  private static final Logger logger = LoggerFactory.getLogger(SubnetAllocatorServiceTest.class);
+
   private static BasicServiceHost host;
   private static XenonRestClient xenonClient;
 
-  @BeforeSuite
-  public void beforeSuite() throws Throwable {
+  private static void commonHostAndClientSetup() throws Throwable {
     host = BasicServiceHost.create();
     ServiceHostUtils.startFactoryServices(host, CloudStoreServiceGroup.FACTORY_SERVICES_MAP);
 
@@ -61,10 +68,15 @@ public class SubnetAllocatorServiceTest {
     xenonClient.start();
   }
 
-  @AfterSuite
-  public void afterSuite() throws Throwable {
-    xenonClient.stop();
-    host.destroy();
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (xenonClient != null) {
+      xenonClient.stop();
+      xenonClient = null;
+    }
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
   }
 
   @Test(enabled = false)
@@ -75,10 +87,15 @@ public class SubnetAllocatorServiceTest {
    * Tests for handleStart.
    */
   public static class HandleStartTest {
+    @BeforeMethod
+    public void beforeMethod() throws Throwable {
+      commonHostAndClientSetup();
+    }
 
     @AfterMethod
     public void afterMethod() throws Throwable {
       ServiceHostUtils.deleteAllDocuments(host, "test-host");
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -89,37 +106,26 @@ public class SubnetAllocatorServiceTest {
       assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
 
       SubnetAllocatorService.State createdState = result.getBody(SubnetAllocatorService.State.class);
+
+      SubnetUtils subnetUtils = new SubnetUtils(startState.rootCidr);
+      SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
+      Long lowIp, highIp;
+
+      InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
+      lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
+
+      InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
+      highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
+
+      SubnetAllocatorService.IpV4Range ipV4Range = new SubnetAllocatorService.IpV4Range(lowIp, highIp);
+      startState.freeList = new ArrayList<>();
+      startState.freeList.add(ipV4Range);
+
       assertThat(ServiceUtils.documentEquals(SubnetAllocatorService.State.class, startState, createdState), is(true));
 
       SubnetAllocatorService.State savedState = host.getServiceState(SubnetAllocatorService.State.class,
           createdState.documentSelfLink);
       assertThat(ServiceUtils.documentEquals(SubnetAllocatorService.State.class, startState, savedState), is(true));
-
-      ServiceHostUtils.waitForServiceState(
-          ServiceDocumentQueryResult.class,
-          DhcpSubnetService.FACTORY_LINK,
-          (queryResult) -> queryResult.documentCount == 1,
-          host,
-          null);
-
-      ServiceDocumentQueryResult queryResult = ServiceHostUtils.getServiceState(host, ServiceDocumentQueryResult.class,
-          DhcpSubnetService.FACTORY_LINK,
-          "test-host");
-      assertThat(queryResult, is(notNullValue()));
-      assertThat(queryResult.documentCount, is(1L));
-      assertThat(queryResult.documentLinks, is(notNullValue()));
-      assertThat(queryResult.documentLinks.size(), is(1));
-
-      DhcpSubnetService.State dhcpSubnetServiceState = ServiceHostUtils.getServiceState(host,
-          DhcpSubnetService.State.class, queryResult.documentLinks.get(0), "test-host");
-      assertThat(dhcpSubnetServiceState, is(notNullValue()));
-
-      SubnetUtils subnetUtils = new SubnetUtils(startState.rootCidr);
-      SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
-      assertThat(IpHelper.longToIp(dhcpSubnetServiceState.lowIp),
-          is(InetAddresses.forString(subnetInfo.getLowAddress())));
-      assertThat(IpHelper.longToIp(dhcpSubnetServiceState.highIp),
-          is(InetAddresses.forString(subnetInfo.getHighAddress())));
     }
   }
 
@@ -131,12 +137,14 @@ public class SubnetAllocatorServiceTest {
 
     @BeforeMethod
     public void beforeMethod() throws Throwable {
+      commonHostAndClientSetup();
       startState = createInitialState();
     }
 
     @AfterMethod
     public void afterMethod() throws Throwable {
       ServiceHostUtils.deleteAllDocuments(host, "test-host");
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -190,6 +198,7 @@ public class SubnetAllocatorServiceTest {
 
     @BeforeMethod
     public void beforeMethod() throws Throwable {
+      commonHostAndClientSetup();
       startState = createInitialState();
       Operation result = xenonClient.post(SubnetAllocatorService.FACTORY_LINK, startState);
       assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
@@ -199,10 +208,11 @@ public class SubnetAllocatorServiceTest {
     @AfterMethod
     public void afterMethod() throws Throwable {
       ServiceHostUtils.deleteAllDocuments(host, "test-host");
+      commonHostAndClientTeardown();
     }
 
     @Test
-    public void testExtractSubnet() throws Throwable {
+    public void testAllocateSubnet() throws Throwable {
       String subnetId = UUID.randomUUID().toString();
       SubnetAllocatorService.AllocateSubnet allocateSubnetPatch =
           new SubnetAllocatorService.AllocateSubnet(
@@ -214,11 +224,52 @@ public class SubnetAllocatorServiceTest {
           .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
       host.sendRequestAndWait(patchOperation);
 
+      SubnetAllocatorService.State allocatorState = host.getServiceState(SubnetAllocatorService.State.class,
+          startState.documentSelfLink);
+
+      assertThat(allocatorState.freeList.size(), is(2));
+
+      ServiceHostUtils.waitForServiceState(
+          ServiceDocumentQueryResult.class,
+          DhcpSubnetService.FACTORY_LINK,
+          (queryResult) -> queryResult.documentCount == 1,
+          host,
+          null);
+
       DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
           DhcpSubnetService.FACTORY_LINK + "/" + subnetId);
 
-      assertThat(currentState.lowIp, is(0L));
-      assertThat(currentState.highIp, is(16L));
+      InetAddress lowAddress = IpHelper.longToIp(currentState.lowIp);
+      InetAddress highAddress = IpHelper.longToIp(currentState.highIp);
+
+      assertThat(currentState.cidr, is("192.168.0.16/28"));
+      assertThat(lowAddress.getHostAddress(), is("192.168.0.16"));
+      assertThat(highAddress.getHostAddress(), is("192.168.0.31"));
+
+    }
+
+    @Test
+    public void testAllocateSubnetFailure() throws Throwable {
+      String subnetId = UUID.randomUUID().toString();
+      SubnetAllocatorService.AllocateSubnet allocateSubnetPatch =
+          new SubnetAllocatorService.AllocateSubnet(
+              subnetId, (long) Integer.MAX_VALUE, 4L);
+      Operation patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(allocateSubnetPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      try {
+        host.sendRequestAndWait(patchOperation);
+        Assert.fail("Allocation of such a large subnet should have failed");
+      } catch (BadRequestException ex) {
+        assertThat(ex.getMessage(), containsString("Could not find any IP range big enough to allocate"));
+      }
+
+      SubnetAllocatorService.State allocatorState = host.getServiceState(SubnetAllocatorService.State.class,
+          startState.documentSelfLink);
+
+      assertThat(allocatorState.freeList.size(), is(1));
     }
   }
 
