@@ -49,4 +49,6 @@ public interface TenantBackend {
   void setSecurityGroups(String id, List<SecurityGroup> securityGroups) throws ExternalException;
 
   ResourceList<Tenant> getPage(String pageLink) throws PageExpiredException;
+
+  int getNumberTenants();
 }

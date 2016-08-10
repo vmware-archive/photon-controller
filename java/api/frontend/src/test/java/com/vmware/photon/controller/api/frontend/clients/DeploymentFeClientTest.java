@@ -508,11 +508,14 @@ public class DeploymentFeClientTest {
 
       DeploymentSize deploymentSize = new DeploymentSize();
       deploymentSize.setNumberHosts(2);
+      deploymentSize.setNumberTenants(7);
 
       doReturn(deploymentSize.getNumberHosts()).when(hostBackend).getNumberHosts();
+      doReturn(deploymentSize.getNumberTenants()).when(tenantBackend).getNumberTenants();
 
       DeploymentSize deploymentRetrievedSize = feClient.getDeploymentSize(deploymentId);
       assertThat(deploymentRetrievedSize.getNumberHosts(), is(deploymentSize.getNumberHosts()));
+      assertThat(deploymentRetrievedSize.getNumberTenants(), is(deploymentSize.getNumberTenants()));
     }
 
     @Test(expectedExceptions = DeploymentNotFoundException.class,

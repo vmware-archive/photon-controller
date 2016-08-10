@@ -292,7 +292,7 @@ public class DeploymentResource {
 
   @GET
   @Path(DeploymentResourceRoutes.DEPLOYMENT_SIZE_PATH)
-  @ApiOperation(value = "Gets size information of the deployment", response = DeploymentSize.class)
+  @ApiOperation(value = "Gets size information about the deployment", response = DeploymentSize.class)
   public Response getSize(@Context Request request,
                           @PathParam("id") String id) throws ExternalException {
     return generateCustomResponse(
