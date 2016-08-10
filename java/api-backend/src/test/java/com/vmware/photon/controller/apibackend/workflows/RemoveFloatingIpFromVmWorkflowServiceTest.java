@@ -487,14 +487,14 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
       assertThat(savedState.taskServiceEntity, notNullValue());
       assertThat(savedState.taskServiceEntity.documentSelfLink, notNullValue());
 
-      Map<String, String> expectedFloatingIpToNatRuleMap = new HashMap<>();
-      expectedFloatingIpToNatRuleMap.put("natRuleId2", "5.6.7.8");
+      Map<String, String> expectedVmIdToNatRuleIdMap = new HashMap<>();
+      expectedVmIdToNatRuleIdMap.put("vmId2", "natRuleId2");
 
       VirtualNetworkService.State virtualNetwork = testEnvironment.getServiceState(
           savedState.taskServiceEntity.documentSelfLink,
           VirtualNetworkService.State.class);
-      assertThat(virtualNetwork.natRuleToFloatingIpMap.size(), is(1));
-      assertThat(virtualNetwork.natRuleToFloatingIpMap, equalTo(expectedFloatingIpToNatRuleMap));
+      assertThat(virtualNetwork.vmIdToNatRuleIdMap.size(), is(1));
+      assertThat(virtualNetwork.vmIdToNatRuleIdMap, equalTo(expectedVmIdToNatRuleIdMap));
     }
 
     private RemoveFloatingIpFromVmWorkflowDocument startService() throws Throwable {
@@ -520,9 +520,9 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     virtualNetwork.tier0RouterId = "logical_tier0_router_id";
     virtualNetwork.logicalRouterId = "logical_tier1_router_id";
     virtualNetwork.logicalSwitchId = "logical_switch_id";
-    virtualNetwork.natRuleToFloatingIpMap = new HashMap<>();
-    virtualNetwork.natRuleToFloatingIpMap.put("natRuleId", "1.2.3.4");
-    virtualNetwork.natRuleToFloatingIpMap.put("natRuleId2", "5.6.7.8");
+    virtualNetwork.vmIdToNatRuleIdMap = new HashMap<>();
+    virtualNetwork.vmIdToNatRuleIdMap.put("vmId1", "natRuleId1");
+    virtualNetwork.vmIdToNatRuleIdMap.put("vmId2", "natRuleId2");
 
     Operation result = testEnvironment.sendPostAndWait(VirtualNetworkService.FACTORY_LINK, virtualNetwork);
     assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
@@ -550,7 +550,7 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     startState.nsxAddress = "https://192.168.1.1";
     startState.nsxUsername = "nsxUsername";
     startState.nsxPassword = "nsxPassword";
-    startState.natRuleId = "natRuleId";
+    startState.vmId = "vmId1";
 
     return startState;
   }

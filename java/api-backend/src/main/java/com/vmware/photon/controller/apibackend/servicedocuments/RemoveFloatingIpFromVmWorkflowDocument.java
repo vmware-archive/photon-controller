@@ -100,11 +100,11 @@ public class RemoveFloatingIpFromVmWorkflowDocument extends ServiceDocument {
   public String networkId;
 
   /**
-   * ID of the NAT rule that translates the VM's floating IP to private IP.
+   * ID of the vm to be removed a floating IP.
    */
   @NotBlank
   @Immutable
-  public String natRuleId;
+  public String vmId;
 
   ///
   /// Task Output
