@@ -51,7 +51,8 @@ public class Main {
     DnsmasqDriver dnsmasqDriver = new DnsmasqDriver("/var/lib/misc/dnsmasq.leases",
             "/usr/local/bin/dhcp_release",
             DnsmasqDriver.class.getResource("/scripts/release-ip.sh").getPath(),
-            DnsmasqDriver.class.getResource("/scripts/dhcp-status.sh").getPath());
+            DnsmasqDriver.class.getResource("/scripts/dhcp-status.sh").getPath(),
+            "/etc/hosts");
 
     Injector injector = Guice.createInjector(new DHCPAgentModule(dhcpAgentConfig, dnsmasqDriver));
 

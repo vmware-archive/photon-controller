@@ -63,7 +63,8 @@ public class StatusServiceTest {
               new DnsmasqDriver(StatusServiceTest.class.getResource("/dnsmasq.leases").getPath(),
                       "/usr/local/bin/dhcp_release",
                       StatusServiceTest.class.getResource(successScript).getPath(),
-                      StatusServiceTest.class.getResource(successScript).getPath()),
+                      StatusServiceTest.class.getResource(successScript).getPath(),
+                      "/etc/hosts"),
               1,
               listeningExecutorService);
     }

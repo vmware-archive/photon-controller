@@ -29,7 +29,8 @@ public class TestHost extends BasicServiceHost {
     private DHCPDriver dhcpDriver = new DnsmasqDriver(TestHost.class.getResource("/dnsmasq.leases").getPath(),
             "/usr/local/bin/dhcp_release",
             TestHost.class.getResource(successScript).getPath(),
-            TestHost.class.getResource(successScript).getPath());
+            TestHost.class.getResource(successScript).getPath(),
+            "/etc/hosts");
 
     public TestHost() {
         super();

@@ -293,7 +293,8 @@ public class ReleaseIPServiceTest {
             dnsmasqDriver = new DnsmasqDriver(ReleaseIPServiceTest.class.getResource("/dnsmasq.leases").getPath(),
                     "/usr/local/bin/dhcp_release",
                     ReleaseIPServiceTest.class.getResource(scriptPath).getPath(),
-                    ReleaseIPServiceTest.class.getResource(scriptPath).getPath());
+                    ReleaseIPServiceTest.class.getResource(scriptPath).getPath(),
+                    "/etc/hosts");
             testEnvironment = TestEnvironment.create(dnsmasqDriver, 1, listeningExecutorService);
         }
 

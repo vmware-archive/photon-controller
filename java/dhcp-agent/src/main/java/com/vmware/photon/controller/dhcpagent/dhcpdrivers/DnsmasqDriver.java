@@ -14,9 +14,14 @@
 package com.vmware.photon.controller.dhcpagent.dhcpdrivers;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.Map;
 
 /**
  * Class implements Driver interface for Dnsmasq DHCP server.
@@ -26,13 +31,22 @@ public class DnsmasqDriver implements DHCPDriver {
     private String dhcpReleaseUtilityPath = "/usr/local/bin/dhcp_release";
     private String releaseIPPath = "/script/release-ip.sh";
     private String dhcpStatusPath = "/script/dhcp-status.sh";
+    private String dhcpHostFileDir = "/etc/hosts";
+    private String dhcpHostFileCopyDir = "/etc/hosts_copy";
 
     public DnsmasqDriver(String dhcpLeaseFilePath,
-            String dhcpReleaseUtilityPath, String releaseIPPath, String dhcpStatusPath) {
+            String dhcpReleaseUtilityPath, String releaseIPPath, String dhcpStatusPath, String dhcpHostFileDir) {
         this.dhcpLeaseFilePath = dhcpLeaseFilePath;
         this.dhcpReleaseUtilityPath = dhcpReleaseUtilityPath;
         this.releaseIPPath = releaseIPPath;
         this.dhcpStatusPath = dhcpStatusPath;
+        this.dhcpHostFileDir = dhcpHostFileDir;
+        this.dhcpHostFileCopyDir = dhcpHostFileDir + "_copy";
+
+        File directory = new File(String.valueOf(this.dhcpHostFileCopyDir));
+        if (!directory.exists()){
+            directory.mkdir();
+        }
     }
 
     /**
@@ -118,5 +132,53 @@ public class DnsmasqDriver implements DHCPDriver {
         }
 
         return ipAddress;
+    }
+
+    /**
+     * This method update subnet allocation of
+     * IP for MAC address.
+     *
+     * @param ipAddressToMACAddressMap
+     * @param subnetId
+     *
+     * @return
+     */
+    public Response updateSubnetIPAllocation(Map<String, String> ipAddressToMACAddressMap, String subnetId)
+            throws Exception {
+        Response response = new Response();
+        String newSubnetFilename = dhcpHostFileCopyDir + "/" + subnetId;
+
+        PrintWriter writer = new PrintWriter(newSubnetFilename, "UTF-8");
+        for (Map.Entry<String, String> pair : ipAddressToMACAddressMap.entrySet()) {
+            String line = pair.getKey() + " " + pair.getValue() + " " + subnetId;
+            writer.println(line);
+        }
+
+        writer.close();
+
+        String oldSubnetFilename = dhcpHostFileDir + "/" + subnetId;
+        File oldSubnetHostFile = new File(oldSubnetFilename);
+        File newSubnetHostFile = new File(newSubnetFilename);
+
+        Files.move(newSubnetHostFile.toPath(), oldSubnetHostFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+        response.exitCode = 1;
+        return response;
+    }
+
+    /**
+     * This method deletes subnet.
+     *
+     * @param subnetId
+     *
+     * @return
+     */
+    public Response deleteSubnetIPAllocation(String subnetId) throws Exception {
+        Response response = new Response();
+        String subnetFilename = dhcpHostFileDir + "/" + subnetId;
+        File subnetHostFile = new File(subnetFilename);
+        boolean result = Files.deleteIfExists(subnetHostFile.toPath());
+        response.exitCode = result ? 0 : 1;
+        return response;
     }
 }

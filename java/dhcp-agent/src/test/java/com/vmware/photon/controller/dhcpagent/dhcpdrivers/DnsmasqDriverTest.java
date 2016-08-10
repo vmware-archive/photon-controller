@@ -22,7 +22,12 @@ import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.testng.Assert.fail;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Class implements tests for Dnsmasq driver.
@@ -52,7 +57,8 @@ public class DnsmasqDriverTest {
                 leaseFilePath,
                 "/usr/local/bin/dhcp_release",
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
-                DnsmasqDriverTest.class.getResource(scriptPath).getPath());
+                DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
+                DnsmasqDriverTest.class.getResource("/hosts").getPath());
     }
 
     /**
@@ -130,6 +136,53 @@ public class DnsmasqDriverTest {
             dnsmasqDriver.findIP("08:00:27:d8:7d:8e");
             fail("Failed to get file not found exception.");
         } catch (Throwable e) {
+        }
+    }
+
+    @Test
+    public void testUpdateSubnetIPAllocation() {
+        try {
+            setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
+            String ipAddress = "192.168.0.2";
+            String macAddress = "08:00:27:d8:7d:8e";
+            Map<String, String> macAddressIPMap = new HashMap<>();
+            macAddressIPMap.put(ipAddress, macAddress);
+
+            dnsmasqDriver.updateSubnetIPAllocation(macAddressIPMap, "subnet1");
+
+            FileReader subnetHostFile = new FileReader(
+                    DnsmasqDriverTest.class.getResource("/hosts").getPath() + "/subnet1");
+            BufferedReader bufferedReader =
+                    new BufferedReader(subnetHostFile);
+
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                if (!line.contains(ipAddress)) {
+                    fail(String.format("IP address not found in host file:", ipAddress));
+                }
+
+                if (!line.contains(macAddress)) {
+                    fail(String.format("MAC address not found in host file:", macAddress));
+                }
+            }
+
+        } catch (Throwable e) {
+            fail(String.format("Failed with exception: %s", e.toString()));
+        }
+    }
+
+    @Test
+    public void testDeleteSubnetIPAllocation() {
+        try {
+            setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
+            dnsmasqDriver.deleteSubnetIPAllocation("subnet1");
+
+            File hostFile = new File(DnsmasqDriverTest.class.getResource("/hosts").getPath() + "/subnet1");
+            if (hostFile.exists() && !hostFile.isDirectory()) {
+                fail("Host file not deleted found in host file:");
+            }
+        } catch (Throwable e) {
+            fail(String.format("Failed with exception: %s", e.toString()));
         }
     }
 }
