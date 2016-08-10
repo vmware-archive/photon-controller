@@ -1291,6 +1291,18 @@ public class ProvisionHostTaskService extends StatefulService {
     if (deploymentState.oAuthPassword != null) {
       oAuthPassword = deploymentState.oAuthPassword;
     }
+
+    ServiceUtils.logInfo(this, "Installing %s vib with following arguments : %s %s %s %s %s %s %s %s",
+        vibState.vibName,
+        hostState.hostAddress,
+        hostState.userName,
+        hostState.password,
+        vibState.uploadPath,
+        createCert.toString(),
+        oAuthDomain,
+        oAuthAddress,
+        oAuthPassword);
+
     List<String> command = Arrays.asList(
         "./" + INSTALL_VIB_SCRIPT_NAME,
         hostState.hostAddress,
