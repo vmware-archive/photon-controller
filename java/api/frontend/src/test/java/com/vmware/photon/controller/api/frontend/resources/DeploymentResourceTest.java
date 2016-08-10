@@ -443,6 +443,7 @@ public class DeploymentResourceTest extends ResourceTest {
   public void testGetSizeByValidId() throws Exception {
     DeploymentSize deploymentSize = new DeploymentSize();
     deploymentSize.setNumberHosts(2);
+    deploymentSize.setNumberTenants(7);
 
     String uri = UriBuilder.fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
         DeploymentResourceRoutes.DEPLOYMENT_SIZE_PATH)
@@ -459,6 +460,7 @@ public class DeploymentResourceTest extends ResourceTest {
 
     DeploymentSize deploymentSizeRetrieved = response.readEntity(DeploymentSize.class);
     assertThat(deploymentSizeRetrieved.getNumberHosts(), is(deploymentSize.getNumberHosts()));
+    assertThat(deploymentSizeRetrieved.getNumberTenants(), is(deploymentSize.getNumberTenants()));
   }
 
   @Test

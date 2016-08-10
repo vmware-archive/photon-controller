@@ -286,6 +286,7 @@ public class DeploymentFeClient {
 
     DeploymentSize deploymentSize = new DeploymentSize();
     deploymentSize.setNumberHosts(hostBackend.getNumberHosts());
+    deploymentSize.setNumberTenants(tenantBackend.getNumberTenants());
 
     return deploymentSize;
 

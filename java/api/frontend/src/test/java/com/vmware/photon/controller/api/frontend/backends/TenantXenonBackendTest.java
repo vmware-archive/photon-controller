@@ -219,7 +219,7 @@ public class TenantXenonBackendTest {
   }
 
   /**
-   * Tests for querying project.
+   * Tests for querying tenant.
    */
   @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
   public static class QueryTest {
@@ -290,6 +290,16 @@ public class TenantXenonBackendTest {
         assertThat(e.getMessage(), is("Tenant invalid-tenant not found"));
       }
 
+    }
+
+    @Test
+    public void testGetNumberTenants() throws Throwable {
+      tenantBackend.createTenant(spec);
+      spec.setName("t2");
+      tenantBackend.createTenant(spec);
+
+      int num = tenantBackend.getNumberTenants();
+      assertThat(num, is(2));
     }
   }
 

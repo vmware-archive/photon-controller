@@ -43,7 +43,10 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.TenantService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -191,6 +194,20 @@ public class TenantXenonBackend implements TenantBackend {
       throw new TenantNotFoundException(id);
     }
 
+  }
+
+  @Override
+  public int getNumberTenants() {
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(TenantService.State.class));
+    querySpec.query.addBooleanClause(kindClause);
+    querySpec.options.add(QueryTask.QuerySpecification.QueryOption.COUNT);
+
+    com.vmware.xenon.common.Operation result = xenonClient.query(querySpec, true);
+    ServiceDocumentQueryResult queryResult = result.getBody(QueryTask.class).results;
+    return queryResult.documentCount.intValue();
   }
 
   private TenantEntity create(TenantCreateSpec spec) throws ExternalException {
