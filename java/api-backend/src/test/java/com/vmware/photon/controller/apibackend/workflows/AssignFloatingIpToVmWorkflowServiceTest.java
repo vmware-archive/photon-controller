@@ -20,9 +20,11 @@ import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHelper;
 import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIpToVmWorkflowDocument;
 import com.vmware.photon.controller.apibackend.utils.TaskStateHelper;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
+import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -35,6 +37,8 @@ import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 
+import com.google.common.net.InetAddresses;
+import org.apache.commons.net.util.SubnetUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -48,6 +52,8 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 import java.lang.reflect.Field;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -305,11 +311,11 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
               startState,
               AssignFloatingIpToVmWorkflowDocument.class,
               (state) -> AssignFloatingIpToVmWorkflowDocument.TaskState.TaskStage.STARTED == state.taskState.stage &&
-                  AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP
+                  AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP_AND_MAC
                       == state.taskState.subStage);
 
       if (currentStage != AssignFloatingIpToVmWorkflowDocument.TaskState.TaskStage.STARTED &&
-          currentSubStage != AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP) {
+          currentSubStage != AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP_AND_MAC) {
         testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
             buildPatchState(currentStage, currentSubStage));
       }
@@ -344,11 +350,11 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
               startState,
               AssignFloatingIpToVmWorkflowDocument.class,
               (state) -> AssignFloatingIpToVmWorkflowDocument.TaskState.TaskStage.STARTED == state.taskState.stage &&
-                  AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP
+                  AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP_AND_MAC
                       == state.taskState.subStage);
 
       if (currentStage != AssignFloatingIpToVmWorkflowDocument.TaskState.TaskStage.STARTED &&
-          currentSubStage != AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP) {
+          currentSubStage != AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP_AND_MAC) {
         testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
             buildPatchState(currentStage, currentSubStage));
       }
@@ -378,7 +384,7 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
               startState,
               AssignFloatingIpToVmWorkflowDocument.class,
               (state) -> AssignFloatingIpToVmWorkflowDocument.TaskState.TaskStage.STARTED == state.taskState.stage &&
-                  AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP
+                  AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP_AND_MAC
                       == state.taskState.subStage);
 
       AssignFloatingIpToVmWorkflowDocument patchState = buildPatchState(
@@ -404,8 +410,8 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
    * End-to-end tests.
    */
   public class EndToEndTest {
-    TestEnvironment testEnvironment;
-    NsxClientFactory nsxClientFactory;
+    private TestEnvironment testEnvironment;
+    private NsxClientFactory nsxClientFactory;
 
     @BeforeMethod
     public void setupTest() throws Throwable {
@@ -461,6 +467,7 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
     }
 
     private AssignFloatingIpToVmWorkflowDocument startService() throws Throwable {
+      createDhcpRootSubnetServiceInCloudStore(testEnvironment);
       VirtualNetworkService.State virtualNetworkState = createVirtualNetworkInCloudStore(testEnvironment);
       String networkId = ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkState.documentSelfLink);
       VmService.State vmState = createVmInCloudStore(testEnvironment, networkId);
@@ -522,6 +529,24 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
     return result.getBody(VirtualNetworkService.State.class);
   }
 
+  private static DhcpSubnetService.State createDhcpRootSubnetServiceInCloudStore(TestEnvironment testEnvironment)
+      throws Throwable {
+    String cidr = "192.168.1.0/24";
+    SubnetUtils subnetUtils = new SubnetUtils(cidr);
+    SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
+    InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
+    InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
+
+    DhcpSubnetService.State state = new DhcpSubnetService.State();
+    state.cidr = cidr;
+    state.lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
+    state.highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
+    state.documentSelfLink = DhcpSubnetService.SINGLETON_LINK;
+
+    Operation result = testEnvironment.sendPostAndWait(DhcpSubnetService.FACTORY_LINK, state);
+    return result.getBody(DhcpSubnetService.State.class);
+  }
+
   private static AssignFloatingIpToVmWorkflowDocument buildStartState(
       AssignFloatingIpToVmWorkflowDocument.TaskState.TaskStage startStage,
       AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage subStage,
@@ -538,7 +563,6 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
     startState.nsxAddress = "https://192.168.1.1";
     startState.nsxUsername = "username";
     startState.nsxPassword = "password";
-    startState.vmFloatingIpAddress = "5.6.7.8";
 
     return startState;
   }

@@ -45,7 +45,8 @@ public class AssignFloatingIpToVmWorkflowDocument extends ServiceDocument {
      * Definitions of substages.
      */
     public enum SubStage {
-      GET_VM_PRIVATE_IP,
+      GET_VM_PRIVATE_IP_AND_MAC,
+      ALLOCATE_VM_FLOATING_IP,
       CREATE_NAT_RULE
     }
   }
@@ -110,13 +111,6 @@ public class AssignFloatingIpToVmWorkflowDocument extends ServiceDocument {
   @Immutable
   public String vmId;
 
-  /**
-   * Floating IP address of the VM.
-   */
-  @NotBlank
-  @Immutable
-  public String vmFloatingIpAddress;
-
   ///
   /// Task Output
   ///
@@ -138,4 +132,16 @@ public class AssignFloatingIpToVmWorkflowDocument extends ServiceDocument {
    */
   @WriteOnce
   public String vmPrivateIpAddress;
+
+  /**
+   * MAC address of the VM.
+   */
+  @WriteOnce
+  public String vmMacAddress;
+
+  /**
+   * Floating IP address of the VM.
+   */
+  @WriteOnce
+  public String vmFloatingIpAddress;
 }
