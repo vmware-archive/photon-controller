@@ -56,9 +56,9 @@ public class NsxClientApi {
    * Performs a POST HTTP request to NSX.
    */
   protected <T> T post(final String path,
-                     final HttpEntity payload,
-                     final int expectedResponseStatus,
-                     final TypeReference<T> typeReference) throws IOException {
+                       final HttpEntity payload,
+                       final int expectedResponseStatus,
+                       final TypeReference<T> typeReference) throws IOException {
     HttpResponse result = restClient.send(
         RestClient.Method.POST,
         path,
@@ -72,10 +72,10 @@ public class NsxClientApi {
    * Performs a POST HTTP request to NSX.
    */
   protected <T> void postAsync(final String path,
-                             final HttpEntity payload,
-                             final int expectedResponseStatus,
-                             final TypeReference<T> typeReference,
-                             final FutureCallback<T> responseCallback) throws IOException {
+                               final HttpEntity payload,
+                               final int expectedResponseStatus,
+                               final TypeReference<T> typeReference,
+                               final FutureCallback<T> responseCallback) throws IOException {
     restClient.sendAsync(
         RestClient.Method.POST,
         path,
@@ -111,11 +111,68 @@ public class NsxClientApi {
   }
 
   /**
+   * Performs a synchronous PUT HTTP request to NSX.
+   */
+  protected <T> T put(final String path,
+                      final HttpEntity payload,
+                      final int expectedResponseStatus,
+                      final TypeReference<T> typeReference) throws IOException {
+    HttpResponse result = restClient.send(
+        RestClient.Method.PUT,
+        path,
+        payload);
+
+    restClient.check(result, expectedResponseStatus);
+    return deserializeObjectFromJson(result.getEntity(), typeReference);
+  }
+
+  /**
+   * Performs an asynchronous PUT HTTP request to NSX.
+   */
+  protected <T> void putAsync(final String path,
+                              final HttpEntity payload,
+                              final int expectedResponseStatus,
+                              final TypeReference<T> typeReference,
+                              final FutureCallback<T> responseCallback) throws IOException {
+    restClient.sendAsync(
+        RestClient.Method.PUT,
+        path,
+        payload,
+        new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
+          @Override
+          public void completed(HttpResponse result) {
+            T ret = null;
+            try {
+              restClient.check(result, expectedResponseStatus);
+              ret = deserializeObjectFromJson(result.getEntity(), typeReference);
+            } catch (Throwable t) {
+              responseCallback.onFailure(t);
+            }
+
+            if (ret != null) {
+              responseCallback.onSuccess(ret);
+            }
+          }
+
+          @Override
+          public void failed(Exception e) {
+            responseCallback.onFailure(e);
+          }
+
+          @Override
+          public void cancelled() {
+            responseCallback.onFailure(new RuntimeException("putAsync " + path + " was cancelled"));
+          }
+        }
+    );
+  }
+
+  /**
    * Performs a GET HTTP request to NSX.
    */
   protected <T> T get(final String path,
-                    final int expectedResponseStatus,
-                    final TypeReference<T> typeReference) throws IOException {
+                      final int expectedResponseStatus,
+                      final TypeReference<T> typeReference) throws IOException {
     HttpResponse result = restClient.send(
         RestClient.Method.GET,
         path,
@@ -129,9 +186,9 @@ public class NsxClientApi {
    * Performs a GET HTTP request to NSX.
    */
   protected <T> void getAsync(final String path,
-                            final int expectedResponseStatus,
-                            final TypeReference<T> typeReference,
-                            final FutureCallback<T> responseCallback) throws IOException {
+                              final int expectedResponseStatus,
+                              final TypeReference<T> typeReference,
+                              final FutureCallback<T> responseCallback) throws IOException {
     restClient.sendAsync(
         RestClient.Method.GET,
         path,
@@ -170,7 +227,7 @@ public class NsxClientApi {
    * Performs a DELETE HTTP request to NSX.
    */
   protected void delete(final String path,
-                      final int expectedResponseStatus) throws IOException {
+                        final int expectedResponseStatus) throws IOException {
     HttpResponse result = restClient.send(
         RestClient.Method.DELETE,
         path,
@@ -183,8 +240,8 @@ public class NsxClientApi {
    * Performs a DELETE HTTP request to NSX.
    */
   protected void deleteAsync(final String path,
-                           final int expectedResponseStatus,
-                           final FutureCallback<Void> responseCallback) throws IOException {
+                             final int expectedResponseStatus,
+                             final FutureCallback<Void> responseCallback) throws IOException {
     restClient.sendAsync(
         RestClient.Method.DELETE,
         path,

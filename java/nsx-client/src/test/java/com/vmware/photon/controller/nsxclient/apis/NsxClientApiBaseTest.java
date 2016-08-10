@@ -278,6 +278,153 @@ public class NsxClientApiBaseTest extends NsxClientApi {
   }
 
   /**
+   * Tests for methods of putting HTTP request to NSX.
+   */
+  public static class PutTest {
+    private HttpResponseFactory factory;
+    private RestClient restClient;
+
+    @BeforeMethod
+    public void setup() {
+      factory = new DefaultHttpResponseFactory();
+      restClient = spy(new RestClient("target", "username", "password"));
+    }
+
+    @Test
+    public void testPutSuccessful() throws IOException {
+      String jsonContent = "{\"field1\":\"value1\",\"field2\":\"value2\"}";
+      HttpEntity responseHttpEntity = new StringEntity(jsonContent, ContentType.APPLICATION_JSON);
+
+      HttpResponse httpResponse = factory.newHttpResponse(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, null);
+      httpResponse.setEntity(responseHttpEntity);
+
+      HttpEntity requestHttpEntity = new StringEntity("", ContentType.APPLICATION_JSON);
+      doReturn(httpResponse).when(restClient).send(RestClient.Method.PUT, "target", requestHttpEntity);
+
+      NsxClientApiBaseTest nsxClientApi = new NsxClientApiBaseTest(restClient);
+      DummyClass dummyObject = nsxClientApi.put("target",
+          requestHttpEntity,
+          HttpStatus.SC_OK,
+          new TypeReference<DummyClass>() {
+          });
+
+      assertThat(dummyObject.dummyField1, is("value1"));
+      assertThat(dummyObject.dummyField2, is("value2"));
+    }
+
+    @Test
+    public void testPutFailed() throws IOException {
+      HttpResponse httpResponse = factory.newHttpResponse(HttpVersion.HTTP_1_1, HttpStatus.SC_NOT_FOUND, null);
+
+      HttpEntity requestHttpEntity = new StringEntity("", ContentType.APPLICATION_JSON);
+      doReturn(httpResponse).when(restClient).send(RestClient.Method.PUT, "target", requestHttpEntity);
+
+      NsxClientApiBaseTest nsxClientApi = new NsxClientApiBaseTest(restClient);
+      try {
+        nsxClientApi.put("target", requestHttpEntity, HttpStatus.SC_OK, new TypeReference<DummyClass>() {
+        });
+      } catch (RuntimeException e) {
+        assertThat(e.getMessage(), is("HTTP request failed with: " + HttpStatus.SC_NOT_FOUND));
+      }
+    }
+  }
+
+  /**
+   * Tests for methods of async put to NSX.
+   */
+  public static class AsyncPutTest {
+    private CloseableHttpAsyncClient asyncClient;
+    private RestClient restClient;
+    private Future<HttpResponse> httpResponseFuture;
+    private CountDownLatch latch;
+
+    @BeforeMethod
+    public void setup() throws IOException {
+      httpResponseFuture = mock(FutureTask.class);
+      asyncClient = mock(CloseableHttpAsyncClient.class);
+      restClient = spy(new RestClient("target", "username", "password", asyncClient));
+      latch = new CountDownLatch(1);
+
+      doAnswer(invocation -> null).when(asyncClient).close();
+    }
+
+    @Test
+    public void testAsyncPutSuccessful() throws Exception {
+      String jsonContent = "{\"field1\":\"value1\",\"field2\":\"value2\"}";
+      HttpEntity responseHttpEntity  = new StringEntity(jsonContent, ContentType.APPLICATION_JSON);
+
+      HttpResponseFactory factory = new DefaultHttpResponseFactory();
+      HttpResponse httpResponse = factory.newHttpResponse(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, null);
+      httpResponse.setEntity(responseHttpEntity);
+
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          ((FutureCallback<HttpResponse>) invocation.getArguments()[CALLBACK_ARG_INDEX]).completed(httpResponse);
+        }
+        return httpResponseFuture;
+      }).when(asyncClient).execute(any(HttpUriRequest.class), any(BasicHttpContext.class), any(FutureCallback.class));
+
+      HttpEntity requestHttpEntity = new StringEntity("", ContentType.APPLICATION_JSON);
+      NsxClientApiBaseTest nsxClientApi = new NsxClientApiBaseTest(restClient);
+      nsxClientApi.putAsync("target",
+          requestHttpEntity,
+          HttpStatus.SC_OK,
+          new TypeReference<DummyClass>() {},
+          new com.google.common.util.concurrent.FutureCallback<DummyClass>() {
+            @Override
+            public void onSuccess(DummyClass result) {
+              assertThat(result.dummyField1, is("value1"));
+              assertThat(result.dummyField2, is("value2"));
+
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+
+    @Test
+    public void testAsyncPutFailed() throws Exception {
+      final String errorMsg = "Document does not exist";
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          Exception ex = new Exception(errorMsg);
+          ((FutureCallback<HttpResponse>) invocation.getArguments()[CALLBACK_ARG_INDEX]).failed(ex);
+        }
+        return httpResponseFuture;
+      }).when(asyncClient).execute(any(HttpUriRequest.class), any(BasicHttpContext.class), any(FutureCallback.class));
+
+      HttpEntity requestHttpEntity = new StringEntity("", ContentType.APPLICATION_JSON);
+      NsxClientApiBaseTest nsxClientApi = new NsxClientApiBaseTest(restClient);
+      nsxClientApi.putAsync("target",
+          requestHttpEntity,
+          HttpStatus.SC_OK,
+          new TypeReference<DummyClass>() {},
+          new com.google.common.util.concurrent.FutureCallback<DummyClass>() {
+            @Override
+            public void onSuccess(DummyClass result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+  }
+
+  /**
    * Tests for methods of getting HTTP request to NSX.
    */
   public static class GetTest {
