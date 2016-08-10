@@ -93,7 +93,8 @@ public class DHCPAgentXenonHostTest {
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
               "/usr/local/bin/dhcp_release",
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
+              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
+              "/etc/hosts"));
     }
 
     @AfterMethod
@@ -140,7 +141,8 @@ public class DHCPAgentXenonHostTest {
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
               "/usr/local/bin/dhcp_release",
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
+              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
+              "/etc/hosts"));
       host = injector.getInstance(DHCPAgentXenonHost.class);
     }
 
@@ -189,7 +191,8 @@ public class DHCPAgentXenonHostTest {
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
               "/usr/local/bin/dhcp_release",
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
+              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
+              "/etc/hosts"));
       host = injector.getInstance(DHCPAgentXenonHost.class);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());

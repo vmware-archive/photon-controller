@@ -48,7 +48,8 @@ public class DHCPAgentModuleTest {
               DHCPAgentModuleTest.class.getResource("/dnsmasq.leases").getPath(),
               "/usr/local/bin/dhcp_release",
               DHCPAgentModuleTest.class.getResource(successScript).getPath(),
-              DHCPAgentModuleTest.class.getResource(successScript).getPath()));
+              DHCPAgentModuleTest.class.getResource(successScript).getPath(),
+              "/etc/hosts"));
     }
 
     @Test

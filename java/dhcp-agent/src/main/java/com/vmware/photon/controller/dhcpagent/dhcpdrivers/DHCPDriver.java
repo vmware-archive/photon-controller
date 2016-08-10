@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.dhcpagent.dhcpdrivers;
 
+import java.util.Map;
+
 /**
  * Interface defining the functionality to be implemented by all DHCP drivers.
  */
@@ -36,6 +38,26 @@ public interface DHCPDriver {
      * @return
      */
     boolean isRunning();
+
+    /**
+     * This method update subnet allocation of
+     * IP for MAC address.
+     *
+     * @param ipAddressToMACAddressMap
+     * @param subnetId
+     *
+     * @return
+     */
+    Response updateSubnetIPAllocation(Map<String, String> ipAddressToMACAddressMap, String subnetId) throws Exception;
+
+    /**
+     * This method deletes subnet.
+     *
+     * @param subnetId
+     *
+     * @return
+     */
+     Response deleteSubnetIPAllocation(String subnetId) throws Exception;
 
     /**
      * Class to hold the response for Driver operations.
