@@ -188,7 +188,7 @@ public class AddCloudHostWorkflowService extends StatefulService {
                     Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(completedOp);
                     QueryTaskUtils.logQueryResults(AddCloudHostWorkflowService.this, documentLinks);
                     checkState(documentLinks.size() >= 1);
-                    provisionCloudHost(currentState, documentLinks.iterator().next());
+                    getDeployment(currentState, documentLinks.iterator().next());
                   } catch (Throwable t) {
                     failTask(t);
                   }
@@ -196,7 +196,29 @@ public class AddCloudHostWorkflowService extends StatefulService {
             ));
   }
 
-  private void provisionCloudHost(final State currentState, String deploymentServiceLink) {
+  private void getDeployment(final State currentState, String deploymentServiceLink) {
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(deploymentServiceLink)
+            .setCompletion(
+                (operation, throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
+
+                  DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+                  try {
+                    provisionCloudHost(currentState, deploymentState);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            )
+    );
+  }
+
+  private void provisionCloudHost(final State currentState, DeploymentService.State deploymentService) {
     final Service service = this;
 
     FutureCallback<BulkProvisionHostsWorkflowService.State> callback = new
@@ -226,9 +248,11 @@ public class AddCloudHostWorkflowService extends StatefulService {
         };
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
-    startState.deploymentServiceLink = deploymentServiceLink;
+    startState.deploymentServiceLink = deploymentService.documentSelfLink;
     startState.usageTag = UsageTag.CLOUD.name();
     startState.querySpecification = MiscUtils.generateHostQuerySpecification(currentState.hostServiceLink, null);
+    ServiceUtils.logInfo(this, "Assigning createCert the value %s", deploymentService.oAuthEnabled.toString());
+    startState.createCert = deploymentService.oAuthEnabled;
 
     TaskUtils.startTaskAsync(
         this,
