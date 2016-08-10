@@ -91,6 +91,7 @@ function create_and_copy_certificate() {
     priv_key_path="${cert_dir}/host.privkey"
     pub_key_path="${cert_dir}/host.pubkey"
     if [ ! -f "${priv_key_path}" ] || [ ! -f "${pub_key_path}" ]; then
+      echo "Creating keys for ${host_address}"
       certool --genkey --privkey="${priv_key_path}" --pubkey="${pub_key_path}" \
         --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} --server ${lightwave_address}
     fi
@@ -98,13 +99,23 @@ function create_and_copy_certificate() {
     # Generate certificate if it doesn't exist
     host_crt_path="${cert_dir}/host.crt"
     if [ ! -f "${host_crt_path}" ]; then
+      echo "Creating cert for ${host_address}"
       certool --gencert --privkey="${priv_key_path}" --cert="${host_crt_path}" \
         --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} \
         --server ${lightwave_address} --config "${config_file_path}"
     fi
 
+
+    # listing /etc/vmware/ssl contents before copying
+    echo "listing /etc/vmware/ssl contents before copying"
+    sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} ls /etc/vmware/ssl
+
     sshpass -p "$password" scp -o StrictHostKeyChecking=no ${host_crt_path} ${username}@${host_address}:/etc/vmware/ssl
     sshpass -p "$password" scp -o StrictHostKeyChecking=no ${priv_key_path} ${username}@${host_address}:/etc/vmware/ssl
+
+    # listing /etc/vmware/ssl contents after copying
+    echo "listing /etc/vmware/ssl contents after coying"
+    sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} ls /etc/vmware/ssl
 
     rm -rf "${cert_dir}"
   fi
@@ -119,7 +130,9 @@ install_vib
 sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list
 sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} date
 
+echo "Creating and copying cert: ${create_cert}"
 if [ "$create_cert" == "true" ]
 then
+  echo "Creating and copying cert for ${host_address}"
   create_and_copy_certificate
 fi
