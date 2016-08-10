@@ -40,7 +40,11 @@ import org.apache.commons.net.util.SubnetUtils;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 
 /**
@@ -162,20 +166,62 @@ public class SubnetAllocatorService extends StatefulService {
     ServiceUtils.logInfo(this, "Allocating subnet %s", getSelfLink());
 
     AllocateSubnet allocateSubnetPatch = patch.getBody(AllocateSubnet.class);
+    State currentState = getState(patch);
+
 
     try {
+      Long requestedSize = allocateSubnetPatch.numberOfAllIpAddresses;
+      List<IpV4Range> candidateRanges = currentState.freeList.stream()
+          .filter(ipV4Range -> (ipV4Range.high - ipV4Range.low) >= requestedSize)
+          .collect(Collectors.toList());
+      int inverseSubnetMask = safeLongToInt(requestedSize - 1);
+      int subnetMask = ~(inverseSubnetMask);
+
+      IpV4Range createdIpv4Range = null;
+      IpV4Range selectedIpv4Range = null;
+
+      for (IpV4Range ipV4Range : candidateRanges) {
+        long currentLow = ipV4Range.low;
+        while ((currentLow & subnetMask) != currentLow) {
+          currentLow++;
+        }
+
+        long currentHigh = currentLow + inverseSubnetMask;
+        if (currentHigh <= ipV4Range.high) {
+          createdIpv4Range = new IpV4Range(currentLow, currentHigh);
+          selectedIpv4Range = ipV4Range;
+          break;
+        }
+      }
+
+      if (createdIpv4Range == null) {
+        patch.fail(new IllegalArgumentException("Could not find any IP range big enough to allocate"));
+        return;
+      }
+
+      currentState.freeList.remove(selectedIpv4Range);
+      if (createdIpv4Range.low > selectedIpv4Range.low) {
+        IpV4Range lowRange = new IpV4Range(selectedIpv4Range.low, createdIpv4Range.low - 1);
+        currentState.freeList.add(lowRange);
+      }
+
+      if (createdIpv4Range.high < selectedIpv4Range.high) {
+        IpV4Range highRange = new IpV4Range(createdIpv4Range.high + 1, selectedIpv4Range.high);
+        currentState.freeList.add(highRange);
+      }
+
+      setState(patch, currentState);
+      patch.complete();
+
       DhcpSubnetService.State subnet = new DhcpSubnetService.State();
-      subnet.lowIp = 0L;
-      subnet.highIp = allocateSubnetPatch.numberOfAllIpAddresses;
-      subnet.lowIpDynamic = 0L;
-      subnet.highIpDynamic = allocateSubnetPatch.numberOfAllIpAddresses;
+      subnet.cidr = IpHelper.calculateCidrFromIpV4Range(createdIpv4Range.low, createdIpv4Range.high);
+      subnet.lowIp = createdIpv4Range.low;
+      subnet.highIp = createdIpv4Range.high;
       subnet.documentSelfLink = allocateSubnetPatch.subnetId;
 
       Operation postOperation = Operation.createPost(this, DhcpSubnetService.FACTORY_LINK)
           .setBody(subnet);
       ServiceUtils.doServiceOperation(this, postOperation);
-
-      patch.complete();
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       patch.fail(t);
@@ -195,7 +241,7 @@ public class SubnetAllocatorService extends StatefulService {
       InitializationUtils.initialize(startState);
       ValidationUtils.validateState(startState);
 
-      seedWithOneAvailableSubnet(startState.rootCidr);
+      seedWithOneAvailableSubnet(startState.rootCidr, startState);
 
       createOperation.complete();
     } catch (IllegalStateException t) {
@@ -230,6 +276,9 @@ public class SubnetAllocatorService extends StatefulService {
     @Immutable
     public String rootCidr;
 
+    //    public Collection<AbstractMap.SimpleEntry<Long, Long>> freeList;
+    public Collection<IpV4Range> freeList;
+
     @Override
     public String toString() {
       return com.google.common.base.Objects.toStringHelper(this)
@@ -239,7 +288,7 @@ public class SubnetAllocatorService extends StatefulService {
     }
   }
 
-  private void seedWithOneAvailableSubnet(String rootCidr)
+  private void seedWithOneAvailableSubnet(String rootCidr, State startState)
       throws InterruptedException, TimeoutException, BadRequestException,
       DocumentNotFoundException, UnknownHostException {
 
@@ -261,12 +310,33 @@ public class SubnetAllocatorService extends StatefulService {
       throw new IllegalArgumentException("highIpAddress not an IPv4 address");
     }
 
-    DhcpSubnetService.State subnet = new DhcpSubnetService.State();
-    subnet.lowIp = lowIp;
-    subnet.highIp = highIp;
+    IpV4Range ipV4Range = new IpV4Range(lowIp, highIp);
 
-    Operation postOperation = Operation.createPost(this, DhcpSubnetService.FACTORY_LINK)
-        .setBody(subnet);
-    ServiceUtils.doServiceOperation(this, postOperation);
+    if (startState.freeList == null) {
+      startState.freeList = new ArrayList<>();
+    }
+
+    startState.freeList.add(ipV4Range);
+  }
+
+  private static int safeLongToInt(long l) {
+    if (l < Integer.MIN_VALUE || l > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException(l
+          + " cannot be cast to int without changing its value.");
+    }
+    return (int) l;
+  }
+
+  /**
+   * POJO to store a range of IPv4 addresses.
+   */
+  public static class IpV4Range {
+    public IpV4Range(Long low, Long high) {
+      this.low = low;
+      this.high = high;
+    }
+
+    public Long low;
+    public Long high;
   }
 }

@@ -86,10 +86,13 @@ public class IpHelper {
     Preconditions.checkState((inverseSubnetMask == 0) || ((inverseSubnetMask & (inverseSubnetMask + 1)) == 0),
         String.format(
             "inverseSubnetMask should be 0 or " +
-                "inverseSubnetMask + 1 should be a power of 2, inverseSubnetMask=%s, ipLow=%s, ipHigh=%s",
+                "inverseSubnetMask + 1 should be a power of 2, " +
+                "ipLow=%s, ipHigh=%s, inverseSubnetMask=%s[%s], subnetMask=%s",
             Long.toBinaryString(ipLow),
             Long.toBinaryString(ipHigh),
-            Long.toBinaryString(inverseSubnetMask)));
+            inverseSubnetMask,
+            Long.toBinaryString(inverseSubnetMask),
+            Long.toBinaryString(subnetMask)));
 
     Preconditions.checkState((ipLow & subnetMask) == ipLow,
         String.format("ipLow & subnetMask should equal ipLow, ipLow = %s, ipHigh= %s, subnetMask= %s",
