@@ -114,6 +114,26 @@ public class DhcpSubnetService extends StatefulService {
 
   public void handleAllocateIpToMacPatch(Operation patch) {
     ServiceUtils.logInfo(this, "Patching service %s to allocate IP to MAC", getSelfLink());
+
+    // TODO: this is fake logic to make AssignFloatingIpToVmWorkflowService happy.
+    IpOperationPatch ipOperation = patch.getBody(IpOperationPatch.class);
+    IpLeaseService.State ipLease = new IpLeaseService.State();
+    ipLease.macAddress = ipOperation.macAddress;
+    ipLease.ip = "1.2.3.4";
+
+    try {
+      Operation postOperation = Operation
+          .createPost(this, IpLeaseService.FACTORY_LINK)
+          .setBody(ipLease);
+      Operation resultOperation = ServiceUtils.doServiceOperation(this, postOperation);
+      IpLeaseService.State ipLeaseResult = resultOperation.getBody(IpLeaseService.State.class);
+      ipOperation.ipLeaseId = ServiceUtils.getIDFromDocumentSelfLink(ipLeaseResult.documentSelfLink);
+
+      patch.complete();
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patch.fail(t);
+    }
   }
 
   public void handleReleaseIpForMacPatch(Operation patch) {
@@ -244,6 +264,7 @@ public class DhcpSubnetService extends StatefulService {
   public static class IpOperationPatch extends ServiceDocument {
     public final Kind kind;
     public String macAddress;
+    public String ipLeaseId;
 
     private IpOperationPatch() {
       kind = null;
