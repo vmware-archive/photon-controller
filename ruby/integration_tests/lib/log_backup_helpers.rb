@@ -67,19 +67,31 @@ module EsxCloud
        def verify_logs
          service_log_folder = File.join(ENV["WORKSPACE"], "devbox-photon", "log")
 
-         sensitive_info_regex = /username|password/i
-         white_list_regex = ["password must be null", "password may not be null", "getServiceProviderUsername",
+         sensitive_phrases_list = ["username", "password"]
+         if ENV["ESX_PASSWORD"]
+           sensitive_phrases_list << ENV["ESX_PASSWORD"]
+         end
+
+         if ENV["PHOTON_PASSWORD_ADMIN"]
+           sensitive_phrases_list << ENV["PHOTON_PASSWORD_ADMIN"]
+         end
+
+         if ENV["LW_PASSWORD"]
+           sensitive_phrases_list << ENV["LW_PASSWORD"]
+         end
+
+         sensitive_info_regex = /#{sensitive_phrases_list.map{ |w| Regexp.escape(w) }.join('|')}/i
+
+         white_list = ["password must be null", "password may not be null", "getServiceProviderUsername",
          "Password policy successfully set"]
-         regex = /#{white_list_regex.map{ |w| Regexp.escape(w) }.join('|')}/i
+         white_list_regex = /#{white_list.map{ |w| Regexp.escape(w) }.join('|')}/i
 
          matches = Array.new
          Dir.glob("#{service_log_folder}/**/*.log") do |log_file|
            # Checks each line in the file if it matches sensitive_info_regex, but not part of white_list_regex
            File.foreach(log_file) do |line|
-             if line =~ sensitive_info_regex
-               if line !~ regex
+             if line =~ sensitive_info_regex && line !~ white_list_regex
                  matches << line
-               end
              end
 
              if !matches.empty?
@@ -113,5 +125,5 @@ module EsxCloud
        end
 
      end
-  end
+   end
 end
