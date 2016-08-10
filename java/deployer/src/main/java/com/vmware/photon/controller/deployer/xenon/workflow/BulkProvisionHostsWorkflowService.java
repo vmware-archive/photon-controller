@@ -385,6 +385,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       startState.parentTaskServiceLink = aggregatorServiceLink;
       startState.deploymentServiceLink = currentState.deploymentServiceLink;
       startState.hostServiceLink = hostServiceLink;
+      startState.createCert = currentState.createCert;
       return Operation.createPost(this, ProvisionHostTaskFactoryService.SELF_LINK).setBody(startState);
     });
 
