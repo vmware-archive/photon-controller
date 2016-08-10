@@ -16,6 +16,8 @@ package com.vmware.photon.controller.apibackend.workflows;
 import com.vmware.photon.controller.apibackend.exceptions.AssignFloatingIpToVmException;
 import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIpToVmWorkflowDocument;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
@@ -139,8 +141,11 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
   private void processPatch(AssignFloatingIpToVmWorkflowDocument state) {
     try {
       switch (state.taskState.subStage) {
-        case GET_VM_PRIVATE_IP:
+        case GET_VM_PRIVATE_IP_AND_MAC:
           getVmPrivateIp(state);
+          break;
+        case ALLOCATE_VM_FLOATING_IP:
+          allocateVmFloatingIp(state);
           break;
         case CREATE_NAT_RULE:
           createNatRule(state);
@@ -167,21 +172,77 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
                   "VM " + state.vmId + " does not belong to network " + state.networkId);
             }
 
-            if (StringUtils.isBlank(vmState.networkInfo.get(state.networkId).privateIpAddress)) {
+            VmService.NetworkInfo vmNetworkInfo = vmState.networkInfo.get(state.networkId);
+            if (StringUtils.isBlank(vmNetworkInfo.privateIpAddress)) {
               throw new AssignFloatingIpToVmException(
                   "VM " + state.vmId + " does not have private IP on network " + state.networkId);
             }
 
+            if (StringUtils.isBlank(vmNetworkInfo.macAddress)) {
+              throw new AssignFloatingIpToVmException(
+                  "VM " + state.vmId + " does not have a MAC address on network " + state.networkId);
+            }
+
             AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
-                AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.CREATE_NAT_RULE);
-            patchState.vmPrivateIpAddress =
-                vmState.networkInfo.get(state.networkId).privateIpAddress;
+                AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.ALLOCATE_VM_FLOATING_IP);
+            patchState.vmPrivateIpAddress = vmNetworkInfo.privateIpAddress;
+            patchState.vmMacAddress = vmNetworkInfo.macAddress;
 
             progress(state, patchState);
           } catch (Throwable t) {
             fail(state, t);
           }
+        })
+        .sendWith(this);
+  }
+
+  private void allocateVmFloatingIp(AssignFloatingIpToVmWorkflowDocument state) throws Throwable {
+    DhcpSubnetService.IpOperationPatch allocateIp = new DhcpSubnetService.IpOperationPatch(
+        DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+        state.vmMacAddress);
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPatch(DhcpSubnetService.SINGLETON_LINK)
+        .setBody(allocateIp)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            DhcpSubnetService.IpOperationPatch allocateIpResult = op.getBody(DhcpSubnetService.IpOperationPatch.class);
+            allocateVmFloatingIp(state, allocateIpResult.ipLeaseId);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void allocateVmFloatingIp(AssignFloatingIpToVmWorkflowDocument state, String ipLeaseId) throws Throwable {
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createGet(IpLeaseService.FACTORY_LINK + "/" + ipLeaseId)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            IpLeaseService.State ipLeaseState = op.getBody(IpLeaseService.State.class);
+
+            AssignFloatingIpToVmWorkflowDocument patchState =buildPatch(
+                TaskState.TaskStage.STARTED,
+                AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.CREATE_NAT_RULE);
+            patchState.vmFloatingIpAddress = ipLeaseState.ip;
+
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+
         })
         .sendWith(this);
   }
