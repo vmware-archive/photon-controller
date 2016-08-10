@@ -273,6 +273,11 @@ public class HostService extends StatefulService {
               }
 
               State hostState = op.getBody(State.class);
+              // Do nothing if the hoststate is in maintenance
+              if (hostState.state.equals(HostState.MAINTENANCE)) {
+                maintenance.complete();
+                return;
+              }
               // Retrieve host metadata if the interval has elapsed. Otherwise, just ping the
               // host to perform a health-check.
               if (System.currentTimeMillis() - lastHostMetadataUpdateTime >= UPDATE_HOST_METADATA_INTERVAL) {
