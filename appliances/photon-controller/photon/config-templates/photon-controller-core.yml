@@ -1,0 +1,125 @@
+xenon:
+  bindAddress: "0.0.0.0"
+  port: 19000
+  registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
+  storagePath: "{{{CLOUD-STORE_XENON_STORAGE_PATH}}}"
+  peerNodes:
+{{#PHOTON_CONTROLLER_PEER_NODES}}
+  - http://{{peerAddress}}:{{peerPort}}
+{{/PHOTON_CONTROLLER_PEER_NODES}}
+{{^PHOTON_CONTROLLER_PEER_NODES}}
+  - http://{{{REGISTRATION_ADDRESS}}}:19000
+{{/PHOTON_CONTROLLER_PEER_NODES}}
+
+deployer:
+  deployer:
+    apifeEndpoint: "http://{{{APIFE_IP}}}:{{{APIFE_PORT}}}"
+    configDirectory: "/etc/esxcloud-deployer/configurations/"
+    enableSyslog: "{{{ENABLE_SYSLOG}}}"
+    maxMemoryGb: {{{MAX_MEMORY_GB}}}
+    maxVmCount: {{{MAX_VM_COUNT}}}
+    projectName: "{{{PROJECT_NAME}}}"
+    resourceTicketName: "{{{RESOURCE_TICKET_NAME}}}"
+    scriptDirectory: "{{{PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY}}}/scripts"
+    scriptLogDirectory: "{{{LOG_DIRECTORY}}}/script_logs"
+    syslogEndpoint: "{{{SYSLOG_ENDPOINT}}}"
+    tenantName: "{{{TENANT_NAME}}}"
+    vibDirectory: "{{{VIB_DIRECTORY}}}"
+    sharedSecret: "{{{SHARED_SECRET}}}"
+    enableAuth: {{{ENABLE_AUTH}}}
+    vibUninstallOrder:
+    - photon-controller-agent
+    - envoy
+
+photon_controller_logging:
+  file:
+    enabled: true
+    currentLogFilename: {{{LOG_DIRECTORY}}}/photon-controller.log
+    archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/photon-controller-%d.log.gz
+    logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
+  syslog:
+    enabled: {{{ENABLE_SYSLOG}}}
+{{#ENABLE_SYSLOG}}
+    host: "{{{SYSLOG_ENDPOINT}}}"
+    logFormat: "%-5p [%d{ISO8601}] [photon-controller] [%property{instance}]%X{request}%X{task} %c: %m\n%ex"
+    facility: LOCAL0
+{{/ENABLE_SYSLOG}}
+
+#
+# below section is for apife_configuration
+#
+apife:
+  type: simple
+  minThreads: 8
+  maxThreads: 512
+  applicationContextPath: /
+  registerDefaultExceptionMappers: false
+  connector:
+{{^ENABLE_AUTH}}
+    type: http
+    port: 9000
+    bindHost: "0.0.0.0"
+{{/ENABLE_AUTH}}
+{{#ENABLE_AUTH}}
+    type: https
+    port: 9000
+    bindHost: "0.0.0.0"
+    keyStorePath: /keystore.jks
+    keyStorePassword: {{{LIGHTWAVE_PASSWORD}}}
+    validateCerts: false
+    supportedProtocols: [TLSv1.1, TLSv1.2]
+    excludedProtocols: [TLSv1, SSLv2Hello, SSLv3]
+{{/ENABLE_AUTH}}
+
+use_virtual_network: {{{USE_VIRTUAL_NETWORK}}}
+
+# to add console logging add '- type: console' below
+logging:
+  appenders:
+    - type: file
+      currentLogFilename: {{{LOG_DIRECTORY}}}/photon-controller.log
+      archive: true
+      archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/photon-controller-%d.log.gz
+      archivedFileCount: 5
+      logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
+{{#ENABLE_SYSLOG}}
+    - type: syslog
+      host: "{{{SYSLOG_ENDPOINT}}}"
+      logFormat: "%-5p [%d{ISO8601}] [photon-controller] %X{request}%X{task} %c: %m\n%ex"
+      facility: LOCAL0
+{{/ENABLE_SYSLOG}}
+
+{{#USE_ESX_STORE}}
+image:
+  use_esx_store: true
+{{#ESX_HOST}}
+  endpoint: https://{{{ESX_HOST}}}/sdk
+  datastore: {{{DATASTORE}}}
+{{/ESX_HOST}}
+{{/USE_ESX_STORE}}
+{{^USE_ESX_STORE}}
+image:
+  use_esx_store: false
+  datastore: {{{DATASTORE}}}
+{{/USE_ESX_STORE}}
+
+{{#ENABLE_INSTALLER_STATUS_FILTER}}
+status:
+  components:
+    - photon-controller
+{{/ENABLE_INSTALLER_STATUS_FILTER}}
+
+auth:
+  enable_auth: {{{ENABLE_AUTH}}}
+{{#ENABLE_AUTH}}
+  sharedSecret: {{{SHARED_SECRET}}}
+{{#AUTH_SERVER_ADDRESS}}
+  auth_server_address: {{{AUTH_SERVER_ADDRESS}}}
+{{/AUTH_SERVER_ADDRESS}}
+{{#AUTH_SERVER_PORT}}
+  auth_server_port: {{{AUTH_SERVER_PORT}}}
+{{/AUTH_SERVER_PORT}}
+{{#AUTH_SERVER_TENANT}}
+  tenant: {{{AUTH_SERVER_TENANT}}}
+{{/AUTH_SERVER_TENANT}}
+{{/ENABLE_AUTH}}
