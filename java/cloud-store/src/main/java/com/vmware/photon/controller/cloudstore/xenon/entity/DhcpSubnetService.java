@@ -357,6 +357,29 @@ public class DhcpSubnetService extends StatefulService {
      */
     public boolean doGarbageCollection;
 
+    /**
+     * This version number represents the current version of the subnet based on changes in IP leases.
+     * It will be patched for increment on each IP lease change.
+     */
+    @DefaultLong(0L)
+    @NotNull
+    public Long version;
+
+    /**
+     * This version number represents the subnet version selected for pushing changes to DHCP agent.
+     */
+    @DefaultLong(0L)
+    @NotNull
+    public Long versionStaged;
+
+    /**
+     * This version number represents the subnet version for which changes in IP leases are pushed
+     * successfully to DHCP agent.
+     */
+    @DefaultLong(0L)
+    @NotNull
+    public Long versionPushed;
+
     @Override
     public String toString() {
       return com.google.common.base.Objects.toStringHelper(this)

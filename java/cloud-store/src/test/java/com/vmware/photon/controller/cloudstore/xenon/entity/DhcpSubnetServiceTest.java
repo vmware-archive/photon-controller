@@ -213,6 +213,9 @@ public class DhcpSubnetServiceTest {
     DhcpSubnetService.State startState = new DhcpSubnetService.State();
     startState.lowIp = lowIp;
     startState.highIp = highIp;
+    startState.version = 0L;
+    startState.versionStaged = 0L;
+    startState.versionPushed = 0L;
 
     return startState;
   }
