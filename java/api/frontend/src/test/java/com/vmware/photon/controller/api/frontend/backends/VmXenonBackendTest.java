@@ -1467,6 +1467,7 @@ public class VmXenonBackendTest {
       List<String> virtualNetworks = createVirtualNetworksInCloudStore();
       createDeploymentInCloudStore();
       createSubnetAllocatorInCloudStore();
+      createDhcpSubnetsInCloudStore(virtualNetworks);
 
       commonDataSetup(
           tenantXenonBackend,
@@ -1567,6 +1568,23 @@ public class VmXenonBackendTest {
       Operation operation = Operation.createPost(UriUtils.buildUri(host, SubnetAllocatorService.FACTORY_LINK))
           .setBody(startState);
       host.sendRequestAndWait(operation);
+    }
+
+    private void createDhcpSubnetsInCloudStore(List<String> virtualNetworks) throws Throwable {
+
+      for (String subnetId : virtualNetworks) {
+        SubnetAllocatorService.AllocateSubnet allocateSubnetPatch =
+            new SubnetAllocatorService.AllocateSubnet(
+                subnetId, 16L, 4L);
+
+        Operation patchOperation = Operation.createPatch(
+            UriUtils.buildUri(host, SubnetAllocatorService.SINGLETON_LINK))
+            .setBody(allocateSubnetPatch);
+
+        Operation completedOperation = host.sendRequestAndWait(patchOperation);
+
+        assertThat(completedOperation.getStatusCode(), CoreMatchers.is(Operation.STATUS_CODE_OK));
+      }
     }
   }
 
