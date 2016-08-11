@@ -42,6 +42,18 @@ public class IpHelperTest {
     assertThat(out.getHostAddress(), is(equalTo(expectedIpAddress)));
   }
 
+  @Test(dataProvider = "IpAddresses")
+  public void testLongToIpString(String expectedIpAddress, long value) {
+    String out = IpHelper.longToIpString(value);
+    assertThat(out, is(equalTo(expectedIpAddress)));
+  }
+
+  @Test(dataProvider = "IpAddresses")
+  public void testIpStringToLong(String ipAddress, long expectedLongValue) {
+    long ip = IpHelper.ipStringToLong(ipAddress);
+    assertThat(ip, is(expectedLongValue));
+  }
+
   @DataProvider(name = "IpAddresses")
   public Object[][] getIpAddresses() {
     return new Object[][]{
