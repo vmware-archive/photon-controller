@@ -179,14 +179,14 @@ public class DhcpSubnetServiceTest {
     }
 
     @Test
-    public void testExtractSubnet() throws Throwable {
-      DhcpSubnetService.SubnetOperationPatch subnetOperationPatch =
-          new DhcpSubnetService.SubnetOperationPatch(
-              DhcpSubnetService.SubnetOperationPatch.Kind.ExtractSubnetFromBottom,
-              16);
+    public void testAllocateIpToMac() throws Throwable {
+      DhcpSubnetService.IpOperationPatch ipOperationPatch =
+          new DhcpSubnetService.IpOperationPatch(
+              DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+              macAddress);
       Operation patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
-          .setBody(subnetOperationPatch)
+          .setBody(ipOperationPatch)
           .setReferer("test-host")
           .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
       host.sendRequestAndWait(patchOperation);
@@ -194,45 +194,24 @@ public class DhcpSubnetServiceTest {
       DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
           startState.documentSelfLink);
 
-      assertThat(currentState.lowIp, is(startState.lowIp + 16));
-      assertThat(currentState.size, is(currentState.highIp - currentState.lowIp));
-      assertThat(currentState.highIp, is(startState.highIp));
-    }
-
-    @Test
-    public void testAllocateIpToMac() throws Throwable {
-      DhcpSubnetService.IpOperationPatch ipOperationPatch =
-              new DhcpSubnetService.IpOperationPatch(
-                      DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
-                      macAddress);
-      Operation patchOperation = new Operation()
-              .setAction(Service.Action.PATCH)
-              .setBody(ipOperationPatch)
-              .setReferer("test-host")
-              .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
-      host.sendRequestAndWait(patchOperation);
-
-      DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
-              startState.documentSelfLink);
-
       assertThat(currentState.version, is(startState.version + 1));
     }
 
     @Test
     public void testReleaseIpToMac() throws Throwable {
       DhcpSubnetService.IpOperationPatch ipOperationPatch =
-              new DhcpSubnetService.IpOperationPatch(
-                      DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac,
-                      macAddress);
+          new DhcpSubnetService.IpOperationPatch(
+              DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac,
+              macAddress);
       Operation patchOperation = new Operation()
-              .setAction(Service.Action.PATCH)
-              .setBody(ipOperationPatch)
-              .setReferer("test-host")
-              .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+          .setAction(Service.Action.PATCH)
+          .setBody(ipOperationPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
       host.sendRequestAndWait(patchOperation);
 
       DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
-              startState.documentSelfLink);
+          startState.documentSelfLink);
 
       assertThat(currentState.version, is(startState.version + 1));
     }
