@@ -32,7 +32,9 @@ import com.vmware.photon.controller.api.frontend.entities.base.TagEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidAttachDisksException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidImageStateException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmStateException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ProjectNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.VmNotFoundException;
@@ -72,6 +74,8 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
@@ -291,6 +295,30 @@ public class VmXenonBackendTest {
 
     Operation post = Operation.createPost(host, HostServiceFactory.SELF_LINK).setBody(hostDoc);
     host.sendRequestAndWait(post);
+  }
+
+  private static List<String> createVirtualNetworksInCloudStore() throws Throwable {
+    List<String> networkIds = new ArrayList<>();
+
+    VirtualNetworkService.State startState = new VirtualNetworkService.State();
+    startState.name = "virtual_network_name";
+    startState.state = SubnetState.READY;
+    startState.routingType = RoutingType.ROUTED;
+    startState.parentId = "parentId";
+    startState.parentKind = "parentKind";
+    startState.tier0RouterId = "logical_tier0_router_id";
+    startState.logicalRouterId = "logical_tier1_router_id";
+    startState.logicalSwitchId = "logical_switch_id";
+    startState.size = 16;
+
+    Operation operation = Operation.createPost(UriUtils.buildUri(host, VirtualNetworkService.FACTORY_LINK))
+        .setBody(startState);
+    Operation result = host.sendRequestAndWait(operation);
+
+    VirtualNetworkService.State createdState = result.getBody(VirtualNetworkService.State.class);
+    networkIds.add(ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink));
+
+    return networkIds;
   }
 
   /**
@@ -697,6 +725,23 @@ public class VmXenonBackendTest {
       assertThat(vmCreateSpec.getSubnets().equals(vm.getNetworks()), is(true));
     }
 
+    @Test(expectedExceptions = NetworkNotFoundException.class,
+          expectedExceptionsMessageRegExp = "Network missing-network-id not found")
+    public void testFailCreateWithInvalidNetworkId() throws Throwable {
+      vmCreateSpec.getSubnets().add("missing-network-id");
+      vmXenonBackend.prepareVmCreate(projectId, vmCreateSpec);
+    }
+
+    @Test(expectedExceptions = InvalidNetworkStateException.class,
+          expectedExceptionsMessageRegExp = "Network .* is in PENDING_DELETE state")
+    public void testFailCreateWithNetworkInPendingDelete() throws Throwable {
+      NetworkService.State patch = new NetworkService.State();
+      patch.state = SubnetState.PENDING_DELETE;
+      apiFeXenonRestClient.patch(NetworkServiceFactory.SELF_LINK + "/" + vmCreateSpec.getSubnets().get(0), patch);
+
+      vmXenonBackend.prepareVmCreate(projectId, vmCreateSpec);
+    }
+
     private double getUsage(String key) throws Throwable {
       ProjectEntity projectEntity = projectXenonBackend.findById(projectId);
       String resourceTicketId = projectEntity.getResourceTicketId();
@@ -733,9 +778,6 @@ public class VmXenonBackendTest {
     private FlavorXenonBackend flavorXenonBackend;
 
     @Inject
-    private NetworkXenonBackend networkXenonBackend;
-
-    @Inject
     private FlavorLoader flavorLoader;
 
     @BeforeMethod
@@ -749,7 +791,7 @@ public class VmXenonBackendTest {
           flavorXenonBackend,
           flavorLoader);
 
-      commonVmAndImageSetup(vmXenonBackend, networkXenonBackend);
+      commonVmAndImageSetup(vmXenonBackend, createVirtualNetworksInCloudStore());
     }
 
     @AfterMethod
@@ -931,9 +973,6 @@ public class VmXenonBackendTest {
     private EntityLockXenonBackend entityLockXenonBackend;
 
     @Inject
-    private NetworkXenonBackend networkXenonBackend;
-
-    @Inject
     private FlavorLoader flavorLoader;
 
     private String vmId;
@@ -955,7 +994,7 @@ public class VmXenonBackendTest {
           flavorXenonBackend,
           flavorLoader);
 
-      commonVmAndImageSetup(vmXenonBackend, networkXenonBackend);
+      commonVmAndImageSetup(vmXenonBackend, createVirtualNetworksInCloudStore());
 
       vmId = createdVmTaskEntity.getEntityId();
       entityLockXenonBackend.clearTaskLocks(createdVmTaskEntity);
@@ -1403,6 +1442,23 @@ public class VmXenonBackendTest {
       assertThat(getUsage("vm.cost"), is(0.0));
     }
 
+    @Test
+    public void testTombstoneVmWithWrongNetworkId() throws Throwable {
+      // delete the vm created in setup
+      VmService.State patch = new VmService.State();
+      patch.networks = new ArrayList<>();
+      patch.networks.add("missing-network");
+      apiFeXenonRestClient.patch(VmServiceFactory.SELF_LINK + "/" + vmId, patch);
+
+      // delete the entity
+      vmXenonBackend.tombstone(vm);
+
+      TombstoneEntity tombstone = tombstoneXenonBackend.getByEntityId(vm.getId());
+      assertThat(tombstone.getEntityId(), is(vm.getId()));
+      assertThat(tombstone.getEntityKind(), is(Vm.KIND));
+      assertThat(getUsage("vm.cost"), is(0.0));
+    }
+
     @Test(enabled = false)
     public void testTombstoneDeletesNetworksInPendingDelete() throws Throwable {
       TombstoneEntity tombstone = tombstoneXenonBackend.getByEntityId(vm.getId());
@@ -1431,6 +1487,10 @@ public class VmXenonBackendTest {
       String resourceTicketId = projectEntity.getResourceTicketId();
       ResourceTicketEntity resourceTicketEntity = resourceTicketXenonBackend.findById(resourceTicketId);
       return resourceTicketEntity.getUsage(key).getValue();
+    }
+
+    private void patchNetworksList(String vmId) throws Throwable {
+
     }
   }
 
@@ -1472,9 +1532,6 @@ public class VmXenonBackendTest {
 
     @Inject
     private TombstoneXenonBackend tombstoneXenonBackend;
-
-    @Inject
-    private NetworkXenonBackend networkXenonBackend;
 
     private String vmId;
 
@@ -1555,30 +1612,6 @@ public class VmXenonBackendTest {
       Operation operation = Operation.createPost(UriUtils.buildUri(host, DeploymentServiceFactory.SELF_LINK))
           .setBody(startState);
       host.sendRequestAndWait(operation);
-    }
-
-    private List<String> createVirtualNetworksInCloudStore() throws Throwable {
-      List<String> networkIds = new ArrayList<>();
-
-      VirtualNetworkService.State startState = new VirtualNetworkService.State();
-      startState.name = "virtual_network_name";
-      startState.state = SubnetState.READY;
-      startState.routingType = RoutingType.ROUTED;
-      startState.parentId = "parentId";
-      startState.parentKind = "parentKind";
-      startState.tier0RouterId = "logical_tier0_router_id";
-      startState.logicalRouterId = "logical_tier1_router_id";
-      startState.logicalSwitchId = "logical_switch_id";
-      startState.size = 16;
-
-      Operation operation = Operation.createPost(UriUtils.buildUri(host, VirtualNetworkService.FACTORY_LINK))
-          .setBody(startState);
-      Operation result = host.sendRequestAndWait(operation);
-
-      VirtualNetworkService.State createdState = result.getBody(VirtualNetworkService.State.class);
-      networkIds.add(ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink));
-
-      return networkIds;
     }
 
     private void createSubnetAllocatorInCloudStore() throws Throwable {

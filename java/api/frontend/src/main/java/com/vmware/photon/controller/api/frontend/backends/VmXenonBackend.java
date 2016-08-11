@@ -38,10 +38,12 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalExc
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidAttachDisksException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidFlavorStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidImageStateException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmDisksSpecException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.IsoAlreadyAttachedException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.MoreThanOneIsoAttachedException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PersistentDiskAttachedException;
@@ -70,6 +72,7 @@ import com.vmware.photon.controller.api.model.VmOperation;
 import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -331,7 +334,12 @@ public class VmXenonBackend implements VmBackend {
     if (!useVirtualNetwork) {
       if (null != vm.getNetworks()) {
         for (String network : vm.getNetworks()) {
-          networkList.add(networkBackend.findById(network));
+          try {
+            networkList.add(networkBackend.findById(network));
+          } catch (NetworkNotFoundException ex) {
+            // swallow the network not found exception since if the network id is wrong
+            // we don't need to do anything for the network
+          }
         }
       }
     }
@@ -784,9 +792,22 @@ public class VmXenonBackend implements VmBackend {
     }
 
     vm.networks = spec.getSubnets();
+    if (null != vm.networks) {
+      for (String networkId : vm.networks) {
+        SubnetState subnetState;
+        if (useVirtualNetwork) {
+          subnetState = getVirtualNetworkState(networkId);
+        } else {
+          subnetState = networkBackend.findById(networkId).getState();
+        }
+        if (!SubnetState.READY.equals(subnetState)) {
+          throw new InvalidNetworkStateException(
+              String.format("Network %s is in %s state", networkId, subnetState));
+        }
+      }
+    }
 
     ImageEntity image = imageBackend.findById(spec.getSourceImageId());
-
     if (!ImageState.READY.equals(image.getState())) {
       throw new InvalidImageStateException(
           String.format("Image %s is in %s state", image.getId(), image.getState()));
@@ -1193,5 +1214,15 @@ public class VmXenonBackend implements VmBackend {
     com.vmware.xenon.common.Operation result = xenonClient.query(querySpec, true);
     ServiceDocumentQueryResult queryResult = result.getBody(QueryTask.class).results;
     return queryResult.documentCount.intValue();
+  }
+
+  private SubnetState getVirtualNetworkState(String networkId) throws NetworkNotFoundException {
+    String documentLink = VirtualNetworkService.FACTORY_LINK + "/" + networkId;
+
+    try {
+      return xenonClient.get(documentLink).getBody(VirtualNetworkService.State.class).state;
+    } catch (DocumentNotFoundException ex) {
+      throw new NetworkNotFoundException(networkId);
+    }
   }
 }
