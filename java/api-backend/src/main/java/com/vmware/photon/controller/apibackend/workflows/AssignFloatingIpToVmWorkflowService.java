@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apibackend.workflows;
 
 import com.vmware.photon.controller.apibackend.exceptions.AssignFloatingIpToVmException;
 import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIpToVmWorkflowDocument;
+import com.vmware.photon.controller.apibackend.utils.CloudStoreUtils;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
@@ -73,7 +74,19 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
         return;
       }
 
-      getVirtualNetwork(state, createOperation);
+      CloudStoreUtils.getCloudStoreEntityAndProcess(
+          this,
+          VirtualNetworkService.FACTORY_LINK + "/" + state.networkId,
+          VirtualNetworkService.State.class,
+          virtualNetworkState -> {
+            state.taskServiceEntity = virtualNetworkState;
+            create(state, createOperation);
+          },
+          throwable -> {
+            createOperation.fail(throwable);
+            fail(state, throwable);
+          }
+      );
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(createOperation)) {
@@ -142,7 +155,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
     try {
       switch (state.taskState.subStage) {
         case GET_VM_PRIVATE_IP_AND_MAC:
-          getVmPrivateIp(state);
+          getVmPrivateIpAndMac(state);
           break;
         case ALLOCATE_VM_FLOATING_IP:
           allocateVmFloatingIp(state);
@@ -150,23 +163,25 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
         case CREATE_NAT_RULE:
           createNatRule(state);
           break;
+        case UPDATE_VM:
+          updateVm(state);
+          break;
+        case UPDATE_VIRTUAL_NETWORK:
+          updateVirtualNetwork(state);
+          break;
       }
     } catch (Throwable t) {
       fail(state, t);
     }
   }
 
-  private void getVmPrivateIp(AssignFloatingIpToVmWorkflowDocument state) throws Throwable {
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createGet(VmServiceFactory.SELF_LINK + "/" + state.vmId)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            fail(state, ex);
-            return;
-          }
-
+  private void getVmPrivateIpAndMac(AssignFloatingIpToVmWorkflowDocument state) {
+    CloudStoreUtils.getCloudStoreEntityAndProcess(
+        this,
+        VmServiceFactory.SELF_LINK + "/" + state.vmId,
+        VmService.State.class,
+        vmState -> {
           try {
-            VmService.State vmState = op.getBody(VmService.State.class);
             if (!vmState.networkInfo.containsKey(state.networkId)) {
               throw new AssignFloatingIpToVmException(
                   "VM " + state.vmId + " does not belong to network " + state.networkId);
@@ -183,6 +198,11 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
                   "VM " + state.vmId + " does not have a MAC address on network " + state.networkId);
             }
 
+            if (!StringUtils.isBlank(vmNetworkInfo.floatingIpAddress)) {
+              throw new AssignFloatingIpToVmException(
+                  "VM " + state.vmId + " already has a floating IP assigned on network " + state.networkId);
+            }
+
             AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
                 AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.ALLOCATE_VM_FLOATING_IP);
@@ -193,46 +213,39 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
           } catch (Throwable t) {
             fail(state, t);
           }
-        })
-        .sendWith(this);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
   }
 
-  private void allocateVmFloatingIp(AssignFloatingIpToVmWorkflowDocument state) throws Throwable {
+  private void allocateVmFloatingIp(AssignFloatingIpToVmWorkflowDocument state) {
     DhcpSubnetService.IpOperationPatch allocateIp = new DhcpSubnetService.IpOperationPatch(
         DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
         state.vmMacAddress);
 
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createPatch(DhcpSubnetService.SINGLETON_LINK)
-        .setBody(allocateIp)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            fail(state, ex);
-            return;
-          }
-
-          try {
-            DhcpSubnetService.IpOperationPatch allocateIpResult = op.getBody(DhcpSubnetService.IpOperationPatch.class);
-            allocateVmFloatingIp(state, allocateIpResult.ipLeaseId);
-          } catch (Throwable t) {
-            fail(state, t);
-          }
-        })
-        .sendWith(this);
+    CloudStoreUtils.patchCloudStoreEntityAndProcess(
+        this,
+        DhcpSubnetService.SINGLETON_LINK,
+        allocateIp,
+        DhcpSubnetService.IpOperationPatch.class,
+        allocateIpResult -> {
+          allocateVmFloatingIp(state, allocateIpResult.ipLeaseId);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
   }
 
-  private void allocateVmFloatingIp(AssignFloatingIpToVmWorkflowDocument state, String ipLeaseId) throws Throwable {
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createGet(IpLeaseService.FACTORY_LINK + "/" + ipLeaseId)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            fail(state, ex);
-            return;
-          }
-
+  private void allocateVmFloatingIp(AssignFloatingIpToVmWorkflowDocument state, String ipLeaseId) {
+    CloudStoreUtils.getCloudStoreEntityAndProcess(
+        this,
+        IpLeaseService.FACTORY_LINK + "/" + ipLeaseId,
+        IpLeaseService.State.class,
+        ipLeaseState -> {
           try {
-            IpLeaseService.State ipLeaseState = op.getBody(IpLeaseService.State.class);
-
             AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
                 AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.CREATE_NAT_RULE);
@@ -242,9 +255,10 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
           } catch (Throwable t) {
             fail(state, t);
           }
-
-        })
-        .sendWith(this);
+        },
+        throwable -> {
+          fail(state, throwable);
+        });
   }
 
   private void createNatRule(AssignFloatingIpToVmWorkflowDocument state) throws Throwable {
@@ -266,12 +280,17 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
           @Override
           public void onSuccess(NatRule result) {
             try {
-              if (state.taskServiceEntity.vmIdToNatRuleIdMap == null) {
-                state.taskServiceEntity.vmIdToNatRuleIdMap = new HashMap<>();
+              AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
+                  TaskState.TaskStage.STARTED,
+                  AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.UPDATE_VM);
+              patchState.taskServiceEntity = state.taskServiceEntity;
+              if (patchState.taskServiceEntity.vmIdToNatRuleIdMap == null) {
+                patchState.taskServiceEntity.vmIdToNatRuleIdMap = new HashMap<>();
               }
 
-              state.taskServiceEntity.vmIdToNatRuleIdMap.put(state.vmId, result.getId());
-              updateVirtualNetwork(state);
+              patchState.taskServiceEntity.vmIdToNatRuleIdMap.put(state.vmId, result.getId());
+
+              progress(state, patchState);
             } catch (Throwable t) {
               fail(state, t);
             }
@@ -284,42 +303,51 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
         });
   }
 
-  /**
-   * Gets a VirtualNetworkService.State from {@link com.vmware.photon.controller.cloudstore.xenon.entity
-   * .VirtualNetworkService.State} entity in cloud-store.
-   */
-  private void getVirtualNetwork(AssignFloatingIpToVmWorkflowDocument state, Operation operation) {
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createGet(VirtualNetworkService.FACTORY_LINK + "/" + state.networkId)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            operation.fail(ex);
-            fail(state, ex);
-            return;
-          }
+  private void updateVm(AssignFloatingIpToVmWorkflowDocument state) {
+    CloudStoreUtils.getCloudStoreEntityAndProcess(
+        this,
+        VmServiceFactory.SELF_LINK + "/" + state.vmId,
+        VmService.State.class,
+        vmState -> {
+          VmService.NetworkInfo vmNetworkInfo = vmState.networkInfo.get(state.networkId);
+          vmNetworkInfo.floatingIpAddress = state.vmFloatingIpAddress;
+          vmState.networkInfo.put(state.networkId, vmNetworkInfo);
 
-          state.taskServiceEntity = op.getBody(VirtualNetworkService.State.class);
-          create(state, operation);
-        })
-        .sendWith(this);
+          VmService.State vmPatchState = new VmService.State();
+          vmPatchState.networkInfo = vmState.networkInfo;
+
+          updateVm(state, vmPatchState);
+        },
+        throwable -> {
+          fail(state, throwable);
+        });
   }
 
-  /**
-   * Updates a VirtualNetworkService.State entity in cloud-store.
-   */
+  private void updateVm(AssignFloatingIpToVmWorkflowDocument state, VmService.State vmPatchState) {
+    CloudStoreUtils.patchCloudStoreEntityAndProcess(
+        this,
+        VmServiceFactory.SELF_LINK + "/" + state.vmId,
+        vmPatchState,
+        VmService.State.class,
+        vmState -> {
+          progress(state, AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.UPDATE_VIRTUAL_NETWORK);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
+  }
+
   private void updateVirtualNetwork(AssignFloatingIpToVmWorkflowDocument state) {
     VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
     virtualNetworkPatchState.vmIdToNatRuleIdMap = state.taskServiceEntity.vmIdToNatRuleIdMap;
 
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createPatch(state.taskServiceEntity.documentSelfLink)
-        .setBody(virtualNetworkPatchState)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            fail(state, ex);
-            return;
-          }
-
+    CloudStoreUtils.patchCloudStoreEntityAndProcess(
+        this,
+        VirtualNetworkService.FACTORY_LINK + "/" + state.networkId,
+        virtualNetworkPatchState,
+        VirtualNetworkService.State.class,
+        virtualNetworkState -> {
           try {
             AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.FINISHED,
@@ -329,8 +357,10 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
           } catch (Throwable t) {
             fail(state, t);
           }
-        })
-        .sendWith(this);
-
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
   }
 }
