@@ -168,7 +168,6 @@ public class SubnetAllocatorService extends StatefulService {
     AllocateSubnet allocateSubnetPatch = patch.getBody(AllocateSubnet.class);
     State currentState = getState(patch);
 
-
     try {
       Long requestedSize = allocateSubnetPatch.numberOfAllIpAddresses;
       List<IpV4Range> candidateRanges = currentState.freeList.stream()
@@ -230,7 +229,51 @@ public class SubnetAllocatorService extends StatefulService {
 
   public void handleReleaseSubnet(Operation patch) {
     ServiceUtils.logInfo(this, "Releasing subnet %s", getSelfLink());
-    patch.complete();
+    ReleaseSubnet releaseSubnetPatch = patch.getBody(ReleaseSubnet.class);
+    State currentState = getState(patch);
+
+    try {
+      Operation getOperation =
+          Operation.createGet(this, DhcpSubnetService.FACTORY_LINK + "/" + releaseSubnetPatch.subnetId);
+      Operation completedOperation = null;
+      try {
+        completedOperation = ServiceUtils.doServiceOperation(this, getOperation);
+      } catch (DocumentNotFoundException ex) {
+        throw new IllegalArgumentException("Could not find the subnet service with the provided subnetId");
+      }
+
+      DhcpSubnetService.State subnetState = completedOperation.getBody(DhcpSubnetService.State.class);
+
+      Operation deleteOperation =
+          Operation.createDelete(this, subnetState.documentSelfLink);
+      ServiceUtils.doServiceOperation(this, deleteOperation);
+
+      IpV4Range lowRange = null;
+      List<IpV4Range> ipV4RangeListLow = currentState.freeList.stream()
+          .filter(ipV4Range -> ipV4Range.high + 1 == subnetState.lowIp)
+          .collect(Collectors.toList());
+      if (ipV4RangeListLow != null && !ipV4RangeListLow.isEmpty()) {
+        lowRange = ipV4RangeListLow.get(0);
+        lowRange.high = subnetState.highIp;
+      }
+
+      List<IpV4Range> ipV4RangeListHigh = currentState.freeList.stream()
+          .filter(ipV4Range -> ipV4Range.low - 1 == subnetState.highIp)
+          .collect(Collectors.toList());
+
+      if (ipV4RangeListHigh != null && !ipV4RangeListHigh.isEmpty()) {
+        if (lowRange != null) {
+          lowRange.high = ipV4RangeListHigh.get(0).high;
+          currentState.freeList.remove(ipV4RangeListHigh.get(0));
+        } else {
+          ipV4RangeListHigh.get(0).low = subnetState.lowIp;
+        }
+      }
+      patch.complete();
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patch.fail(t);
+    }
   }
 
   @Override
@@ -293,6 +336,7 @@ public class SubnetAllocatorService extends StatefulService {
       DocumentNotFoundException, UnknownHostException {
 
     SubnetUtils subnetUtils = new SubnetUtils(rootCidr);
+    subnetUtils.setInclusiveHostCount(true);
     SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
     Long lowIp, highIp;
 
