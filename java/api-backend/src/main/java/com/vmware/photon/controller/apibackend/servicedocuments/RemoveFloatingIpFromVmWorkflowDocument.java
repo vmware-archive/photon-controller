@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.servicedocuments;
 
+import com.vmware.photon.controller.apibackend.annotations.ControlFlagsField;
 import com.vmware.photon.controller.apibackend.annotations.TaskServiceEntityField;
 import com.vmware.photon.controller.apibackend.annotations.TaskServiceStateField;
 import com.vmware.photon.controller.apibackend.annotations.TaskStateField;
@@ -23,6 +24,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 
@@ -43,7 +45,11 @@ public class RemoveFloatingIpFromVmWorkflowDocument extends ServiceDocument {
      * Definitions of substages.
      */
     public enum SubStage {
-      REMOVE_NAT_RULE
+      GET_VM_MAC,
+      REMOVE_NAT_RULE,
+      RELEASE_VM_FLOATING_IP,
+      UPDATE_VM,
+      UPDATE_VIRTUAL_NETWORK
     }
   }
 
@@ -63,6 +69,7 @@ public class RemoveFloatingIpFromVmWorkflowDocument extends ServiceDocument {
    */
   @DefaultInteger(0)
   @Immutable
+  @ControlFlagsField
   public Integer controlFlags;
 
   ///
@@ -121,4 +128,10 @@ public class RemoveFloatingIpFromVmWorkflowDocument extends ServiceDocument {
    */
   @TaskServiceStateField
   public TaskService.State taskServiceState;
+
+  /**
+   * MAC address of the VM.
+   */
+  @WriteOnce
+  public String vmMacAddress;
 }

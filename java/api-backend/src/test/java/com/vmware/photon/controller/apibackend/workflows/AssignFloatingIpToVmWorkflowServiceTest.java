@@ -132,7 +132,6 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
      */
     @Test
     public void succeedsWithNullDefaultFields() throws Throwable {
-
       startState.taskState = null;
       AssignFloatingIpToVmWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -215,7 +214,6 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
      */
     @Test
     public void succeedsWithValidStartState() throws Throwable {
-
       AssignFloatingIpToVmWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
               AssignFloatingIpToVmWorkflowService.FACTORY_LINK,
@@ -365,8 +363,7 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
     }
 
     @DataProvider(name = "InvalidStageAndSubStagePatch")
-    public Object[][] getInvalidStageAndSubStagePatch()
-        throws Throwable {
+    public Object[][] getInvalidStageAndSubStagePatch() throws Throwable {
       return taskStateHelper.getInvalidPatchState();
     }
 

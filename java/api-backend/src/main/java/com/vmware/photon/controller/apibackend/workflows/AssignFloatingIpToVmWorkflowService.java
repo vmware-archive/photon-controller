@@ -258,7 +258,8 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
         },
         throwable -> {
           fail(state, throwable);
-        });
+        }
+    );
   }
 
   private void createNatRule(AssignFloatingIpToVmWorkflowDocument state) throws Throwable {
@@ -300,7 +301,8 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
           public void onFailure(Throwable t) {
             fail(state, t);
           }
-        });
+        }
+    );
   }
 
   private void updateVm(AssignFloatingIpToVmWorkflowDocument state) {
@@ -320,7 +322,8 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
         },
         throwable -> {
           fail(state, throwable);
-        });
+        }
+    );
   }
 
   private void updateVm(AssignFloatingIpToVmWorkflowDocument state, VmService.State vmPatchState) {

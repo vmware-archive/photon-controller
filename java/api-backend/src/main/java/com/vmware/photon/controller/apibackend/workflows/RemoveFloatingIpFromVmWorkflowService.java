@@ -13,10 +13,15 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
+import com.vmware.photon.controller.apibackend.exceptions.AssignFloatingIpToVmException;
 import com.vmware.photon.controller.apibackend.exceptions.RemoveFloatingIpFromVmException;
 import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
+import com.vmware.photon.controller.apibackend.utils.CloudStoreUtils;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
@@ -27,6 +32,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.TaskState;
 
 import com.google.common.util.concurrent.FutureCallback;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Implements an Xenon service that represents a workflow to remove the floating IP from a VM.
@@ -64,7 +70,19 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
         return;
       }
 
-      getVirtualNetwork(state, createOperation);
+      CloudStoreUtils.getCloudStoreEntityAndProcess(
+          this,
+          VirtualNetworkService.FACTORY_LINK + "/" + state.networkId,
+          VirtualNetworkService.State.class,
+          virtualNetworkState -> {
+            state.taskServiceEntity = virtualNetworkState;
+            create(state, createOperation);
+          },
+          throwable -> {
+            createOperation.fail(throwable);
+            fail(state, throwable);
+          }
+      );
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(createOperation)) {
@@ -132,8 +150,20 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
   private void processPatch(RemoveFloatingIpFromVmWorkflowDocument state) {
     try {
       switch (state.taskState.subStage) {
+        case GET_VM_MAC:
+          getVmMac(state);
+          break;
         case REMOVE_NAT_RULE:
           removeNatRule(state);
+          break;
+        case RELEASE_VM_FLOATING_IP:
+          releaseVmFloatingIp(state);
+          break;
+        case UPDATE_VM:
+          updateVm(state);
+          break;
+        case UPDATE_VIRTUAL_NETWORK:
+          updateVirtualNetwork(state);
           break;
       }
     } catch (Throwable t) {
@@ -141,12 +171,46 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
     }
   }
 
+  private void getVmMac(RemoveFloatingIpFromVmWorkflowDocument state) {
+    CloudStoreUtils.getCloudStoreEntityAndProcess(
+        this,
+        VmServiceFactory.SELF_LINK + "/" + state.vmId,
+        VmService.State.class,
+        vmState -> {
+          try {
+            if (!vmState.networkInfo.containsKey(state.networkId)) {
+              throw new RemoveFloatingIpFromVmException(
+                  "VM " + state.vmId + " does not belong to network " + state.networkId);
+            }
+
+            VmService.NetworkInfo vmNetworkInfo = vmState.networkInfo.get(state.networkId);
+
+            if (StringUtils.isBlank(vmNetworkInfo.macAddress)) {
+              throw new AssignFloatingIpToVmException(
+                  "VM " + state.vmId + " does not have a MAC address on network " + state.networkId);
+            }
+
+            RemoveFloatingIpFromVmWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.STARTED,
+                RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE);
+            patchState.vmMacAddress = vmNetworkInfo.macAddress;
+
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
+  }
+
   private void removeNatRule(RemoveFloatingIpFromVmWorkflowDocument state) throws Throwable {
     if (!state.taskServiceEntity.vmIdToNatRuleIdMap.containsKey(state.vmId)) {
       throw new RemoveFloatingIpFromVmException("VM " + state.vmId + " does not have a NAT rule associated");
     }
 
-    String natRuleId = state.taskServiceEntity.vmIdToNatRuleIdMap.get(state.vmId);
     LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(),
         state.nsxAddress,
         state.nsxUsername,
@@ -154,12 +218,21 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
         .getLogicalRouterApi();
 
     logicalRouterApi.deleteNatRule(state.taskServiceEntity.logicalRouterId,
-        natRuleId,
+        state.taskServiceEntity.vmIdToNatRuleIdMap.get(state.vmId),
         new FutureCallback<Void>() {
           @Override
           public void onSuccess(Void result) {
-            state.taskServiceEntity.vmIdToNatRuleIdMap.remove(state.vmId);
-            updateVirtualNetwork(state);
+            try {
+              RemoveFloatingIpFromVmWorkflowDocument patchState = buildPatch(
+                  TaskState.TaskStage.STARTED,
+                  RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.RELEASE_VM_FLOATING_IP);
+              patchState.taskServiceEntity = state.taskServiceEntity;
+              patchState.taskServiceEntity.vmIdToNatRuleIdMap.remove(state.vmId);
+
+              progress(state, patchState);
+            } catch (Throwable t) {
+              fail(state, t);
+            }
           }
 
           @Override
@@ -169,42 +242,71 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
         });
   }
 
-  /**
-   * Gets a VirtualNetworkService.State from {@link com.vmware.photon.controller.cloudstore.xenon.entity
-   * .VirtualNetworkService.State} entity in cloud-store.
-   */
-  private void getVirtualNetwork(RemoveFloatingIpFromVmWorkflowDocument state, Operation operation) {
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createGet(VirtualNetworkService.FACTORY_LINK + "/" + state.networkId)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            operation.fail(ex);
-            fail(state, ex);
-            return;
-          }
+  private void releaseVmFloatingIp(RemoveFloatingIpFromVmWorkflowDocument state) {
+    DhcpSubnetService.IpOperationPatch releaseIp = new DhcpSubnetService.IpOperationPatch(
+        DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac,
+        state.vmMacAddress);
 
-          state.taskServiceEntity = op.getBody(VirtualNetworkService.State.class);
-          create(state, operation);
-        })
-        .sendWith(this);
+    CloudStoreUtils.patchCloudStoreEntityAndProcess(
+        this,
+        DhcpSubnetService.SINGLETON_LINK,
+        releaseIp,
+        DhcpSubnetService.IpOperationPatch.class,
+        releaseIpResult -> {
+          progress(state, RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.UPDATE_VM);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
   }
 
-  /**
-   * Updates a VirtualNetworkService.State entity in cloud-store.
-   */
+  private void updateVm(RemoveFloatingIpFromVmWorkflowDocument state) {
+    CloudStoreUtils.getCloudStoreEntityAndProcess(
+        this,
+        VmServiceFactory.SELF_LINK + "/" + state.vmId,
+        VmService.State.class,
+        vmState -> {
+          VmService.NetworkInfo vmNetworkInfo = vmState.networkInfo.get(state.networkId);
+          vmNetworkInfo.floatingIpAddress = null;
+          vmState.networkInfo.put(state.networkId, vmNetworkInfo);
+
+          VmService.State vmPatchState = new VmService.State();
+          vmPatchState.networkInfo = vmState.networkInfo;
+
+          updateVm(state, vmPatchState);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
+  }
+
+  private void updateVm(RemoveFloatingIpFromVmWorkflowDocument state, VmService.State vmPatchState) {
+    CloudStoreUtils.patchCloudStoreEntityAndProcess(
+        this,
+        VmServiceFactory.SELF_LINK + "/" + state.vmId,
+        vmPatchState,
+        VmService.State.class,
+        vmState -> {
+          progress(state, RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.UPDATE_VIRTUAL_NETWORK);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
+  }
+
   private void updateVirtualNetwork(RemoveFloatingIpFromVmWorkflowDocument state) {
     VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
     virtualNetworkPatchState.vmIdToNatRuleIdMap = state.taskServiceEntity.vmIdToNatRuleIdMap;
 
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createPatch(state.taskServiceEntity.documentSelfLink)
-        .setBody(virtualNetworkPatchState)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            fail(state, ex);
-            return;
-          }
-
+    CloudStoreUtils.patchCloudStoreEntityAndProcess(
+        this,
+        VirtualNetworkService.FACTORY_LINK + "/" + state.networkId,
+        virtualNetworkPatchState,
+        VirtualNetworkService.State.class,
+        virtualNetworkState -> {
           try {
             RemoveFloatingIpFromVmWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.FINISHED,
@@ -214,7 +316,10 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
           } catch (Throwable t) {
             fail(state, t);
           }
-        })
-        .sendWith(this);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
   }
 }
