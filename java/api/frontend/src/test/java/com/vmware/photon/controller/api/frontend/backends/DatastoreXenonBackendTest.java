@@ -43,6 +43,12 @@ import java.util.concurrent.Executors;
  */
 public class DatastoreXenonBackendTest {
 
+  private ApiFeXenonRestClient xenonClient;
+
+  private DatastoreBackend datastoreBackend;
+
+  private BasicServiceHost host;
+
   private DatastoreService.State createDatastore(
       ApiFeXenonRestClient xenonClient, String type, Set<String> tags) {
     DatastoreService.State datastore = new DatastoreService.State();
@@ -56,6 +62,33 @@ public class DatastoreXenonBackendTest {
     return result.getBody(DatastoreService.State.class);
   }
 
+  private void setupCommon() throws Throwable {
+    host = BasicServiceHost.create(
+        null,
+        DatastoreServiceFactory.SELF_LINK,
+        10, 10);
+
+    host.startServiceSynchronously(new DatastoreServiceFactory(), null);
+
+    StaticServerSet serverSet = new StaticServerSet(
+        new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+
+    xenonClient =
+        new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
+
+    datastoreBackend = new DatastoreXenonBackend(xenonClient);
+  }
+
+  public void tearDownCommon() throws Throwable {
+    if (host != null) {
+      BasicServiceHost.destroy(host);
+    }
+
+    if (xenonClient != null) {
+      xenonClient.stop();
+    }
+  }
+
   @Test
   private void dummy() {
   }
@@ -65,37 +98,14 @@ public class DatastoreXenonBackendTest {
    */
   public class ToApiRepresentationTest {
 
-    private ApiFeXenonRestClient xenonClient;
-
-    private DatastoreBackend datastoreBackend;
-
-    private BasicServiceHost host;
-
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = BasicServiceHost.create(
-          null,
-          DatastoreServiceFactory.SELF_LINK,
-          10, 10);
-
-      host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-
-      xenonClient =
-          new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
-
-      datastoreBackend = new DatastoreXenonBackend(xenonClient);
+      setupCommon();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
-
-      xenonClient.stop();
+      tearDownCommon();
     }
 
     @Test
@@ -116,34 +126,17 @@ public class DatastoreXenonBackendTest {
   }
 
   /**
-   * Tests {@link DatastoreXenonBackend#filter(Optional, Optional)}.
+   * Tests for querying datastore.
+   * {@link DatastoreXenonBackend#filter(Optional, Optional)}.
+   * {@link DatastoreXenonBackend#getNumberDatastores()}.
    */
-  public class FilterTest {
-
-    private ApiFeXenonRestClient xenonClient;
-
-    private DatastoreBackend datastoreBackend;
-
-    private BasicServiceHost host;
+  public class QueryTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = BasicServiceHost.create(
-          null,
-          DatastoreServiceFactory.SELF_LINK,
-          10, 10);
+      setupCommon();
 
-      host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-
-      StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-
-      xenonClient =
-          new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
-
-      datastoreBackend = new DatastoreXenonBackend(xenonClient);
-
-      // Create port groups for filtering
+      // Create datastores for filtering
       createDatastore(xenonClient, "EXT3", null);
       createDatastore(xenonClient, "SHARED_VMFS", null);
       Set<String> tags = new HashSet<>();
@@ -160,11 +153,13 @@ public class DatastoreXenonBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      if (host != null) {
-        BasicServiceHost.destroy(host);
-      }
+      tearDownCommon();
+    }
 
-      xenonClient.stop();
+    @Test
+    public void queryNumberHosts() throws Throwable {
+      int num = datastoreBackend.getNumberDatastores();
+      assertThat(num, is(5));
     }
 
     @Test(dataProvider = "filterParams")

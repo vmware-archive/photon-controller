@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api.frontend.clients;
 
+import com.vmware.photon.controller.api.frontend.backends.DatastoreBackend;
 import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
 import com.vmware.photon.controller.api.frontend.backends.HostBackend;
 import com.vmware.photon.controller.api.frontend.backends.ProjectBackend;
@@ -78,6 +79,7 @@ public class DeploymentFeClientTest {
   private HostBackend hostBackend;
   private TenantBackend tenantBackend;
   private ProjectBackend projectBackend;
+  private DatastoreBackend datastoreBackend;
   private AuthConfig authConfig;
   private TaskCommandFactory commandFactory;
   private ExecutorService executorService;
@@ -89,14 +91,15 @@ public class DeploymentFeClientTest {
     hostBackend = mock(HostBackend.class);
     tenantBackend = mock(TenantBackend.class);
     projectBackend = mock(ProjectBackend.class);
+    datastoreBackend = mock(DatastoreBackend.class);
     authConfig = new AuthConfig();
 
     commandFactory = mock(TaskCommandFactory.class);
     executorService = mock(TaskCommandExecutorService.class);
 
     feClient = new DeploymentFeClient(
-        taskBackend, deploymentBackend, vmBackend, hostBackend, tenantBackend, projectBackend, authConfig,
-        commandFactory, executorService);
+        taskBackend, deploymentBackend, vmBackend, hostBackend, tenantBackend, projectBackend, datastoreBackend,
+        authConfig, commandFactory, executorService);
   }
 
   /**
@@ -509,13 +512,16 @@ public class DeploymentFeClientTest {
       DeploymentSize deploymentSize = new DeploymentSize();
       deploymentSize.setNumberHosts(2);
       deploymentSize.setNumberTenants(7);
+      deploymentSize.setNumberDatastores(5);
 
       doReturn(deploymentSize.getNumberHosts()).when(hostBackend).getNumberHosts();
       doReturn(deploymentSize.getNumberTenants()).when(tenantBackend).getNumberTenants();
+      doReturn(deploymentSize.getNumberDatastores()).when(datastoreBackend).getNumberDatastores();
 
       DeploymentSize deploymentRetrievedSize = feClient.getDeploymentSize(deploymentId);
       assertThat(deploymentRetrievedSize.getNumberHosts(), is(deploymentSize.getNumberHosts()));
       assertThat(deploymentRetrievedSize.getNumberTenants(), is(deploymentSize.getNumberTenants()));
+      assertThat(deploymentRetrievedSize.getNumberDatastores(), is(deploymentSize.getNumberDatastores()));
     }
 
     @Test(expectedExceptions = DeploymentNotFoundException.class,
