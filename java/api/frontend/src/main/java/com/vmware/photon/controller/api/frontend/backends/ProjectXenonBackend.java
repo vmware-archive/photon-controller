@@ -340,11 +340,12 @@ public class ProjectXenonBackend implements ProjectBackend {
 
   private ProjectTicket getProjectTicket(String resourceTicketId) throws ResourceTicketNotFoundException {
     ResourceTicketEntity resourceTicketEntity = resourceTicketBackend.findById(resourceTicketId);
+    ResourceTicketEntity parentTicketEntity = resourceTicketBackend.findById(resourceTicketEntity.getParentId());
     ProjectTicket ticket = new ProjectTicket();
     // null for tenant resource tickets
     if (resourceTicketEntity != null) {
-      ticket.setTenantTicketId(resourceTicketEntity.getId());
-      ticket.setTenantTicketName(resourceTicketEntity.getName());
+      ticket.setTenantTicketId(parentTicketEntity.getId());
+      ticket.setTenantTicketName(parentTicketEntity.getName());
     }
 
     List<QuotaLineItem> limits = new ArrayList<>();
