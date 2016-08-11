@@ -16,6 +16,7 @@ package com.vmware.photon.controller.nsxclient.apis;
 import com.vmware.photon.controller.nsxclient.RestClient;
 import com.vmware.photon.controller.nsxclient.builders.LogicalRouterLinkPortOnTier0CreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.builders.LogicalRouterLinkPortOnTier1CreateSpecBuilder;
+import com.vmware.photon.controller.nsxclient.builders.RoutingAdvertisementUpdateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.datatypes.NatActionType;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.models.IPv4CIDRBlock;
@@ -33,6 +34,8 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouterPortListResult
 import com.vmware.photon.controller.nsxclient.models.NatRule;
 import com.vmware.photon.controller.nsxclient.models.NatRuleCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.ResourceReference;
+import com.vmware.photon.controller.nsxclient.models.RoutingAdvertisement;
+import com.vmware.photon.controller.nsxclient.models.RoutingAdvertisementUpdateSpec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.util.concurrent.FutureCallback;
@@ -881,6 +884,169 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
             @Override
             public void onFailure(Throwable t) {
               assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          });
+      latch.await();
+    }
+  }
+
+  /**
+   * Tests for functions to configure the routing advertisement.
+   */
+  public static class RoutingAdvertisementTest {
+    private LogicalRouterApi logicalRouterApi;
+    private CountDownLatch latch;
+    private String routerId;
+
+    @BeforeMethod
+    public void setup() {
+      logicalRouterApi = spy(new LogicalRouterApi(mock(RestClient.class)));
+      latch = new CountDownLatch(1);
+      routerId = "routerId";
+    }
+
+    @Test
+    public void testSuccessfullyUpdateRoutingAdvertisement() throws Exception {
+      RoutingAdvertisementUpdateSpec spec = new RoutingAdvertisementUpdateSpecBuilder()
+          .advertiseNatRoutes(true)
+          .advertiseNsxConnectedRoutes(true)
+          .advertiseStaticRoutes(true)
+          .enabled(true)
+          .revision(0)
+          .build();
+
+      RoutingAdvertisement routingAdvertisement = new RoutingAdvertisement();
+      routingAdvertisement.setAdvertiseNatRoutes(true);
+      routingAdvertisement.setAdvertiseNsxConnectedRoutes(true);
+      routingAdvertisement.setAdvertiseStaticRoutes(true);
+      routingAdvertisement.setEnabled(true);
+      routingAdvertisement.setRevision(1);
+
+      doAnswer(invocation -> {
+        ((FutureCallback<RoutingAdvertisement>) invocation.getArguments()[4])
+            .onSuccess(routingAdvertisement);
+        return null;
+      }).when(logicalRouterApi)
+          .putAsync(eq(LogicalRouterApi.LOGICAL_ROUTERS_BASE_PATH + "/" + routerId + "/routing/advertisement"),
+              any(HttpEntity.class),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.configureRoutingAdvertisement(routerId,
+          spec,
+          new FutureCallback<RoutingAdvertisement>() {
+            @Override
+            public void onSuccess(RoutingAdvertisement result) {
+              assertThat(result, is(routingAdvertisement));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          });
+      latch.await();
+    }
+
+    @Test
+    public void testFailedToUpdateRoutingAdvertisement() throws Exception {
+      final String errorMsg = "Update wrong revision";
+      RoutingAdvertisementUpdateSpec spec = new RoutingAdvertisementUpdateSpec();
+
+      doAnswer(invocation -> {
+        ((FutureCallback<RoutingAdvertisement>) invocation.getArguments()[4])
+            .onFailure(new RuntimeException(errorMsg));
+        return null;
+      }).when(logicalRouterApi)
+          .putAsync(eq(LogicalRouterApi.LOGICAL_ROUTERS_BASE_PATH + "/" + routerId + "/routing/advertisement"),
+              any(HttpEntity.class),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.configureRoutingAdvertisement(routerId,
+          spec,
+          new FutureCallback<RoutingAdvertisement>() {
+            @Override
+            public void onSuccess(RoutingAdvertisement result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              assertThat(throwable.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          });
+      latch.await();
+    }
+
+    @Test
+    public void testSuccessfullyReadRoutingAdvertisement() throws Exception {
+      RoutingAdvertisement routingAdvertisement = new RoutingAdvertisement();
+      routingAdvertisement.setAdvertiseNatRoutes(true);
+      routingAdvertisement.setAdvertiseNsxConnectedRoutes(true);
+      routingAdvertisement.setAdvertiseStaticRoutes(true);
+      routingAdvertisement.setEnabled(true);
+      routingAdvertisement.setRevision(0);
+
+      doAnswer(invocation -> {
+        ((FutureCallback<RoutingAdvertisement>) invocation.getArguments()[3])
+            .onSuccess(routingAdvertisement);
+        return null;
+      }).when(logicalRouterApi)
+          .getAsync(eq(LogicalRouterApi.LOGICAL_ROUTERS_BASE_PATH + "/" + routerId + "/routing/advertisement"),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.getRoutingAdvertisement(routerId,
+          new FutureCallback<RoutingAdvertisement>() {
+            @Override
+            public void onSuccess(RoutingAdvertisement result) {
+              assertThat(result, is(routingAdvertisement));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          });
+      latch.await();
+    }
+
+    @Test
+    public void testFailedToReadRoutingAdvertisement() throws Exception {
+      final String errorMsg = "Service is not available";
+
+      doAnswer(invocation -> {
+        ((FutureCallback<RoutingAdvertisement>) invocation.getArguments()[3])
+            .onFailure(new RuntimeException(errorMsg));
+        return null;
+      }).when(logicalRouterApi)
+          .getAsync(eq(LogicalRouterApi.LOGICAL_ROUTERS_BASE_PATH + "/" + routerId + "/routing/advertisement"),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.getRoutingAdvertisement(routerId,
+          new FutureCallback<RoutingAdvertisement>() {
+            @Override
+            public void onSuccess(RoutingAdvertisement result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              assertThat(throwable.getMessage(), is(errorMsg));
               latch.countDown();
             }
           });

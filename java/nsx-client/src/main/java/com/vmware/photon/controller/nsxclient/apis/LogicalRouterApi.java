@@ -25,6 +25,8 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterPortListResult;
 import com.vmware.photon.controller.nsxclient.models.NatRule;
 import com.vmware.photon.controller.nsxclient.models.NatRuleCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.RoutingAdvertisement;
+import com.vmware.photon.controller.nsxclient.models.RoutingAdvertisementUpdateSpec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.util.concurrent.FutureCallback;
@@ -56,7 +58,8 @@ public class LogicalRouterApi extends NsxClientApi {
     postAsync(LOGICAL_ROUTERS_BASE_PATH,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
-        new TypeReference<LogicalRouter>() {},
+        new TypeReference<LogicalRouter>() {
+        },
         responseCallback
     );
   }
@@ -69,7 +72,8 @@ public class LogicalRouterApi extends NsxClientApi {
       throws IOException {
     getAsync(LOGICAL_ROUTERS_BASE_PATH + "/" + id,
         HttpStatus.SC_OK,
-        new TypeReference<LogicalRouter>() {},
+        new TypeReference<LogicalRouter>() {
+        },
         responseCallback
     );
   }
@@ -104,7 +108,8 @@ public class LogicalRouterApi extends NsxClientApi {
     postAsync(LOGICAL_ROUTER_PORTS_BASE_PATH,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
-        new TypeReference<LogicalRouterDownLinkPort>() {},
+        new TypeReference<LogicalRouterDownLinkPort>() {
+        },
         responseCallback
     );
   }
@@ -118,7 +123,8 @@ public class LogicalRouterApi extends NsxClientApi {
     postAsync(LOGICAL_ROUTER_PORTS_BASE_PATH,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
-        new TypeReference<LogicalRouterLinkPortOnTier0>() {},
+        new TypeReference<LogicalRouterLinkPortOnTier0>() {
+        },
         responseCallback
     );
   }
@@ -132,7 +138,8 @@ public class LogicalRouterApi extends NsxClientApi {
     postAsync(LOGICAL_ROUTER_PORTS_BASE_PATH,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
-        new TypeReference<LogicalRouterLinkPortOnTier1>() {},
+        new TypeReference<LogicalRouterLinkPortOnTier1>() {
+        },
         responseCallback
     );
   }
@@ -145,7 +152,8 @@ public class LogicalRouterApi extends NsxClientApi {
       throws IOException {
     getAsync(LOGICAL_ROUTER_PORTS_BASE_PATH + "?logical_router_id=" + id,
         HttpStatus.SC_OK,
-        new TypeReference<LogicalRouterPortListResult>() {},
+        new TypeReference<LogicalRouterPortListResult>() {
+        },
         responseCallback
     );
   }
@@ -181,7 +189,8 @@ public class LogicalRouterApi extends NsxClientApi {
     postAsync(LOGICAL_ROUTERS_BASE_PATH + "/" + id + "/nat/rules",
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
-        new TypeReference<NatRule>() {},
+        new TypeReference<NatRule>() {
+        },
         responseCallback);
   }
 
@@ -194,7 +203,8 @@ public class LogicalRouterApi extends NsxClientApi {
       throws IOException {
     getAsync(LOGICAL_ROUTERS_BASE_PATH + "/" + id + "/nat/rules/" + ruleId,
         HttpStatus.SC_OK,
-        new TypeReference<NatRule>() {},
+        new TypeReference<NatRule>() {
+        },
         responseCallback);
   }
 
@@ -208,5 +218,37 @@ public class LogicalRouterApi extends NsxClientApi {
     deleteAsync(LOGICAL_ROUTERS_BASE_PATH + "/" + id + "/nat/rules/" + ruleId,
         HttpStatus.SC_OK,
         responseCallback);
+  }
+
+  /**
+   * Configure routing advertisement on tier-1 router.
+   */
+  public void configureRoutingAdvertisement(String id,
+                                            RoutingAdvertisementUpdateSpec spec,
+                                            FutureCallback<RoutingAdvertisement> responseCallback)
+      throws IOException {
+
+    putAsync(LOGICAL_ROUTERS_BASE_PATH + "/" + id + "/routing/advertisement",
+        serializeObjectAsJson(spec),
+        HttpStatus.SC_OK,
+        new TypeReference<RoutingAdvertisement>() {
+        },
+        responseCallback
+    );
+  }
+
+  /**
+   * Get the routing advertisement configuration on tier-1 router.
+   */
+  public void getRoutingAdvertisement(String id,
+                                      FutureCallback<RoutingAdvertisement> responseCallback)
+      throws IOException {
+
+    getAsync(LOGICAL_ROUTERS_BASE_PATH + "/" + id + "/routing/advertisement",
+        HttpStatus.SC_OK,
+        new TypeReference<RoutingAdvertisement>() {
+        },
+        responseCallback
+    );
   }
 }
