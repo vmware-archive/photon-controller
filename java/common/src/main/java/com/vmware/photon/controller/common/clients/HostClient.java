@@ -1367,6 +1367,10 @@ public class HostClient extends ThriftClient{
     logger.debug("Creating host async client of hostIp {} and port {}", this.getHostIp(), this.getPort());
     ClientPoolOptions options = new ClientPoolOptions(CLIENT_POOL_OPTIONS);
     options = options.setServiceName("Host");
+    if (getKeyStorePath() != null) {
+      options.setKeyStorePath(getKeyStorePath());
+      options.setKeyStorePassword(getKeyStorePassword());
+    }
     this.clientPool = this.clientPoolFactory.create(
         ImmutableSet.of(new InetSocketAddress(this.getHostIp(), this.getPort())),
         options);

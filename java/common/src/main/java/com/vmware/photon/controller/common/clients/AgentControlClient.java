@@ -114,7 +114,7 @@ public class AgentControlClient extends ThriftClient {
     ClientPoolOptions options = new ClientPoolOptions(CLIENT_POOL_OPTIONS);
     options = options.setServiceName("AgentControl");
     if (getKeyStorePath() != null) {
-      options.setKeyStorePassword(getKeyStorePath());
+      options.setKeyStorePath(getKeyStorePath());
       options.setKeyStorePassword(getKeyStorePassword());
     }
     this.clientPool = this.clientPoolFactory.create(
