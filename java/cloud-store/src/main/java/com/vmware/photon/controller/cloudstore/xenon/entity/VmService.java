@@ -146,7 +146,8 @@ public class VmService extends StatefulService {
     public List<String> networks;
 
     /**
-     * Networks info on which vm is placed on.
+     * Networks info on which vm is placed on. The key is the ID of the network that
+     * the VM is placed on.
      */
     public Map<String, VmService.NetworkInfo> networkInfo;
 

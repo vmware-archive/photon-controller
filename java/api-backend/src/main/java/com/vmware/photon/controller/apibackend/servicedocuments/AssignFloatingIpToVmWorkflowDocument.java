@@ -47,7 +47,9 @@ public class AssignFloatingIpToVmWorkflowDocument extends ServiceDocument {
     public enum SubStage {
       GET_VM_PRIVATE_IP_AND_MAC,
       ALLOCATE_VM_FLOATING_IP,
-      CREATE_NAT_RULE
+      CREATE_NAT_RULE,
+      UPDATE_VM,
+      UPDATE_VIRTUAL_NETWORK
     }
   }
 

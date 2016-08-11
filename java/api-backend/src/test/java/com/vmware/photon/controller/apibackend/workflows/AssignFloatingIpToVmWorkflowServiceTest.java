@@ -464,6 +464,13 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
           VirtualNetworkService.State.class);
       assertThat(virtualNetwork.vmIdToNatRuleIdMap.size(), is(1));
       assertThat(virtualNetwork.vmIdToNatRuleIdMap, equalTo(expectedVmIdToNatRuleIdMap));
+
+      VmService.State vm = testEnvironment.getServiceState(
+          VmServiceFactory.SELF_LINK + "/" + savedState.vmId,
+          VmService.State.class);
+      assertThat(vm.networkInfo.size(), is(1));
+      assertThat(vm.networkInfo.get(savedState.networkId).floatingIpAddress, notNullValue());
+      assertThat(vm.networkInfo.get(savedState.networkId).floatingIpAddress, equalTo("1.2.3.4"));
     }
 
     private AssignFloatingIpToVmWorkflowDocument startService() throws Throwable {
