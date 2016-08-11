@@ -41,7 +41,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.BitSet;
 import java.util.List;
 
-
 /**
  * Used for allocating IPs from a subnet and also to track ownership of a CIDR range by a network.
  */
@@ -88,25 +87,7 @@ public class DhcpSubnetService extends StatefulService {
         Action.PATCH,
         new RequestRouter.RequestBodyMatcher<>(
             IpOperationPatch.class, "kind", IpOperationPatch.Kind.ReleaseIpForMac),
-        this::handleReleaseIpForMacPatch, "Release Ip for MAC address");
-
-    myRouter.register(
-        Action.PATCH,
-        new RequestRouter.RequestBodyMatcher<>(
-            SubnetOperationPatch.class, "kind", SubnetOperationPatch.Kind.ExtractSubnetFromBottom),
-        this::handleExtractSubnetFromBottom, "Extract subnet from bottom");
-
-    myRouter.register(
-        Action.PATCH,
-        new RequestRouter.RequestBodyMatcher<>(
-            SubnetOperationPatch.class, "kind", SubnetOperationPatch.Kind.ExpandSubnetAtBottom),
-        this::handleExpandSubnetAtBottom, "Expand subnet at bottom");
-
-    myRouter.register(
-        Action.PATCH,
-        new RequestRouter.RequestBodyMatcher<>(
-            SubnetOperationPatch.class, "kind", SubnetOperationPatch.Kind.ExpandSubnetAtTop),
-        this::handleExpandSubnetAtTop, "Expand subnet at top");
+        this::handleReleaseIpPatch, "Release Ip lease for the provided IP address");
 
     OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
     opProcessingChain.add(myRouter);
@@ -152,7 +133,7 @@ public class DhcpSubnetService extends StatefulService {
     }
   }
 
-  public void handleReleaseIpForMacPatch(Operation patch) {
+  public void handleReleaseIpPatch(Operation patch) {
     ServiceUtils.logInfo(this, "Patching service %s to release IP for MAC", getSelfLink());
     try {
       State currentState = getState(patch);
@@ -176,40 +157,6 @@ public class DhcpSubnetService extends StatefulService {
       ServiceUtils.logSevere(this, t);
       patch.fail(t);
     }
-  }
-
-  public void handleExtractSubnetFromBottom(Operation patch) {
-    ServiceUtils.logInfo(this, "Patching service %s to extract subnet", getSelfLink());
-
-    SubnetOperationPatch subnetOperationPatch = patch.getBody(SubnetOperationPatch.class);
-    if (subnetOperationPatch.size <= 0) {
-      throw new IllegalArgumentException("requested size should be greater than zero");
-    }
-
-    State currentState = getState(patch);
-
-    if (currentState.isAllocated) {
-      throw new IllegalArgumentException("cannot extract subnet from an already allocated subnet");
-    }
-
-    if (currentState.size < subnetOperationPatch.size) {
-      throw new IllegalArgumentException("requested size should be greater than or equal to existing size");
-    }
-
-    currentState.lowIp += subnetOperationPatch.size;
-    currentState.size -= subnetOperationPatch.size;
-
-    setState(patch, currentState);
-
-    patch.complete();
-  }
-
-  public void handleExpandSubnetAtBottom(Operation patch) {
-    ServiceUtils.logInfo(this, "Patching service %s to expand available subnet at bottom", getSelfLink());
-  }
-
-  public void handleExpandSubnetAtTop(Operation patch) {
-    ServiceUtils.logInfo(this, "Patching service %s to expand available subnet at top", getSelfLink());
   }
 
   @Override
@@ -251,53 +198,6 @@ public class DhcpSubnetService extends StatefulService {
   public void handleDelete(Operation deleteOperation) {
     ServiceUtils.logInfo(this, "Deleting service %s", getSelfLink());
     ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
-  }
-
-  @Override
-  public void handlePatch(Operation patchOperation) {
-    ServiceUtils.logWarning(this, "Patching service %s using default handler not allowed", getSelfLink());
-    patchOperation.fail(Operation.STATUS_CODE_BAD_METHOD);
-  }
-
-
-  /**
-   * Class for resizing the subnet to support extraction and coalescing of subnets.
-   */
-  @NoMigrationDuringUpgrade
-  @NoMigrationDuringDeployment
-  public static class SubnetOperationPatch extends ServiceDocument {
-    public final Kind kind;
-    public Integer size;
-
-    private SubnetOperationPatch() {
-      kind = null;
-    }
-
-    public SubnetOperationPatch(Kind kind, Integer size) {
-      if (kind == null) {
-        throw new IllegalArgumentException("kind should not be null");
-      }
-
-      if (size == null) {
-        throw new IllegalArgumentException("size should not be null");
-      }
-
-      if (size <= 0) {
-        throw new IllegalArgumentException("size should be greater than zero");
-      }
-
-      this.kind = kind;
-      this.size = size;
-    }
-
-    /**
-     * Defines type of Subnet operations that are supported.
-     */
-    public enum Kind {
-      ExtractSubnetFromBottom,
-      ExpandSubnetAtTop,
-      ExpandSubnetAtBottom
-    }
   }
 
   /**
