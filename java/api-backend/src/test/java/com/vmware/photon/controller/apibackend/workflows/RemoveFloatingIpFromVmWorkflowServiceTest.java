@@ -19,7 +19,12 @@ import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHelper;
 import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
+import com.vmware.photon.controller.apibackend.utils.TaskStateHelper;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
+import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -31,7 +36,8 @@ import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 
-import org.apache.commons.lang3.tuple.Pair;
+import com.google.common.net.InetAddresses;
+import org.apache.commons.net.util.SubnetUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -40,11 +46,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 import java.lang.reflect.Field;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,6 +62,8 @@ import java.util.Map;
  * Tests for {@link com.vmware.photon.controller.apibackend.workflows.RemoveFloatingIpFromVmWorkflowService}.
  */
 public class RemoveFloatingIpFromVmWorkflowServiceTest {
+  private static final TaskStateHelper<RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage> taskStateHelper =
+      new TaskStateHelper<>(RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.class);
 
   @Test(enabled = false)
   private void dummy() {
@@ -98,6 +109,7 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
           RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CREATED,
           null,
           ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink),
+          "vmId",
           new ControlFlags.Builder()
               .disableOperationProcessingOnHandleStart()
               .disableOperationProcessingOnHandlePatch()
@@ -120,7 +132,6 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
      */
     @Test
     public void succeedsWithNullDefaultFields() throws Throwable {
-
       startState.taskState = null;
       RemoveFloatingIpFromVmWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -181,6 +192,7 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
           RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CREATED,
           null,
           ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink),
+          "vmId",
           new ControlFlags.Builder()
               .disableOperationProcessingOnHandleStart()
               .disableOperationProcessingOnHandlePatch()
@@ -225,6 +237,7 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
           stage,
           subStage,
           ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink),
+          "vmId",
           new ControlFlags.Builder()
               .disableOperationProcessingOnHandleStart()
               .disableOperationProcessingOnHandlePatch()
@@ -238,27 +251,8 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     }
 
     @DataProvider(name = "InvalidStartState")
-    public Object[][] getInvalidStartStateTestData() {
-      return new Object[][]{
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CREATED,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE},
-
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED, null},
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE},
-
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.FINISHED, null},
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.FINISHED,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE},
-
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.FAILED, null},
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.FAILED,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE},
-
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CANCELLED, null},
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CANCELLED,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE},
-      };
+    public Object[][] getInvalidStartStateTestData() throws Throwable {
+      return taskStateHelper.getInvalidStartState();
     }
   }
 
@@ -282,6 +276,7 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
           RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CREATED,
           null,
           ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink),
+          "vmId",
           new ControlFlags.Builder()
               .disableOperationProcessingOnHandlePatch()
               .disableOperationProcessingOnStageTransition()
@@ -307,8 +302,7 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
         RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage currentStage,
         RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage currentSubStage,
         RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage patchStage,
-        RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage patchSubStage
-    ) throws Throwable {
+        RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage patchSubStage) throws Throwable {
 
       RemoveFloatingIpFromVmWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -316,13 +310,17 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
               startState,
               RemoveFloatingIpFromVmWorkflowDocument.class,
               (state) -> RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED == state.taskState.stage &&
-                  RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE
+                  RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.GET_VM_MAC
                       == state.taskState.subStage);
 
-      patchTaskToState(finalState.documentSelfLink, currentStage, currentSubStage);
+      if (currentStage != RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED &&
+          currentSubStage != RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.GET_VM_MAC) {
+        testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
+            buildPatchState(currentStage, currentSubStage));
+      }
 
-      RemoveFloatingIpFromVmWorkflowDocument patchState = buildPatchState(patchStage, patchSubStage);
-      finalState = testEnvironment.sendPatchAndWait(finalState.documentSelfLink, patchState)
+      finalState = testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
+          buildPatchState(patchStage, patchSubStage))
           .getBody(RemoveFloatingIpFromVmWorkflowDocument.class);
 
       assertThat(finalState.taskState.stage, is(patchStage));
@@ -330,13 +328,8 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     }
 
     @DataProvider(name = "ValidStageAndSubStagePatch")
-    public Object[][] getValidStageAndSubStagePatch() {
-      return new Object[][]{
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.FINISHED,
-              null},
-      };
+    public Object[][] getValidStageAndSubStagePatch() throws Throwable {
+      return taskStateHelper.getValidPatchState();
     }
 
     /**
@@ -345,11 +338,10 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
      */
     @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "InvalidStageAndSubStagePatch")
     public void failsWithInvalidStageAndSubStagePatch(
-        RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage firstPatchStage,
-        RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage firstPatchSubStage,
-        RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage secondPatchStage,
-        RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage secondPatchSubStage)
-        throws Throwable {
+        RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage currentStage,
+        RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage currentSubStage,
+        RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage patchStage,
+        RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage patchSubStage) throws Throwable {
 
       RemoveFloatingIpFromVmWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -357,83 +349,24 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
               startState,
               RemoveFloatingIpFromVmWorkflowDocument.class,
               (state) -> RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED == state.taskState.stage &&
-                  RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE
+                  RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.GET_VM_MAC
                       == state.taskState.subStage);
 
-      patchTaskToState(finalState.documentSelfLink, firstPatchStage, firstPatchSubStage);
+      if (currentStage != RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED &&
+          currentSubStage != RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.GET_VM_MAC) {
+        testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
+            buildPatchState(currentStage, currentSubStage));
+      }
 
-      RemoveFloatingIpFromVmWorkflowDocument patchState = buildPatchState(secondPatchStage, secondPatchSubStage);
-      testEnvironment.sendPatchAndWait(finalState.documentSelfLink, patchState)
+      testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
+          buildPatchState(patchStage, patchSubStage))
           .getBody(RemoveFloatingIpFromVmWorkflowDocument.class);
+
     }
 
     @DataProvider(name = "InvalidStageAndSubStagePatch")
-    public Object[][] getInvalidStageAndSubStagePatch()
-        throws Throwable {
-
-      return new Object[][]{
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CREATED,
-              null},
-
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.FINISHED,
-              null,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CREATED,
-              null},
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.FINISHED,
-              null,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE},
-
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CANCELLED,
-              null,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CREATED,
-              null},
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CANCELLED,
-              null,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE},
-
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.FAILED,
-              null,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CREATED,
-              null},
-          {RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.FAILED,
-              null,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED,
-              RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE},
-      };
-    }
-
-    private void patchTaskToState(String documentSelfLink,
-                                  RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage targetStage,
-                                  RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage targetSubStage)
-        throws Throwable {
-
-      if (targetStage == RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.FAILED ||
-          targetStage == RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CANCELLED) {
-        RemoveFloatingIpFromVmWorkflowDocument patchState = buildPatchState(targetStage, targetSubStage);
-        testEnvironment.sendPatchAndWait(documentSelfLink, patchState);
-      } else {
-        Pair<RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage,
-            RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage>[] transitionSequence =
-            new Pair[]{
-                Pair.of(RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED,
-                    RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE),
-                Pair.of(RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.FINISHED, null)
-            };
-
-        for (Pair<RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage,
-            RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage> state : transitionSequence) {
-          RemoveFloatingIpFromVmWorkflowDocument patchState = buildPatchState(state.getLeft(), state.getRight());
-          testEnvironment.sendPatchAndWait(documentSelfLink, patchState);
-
-          if (state.getLeft() == targetStage && state.getRight() == targetSubStage) {
-            break;
-          }
-        }
-      }
+    public Object[][] getInvalidStageAndSubStagePatch() throws Throwable {
+      return taskStateHelper.getInvalidPatchState();
     }
   }
 
@@ -495,18 +428,57 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
           VirtualNetworkService.State.class);
       assertThat(virtualNetwork.vmIdToNatRuleIdMap.size(), is(1));
       assertThat(virtualNetwork.vmIdToNatRuleIdMap, equalTo(expectedVmIdToNatRuleIdMap));
+
+      VmService.State vm = testEnvironment.getServiceState(
+          VmServiceFactory.SELF_LINK + "/" + savedState.vmId,
+          VmService.State.class);
+      assertThat(vm.networkInfo.size(), is(1));
+      assertThat(vm.networkInfo.get(savedState.networkId).floatingIpAddress, nullValue());
     }
 
     private RemoveFloatingIpFromVmWorkflowDocument startService() throws Throwable {
+      createDhcpRootSubnetServiceInCloudStore(testEnvironment);
       VirtualNetworkService.State virtualNetworkState = createVirtualNetworkInCloudStore(testEnvironment);
       String networkId = ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkState.documentSelfLink);
+      VmService.State vmState = createVmInCloudStore(testEnvironment, networkId);
+      String vmId = ServiceUtils.getIDFromDocumentSelfLink(vmState.documentSelfLink);
+
+      Map<String, String> vmIdToNatRuleIdMap = new HashMap<>();
+      vmIdToNatRuleIdMap.put(vmId, "natRuleId");
+      vmIdToNatRuleIdMap.put("vmId2", "natRuleId2");
+      updateVirtualNetworkInCloudStore(testEnvironment, networkId, vmIdToNatRuleIdMap);
+
       return testEnvironment.callServiceAndWaitForState(
           RemoveFloatingIpFromVmWorkflowService.FACTORY_LINK,
-          buildStartState(RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CREATED, null, networkId, 0),
+          buildStartState(
+              RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.CREATED,
+              null,
+              networkId,
+              vmId,
+              0),
           RemoveFloatingIpFromVmWorkflowDocument.class,
           (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage)
       );
     }
+  }
+
+  private static VmService.State createVmInCloudStore(TestEnvironment testEnvironment, String networkId)
+      throws Throwable {
+    VmService.State startState = ReflectionUtils.buildValidStartState(VmService.State.class);
+
+    VmService.NetworkInfo networkInfo = new VmService.NetworkInfo();
+    networkInfo.id = networkId;
+    networkInfo.macAddress = "macAddress";
+    networkInfo.privateIpAddress = "1.2.3.4";
+    networkInfo.floatingIpAddress = "4.5.6.7";
+
+    startState.networkInfo = new HashMap<>();
+    startState.networkInfo.put(networkId, networkInfo);
+
+    Operation result = testEnvironment.sendPostAndWait(VmServiceFactory.SELF_LINK, startState);
+    assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+
+    return result.getBody(VmService.State.class);
   }
 
   private static VirtualNetworkService.State createVirtualNetworkInCloudStore(TestEnvironment testEnvironment)
@@ -536,10 +508,43 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     return result.getBody(VirtualNetworkService.State.class);
   }
 
+  private static VirtualNetworkService.State updateVirtualNetworkInCloudStore(
+      TestEnvironment testEnvironment,
+      String networkId,
+      Map<String, String> vmIdToNatRuleIdMap) throws Throwable {
+    VirtualNetworkService.State patchState = new VirtualNetworkService.State();
+    patchState.vmIdToNatRuleIdMap = vmIdToNatRuleIdMap;
+
+    Operation result = testEnvironment.sendPatchAndWait(VirtualNetworkService.FACTORY_LINK + "/" + networkId,
+        patchState);
+    assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+
+    return result.getBody(VirtualNetworkService.State.class);
+  }
+
+  private static DhcpSubnetService.State createDhcpRootSubnetServiceInCloudStore(TestEnvironment testEnvironment)
+      throws Throwable {
+    String cidr = "192.168.1.0/24";
+    SubnetUtils subnetUtils = new SubnetUtils(cidr);
+    SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
+    InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
+    InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
+
+    DhcpSubnetService.State state = new DhcpSubnetService.State();
+    state.cidr = cidr;
+    state.lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
+    state.highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
+    state.documentSelfLink = DhcpSubnetService.SINGLETON_LINK;
+
+    Operation result = testEnvironment.sendPostAndWait(DhcpSubnetService.FACTORY_LINK, state);
+    return result.getBody(DhcpSubnetService.State.class);
+  }
+
   private static RemoveFloatingIpFromVmWorkflowDocument buildStartState(
       RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage startStage,
       RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage subStage,
       String networkId,
+      String vmId,
       int controlFlags) {
     RemoveFloatingIpFromVmWorkflowDocument startState = new RemoveFloatingIpFromVmWorkflowDocument();
     startState.taskState = new RemoveFloatingIpFromVmWorkflowDocument.TaskState();
@@ -550,7 +555,7 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     startState.nsxAddress = "https://192.168.1.1";
     startState.nsxUsername = "nsxUsername";
     startState.nsxPassword = "nsxPassword";
-    startState.vmId = "vmId1";
+    startState.vmId = vmId;
 
     return startState;
   }
