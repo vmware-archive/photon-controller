@@ -331,7 +331,9 @@ public class ProjectXenonBackendTest {
 
       ProjectTicket projectTicket = project.getResourceTicket();
       ResourceTicketEntity resourceTicketEntity = resourceTicketBackend.findById(projectEntity.getResourceTicketId());
-      assertThat(projectTicket.getTenantTicketId(), is(resourceTicketEntity.getId()));
+      ResourceTicketEntity parentTicketEntity = resourceTicketBackend.findById(resourceTicketEntity.getParentId());
+      assertThat(projectTicket.getTenantTicketId(), is(parentTicketEntity.getId()));
+      assertThat(projectTicket.getTenantTicketName(), is(parentTicketEntity.getName()));
     }
 
     @Test
