@@ -38,10 +38,12 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalExc
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidAttachDisksException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidFlavorStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidImageStateException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmDisksSpecException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.IsoAlreadyAttachedException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.MoreThanOneIsoAttachedException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PersistentDiskAttachedException;
@@ -331,7 +333,12 @@ public class VmXenonBackend implements VmBackend {
     if (!useVirtualNetwork) {
       if (null != vm.getNetworks()) {
         for (String network : vm.getNetworks()) {
-          networkList.add(networkBackend.findById(network));
+          try {
+            networkList.add(networkBackend.findById(network));
+          } catch (NetworkNotFoundException ex) {
+            // swallow the network not found exception since if the network id is wrong
+            // we don't need to do anything for the network
+          }
         }
       }
     }
@@ -784,9 +791,15 @@ public class VmXenonBackend implements VmBackend {
     }
 
     vm.networks = spec.getSubnets();
+    for (String networkId : vm.networks) {
+      NetworkEntity network = networkBackend.findById(networkId);
+      if (!SubnetState.READY.equals(network.getState())) {
+        throw new InvalidNetworkStateException(
+            String.format("Network %s is in %s state", network.getId(), network.getState()));
+      }
+    }
 
     ImageEntity image = imageBackend.findById(spec.getSourceImageId());
-
     if (!ImageState.READY.equals(image.getState())) {
       throw new InvalidImageStateException(
           String.format("Image %s is in %s state", image.getId(), image.getState()));
