@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.api.frontend.backends;
 
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
-import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.api.frontend.commands.steps.IsoUploadStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.ResourceReserveStepCmd;
 import com.vmware.photon.controller.api.frontend.entities.AttachedDiskEntity;
@@ -25,7 +24,6 @@ import com.vmware.photon.controller.api.frontend.entities.HostEntity;
 import com.vmware.photon.controller.api.frontend.entities.ImageEntity;
 import com.vmware.photon.controller.api.frontend.entities.IsoEntity;
 import com.vmware.photon.controller.api.frontend.entities.LocalityEntity;
-import com.vmware.photon.controller.api.frontend.entities.NetworkEntity;
 import com.vmware.photon.controller.api.frontend.entities.ProjectEntity;
 import com.vmware.photon.controller.api.frontend.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
@@ -47,6 +45,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpired
 import com.vmware.photon.controller.api.frontend.exceptions.external.PersistentDiskAttachedException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.api.frontend.lib.QuotaCost;
+import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
 import com.vmware.photon.controller.api.frontend.utils.PaginationUtils;
 import com.vmware.photon.controller.api.model.AttachedDisk;
 import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
@@ -68,8 +67,6 @@ import com.vmware.photon.controller.api.model.VmCreateSpec;
 import com.vmware.photon.controller.api.model.VmDiskOperation;
 import com.vmware.photon.controller.api.model.VmOperation;
 import com.vmware.photon.controller.api.model.VmState;
-import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
-import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -84,7 +81,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +89,6 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -110,7 +105,6 @@ public class VmXenonBackend implements VmBackend {
   private static final int GB_TO_BYTE_CONVERSION_RATIO = 1024 * 1024 * 1024;
 
   private final ApiFeXenonRestClient xenonClient;
-  private final PhotonControllerXenonRestClient photonControllerXenonRestClient;
 
   private final ResourceTicketBackend resourceTicketBackend;
   private final ProjectBackend projectBackend;
@@ -120,14 +114,12 @@ public class VmXenonBackend implements VmBackend {
   private final TaskBackend taskBackend;
   private final DiskBackend diskBackend;
   private final HostBackend hostBackend;
-  private final NetworkBackend networkBackend;
   private final TombstoneBackend tombstoneBackend;
-  private final Boolean useVirtualNetwork;
+  private final NetworkHelper networkHelper;
 
   @Inject
   public VmXenonBackend(
       ApiFeXenonRestClient xenonClient,
-      PhotonControllerXenonRestClient photonControllerXenonRestClient,
       ResourceTicketBackend resourceTicketBackend,
       ProjectBackend projectBackend,
       AttachedDiskBackend attachedDiskBackend,
@@ -136,15 +128,11 @@ public class VmXenonBackend implements VmBackend {
       TaskBackend taskBackend,
       FlavorBackend flavorBackend,
       HostBackend hostBackend,
-      NetworkBackend networkBackend,
       TombstoneBackend tombstoneBackend,
-      @Named("useVirtualNetwork") Boolean useVirtualNetwork) {
+      NetworkHelper networkHelper) {
 
     this.xenonClient = xenonClient;
     xenonClient.start();
-
-    this.photonControllerXenonRestClient = photonControllerXenonRestClient;
-    photonControllerXenonRestClient.start();
 
     this.resourceTicketBackend = resourceTicketBackend;
     this.projectBackend = projectBackend;
@@ -154,9 +142,8 @@ public class VmXenonBackend implements VmBackend {
     this.taskBackend = taskBackend;
     this.flavorBackend = flavorBackend;
     this.hostBackend = hostBackend;
-    this.networkBackend = networkBackend;
     this.tombstoneBackend = tombstoneBackend;
-    this.useVirtualNetwork = useVirtualNetwork;
+    this.networkHelper = networkHelper;
   }
 
   @Override
@@ -314,29 +301,9 @@ public class VmXenonBackend implements VmBackend {
   @Override
   public void tombstone(VmEntity vm) throws ExternalException {
     Stopwatch tombstoneWatch = Stopwatch.createStarted();
-    String resourceTickedId = projectBackend.findById(vm.getProjectId()).getResourceTicketId();
-    ImageEntity image = null;
-    if (StringUtils.isNotBlank(vm.getImageId())) {
-      image = imageBackend.findById(vm.getImageId());
-    }
-
-    FlavorEntity flavor = null;
-    if (StringUtils.isNotBlank(vm.getFlavorId())) {
-      flavor = flavorBackend.getEntityById(vm.getFlavorId());
-    }
-
-    List<NetworkEntity> networkList = new LinkedList<>();
-
-    // In virtual network scenario, it is not needed to retrieve the network entity.
-    if (!useVirtualNetwork) {
-      if (null != vm.getNetworks()) {
-        for (String network : vm.getNetworks()) {
-          networkList.add(networkBackend.findById(network));
-        }
-      }
-    }
 
     Stopwatch resourceTicketWatch = Stopwatch.createStarted();
+    String resourceTickedId = projectBackend.findById(vm.getProjectId()).getResourceTicketId();
     resourceTicketBackend.returnQuota(resourceTickedId, new QuotaCost(vm.getCost()));
     resourceTicketWatch.stop();
     logger.info("VmXenonBackend.tombstone for Vm Id: {}, resourceTicket {}, returnQuota in {} milliseconds",
@@ -345,11 +312,15 @@ public class VmXenonBackend implements VmBackend {
         resourceTicketWatch.elapsed(TimeUnit.MILLISECONDS));
 
     tombstoneBackend.create(Vm.KIND, vm.getId());
-
     xenonClient.delete(VmServiceFactory.SELF_LINK + "/" + vm.getId(), new VmService.State());
 
     for (AttachedDiskEntity attachedDisk : attachedDiskBackend.findByVmId(vm.getId())) {
       attachedDiskBackend.deleteAttachedDiskById(attachedDisk.getId());
+    }
+
+    ImageEntity image = null;
+    if (StringUtils.isNotBlank(vm.getImageId())) {
+      image = imageBackend.findById(vm.getImageId());
     }
 
     if (image != null &&
@@ -357,26 +328,19 @@ public class VmXenonBackend implements VmBackend {
       imageBackend.tombstone(image);
     }
 
+    FlavorEntity flavor = null;
+    if (StringUtils.isNotBlank(vm.getFlavorId())) {
+      flavor = flavorBackend.getEntityById(vm.getFlavorId());
+    }
+
     if (flavor != null &&
         FlavorState.PENDING_DELETE.equals(flavor.getState())) {
       flavorBackend.tombstone(flavor);
     }
 
-    if (useVirtualNetwork) {
-      // Virtual network
+    if (null != vm.getNetworks()) {
       for (String network : vm.getNetworks()) {
-        DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
-        startState.networkId = network;
-
-        // Do not wait for the task to finish
-        photonControllerXenonRestClient.post(DeleteVirtualNetworkWorkflowService.FACTORY_LINK, startState);
-      }
-    } else {
-      // Physical network
-      for (NetworkEntity network : networkList) {
-        if (SubnetState.PENDING_DELETE.equals(network.getState())) {
-          networkBackend.tombstone(network);
-        }
+        this.networkHelper.tombstone(network);
       }
     }
 
@@ -784,9 +748,13 @@ public class VmXenonBackend implements VmBackend {
     }
 
     vm.networks = spec.getSubnets();
+    if (null != vm.networks) {
+      for (String networkId : vm.networks) {
+        networkHelper.checkSubnetState(networkId, SubnetState.READY);
+      }
+    }
 
     ImageEntity image = imageBackend.findById(spec.getSourceImageId());
-
     if (!ImageState.READY.equals(image.getState())) {
       throw new InvalidImageStateException(
           String.format("Image %s is in %s state", image.getId(), image.getState()));
@@ -860,7 +828,7 @@ public class VmXenonBackend implements VmBackend {
     // If sdn is enabled, we need to
     // 1. connect the VM with the logical switch and
     // 2. get private IP for this VM.
-    if (useVirtualNetwork) {
+    if (networkHelper.isSdnEnabled()) {
       step = new StepEntity();
       step.setOperation(Operation.CONNECT_VM_SWITCH);
       stepEntities.add(step);
@@ -1054,7 +1022,7 @@ public class VmXenonBackend implements VmBackend {
 
     // Conditional step. If virtual network is being used, the vm connection
     // to logical switch needs to be released.
-    if (useVirtualNetwork) {
+    if (networkHelper.isSdnEnabled()) {
       step = new StepEntity();
       step.setOperation(Operation.DISCONNECT_VM_SWITCH);
       step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, vm.getId());

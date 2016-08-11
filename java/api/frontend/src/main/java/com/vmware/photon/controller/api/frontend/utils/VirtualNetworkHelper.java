@@ -14,11 +14,18 @@
 package com.vmware.photon.controller.api.frontend.utils;
 
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidNetworkStateException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.SubnetState;
+import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.host.gen.VmNetworkInfo;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
@@ -32,16 +39,22 @@ import com.google.inject.Inject;
 public class VirtualNetworkHelper implements NetworkHelper {
 
   private ApiFeXenonRestClient client;
+  private PhotonControllerXenonRestClient photonControllerXenonRestClient;
 
   @Inject
-  public VirtualNetworkHelper(ApiFeXenonRestClient client) {
+  public VirtualNetworkHelper(
+      ApiFeXenonRestClient client,
+      PhotonControllerXenonRestClient pcClient) {
     this.client = client;
+    this.photonControllerXenonRestClient = pcClient;
   }
 
+  @Override
   public boolean isSdnEnabled() {
     return true;
   }
 
+  @Override
   public VmService.NetworkInfo convertAgentNetworkToVmNetwork(VmNetworkInfo agentNetwork) throws ExternalException {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     termsBuilder.put(VirtualNetworkService.State.FIELD_NAME_LOGICAL_SWITCH_ID, agentNetwork.getNetwork());
@@ -68,5 +81,33 @@ public class VirtualNetworkHelper implements NetworkHelper {
     vmNetwork.macAddress = agentNetwork.getMac_address();
 
     return vmNetwork;
+  }
+
+  @Override
+  public void tombstone(String networkId) throws ExternalException {
+    // Virtual network
+    DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
+    startState.networkId = networkId;
+
+    // Do not wait for the task to finish
+    photonControllerXenonRestClient.post(DeleteVirtualNetworkWorkflowService.FACTORY_LINK, startState);
+  }
+
+  @Override
+  public void checkSubnetState(String subnetId, SubnetState desiredState) throws ExternalException {
+    VirtualNetworkService.State entity = findSubnet(subnetId);
+    if (!desiredState.equals(entity.state)) {
+      throw new InvalidNetworkStateException(
+          String.format("Subnet %s is in %s state", subnetId, entity.state));
+    }
+  }
+
+  private VirtualNetworkService.State findSubnet(String subnetId) throws NetworkNotFoundException {
+    try {
+      String documentLink = VirtualNetworkService.FACTORY_LINK + "/" + subnetId;
+      return client.get(documentLink).getBody(VirtualNetworkService.State.class);
+    } catch (DocumentNotFoundException ex) {
+      throw new NetworkNotFoundException(subnetId);
+    }
   }
 }

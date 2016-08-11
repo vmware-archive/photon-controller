@@ -13,6 +13,9 @@
 
 package com.vmware.photon.controller.api.frontend.backends;
 
+import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
+import com.vmware.photon.controller.api.frontend.utils.VirtualNetworkHelper;
+
 import com.google.inject.name.Names;
 
 /**
@@ -22,5 +25,6 @@ public class XenonBackendWithVirtualNetworkTestModule extends XenonBackendTestMo
   @Override
   protected void customConfigure() {
     bindConstant().annotatedWith(Names.named("useVirtualNetwork")).to(true);
+    bind(NetworkHelper.class).to(VirtualNetworkHelper.class);
   }
 }

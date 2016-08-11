@@ -13,10 +13,15 @@
 
 package com.vmware.photon.controller.api.frontend.utils;
 
+import com.vmware.photon.controller.api.frontend.backends.NetworkBackend;
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.api.frontend.entities.NetworkEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidNetworkStateException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PortGroupRepeatedInMultipleNetworksException;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -37,16 +42,20 @@ import java.util.Map;
 public class PhysicalNetworkHelper implements NetworkHelper {
 
   private ApiFeXenonRestClient client;
+  private NetworkBackend networkBackend;
 
   @Inject
-  public PhysicalNetworkHelper(ApiFeXenonRestClient client) {
+  public PhysicalNetworkHelper(ApiFeXenonRestClient client, NetworkBackend networkBackend) {
     this.client = client;
+    this.networkBackend = networkBackend;
   }
 
+  @Override
   public boolean isSdnEnabled() {
     return false;
   }
 
+  @Override
   public VmService.NetworkInfo convertAgentNetworkToVmNetwork(VmNetworkInfo agentNetwork) throws ExternalException {
     // Query cloud-store for network document with the given port group name.
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
@@ -77,5 +86,30 @@ public class PhysicalNetworkHelper implements NetworkHelper {
     vmNetwork.macAddress = agentNetwork.getMac_address();
 
     return vmNetwork;
+  }
+
+  @Override
+  public void tombstone(String networkId) throws ExternalException {
+    NetworkEntity networkEntity;
+    try {
+      networkEntity = networkBackend.findById(networkId);
+    } catch (NetworkNotFoundException ex) {
+      // swallow the network not found exception since if the network id is wrong
+      // we don't need to do anything for the network
+      return;
+    }
+
+    if (SubnetState.PENDING_DELETE.equals(networkEntity.getState())) {
+      networkBackend.tombstone(networkEntity);
+    }
+  }
+
+  @Override
+  public void checkSubnetState(String subnetId, SubnetState desiredState) throws ExternalException {
+    NetworkEntity entity = networkBackend.findById(subnetId);
+    if (!desiredState.equals(entity.getState())) {
+      throw new InvalidNetworkStateException(
+          String.format("Subnet %s is in %s state", subnetId, entity.getState()));
+    }
   }
 }
