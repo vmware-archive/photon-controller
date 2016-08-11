@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.api.frontend.utils;
 
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.host.gen.VmNetworkInfo;
 
@@ -31,4 +32,19 @@ public interface NetworkHelper {
    * Converts network information from that returned by agent to a format that VM creation can consume.
    */
   VmService.NetworkInfo convertAgentNetworkToVmNetwork(VmNetworkInfo agentNetwork) throws ExternalException;
+
+  /**
+   * Tombstones a network entity.
+   * @param networkId
+   * @throws Exception
+   */
+  void tombstone(String networkId) throws ExternalException;
+
+  /**
+   * Validates that subnet is in desired state.
+   * @param subnetId
+   * @param desiredState
+   * @throws ExternalException
+   */
+  void checkSubnetState(String subnetId, SubnetState desiredState) throws ExternalException;
 }
