@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.common;
 
 import com.google.common.base.Preconditions;
+import com.google.common.net.InetAddresses;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -53,6 +54,28 @@ public class IpHelper {
     } catch (UnknownHostException e) {
       throw new IllegalArgumentException("Invalid IP " + ip);
     }
+  }
+
+  /**
+   * Convert an ip in long format to an ip string.
+   *
+   * @param ip
+   * @return
+   */
+  public static String longToIpString(long ip) {
+    InetAddress ipAddress = longToIp(ip);
+    return ipAddress.getHostAddress();
+  }
+
+  /**
+   * Convert an ip string to long.
+   *
+   * @param ip
+   * @return
+   */
+  public static long ipStringToLong(String ip) {
+    InetAddress ipAddress = InetAddresses.forString(ip);
+    return ipToLong((Inet4Address) ipAddress);
   }
 
   /**
