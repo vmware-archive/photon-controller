@@ -22,8 +22,6 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.Service;
-import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.net.InetAddresses;
 import org.apache.commons.net.util.SubnetUtils;
@@ -176,27 +174,6 @@ public class DhcpSubnetServiceTest {
     @AfterMethod
     public void afterMethod() throws Throwable {
       ServiceHostUtils.deleteAllDocuments(host, "test-host");
-    }
-
-    @Test
-    public void testExtractSubnet() throws Throwable {
-      DhcpSubnetService.SubnetOperationPatch subnetOperationPatch =
-          new DhcpSubnetService.SubnetOperationPatch(
-              DhcpSubnetService.SubnetOperationPatch.Kind.ExtractSubnetFromBottom,
-              16);
-      Operation patchOperation = new Operation()
-          .setAction(Service.Action.PATCH)
-          .setBody(subnetOperationPatch)
-          .setReferer("test-host")
-          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
-      host.sendRequestAndWait(patchOperation);
-
-      DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
-          startState.documentSelfLink);
-
-      assertThat(currentState.lowIp, is(startState.lowIp + 16));
-      assertThat(currentState.size, is(currentState.highIp - currentState.lowIp));
-      assertThat(currentState.highIp, is(startState.highIp));
     }
 
     @Test
