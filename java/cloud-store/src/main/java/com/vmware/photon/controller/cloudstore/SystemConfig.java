@@ -134,8 +134,8 @@ public class SystemConfig implements SystemConfigProvider {
   public boolean isBackgroundPaused()  {
     DeploymentService.State state = getState();
     if (state == null) {
-      logger.info("Deployment document not created yet .. isBackgroundPaused returns false");
-      return false;
+      logger.info("Deployment document not created yet .. isBackgroundPaused returns true");
+      return true;
     }
     if (isPaused(state)) {
       return true;
