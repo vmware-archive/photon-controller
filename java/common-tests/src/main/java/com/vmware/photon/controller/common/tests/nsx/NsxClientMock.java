@@ -45,6 +45,8 @@ import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
 import com.vmware.photon.controller.nsxclient.models.NatRule;
 import com.vmware.photon.controller.nsxclient.models.NatRuleCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.ResourceReference;
+import com.vmware.photon.controller.nsxclient.models.RoutingAdvertisement;
+import com.vmware.photon.controller.nsxclient.models.RoutingAdvertisementUpdateSpec;
 import com.vmware.photon.controller.nsxclient.models.TransportNode;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeState;
@@ -808,6 +810,53 @@ public class NsxClientMock extends NsxClient {
               .onFailure(error);
           return null;
         }).when(mockLogicalRouterApi).deleteNatRule(anyString(), anyString(), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
+    public Builder getRoutingAdvertisement(boolean isSuccess) throws Throwable {
+      if (isSuccess) {
+        RoutingAdvertisement routingAdvertisement = new RoutingAdvertisement();
+        routingAdvertisement.setRevision(1);
+
+        doAnswer(invocation -> {
+          ((FutureCallback<RoutingAdvertisement>) invocation.getArguments()[1])
+              .onSuccess(routingAdvertisement);
+          return null;
+        }).when(mockLogicalRouterApi).getRoutingAdvertisement(anyString(), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("getRoutingAdvertisement failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<RoutingAdvertisement>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockLogicalRouterApi).getRoutingAdvertisement(anyString(), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
+    public Builder configureRoutingAdvertisement(boolean isSuccess) throws Throwable {
+      if (isSuccess) {
+        RoutingAdvertisement routingAdvertisement = new RoutingAdvertisement();
+
+        doAnswer(invocation -> {
+          ((FutureCallback<RoutingAdvertisement>) invocation.getArguments()[2])
+              .onSuccess(routingAdvertisement);
+          return null;
+        }).when(mockLogicalRouterApi).configureRoutingAdvertisement(anyString(),
+            any(RoutingAdvertisementUpdateSpec.class),
+            any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("configureRoutingAdvertisement failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<RoutingAdvertisement>) invocation.getArguments()[2])
+              .onFailure(error);
+          return null;
+        }).when(mockLogicalRouterApi).configureRoutingAdvertisement(anyString(),
+            any(RoutingAdvertisementUpdateSpec.class),
+            any(FutureCallback.class));
       }
 
       return this;

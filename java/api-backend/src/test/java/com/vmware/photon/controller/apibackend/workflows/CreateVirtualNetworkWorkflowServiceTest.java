@@ -705,6 +705,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           .createLogicalRouterDownLinkPort(true, LOGICAL_ROUTER_DONWLINK_PORT_ID)
           .createLogicalLinkPortOnTier0Router(true, TIER0_ROUTER_DOWNLINK_PORT_ID)
           .createLogicalLinkPortOnTier1Router(true, LOGICAL_ROUTER_UPLINK_PORT_ID)
+          .getRoutingAdvertisement(true)
+          .configureRoutingAdvertisement(true)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 

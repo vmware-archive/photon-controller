@@ -26,12 +26,14 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.photon.controller.nsxclient.apis.LogicalRouterApi;
 import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
 import com.vmware.photon.controller.nsxclient.builders.LogicalPortCreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.builders.LogicalRouterDownLinkPortCreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.builders.LogicalRouterLinkPortOnTier0CreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.builders.LogicalRouterLinkPortOnTier1CreateSpecBuilder;
+import com.vmware.photon.controller.nsxclient.builders.RoutingAdvertisementUpdateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.datatypes.LogicalServiceResourceType;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.models.IPSubnet;
@@ -44,6 +46,8 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1CreateSpec;
 import com.vmware.photon.controller.nsxclient.models.ResourceReference;
+import com.vmware.photon.controller.nsxclient.models.RoutingAdvertisement;
+import com.vmware.photon.controller.nsxclient.models.RoutingAdvertisementUpdateSpec;
 import com.vmware.photon.controller.nsxclient.models.ServiceBinding;
 import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.photon.controller.nsxclient.utils.TagUtils;
@@ -61,7 +65,9 @@ import static com.google.common.base.Preconditions.checkState;
 import javax.annotation.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Implements an Xenon service that represents a task to configure the routing on a logical network.
@@ -69,6 +75,7 @@ import java.util.List;
 public class ConfigureRoutingTaskService extends StatefulService {
 
   public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/configure-routing-tasks";
+  private static final int NUM_RETRIES = 5;
 
   public static FactoryService createFactory() {
     return FactoryService.create(ConfigureRoutingTaskService.class, ConfigureRoutingTask.class);
@@ -162,6 +169,11 @@ public class ConfigureRoutingTaskService extends StatefulService {
 
         case CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER:
           connectTier1RouterToTier0Router(currentState);
+          break;
+
+        case ENABLE_ROUTING_ADVERTISEMENT:
+          List<Integer> retryCount = Arrays.asList(0);
+          getRoutingAdvertisement(currentState, retryCount);
           break;
 
         default:
@@ -320,7 +332,8 @@ public class ConfigureRoutingTaskService extends StatefulService {
         new FutureCallback<LogicalRouterLinkPortOnTier1>() {
           @Override
           public void onSuccess(@Nullable LogicalRouterLinkPortOnTier1 result) {
-            ConfigureRoutingTask patch = buildPatch(TaskState.TaskStage.FINISHED);
+            ConfigureRoutingTask patch = buildPatch(TaskState.TaskStage.STARTED,
+                TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT, null);
             patch.logicalLinkPortOnTier1Router = result.getId();
 
             TaskUtils.sendSelfPatch(ConfigureRoutingTaskService.this, patch);
@@ -332,6 +345,92 @@ public class ConfigureRoutingTaskService extends StatefulService {
           }
         }
     );
+  }
+
+  private void getRoutingAdvertisement(ConfigureRoutingTask currentState, List<Integer> retryCount) {
+    ServiceUtils.logInfo(this, "Get current routing advertisement revision on tier-1 router %s",
+        currentState.logicalTier1RouterId);
+
+    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(
+        getHost(),
+        currentState.nsxAddress,
+        currentState.nsxUsername,
+        currentState.nsxPassword
+    ).getLogicalRouterApi();
+
+    try {
+      logicalRouterApi.getRoutingAdvertisement(
+          currentState.logicalTier1RouterId,
+          new FutureCallback<RoutingAdvertisement>() {
+            @Override
+            public void onSuccess(RoutingAdvertisement routingAdvertisement) {
+              enableRoutingAdvertisement(currentState, routingAdvertisement.getRevision(), retryCount);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              failTask(t);
+            }
+          }
+      );
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
+  private void enableRoutingAdvertisement(ConfigureRoutingTask currentState, int revision, List<Integer> retryCount) {
+    ServiceUtils.logInfo(this, "Enable routing advertisement on tier-1 router %s", currentState.logicalTier1RouterId);
+
+    NsxClient nsxClient = ServiceHostUtils.getNsxClient(
+        getHost(),
+        currentState.nsxAddress,
+        currentState.nsxUsername,
+        currentState.nsxPassword
+    );
+
+    getHost().schedule(() -> {
+      try {
+        RoutingAdvertisementUpdateSpec spec = new RoutingAdvertisementUpdateSpecBuilder()
+            .advertiseNatRoutes(true)
+            .advertiseNsxConnectedRoutes(true)
+            .advertiseNatRoutes(true)
+            .revision(revision)
+            .build();
+
+        nsxClient.getLogicalRouterApi().configureRoutingAdvertisement(
+            currentState.logicalTier1RouterId,
+            spec,
+            new FutureCallback<RoutingAdvertisement>() {
+              @Override
+              public void onSuccess(@Nullable RoutingAdvertisement routingAdvertisement) {
+                ConfigureRoutingTask patch = buildPatch(TaskState.TaskStage.FINISHED);
+                TaskUtils.sendSelfPatch(ConfigureRoutingTaskService.this, patch);
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                // Technically speaking, if another user is updating the routing advertisement simultaneously,
+                // this update would fail. So we need to retry reading the current revision, and do the update
+                // again.
+                int currNumTries = retryCount.get(0);
+                if (currNumTries++ < NUM_RETRIES) {
+                  ServiceUtils.logSevere(ConfigureRoutingTaskService.this,
+                      "Enabling routing advertisement on tier-1 router %s failed with error %s, retrying ...",
+                      currentState.logicalTier1RouterId,
+                      t.getMessage());
+
+                  retryCount.set(0, currNumTries);
+                  getRoutingAdvertisement(currentState, retryCount);
+                } else {
+                  failTask(t);
+                }
+              }
+            }
+        );
+      } catch (Throwable t) {
+        failTask(t);
+      }
+    }, nsxClient.getEnableRoutingAdvertisementRetryDelay(), TimeUnit.MILLISECONDS);
   }
 
   private void validateStartState(ConfigureRoutingTask state) {
@@ -366,7 +465,7 @@ public class ConfigureRoutingTaskService extends StatefulService {
     if (patchState.stage == TaskState.TaskStage.FINISHED) {
       if (routingType == RoutingType.ROUTED) {
         checkState(startState.stage == TaskState.TaskStage.STARTED
-            && startState.subStage == TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER);
+            && startState.subStage == TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT);
       } else {
         checkState(startState.stage == TaskState.TaskStage.STARTED
             && startState.subStage == TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_SWITCH);
