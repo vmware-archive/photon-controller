@@ -163,6 +163,7 @@ public class DhcpSubnetServiceTest {
    */
   public class HandlePatchTest {
     private DhcpSubnetService.State startState;
+    private final String macAddress = "08:00:27:d8:7d:8e";
 
     @BeforeMethod
     public void beforeMethod() throws Throwable {
@@ -197,6 +198,45 @@ public class DhcpSubnetServiceTest {
       assertThat(currentState.size, is(currentState.highIp - currentState.lowIp));
       assertThat(currentState.highIp, is(startState.highIp));
     }
+
+    @Test
+    public void testAllocateIpToMac() throws Throwable {
+      DhcpSubnetService.IpOperationPatch ipOperationPatch =
+              new DhcpSubnetService.IpOperationPatch(
+                      DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+                      macAddress);
+      Operation patchOperation = new Operation()
+              .setAction(Service.Action.PATCH)
+              .setBody(ipOperationPatch)
+              .setReferer("test-host")
+              .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      host.sendRequestAndWait(patchOperation);
+
+      DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
+              startState.documentSelfLink);
+
+      assertThat(currentState.version, is(startState.version + 1));
+    }
+
+    @Test
+    public void testReleaseIpToMac() throws Throwable {
+      DhcpSubnetService.IpOperationPatch ipOperationPatch =
+              new DhcpSubnetService.IpOperationPatch(
+                      DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac,
+                      macAddress);
+      Operation patchOperation = new Operation()
+              .setAction(Service.Action.PATCH)
+              .setBody(ipOperationPatch)
+              .setReferer("test-host")
+              .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      host.sendRequestAndWait(patchOperation);
+
+      DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
+              startState.documentSelfLink);
+
+      assertThat(currentState.version, is(startState.version + 1));
+    }
+
   }
 
   private static DhcpSubnetService.State createInitialState() {
@@ -213,9 +253,6 @@ public class DhcpSubnetServiceTest {
     DhcpSubnetService.State startState = new DhcpSubnetService.State();
     startState.lowIp = lowIp;
     startState.highIp = highIp;
-    startState.version = 0L;
-    startState.versionStaged = 0L;
-    startState.versionPushed = 0L;
 
     return startState;
   }
