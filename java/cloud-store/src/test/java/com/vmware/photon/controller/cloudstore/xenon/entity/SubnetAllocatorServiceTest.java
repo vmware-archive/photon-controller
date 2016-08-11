@@ -27,8 +27,6 @@ import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.UriUtils;
 
-import com.google.common.net.InetAddresses;
-import org.apache.commons.net.util.SubnetUtils;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,10 +38,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -107,25 +103,24 @@ public class SubnetAllocatorServiceTest {
 
       SubnetAllocatorService.State createdState = result.getBody(SubnetAllocatorService.State.class);
 
-      SubnetUtils subnetUtils = new SubnetUtils(startState.rootCidr);
-      SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
-      Long lowIp, highIp;
-
-      InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
-      lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
-
-      InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
-      highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
-
-      SubnetAllocatorService.IpV4Range ipV4Range = new SubnetAllocatorService.IpV4Range(lowIp, highIp);
-      startState.freeList = new ArrayList<>();
-      startState.freeList.add(ipV4Range);
-
-      assertThat(ServiceUtils.documentEquals(SubnetAllocatorService.State.class, startState, createdState), is(true));
+      assertThat(createdState.freeList.size(), is(1));
+      SubnetAllocatorService.IpV4Range freeRange = createdState.freeList.iterator().next();
+      InetAddress lowAddress = IpHelper.longToIp(freeRange.low);
+      InetAddress highAddress = IpHelper.longToIp(freeRange.high);
+      assertThat(createdState.rootCidr, is("192.168.0.0/16"));
+      assertThat(lowAddress.getHostAddress(), is("192.168.0.0"));
+      assertThat(highAddress.getHostAddress(), is("192.168.255.255"));
 
       SubnetAllocatorService.State savedState = host.getServiceState(SubnetAllocatorService.State.class,
           createdState.documentSelfLink);
-      assertThat(ServiceUtils.documentEquals(SubnetAllocatorService.State.class, startState, savedState), is(true));
+
+      assertThat(savedState.freeList.size(), is(1));
+      freeRange = savedState.freeList.iterator().next();
+      lowAddress = IpHelper.longToIp(freeRange.low);
+      highAddress = IpHelper.longToIp(freeRange.high);
+      assertThat(savedState.rootCidr, is("192.168.0.0/16"));
+      assertThat(lowAddress.getHostAddress(), is("192.168.0.0"));
+      assertThat(highAddress.getHostAddress(), is("192.168.255.255"));
     }
   }
 
@@ -222,12 +217,14 @@ public class SubnetAllocatorServiceTest {
           .setBody(allocateSubnetPatch)
           .setReferer("test-host")
           .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
-      host.sendRequestAndWait(patchOperation);
+      Operation completedOperation = host.sendRequestAndWait(patchOperation);
+
+      assertThat(completedOperation.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
       SubnetAllocatorService.State allocatorState = host.getServiceState(SubnetAllocatorService.State.class,
           startState.documentSelfLink);
 
-      assertThat(allocatorState.freeList.size(), is(2));
+      assertThat(allocatorState.freeList.size(), is(1));
 
       ServiceHostUtils.waitForServiceState(
           ServiceDocumentQueryResult.class,
@@ -242,9 +239,9 @@ public class SubnetAllocatorServiceTest {
       InetAddress lowAddress = IpHelper.longToIp(currentState.lowIp);
       InetAddress highAddress = IpHelper.longToIp(currentState.highIp);
 
-      assertThat(currentState.cidr, is("192.168.0.16/28"));
-      assertThat(lowAddress.getHostAddress(), is("192.168.0.16"));
-      assertThat(highAddress.getHostAddress(), is("192.168.0.31"));
+      assertThat(currentState.cidr, is("192.168.0.0/28"));
+      assertThat(lowAddress.getHostAddress(), is("192.168.0.0"));
+      assertThat(highAddress.getHostAddress(), is("192.168.0.15"));
 
     }
 
@@ -270,6 +267,66 @@ public class SubnetAllocatorServiceTest {
           startState.documentSelfLink);
 
       assertThat(allocatorState.freeList.size(), is(1));
+    }
+
+    @Test
+    public void testReleaseSubnetSuccess() throws Throwable {
+      String subnetId = UUID.randomUUID().toString();
+      SubnetAllocatorService.AllocateSubnet allocateSubnetPatch =
+          new SubnetAllocatorService.AllocateSubnet(
+              subnetId, 16L, 4L);
+      Operation patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(allocateSubnetPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      host.sendRequestAndWait(patchOperation);
+
+      SubnetAllocatorService.ReleaseSubnet releaseSubnetPatch =
+          new SubnetAllocatorService.ReleaseSubnet(subnetId);
+      patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(releaseSubnetPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      host.sendRequestAndWait(patchOperation);
+
+      SubnetAllocatorService.State allocatorState = host.getServiceState(SubnetAllocatorService.State.class,
+          startState.documentSelfLink);
+
+      assertThat(allocatorState.freeList.size(), is(1));
+
+      SubnetAllocatorService.IpV4Range freeRange = allocatorState.freeList.iterator().next();
+
+      InetAddress lowAddress = IpHelper.longToIp(freeRange.low);
+      InetAddress highAddress = IpHelper.longToIp(freeRange.high);
+      assertThat(lowAddress.getHostAddress(), is("192.168.0.0"));
+      assertThat(highAddress.getHostAddress(), is("192.168.255.255"));
+
+      ServiceHostUtils.waitForServiceState(
+          ServiceDocumentQueryResult.class,
+          DhcpSubnetService.FACTORY_LINK,
+          (queryResult) -> queryResult.documentCount == 0,
+          host,
+          null);
+    }
+
+    @Test
+    public void testReleaseSubnetFailure() throws Throwable {
+      String subnetId = UUID.randomUUID().toString();
+      SubnetAllocatorService.ReleaseSubnet releaseSubnetPatch =
+          new SubnetAllocatorService.ReleaseSubnet(subnetId);
+      Operation patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(releaseSubnetPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      try {
+        host.sendRequestAndWait(patchOperation);
+        Assert.fail("relase of non existent subnet should have failed");
+      } catch (BadRequestException ex) {
+        assertThat(ex.getMessage(), containsString("Could not find the subnet service with the provided subnetId"));
+      }
     }
   }
 
