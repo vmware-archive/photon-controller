@@ -38,6 +38,7 @@ public class NsxClient {
   private static final int DELETE_LOGICAL_SWITCH_POLL_DELAY = 10;
   private static final int DELETE_LOGICAL_ROUTER_POLL_DELAY = 10;
   private static final int DELETE_LOGICAL_PORT_POLL_DELAY = 1000;
+  private static final int ENABLE_ROUTING_ADVERTISEMENT_RETRY_DELAY = 1000;
 
   private final RestClient restClient;
 
@@ -122,6 +123,14 @@ public class NsxClient {
    */
   public int getDeleteLogicalPortPollDelay() {
     return DELETE_LOGICAL_PORT_POLL_DELAY;
+  }
+
+  /**
+   * Returns a delay value in milliseconds. The delay is used as the interval to retry
+   * enabling the routing advertisement.
+   */
+  public int getEnableRoutingAdvertisementRetryDelay() {
+    return ENABLE_ROUTING_ADVERTISEMENT_RETRY_DELAY;
   }
 
   public String getHostThumbprint(String ipAddress, int port) throws Throwable {
