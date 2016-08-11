@@ -17,6 +17,7 @@ import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHelper;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureDhcpWorkflowDocument;
+import com.vmware.photon.controller.apibackend.utils.TaskStateHelper;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
@@ -24,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -36,7 +38,6 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.anyString;
@@ -52,6 +53,8 @@ import java.util.EnumSet;
  * Tests for {@link com.vmware.photon.controller.apibackend.workflows.ConfigureDhcpWorkflowService}.
  */
 public class ConfigureDhcpWorkflowServiceTest {
+  private static final TaskStateHelper<ConfigureDhcpWorkflowDocument.TaskState.SubStage> taskStateHelper =
+      new TaskStateHelper<>(ConfigureDhcpWorkflowDocument.TaskState.SubStage.class);
 
   @Test(enabled = false)
   private void dummy() {
@@ -197,20 +200,25 @@ public class ConfigureDhcpWorkflowServiceTest {
      * the workflow will validate the state and fail.
      * @throws Throwable
      */
-    @Test
-    public void failsWithNullMandatoryFields() throws Throwable {
+    @Test(expectedExceptions = XenonRuntimeException.class,
+        expectedExceptionsMessageRegExp = "^.* cannot be null",
+        dataProvider = "NotNullFields")
+    public void failsWithNullMandatoryFields(String fieldName) throws Throwable {
 
-      startState.dhcpServerAddresses = null;
-      try {
-        testEnvironment.callServiceAndWaitForState(
-            ConfigureDhcpWorkflowService.FACTORY_LINK,
-            startState,
-            ConfigureDhcpWorkflowDocument.class,
-            (state) -> TaskState.TaskStage.CREATED == state.taskState.stage);
-      } catch (XenonRuntimeException ex) {
-        assertThat(ex.getMessage(), containsString("dhcpServerAddresses cannot be null"));
-      }
+      Field declaredField = startState.getClass().getDeclaredField(fieldName);
+      declaredField.set(startState, null);
+      testEnvironment.callServiceAndWaitForState(
+          ConfigureDhcpWorkflowService.FACTORY_LINK,
+          startState,
+          ConfigureDhcpWorkflowDocument.class,
+          (state) -> TaskState.TaskStage.CREATED == state.taskState.stage);
+    }
 
+    @DataProvider(name = "NotNullFields")
+    public Object[][] getNotNullFields() {
+      return TestHelper.toDataProvidersList(
+          ReflectionUtils.getAttributeNamesWithAnnotation(
+              ConfigureDhcpWorkflowDocument.class, NotBlank.class));
     }
   }
 
@@ -290,35 +298,8 @@ public class ConfigureDhcpWorkflowServiceTest {
     }
 
     @DataProvider(name = "InvalidStartState")
-    public Object[][] getInvalidStartStateTestData() {
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED,
-              ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE},
-          {TaskState.TaskStage.CREATED,
-              ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE},
-
-          {TaskState.TaskStage.STARTED, null},
-          {TaskState.TaskStage.STARTED,
-              ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE},
-
-          {TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FINISHED,
-              ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE},
-          {TaskState.TaskStage.FINISHED,
-              ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE},
-
-          {TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.FAILED,
-              ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE},
-          {TaskState.TaskStage.FAILED,
-              ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE},
-
-          {TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.CANCELLED,
-              ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE},
-          {TaskState.TaskStage.CANCELLED,
-              ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE},
-      };
+    public Object[][] getInvalidStartStateTestData() throws Throwable {
+      return taskStateHelper.getInvalidStartState();
     }
   }
 
@@ -338,7 +319,7 @@ public class ConfigureDhcpWorkflowServiceTest {
           .cloudStoreHelper(new CloudStoreHelper())
           .build();
 
-      DeploymentService.State deploymentState = createDeploymentDocumentInCloudStore(testEnvironment);
+      createDeploymentDocumentInCloudStore(testEnvironment);
       startState = buildStartState(
           TaskState.TaskStage.CREATED,
           null,
@@ -364,9 +345,10 @@ public class ConfigureDhcpWorkflowServiceTest {
      */
     @Test(dataProvider = "ValidStageAndSubStagePatch")
     public void succeedsWithValidStageAndSubStagePatch(
+        TaskState.TaskStage currentStage,
+        ConfigureDhcpWorkflowDocument.TaskState.SubStage currentSubStage,
         TaskState.TaskStage patchStage,
-        ConfigureDhcpWorkflowDocument.TaskState.SubStage patchSubStage
-    ) throws Throwable {
+        ConfigureDhcpWorkflowDocument.TaskState.SubStage patchSubStage) throws Throwable {
 
       ConfigureDhcpWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -377,8 +359,15 @@ public class ConfigureDhcpWorkflowServiceTest {
                   ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE
                       == state.taskState.subStage);
 
-      ConfigureDhcpWorkflowDocument patchState = buildPatchState(patchStage, patchSubStage);
-      finalState = testEnvironment.sendPatchAndWait(finalState.documentSelfLink, patchState)
+
+      if (currentStage != ConfigureDhcpWorkflowDocument.TaskState.TaskStage.STARTED &&
+          currentSubStage != ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE) {
+        testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
+            buildPatchState(currentStage, currentSubStage));
+      }
+
+      finalState = testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
+          buildPatchState(patchStage, patchSubStage))
           .getBody(ConfigureDhcpWorkflowDocument.class);
 
       assertThat(finalState.taskState.stage, is(patchStage));
@@ -386,17 +375,8 @@ public class ConfigureDhcpWorkflowServiceTest {
     }
 
     @DataProvider(name = "ValidStageAndSubStagePatch")
-    public Object[][] getValidStageAndSubStagePatch() {
-      return new Object[][]{
-          {TaskState.TaskStage.STARTED,
-              ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE},
-          {TaskState.TaskStage.STARTED,
-              ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE},
-
-          {TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.CANCELLED, null},
-      };
+    public Object[][] getValidStageAndSubStagePatch() throws Throwable {
+      return taskStateHelper.getValidPatchState();
     }
 
     /**
@@ -405,11 +385,10 @@ public class ConfigureDhcpWorkflowServiceTest {
      */
     @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "InvalidStageAndSubStagePatch")
     public void failsWithInvalidStageAndSubStagePatch(
-        TaskState.TaskStage firstPatchStage,
-        ConfigureDhcpWorkflowDocument.TaskState.SubStage firstPatchSubStage,
-        TaskState.TaskStage secondPatchStage,
-        ConfigureDhcpWorkflowDocument.TaskState.SubStage secondPatchSubStage)
-        throws Throwable {
+        TaskState.TaskStage currentStage,
+        ConfigureDhcpWorkflowDocument.TaskState.SubStage currentSubStage,
+        TaskState.TaskStage patchStage,
+        ConfigureDhcpWorkflowDocument.TaskState.SubStage patchSubStage) throws Throwable {
 
       ConfigureDhcpWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -420,53 +399,20 @@ public class ConfigureDhcpWorkflowServiceTest {
                   ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE
                       == state.taskState.subStage);
 
-      ConfigureDhcpWorkflowDocument patchState = buildPatchState(firstPatchStage, firstPatchSubStage);
-      if (firstPatchStage != TaskState.TaskStage.STARTED ||
-          firstPatchSubStage != ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE) {
-        finalState = testEnvironment.sendPatchAndWait(finalState.documentSelfLink, patchState)
-            .getBody(ConfigureDhcpWorkflowDocument.class);
+      if (currentStage != ConfigureDhcpWorkflowDocument.TaskState.TaskStage.STARTED &&
+          currentSubStage != ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE) {
+        testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
+            buildPatchState(currentStage, currentSubStage));
       }
 
-      patchState = buildPatchState(secondPatchStage, secondPatchSubStage);
-      testEnvironment.sendPatchAndWait(finalState.documentSelfLink, patchState)
+      testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
+          buildPatchState(patchStage, patchSubStage))
           .getBody(ConfigureDhcpWorkflowDocument.class);
     }
 
     @DataProvider(name = "InvalidStageAndSubStagePatch")
-    public Object[][] getInvalidStageAndSubStagePatch()
-        throws Throwable {
-
-      return new Object[][]{
-          {TaskState.TaskStage.STARTED, ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE,
-              TaskState.TaskStage.CREATED, null},
-
-          {TaskState.TaskStage.STARTED, ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE,
-              TaskState.TaskStage.STARTED, ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE},
-
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE},
-
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE},
-
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE},
-
-      };
+    public Object[][] getInvalidStageAndSubStagePatch() throws Throwable {
+      return taskStateHelper.getInvalidPatchState();
     }
 
     /**

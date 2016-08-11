@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
-import com.vmware.photon.controller.apibackend.exceptions.ConfigureDhcpException;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureDhcpWorkflowDocument;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
@@ -139,19 +138,16 @@ public class ConfigureDhcpWorkflowService extends BaseWorkflowService<ConfigureD
   }
 
   private void processPatch(ConfigureDhcpWorkflowDocument state) {
-    try {
-      switch (state.taskState.subStage) {
-        case CREATE_DHCP_RELAY_PROFILE:
-          createDhcpRelayProfile(state);
-          break;
-        case CREATE_DHCP_RELAY_SERVICE:
-          createDhcpRelayService(state);
-          break;
-        default:
-          throw new ConfigureDhcpException("Invalid task substage " + state.taskState.subStage);
-      }
-    } catch (Throwable t) {
-      fail(state, t);
+    switch (state.taskState.subStage) {
+      case CREATE_DHCP_RELAY_PROFILE:
+        createDhcpRelayProfile(state);
+        break;
+      case CREATE_DHCP_RELAY_SERVICE:
+        createDhcpRelayService(state);
+        break;
+      case UPDATE_DEPLOYMENT:
+        updateDeployment(state);
+        break;
     }
   }
 
@@ -211,8 +207,16 @@ public class ConfigureDhcpWorkflowService extends BaseWorkflowService<ConfigureD
               new FutureCallback<DhcpRelayService>() {
                 @Override
                 public void onSuccess(DhcpRelayService result) {
-                  state.taskServiceEntity.dhcpRelayServiceId = result.getId();
-                  updateDeployment(state);
+                  try {
+                    ConfigureDhcpWorkflowDocument patchState = buildPatch(
+                        TaskState.TaskStage.STARTED,
+                        ConfigureDhcpWorkflowDocument.TaskState.SubStage.UPDATE_DEPLOYMENT);
+                    patchState.taskServiceEntity = state.taskServiceEntity;
+                    patchState.taskServiceEntity.dhcpRelayServiceId = result.getId();
+                    progress(state, patchState);
+                  } catch (Throwable t) {
+                    fail(state, t);
+                  }
                 }
 
                 @Override
@@ -225,9 +229,6 @@ public class ConfigureDhcpWorkflowService extends BaseWorkflowService<ConfigureD
     }
   }
 
-  /**
-   * Updates the deployment state with the DHCP relay information.
-   */
   private void updateDeployment(ConfigureDhcpWorkflowDocument state) {
     DeploymentService.State deploymentPatchState = new DeploymentService.State();
     deploymentPatchState.dhcpRelayProfileId = state.taskServiceEntity.dhcpRelayProfileId;
@@ -243,11 +244,7 @@ public class ConfigureDhcpWorkflowService extends BaseWorkflowService<ConfigureD
           }
 
           try {
-            ConfigureDhcpWorkflowDocument patchState = buildPatch(
-                TaskState.TaskStage.FINISHED,
-                null);
-            patchState.taskServiceEntity = state.taskServiceEntity;
-            finish(state, patchState);
+            finish(state);
           } catch (Throwable t) {
             fail(state, t);
           }

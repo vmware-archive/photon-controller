@@ -52,7 +52,8 @@ public class ConfigureDhcpWorkflowDocument extends ServiceDocument {
      */
     public enum SubStage {
       CREATE_DHCP_RELAY_PROFILE,
-      CREATE_DHCP_RELAY_SERVICE
+      CREATE_DHCP_RELAY_SERVICE,
+      UPDATE_DEPLOYMENT
     }
   }
 
