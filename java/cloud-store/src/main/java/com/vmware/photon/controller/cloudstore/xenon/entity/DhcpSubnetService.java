@@ -114,10 +114,18 @@ public class DhcpSubnetService extends StatefulService {
 
   public void handleAllocateIpToMacPatch(Operation patch) {
     ServiceUtils.logInfo(this, "Patching service %s to allocate IP to MAC", getSelfLink());
+    State currentState = getState(patch);
+    currentState.version++;
+    setState(patch, currentState);
+    patch.complete();
   }
 
   public void handleReleaseIpForMacPatch(Operation patch) {
     ServiceUtils.logInfo(this, "Patching service %s to release IP for MAC", getSelfLink());
+    State currentState = getState(patch);
+    currentState.version++;
+    setState(patch, currentState);
+    patch.complete();
   }
 
   public void handleExtractSubnetFromBottom(Operation patch) {
@@ -361,24 +369,18 @@ public class DhcpSubnetService extends StatefulService {
      * This version number represents the current version of the subnet based on changes in IP leases.
      * It will be patched for increment on each IP lease change.
      */
-    @DefaultLong(0L)
-    @NotNull
-    public Long version;
+     public long version;
 
     /**
      * This version number represents the subnet version selected for pushing changes to DHCP agent.
      */
-    @DefaultLong(0L)
-    @NotNull
-    public Long versionStaged;
+    public long versionStaged;
 
     /**
      * This version number represents the subnet version for which changes in IP leases are pushed
      * successfully to DHCP agent.
      */
-    @DefaultLong(0L)
-    @NotNull
-    public Long versionPushed;
+    public long versionPushed;
 
     @Override
     public String toString() {
