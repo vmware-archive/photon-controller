@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.api.frontend.clients;
 
 import com.vmware.photon.controller.api.frontend.BackendTaskExecutor;
+import com.vmware.photon.controller.api.frontend.backends.DatastoreBackend;
 import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
 import com.vmware.photon.controller.api.frontend.backends.HostBackend;
 import com.vmware.photon.controller.api.frontend.backends.ProjectBackend;
@@ -71,6 +72,7 @@ public class DeploymentFeClient {
   private final HostBackend hostBackend;
   private final TenantBackend tenantBackend;
   private final ProjectBackend projectBackend;
+  private final DatastoreBackend datastoreBackend;
 
   private final AuthConfig authConfig;
 
@@ -85,6 +87,7 @@ public class DeploymentFeClient {
       HostBackend hostBackend,
       TenantBackend tenantBackend,
       ProjectBackend projectBackend,
+      DatastoreBackend datastoreBackend,
       AuthConfig authConfig,
       TaskCommandFactory commandFactory,
       @BackendTaskExecutor ExecutorService executor) {
@@ -94,6 +97,7 @@ public class DeploymentFeClient {
     this.hostBackend = hostBackend;
     this.tenantBackend = tenantBackend;
     this.projectBackend = projectBackend;
+    this.datastoreBackend = datastoreBackend;
     this.authConfig = authConfig;
     this.commandFactory = commandFactory;
     this.executor = executor;
@@ -287,6 +291,7 @@ public class DeploymentFeClient {
     DeploymentSize deploymentSize = new DeploymentSize();
     deploymentSize.setNumberHosts(hostBackend.getNumberHosts());
     deploymentSize.setNumberTenants(tenantBackend.getNumberTenants());
+    deploymentSize.setNumberDatastores(datastoreBackend.getNumberDatastores());
 
     return deploymentSize;
 

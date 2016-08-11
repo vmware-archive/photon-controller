@@ -33,4 +33,6 @@ public interface DatastoreBackend {
   ResourceList<Datastore> filter(Optional<String> tag, Optional<Integer> pageSize) throws ExternalException;
 
   ResourceList<Datastore> getDatastoresPage(String pageLink) throws PageExpiredException;
+
+  int getNumberDatastores();
 }

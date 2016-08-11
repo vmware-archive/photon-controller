@@ -24,7 +24,10 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -88,6 +91,20 @@ public class DatastoreXenonBackend implements DatastoreBackend{
 
     return PaginationUtils.xenonQueryResultToResourceList(
             DatastoreService.State.class, queryResult, state -> toApiRepresentation(state));
+  }
+
+  @Override
+  public int getNumberDatastores() {
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
+    querySpec.query.addBooleanClause(kindClause);
+    querySpec.options.add(QueryTask.QuerySpecification.QueryOption.COUNT);
+
+    com.vmware.xenon.common.Operation result = xenonClient.query(querySpec, true);
+    ServiceDocumentQueryResult queryResult = result.getBody(QueryTask.class).results;
+    return queryResult.documentCount.intValue();
   }
 
   private DatastoreService.State findById(String id) throws DatastoreNotFoundException {
