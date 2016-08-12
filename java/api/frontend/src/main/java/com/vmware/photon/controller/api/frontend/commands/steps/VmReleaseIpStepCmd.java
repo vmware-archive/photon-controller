@@ -53,7 +53,7 @@ public class VmReleaseIpStepCmd extends StepCommand {
     Map<String, VmService.NetworkInfo> networkInfoMap = getNetworkInfo(vmId);
 
     for (VmService.NetworkInfo networkInfo : networkInfoMap.values()) {
-      patchIpAllocation(networkInfo.id, networkInfo.macAddress);
+      patchIpRelease(networkInfo.id, networkInfo.privateIpAddress);
     }
 
     logger.info("Released IP for VM {}", vmId);
@@ -75,15 +75,15 @@ public class VmReleaseIpStepCmd extends StepCommand {
     }
   }
 
-  private void patchIpAllocation(String subnetId, String macAddress) {
-    if (macAddress == null || macAddress.isEmpty()) {
+  private void patchIpRelease(String subnetId, String ipAddress) {
+    if (ipAddress == null || ipAddress.isEmpty()) {
       logger.info("Skip releasing one network info entry for vm , it is null or empty.");
       return;
     }
-    logger.info("Releasing one network info entry for vm, macAddress is {}", macAddress);
+    logger.info("Releasing one network info entry for vm, ipAddress is {}", ipAddress);
 
-    DhcpSubnetService.IpOperationPatch patch = new DhcpSubnetService.IpOperationPatch(DhcpSubnetService
-        .IpOperationPatch.Kind.ReleaseIpForMac, macAddress);
+    DhcpSubnetService.IpOperationPatch patch = new DhcpSubnetService.IpOperationPatch(
+        DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac, null, ipAddress);
 
     PhotonControllerXenonRestClient photonControllerXenonRestClient = taskCommand.getPhotonControllerXenonRestClient();
     photonControllerXenonRestClient.patch(DhcpSubnetService.FACTORY_LINK + "/" + subnetId, patch);

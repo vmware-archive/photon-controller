@@ -54,7 +54,7 @@ public class DhcpSubnetService extends StatefulService {
    * The single instance will be started at the time of configuration of virtual networking
    * in the system which could be at deployment time or later.
    */
-  public static final String SINGLETON_LINK = FACTORY_LINK + "/root-dhcp-subnet";
+  public static final String FLOATING_IP_SUBNET_SINGLETON_LINK = FACTORY_LINK + "/floating-ip-dhcp-subnet";
 
   public static final long MAX_IPV4 = 0xFFFFFFFFL; // this represents 255.255.255.255
 
@@ -129,19 +129,18 @@ public class DhcpSubnetService extends StatefulService {
       int cur = currentState.ipAllocations.nextClearBit(0);
       currentState.ipAllocations.set(cur);
 
-      allocatedIp = IpHelper.longToIp(cur + currentState.lowIpDynamic).getHostAddress();
+      allocatedIp = IpHelper.longToIpString(cur + currentState.lowIpDynamic);
 
       IpLeaseService.State ipLease = new IpLeaseService.State();
       ipLease.macAddress = ipOperationPatch.macAddress;
       ipLease.ip = allocatedIp;
-      ipLease.documentSelfLink = makeIpLeaseUrl(currentState.subnetId, allocatedIp);
+      ipLease.documentSelfLink = makeIpLeaseUrl(currentState.isFloatingIpSubnet, currentState.subnetId, allocatedIp);
 
       Operation postOperation = Operation
           .createPost(this, IpLeaseService.FACTORY_LINK)
           .setBody(ipLease);
-      Operation resultOperation = ServiceUtils.doServiceOperation(this, postOperation);
-      IpLeaseService.State ipLeaseResult = resultOperation.getBody(IpLeaseService.State.class);
-      ipOperationPatch.ipLeaseId = ServiceUtils.getIDFromDocumentSelfLink(ipLeaseResult.documentSelfLink);
+      ServiceUtils.doServiceOperation(this, postOperation);
+      ipOperationPatch.ipAddress = allocatedIp;
 
       currentState.version++;
       setState(patch, currentState);
@@ -155,10 +154,28 @@ public class DhcpSubnetService extends StatefulService {
 
   public void handleReleaseIpForMacPatch(Operation patch) {
     ServiceUtils.logInfo(this, "Patching service %s to release IP for MAC", getSelfLink());
-    State currentState = getState(patch);
-    currentState.version++;
-    setState(patch, currentState);
-    patch.complete();
+    try {
+      State currentState = getState(patch);
+      IpOperationPatch ipOperationPatch = patch.getBody(IpOperationPatch.class);
+
+      String ipLeaseLink =
+          makeIpLeaseUrl(currentState.isFloatingIpSubnet, currentState.subnetId, ipOperationPatch.ipAddress);
+
+      long ipToRelease = IpHelper.ipStringToLong(ipOperationPatch.ipAddress);
+
+      Operation deleteOperation = Operation
+          .createDelete(this, ipLeaseLink);
+      ServiceUtils.doServiceOperation(this, deleteOperation);
+
+      currentState.ipAllocations.clear((int) (ipToRelease - currentState.lowIpDynamic));
+
+      currentState.version++;
+      setState(patch, currentState);
+      patch.complete();
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patch.fail(t);
+    }
   }
 
   public void handleExtractSubnetFromBottom(Operation patch) {
@@ -291,23 +308,28 @@ public class DhcpSubnetService extends StatefulService {
   public static class IpOperationPatch extends ServiceDocument {
     public final Kind kind;
     public String macAddress;
-    public String ipLeaseId;
+    public String ipAddress;
 
     private IpOperationPatch() {
       kind = null;
     }
 
-    public IpOperationPatch(Kind kind, String macAddress) {
+    public IpOperationPatch(Kind kind, String macAddress, String ipAddress) {
       if (kind == null) {
         throw new IllegalArgumentException("kind cannot be null");
       }
 
-      if (macAddress == null) {
-        throw new IllegalArgumentException("macAddress cannot be null");
+      if (kind == Kind.AllocateIpToMac && macAddress == null) {
+        throw new IllegalArgumentException("macAddress cannot be null for allocate ip operation");
+      }
+
+      if (kind == Kind.ReleaseIpForMac && ipAddress == null) {
+        throw new IllegalArgumentException("ipAddress cannot be null for release ip operation");
       }
 
       this.kind = kind;
       this.macAddress = macAddress;
+      this.ipAddress = ipAddress;
     }
 
     /**
@@ -422,10 +444,23 @@ public class DhcpSubnetService extends StatefulService {
      */
     public long versionPushed;
 
+    /**
+     * This is the same id as the VirtualNetworkService that this subnet is associated with
+     * in a one-to-one relationship.
+     */
     public String subnetId;
 
+    /**
+     * Each bit in this bitset represents one IP address in the range.
+     * A set bit indicates the mapping IP address is allocated.
+     * An unset bit indicates the mapping IP address is available for allocation.
+     * The lowest IP address in the range is mapped to bit index 0.
+     */
     public BitSet ipAllocations;
 
+    /**
+     * This flag indicates if the subnet range is being used to manage the floating IP addresses or not.
+     */
     @DefaultBoolean(false)
     @NotNull
     public Boolean isFloatingIpSubnet;
@@ -439,7 +474,11 @@ public class DhcpSubnetService extends StatefulService {
     }
   }
 
-  public static String makeIpLeaseUrl(String subnetId, String ipAddress) {
-    return IpLeaseService.FACTORY_LINK + "/" + subnetId + ":" + ipAddress.replace(".", ":");
+  public static String makeIpLeaseUrl(Boolean isFloatingIp, String subnetId, String ipAddress) {
+    if (isFloatingIp) {
+      return IpLeaseService.FACTORY_LINK + "/" + ipAddress.replace(".", ":");
+    } else {
+      return IpLeaseService.FACTORY_LINK + "/" + subnetId + ":" + ipAddress.replace(".", ":");
+    }
   }
 }

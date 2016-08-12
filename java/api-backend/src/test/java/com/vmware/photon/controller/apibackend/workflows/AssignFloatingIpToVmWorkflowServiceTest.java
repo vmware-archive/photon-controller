@@ -546,7 +546,7 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
     state.lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
     state.highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
     state.isFloatingIpSubnet = true;
-    state.documentSelfLink = DhcpSubnetService.SINGLETON_LINK;
+    state.documentSelfLink = DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK;
 
     Operation result = testEnvironment.sendPostAndWait(DhcpSubnetService.FACTORY_LINK, state);
     return result.getBody(DhcpSubnetService.State.class);

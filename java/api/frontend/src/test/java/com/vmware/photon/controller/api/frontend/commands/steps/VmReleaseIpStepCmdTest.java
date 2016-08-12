@@ -76,10 +76,10 @@ public class VmReleaseIpStepCmdTest {
     VmService.State state = new VmService.State();
     state.networkInfo = new HashMap<>();
     VmService.NetworkInfo networkInfo = new VmService.NetworkInfo();
-    networkInfo.macAddress = "macAddress";
+    networkInfo.privateIpAddress = "ipAddress";
     state.networkInfo.put("network-id", networkInfo);
     networkInfo = new VmService.NetworkInfo();
-    networkInfo.macAddress = "macAddress2";
+    networkInfo.privateIpAddress = "ipAddress2";
     state.networkInfo.put("network-id2", networkInfo);
 
     doReturn(state).when(operation).getBody(any());
@@ -118,7 +118,7 @@ public class VmReleaseIpStepCmdTest {
     state.networkInfo = new HashMap<>();
     VmService.NetworkInfo networkInfo = new VmService.NetworkInfo();
     networkInfo.id = "network-id";
-    networkInfo.macAddress = "macAddress";
+    networkInfo.privateIpAddress = "ipAddress";
     state.networkInfo.put("network-id", networkInfo);
     state.networkInfo.put("network-id2", new VmService.NetworkInfo());
 

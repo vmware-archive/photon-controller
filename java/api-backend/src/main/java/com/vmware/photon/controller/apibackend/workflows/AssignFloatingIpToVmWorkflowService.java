@@ -18,7 +18,6 @@ import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIp
 import com.vmware.photon.controller.apibackend.utils.CloudStoreUtils;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
-import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
@@ -223,15 +222,15 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
   private void allocateVmFloatingIp(AssignFloatingIpToVmWorkflowDocument state) {
     DhcpSubnetService.IpOperationPatch allocateIp = new DhcpSubnetService.IpOperationPatch(
         DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
-        state.vmMacAddress);
+        state.vmMacAddress, null);
 
     CloudStoreUtils.patchCloudStoreEntityAndProcess(
         this,
-        DhcpSubnetService.SINGLETON_LINK,
+        DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK,
         allocateIp,
         DhcpSubnetService.IpOperationPatch.class,
         allocateIpResult -> {
-          allocateVmFloatingIp(state, allocateIpResult.ipLeaseId);
+          allocateVmFloatingIp(state, allocateIpResult.ipAddress);
         },
         throwable -> {
           fail(state, throwable);
@@ -239,27 +238,17 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
     );
   }
 
-  private void allocateVmFloatingIp(AssignFloatingIpToVmWorkflowDocument state, String ipLeaseId) {
-    CloudStoreUtils.getCloudStoreEntityAndProcess(
-        this,
-        IpLeaseService.FACTORY_LINK + "/" + ipLeaseId,
-        IpLeaseService.State.class,
-        ipLeaseState -> {
-          try {
-            AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
-                TaskState.TaskStage.STARTED,
-                AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.CREATE_NAT_RULE);
-            patchState.vmFloatingIpAddress = ipLeaseState.ip;
+  private void allocateVmFloatingIp(AssignFloatingIpToVmWorkflowDocument state, String ipAddress) {
+    try {
+      AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
+          TaskState.TaskStage.STARTED,
+          AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.CREATE_NAT_RULE);
+      patchState.vmFloatingIpAddress = ipAddress;
 
-            progress(state, patchState);
-          } catch (Throwable t) {
-            fail(state, t);
-          }
-        },
-        throwable -> {
-          fail(state, throwable);
-        }
-    );
+      progress(state, patchState);
+    } catch (Throwable t) {
+      fail(state, t);
+    }
   }
 
   private void createNatRule(AssignFloatingIpToVmWorkflowDocument state) throws Throwable {

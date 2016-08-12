@@ -90,7 +90,6 @@ public class SubnetAllocatorServiceTest {
 
     @AfterMethod
     public void afterMethod() throws Throwable {
-      ServiceHostUtils.deleteAllDocuments(host, "test-host");
       commonHostAndClientTeardown();
     }
 
@@ -138,7 +137,6 @@ public class SubnetAllocatorServiceTest {
 
     @AfterMethod
     public void afterMethod() throws Throwable {
-      ServiceHostUtils.deleteAllDocuments(host, "test-host");
       commonHostAndClientTeardown();
     }
 
@@ -202,7 +200,6 @@ public class SubnetAllocatorServiceTest {
 
     @AfterMethod
     public void afterMethod() throws Throwable {
-      ServiceHostUtils.deleteAllDocuments(host, "test-host");
       commonHostAndClientTeardown();
     }
 

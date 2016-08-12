@@ -194,6 +194,7 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
                 TaskState.TaskStage.STARTED,
                 RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE);
             patchState.vmMacAddress = vmNetworkInfo.macAddress;
+            patchState.vmFloatingIpAddress = vmNetworkInfo.floatingIpAddress;
 
             progress(state, patchState);
           } catch (Throwable t) {
@@ -245,11 +246,11 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
   private void releaseVmFloatingIp(RemoveFloatingIpFromVmWorkflowDocument state) {
     DhcpSubnetService.IpOperationPatch releaseIp = new DhcpSubnetService.IpOperationPatch(
         DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac,
-        state.vmMacAddress);
+        state.vmMacAddress, state.vmFloatingIpAddress);
 
     CloudStoreUtils.patchCloudStoreEntityAndProcess(
         this,
-        DhcpSubnetService.SINGLETON_LINK,
+        DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK,
         releaseIp,
         DhcpSubnetService.IpOperationPatch.class,
         releaseIpResult -> {

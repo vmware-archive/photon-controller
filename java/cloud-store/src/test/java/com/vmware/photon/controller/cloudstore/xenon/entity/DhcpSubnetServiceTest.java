@@ -29,9 +29,7 @@ import com.google.common.net.InetAddresses;
 import org.apache.commons.net.util.SubnetUtils;
 import org.apache.http.HttpStatus;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,6 +37,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -49,8 +48,7 @@ public class DhcpSubnetServiceTest {
   private static BasicServiceHost host;
   private static XenonRestClient xenonClient;
 
-  @BeforeSuite
-  public void beforeSuite() throws Throwable {
+  private static void commonHostAndClientSetup() throws Throwable {
     host = BasicServiceHost.create();
     ServiceHostUtils.startFactoryServices(host, CloudStoreServiceGroup.FACTORY_SERVICES_MAP);
 
@@ -60,10 +58,15 @@ public class DhcpSubnetServiceTest {
     xenonClient.start();
   }
 
-  @AfterSuite
-  public void afterSuite() throws Throwable {
-    xenonClient.stop();
-    host.destroy();
+  private static void commonHostAndClientTeardown() throws Throwable {
+    if (xenonClient != null) {
+      xenonClient.stop();
+      xenonClient = null;
+    }
+    if (host != null) {
+      host.destroy();
+      host = null;
+    }
   }
 
   @Test(enabled = false)
@@ -74,10 +77,14 @@ public class DhcpSubnetServiceTest {
    * Tests for handleStart.
    */
   public static class HandleStartTest {
+    @BeforeMethod
+    public void beforeMethod() throws Throwable {
+      commonHostAndClientSetup();
+    }
 
     @AfterMethod
     public void afterMethod() throws Throwable {
-      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -112,12 +119,13 @@ public class DhcpSubnetServiceTest {
 
     @BeforeMethod
     public void beforeMethod() throws Throwable {
+      commonHostAndClientSetup();
       startState = createInitialState();
     }
 
     @AfterMethod
     public void afterMethod() throws Throwable {
-      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -172,6 +180,7 @@ public class DhcpSubnetServiceTest {
 
     @BeforeMethod
     public void beforeMethod() throws Throwable {
+      commonHostAndClientSetup();
       startState = createInitialState();
       Operation result = xenonClient.post(DhcpSubnetService.FACTORY_LINK, startState);
       assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
@@ -180,7 +189,7 @@ public class DhcpSubnetServiceTest {
 
     @AfterMethod
     public void afterMethod() throws Throwable {
-      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+      commonHostAndClientTeardown();
     }
 
     @Test
@@ -209,7 +218,7 @@ public class DhcpSubnetServiceTest {
       DhcpSubnetService.IpOperationPatch ipOperationPatch =
           new DhcpSubnetService.IpOperationPatch(
               DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
-              macAddress);
+              macAddress, null);
       Operation patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
           .setBody(ipOperationPatch)
@@ -229,19 +238,40 @@ public class DhcpSubnetServiceTest {
     public void testReleaseIpToMac() throws Throwable {
       DhcpSubnetService.IpOperationPatch ipOperationPatch =
           new DhcpSubnetService.IpOperationPatch(
-              DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac,
-              macAddress);
+              DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+              macAddress, null);
       Operation patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(ipOperationPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      Operation completedOperation = host.sendRequestAndWait(patchOperation);
+
+      DhcpSubnetService.IpOperationPatch operationResult =
+          completedOperation.getBody(DhcpSubnetService.IpOperationPatch.class);
+
+      DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
+          startState.documentSelfLink);
+
+      assertThat(currentState.version, is(startState.version + 1));
+      assertThat(currentState.ipAllocations.length(), is(1));
+      assertThat(currentState.ipAllocations.get(0), is(true));
+
+      ipOperationPatch =
+          new DhcpSubnetService.IpOperationPatch(
+              DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac,
+              macAddress, operationResult.ipAddress);
+      patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
           .setBody(ipOperationPatch)
           .setReferer("test-host")
           .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
       host.sendRequestAndWait(patchOperation);
 
-      DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
+      currentState = host.getServiceState(DhcpSubnetService.State.class,
           startState.documentSelfLink);
 
-      assertThat(currentState.version, is(startState.version + 1));
+      assertThat(currentState.version, is(startState.version + 2));
       assertThat(currentState.ipAllocations.length(), is(0));
       assertThat(currentState.ipAllocations.get(0), is(false));
     }
@@ -264,6 +294,7 @@ public class DhcpSubnetServiceTest {
     startState.highIp = highIp;
     startState.lowIpDynamic = lowIp + 1;
     startState.highIpDynamic = highIp - 1;
+    startState.subnetId = UUID.randomUUID().toString();
 
     return startState;
   }
