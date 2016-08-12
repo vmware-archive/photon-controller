@@ -134,4 +134,10 @@ public class RemoveFloatingIpFromVmWorkflowDocument extends ServiceDocument {
    */
   @WriteOnce
   public String vmMacAddress;
+
+  /**
+   * Floating IP address of the VM.
+   */
+  @WriteOnce
+  public String vmFloatingIpAddress;
 }

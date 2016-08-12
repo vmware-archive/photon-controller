@@ -370,7 +370,7 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     }
   }
 
-    /**
+  /**
    * End-to-end tests.
    */
   public class EndToEndTest {
@@ -534,7 +534,8 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     state.cidr = cidr;
     state.lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
     state.highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
-    state.documentSelfLink = DhcpSubnetService.SINGLETON_LINK;
+    state.documentSelfLink = DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK;
+    state.isFloatingIpSubnet = true;
 
     Operation result = testEnvironment.sendPostAndWait(DhcpSubnetService.FACTORY_LINK, state);
     return result.getBody(DhcpSubnetService.State.class);

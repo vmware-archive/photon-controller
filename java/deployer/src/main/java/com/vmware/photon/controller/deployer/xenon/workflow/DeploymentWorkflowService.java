@@ -199,7 +199,7 @@ public class DeploymentWorkflowService extends StatefulService {
     }
 
     if (null == startState.managementVmImageFile) {
-      startState.managementVmImageFile =  DeployerConfig.getManagementImageFile();
+      startState.managementVmImageFile = DeployerConfig.getManagementImageFile();
     }
 
     if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
@@ -697,7 +697,7 @@ public class DeploymentWorkflowService extends StatefulService {
 
     DhcpSubnetService.State dhcpSubnetServiceState = createDhcpSubnetServiceState(deploymentState.floatingIpRange);
     sendRequest(HostUtils.getCloudStoreHelper(this)
-        .createPost(DhcpSubnetService.SINGLETON_LINK)
+        .createPost(DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK)
         .setBody(dhcpSubnetServiceState)
         .setCompletion(
             (completedOp, failure) -> {
@@ -733,42 +733,42 @@ public class DeploymentWorkflowService extends StatefulService {
     // get all container
     Operation queryContainersOp = buildBroadcastKindQuery(ContainerService.State.class);
     // get all container templates
-    Operation queryTemplatesOp =  buildBroadcastKindQuery(ContainerTemplateService.State.class);
+    Operation queryTemplatesOp = buildBroadcastKindQuery(ContainerTemplateService.State.class);
     // get all vms
     Operation queryVmsOp = buildBroadcastKindQuery(VmService.State.class);
 
     OperationJoin.create(queryContainersOp, queryTemplatesOp, queryVmsOp)
-      .setCompletion((os, ts) -> {
-        if (ts != null && !ts.isEmpty()) {
-          failTask(ts.values());
-          return;
-        }
-        List<ContainerService.State> containers = QueryTaskUtils
-            .getBroadcastQueryDocuments(ContainerService.State.class, os.get(queryContainersOp.getId()));
-        List<ContainerTemplateService.State> templates = QueryTaskUtils
-            .getBroadcastQueryDocuments(ContainerTemplateService.State.class, os.get(queryTemplatesOp.getId()));
-        List<VmService.State> vms = QueryTaskUtils
-            .getBroadcastQueryDocuments(VmService.State.class, os.get(queryVmsOp.getId()));
+        .setCompletion((os, ts) -> {
+          if (ts != null && !ts.isEmpty()) {
+            failTask(ts.values());
+            return;
+          }
+          List<ContainerService.State> containers = QueryTaskUtils
+              .getBroadcastQueryDocuments(ContainerService.State.class, os.get(queryContainersOp.getId()));
+          List<ContainerTemplateService.State> templates = QueryTaskUtils
+              .getBroadcastQueryDocuments(ContainerTemplateService.State.class, os.get(queryTemplatesOp.getId()));
+          List<VmService.State> vms = QueryTaskUtils
+              .getBroadcastQueryDocuments(VmService.State.class, os.get(queryVmsOp.getId()));
 
-        String templateLink = templates.stream()
-            .filter(template -> template.name.equals(ContainersConfig.ContainerType.PhotonControllerCore.name()))
-            .findFirst().get().documentSelfLink;
-        List<String> vmServiceLinks = containers.stream()
-            .filter(container -> container.containerTemplateServiceLink.equals(templateLink))
-            .map(container -> container.vmServiceLink)
-            .collect(Collectors.toList());
-        List<VmService.State> photonControllerCoreVms = vms.stream()
-            .filter(vm -> vmServiceLinks.contains(vm.documentSelfLink))
-            .collect(Collectors.toList());
+          String templateLink = templates.stream()
+              .filter(template -> template.name.equals(ContainersConfig.ContainerType.PhotonControllerCore.name()))
+              .findFirst().get().documentSelfLink;
+          List<String> vmServiceLinks = containers.stream()
+              .filter(container -> container.containerTemplateServiceLink.equals(templateLink))
+              .map(container -> container.vmServiceLink)
+              .collect(Collectors.toList());
+          List<VmService.State> photonControllerCoreVms = vms.stream()
+              .filter(vm -> vmServiceLinks.contains(vm.documentSelfLink))
+              .collect(Collectors.toList());
 
-        migrateData(currentState, photonControllerCoreVms);
-      })
-      .sendWith(this);
+          migrateData(currentState, photonControllerCoreVms);
+        })
+        .sendWith(this);
   }
 
   private void migrateData(State currentState, List<VmService.State> managementVms) {
     Collection<DeploymentMigrationInformation> migrationInformation
-      = HostUtils.getDeployerContext(this).getDeploymentMigrationInformation();
+        = HostUtils.getDeployerContext(this).getDeploymentMigrationInformation();
 
     final AtomicInteger latch = new AtomicInteger(migrationInformation.size());
     final List<Throwable> errors = new BlockingArrayQueue<>();
@@ -968,13 +968,14 @@ public class DeploymentWorkflowService extends StatefulService {
     QueryTask.Query query = QueryTask.Query.Builder.create().addKindFieldClause(type)
         .build();
     return Operation
-      .createPost(UriUtils.buildBroadcastRequestUri(
-          UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS), ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-      .setBody(QueryTask.Builder
-          .createDirectTask()
-          .addOptions(EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
-          .setQuery(query)
-          .build());
+        .createPost(UriUtils.buildBroadcastRequestUri(
+            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+        .setBody(QueryTask.Builder
+            .createDirectTask()
+            .addOptions(EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+            .setQuery(query)
+            .build());
   }
 
   /**
