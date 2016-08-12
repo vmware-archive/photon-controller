@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
 import com.vmware.photon.controller.common.Constants;
+import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -37,6 +38,7 @@ import com.vmware.xenon.common.StatefulService;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.BitSet;
 import java.util.List;
 
 
@@ -115,21 +117,32 @@ public class DhcpSubnetService extends StatefulService {
   public void handleAllocateIpToMacPatch(Operation patch) {
     ServiceUtils.logInfo(this, "Patching service %s to allocate IP to MAC", getSelfLink());
 
-    // This is fake logic to make AssignFloatingIpToVmWorkflowService happy.
-    IpOperationPatch ipOperation = patch.getBody(IpOperationPatch.class);
-    IpLeaseService.State ipLease = new IpLeaseService.State();
-    ipLease.macAddress = ipOperation.macAddress;
-    ipLease.ip = "1.2.3.4";
-
     try {
+      String allocatedIp;
+      IpOperationPatch ipOperationPatch = patch.getBody(IpOperationPatch.class);
+      State currentState = getState(patch);
+
+      if (currentState.ipAllocations.length() >= currentState.highIpDynamic - currentState.lowIpDynamic) {
+        throw new IllegalArgumentException("range is full");
+      }
+
+      int cur = currentState.ipAllocations.nextClearBit(0);
+      currentState.ipAllocations.set(cur);
+
+      allocatedIp = IpHelper.longToIp(cur + currentState.lowIpDynamic).getHostAddress();
+
+      IpLeaseService.State ipLease = new IpLeaseService.State();
+      ipLease.macAddress = ipOperationPatch.macAddress;
+      ipLease.ip = allocatedIp;
+      ipLease.documentSelfLink = makeIpLeaseUrl(currentState.subnetId, allocatedIp);
+
       Operation postOperation = Operation
           .createPost(this, IpLeaseService.FACTORY_LINK)
           .setBody(ipLease);
       Operation resultOperation = ServiceUtils.doServiceOperation(this, postOperation);
       IpLeaseService.State ipLeaseResult = resultOperation.getBody(IpLeaseService.State.class);
-      ipOperation.ipLeaseId = ServiceUtils.getIDFromDocumentSelfLink(ipLeaseResult.documentSelfLink);
+      ipOperationPatch.ipLeaseId = ServiceUtils.getIDFromDocumentSelfLink(ipLeaseResult.documentSelfLink);
 
-      State currentState = getState(patch);
       currentState.version++;
       setState(patch, currentState);
 
@@ -190,6 +203,10 @@ public class DhcpSubnetService extends StatefulService {
 
       InitializationUtils.initialize(startState);
       startState.size = startState.highIp - startState.lowIp;
+      if (startState.isFloatingIpSubnet) {
+        startState.lowIpDynamic = startState.lowIp;
+        startState.highIpDynamic = startState.highIp;
+      }
       ValidationUtils.validateState(startState);
 
       Preconditions.checkArgument(startState.lowIp < startState.highIp, "lowIp should be less than highIp");
@@ -201,6 +218,8 @@ public class DhcpSubnetService extends StatefulService {
         Preconditions.checkArgument(!startState.doGarbageCollection,
             "garbage collection is not allowed for un-allocated subnets");
       }
+
+      startState.ipAllocations = new BitSet();
 
       createOperation.complete();
     } catch (IllegalStateException t) {
@@ -390,7 +409,7 @@ public class DhcpSubnetService extends StatefulService {
      * This version number represents the current version of the subnet based on changes in IP leases.
      * It will be patched for increment on each IP lease change.
      */
-     public long version;
+    public long version;
 
     /**
      * This version number represents the subnet version selected for pushing changes to DHCP agent.
@@ -403,6 +422,14 @@ public class DhcpSubnetService extends StatefulService {
      */
     public long versionPushed;
 
+    public String subnetId;
+
+    public BitSet ipAllocations;
+
+    @DefaultBoolean(false)
+    @NotNull
+    public Boolean isFloatingIpSubnet;
+
     @Override
     public String toString() {
       return com.google.common.base.Objects.toStringHelper(this)
@@ -410,5 +437,9 @@ public class DhcpSubnetService extends StatefulService {
           .add("cidr", cidr)
           .toString();
     }
+  }
+
+  public static String makeIpLeaseUrl(String subnetId, String ipAddress) {
+    return IpLeaseService.FACTORY_LINK + "/" + subnetId + ":" + ipAddress.replace(".", ":");
   }
 }

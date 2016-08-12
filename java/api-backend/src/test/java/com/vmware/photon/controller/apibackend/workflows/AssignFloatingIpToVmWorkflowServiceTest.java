@@ -467,7 +467,7 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
           VmService.State.class);
       assertThat(vm.networkInfo.size(), is(1));
       assertThat(vm.networkInfo.get(savedState.networkId).floatingIpAddress, notNullValue());
-      assertThat(vm.networkInfo.get(savedState.networkId).floatingIpAddress, equalTo("1.2.3.4"));
+      assertThat(vm.networkInfo.get(savedState.networkId).floatingIpAddress, equalTo("192.168.1.1"));
     }
 
     private AssignFloatingIpToVmWorkflowDocument startService() throws Throwable {
@@ -545,6 +545,7 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
     state.cidr = cidr;
     state.lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
     state.highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
+    state.isFloatingIpSubnet = true;
     state.documentSelfLink = DhcpSubnetService.SINGLETON_LINK;
 
     Operation result = testEnvironment.sendPostAndWait(DhcpSubnetService.FACTORY_LINK, state);

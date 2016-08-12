@@ -61,6 +61,8 @@ public class SubnetAllocatorService extends StatefulService {
    */
   public static final String SINGLETON_LINK = FACTORY_LINK + "/root-subnet";
 
+  public static final int COUNT_OF_RESERVED_IPS = 3;
+
   public static FactoryService createFactory() {
     return FactoryService.create(SubnetAllocatorService.class, SubnetAllocatorService.State.class);
   }
@@ -217,6 +219,16 @@ public class SubnetAllocatorService extends StatefulService {
       subnet.cidr = IpHelper.calculateCidrFromIpV4Range(createdIpv4Range.low, createdIpv4Range.high);
       subnet.lowIp = createdIpv4Range.low;
       subnet.highIp = createdIpv4Range.high;
+      subnet.reservedIpList = new ArrayList<>(COUNT_OF_RESERVED_IPS);
+      for (int i = 0; i < COUNT_OF_RESERVED_IPS; i++) {
+        subnet.reservedIpList.add(i, subnet.lowIp + 1 + i);
+      }
+      if (allocateSubnetPatch.numberOfStaticIpAddresses > 0) {
+        subnet.lowIpStatic = subnet.lowIp + 1 + COUNT_OF_RESERVED_IPS;
+        subnet.highIpStatic = subnet.lowIpStatic + allocateSubnetPatch.numberOfStaticIpAddresses;
+      }
+      subnet.lowIpDynamic = subnet.highIpStatic + 1;
+      subnet.highIpDynamic = subnet.highIp - 1;
       subnet.documentSelfLink = allocateSubnetPatch.subnetId;
 
       Operation postOperation = Operation.createPost(this, DhcpSubnetService.FACTORY_LINK)

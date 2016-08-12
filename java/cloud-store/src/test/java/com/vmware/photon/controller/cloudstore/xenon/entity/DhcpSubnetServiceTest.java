@@ -85,17 +85,22 @@ public class DhcpSubnetServiceTest {
       DhcpSubnetService.State startState = createInitialState();
 
       Operation result = xenonClient.post(DhcpSubnetService.FACTORY_LINK, startState);
-      assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
       DhcpSubnetService.State createdState = result.getBody(DhcpSubnetService.State.class);
       startState.size = startState.highIp - startState.lowIp;
 
-      assertThat(ServiceUtils.documentEquals(DhcpSubnetService.State.class, startState, createdState), is(true));
+      assertThat(createdState.lowIp, is(startState.lowIp));
+      assertThat(createdState.highIp, is(startState.highIp));
+      assertThat(createdState.size, is(startState.highIp - startState.lowIp));
+      assertThat(createdState.doGarbageCollection, is(false));
 
       DhcpSubnetService.State savedState = host.getServiceState(DhcpSubnetService.State.class,
           createdState.documentSelfLink);
-      assertThat(ServiceUtils.documentEquals(DhcpSubnetService.State.class, startState, savedState), is(true));
-      assertThat(startState.doGarbageCollection, is(false));
+      assertThat(savedState.lowIp, is(startState.lowIp));
+      assertThat(savedState.highIp, is(startState.highIp));
+      assertThat(savedState.size, is(startState.highIp - startState.lowIp));
+      assertThat(savedState.doGarbageCollection, is(false));
     }
   }
 
@@ -202,39 +207,43 @@ public class DhcpSubnetServiceTest {
     @Test
     public void testAllocateIpToMac() throws Throwable {
       DhcpSubnetService.IpOperationPatch ipOperationPatch =
-              new DhcpSubnetService.IpOperationPatch(
-                      DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
-                      macAddress);
+          new DhcpSubnetService.IpOperationPatch(
+              DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+              macAddress);
       Operation patchOperation = new Operation()
-              .setAction(Service.Action.PATCH)
-              .setBody(ipOperationPatch)
-              .setReferer("test-host")
-              .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+          .setAction(Service.Action.PATCH)
+          .setBody(ipOperationPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
       host.sendRequestAndWait(patchOperation);
 
       DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
-              startState.documentSelfLink);
+          startState.documentSelfLink);
 
       assertThat(currentState.version, is(startState.version + 1));
+      assertThat(currentState.ipAllocations.length(), is(1));
+      assertThat(currentState.ipAllocations.get(0), is(true));
     }
 
     @Test
     public void testReleaseIpToMac() throws Throwable {
       DhcpSubnetService.IpOperationPatch ipOperationPatch =
-              new DhcpSubnetService.IpOperationPatch(
-                      DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac,
-                      macAddress);
+          new DhcpSubnetService.IpOperationPatch(
+              DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac,
+              macAddress);
       Operation patchOperation = new Operation()
-              .setAction(Service.Action.PATCH)
-              .setBody(ipOperationPatch)
-              .setReferer("test-host")
-              .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+          .setAction(Service.Action.PATCH)
+          .setBody(ipOperationPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
       host.sendRequestAndWait(patchOperation);
 
       DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
-              startState.documentSelfLink);
+          startState.documentSelfLink);
 
       assertThat(currentState.version, is(startState.version + 1));
+      assertThat(currentState.ipAllocations.length(), is(0));
+      assertThat(currentState.ipAllocations.get(0), is(false));
     }
 
   }
@@ -253,6 +262,8 @@ public class DhcpSubnetServiceTest {
     DhcpSubnetService.State startState = new DhcpSubnetService.State();
     startState.lowIp = lowIp;
     startState.highIp = highIp;
+    startState.lowIpDynamic = lowIp + 1;
+    startState.highIpDynamic = highIp - 1;
 
     return startState;
   }
