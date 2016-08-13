@@ -45,7 +45,10 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactor
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -186,6 +189,16 @@ public class ProjectXenonBackend implements ProjectBackend {
         ProjectService.State.class, queryResult);
 
     return toProjectList(projectStates);
+  }
+
+  @Override
+  public int getNumberProjects() {
+    return getNumber(Optional.<String>absent());
+  }
+
+  @Override
+  public int getNumberProjectsByTenant(String tenantId) {
+    return getNumber(Optional.of(tenantId));
   }
 
   private ProjectEntity create(String tenantId, ProjectCreateSpec projectCreateSpec) throws ExternalException {
@@ -417,6 +430,26 @@ public class ProjectXenonBackend implements ProjectBackend {
         false);
 
     return queryResult.documentCount > 0;
+  }
+
+  private int getNumber(Optional<String> tenantId) {
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(ProjectService.State.class));
+    querySpec.query.addBooleanClause(kindClause);
+    querySpec.options.add(QueryTask.QuerySpecification.QueryOption.COUNT);
+
+    if (tenantId.isPresent()) {
+      QueryTask.Query clause = new QueryTask.Query()
+          .setTermPropertyName("tenantId")
+          .setTermMatchValue(tenantId.get());
+      querySpec.query.addBooleanClause(clause);
+    }
+
+    com.vmware.xenon.common.Operation result = xenonClient.query(querySpec, true);
+    ServiceDocumentQueryResult queryResult = result.getBody(QueryTask.class).results;
+    return queryResult.documentCount.intValue();
   }
 
 }

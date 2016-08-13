@@ -47,4 +47,7 @@ public interface ProjectBackend {
 
   ResourceList<Project> getProjectsPage(String pageLink) throws ExternalException;
 
+  int getNumberProjects();
+
+  int getNumberProjectsByTenant(String tenantId);
 }

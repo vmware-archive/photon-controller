@@ -618,4 +618,87 @@ public class ProjectXenonBackendTest {
       }
     }
   }
+
+  /**
+   * Tests for getting project number.
+   */
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
+  public static class GetNumberTest {
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+
+    @Inject
+    private ProjectBackend projectBackend;
+
+    @Inject
+    private ResourceTicketBackend resourceTicketBackend;
+
+    @Inject
+    private TenantBackend tenantBackend;
+
+    private String tenantId1;
+    private String tenantId2;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
+
+      TenantCreateSpec tenantCreateSpec = new TenantCreateSpec();
+      tenantCreateSpec.setName("t1");
+      tenantId1 = tenantBackend.createTenant(tenantCreateSpec).getEntityId();
+      tenantCreateSpec.setName("t2");
+      tenantId2 = tenantBackend.createTenant(tenantCreateSpec).getEntityId();
+
+      QuotaLineItem[] tenantTicketLimits = {new QuotaLineItem("vm", 100, QuotaUnit.COUNT)};
+
+      ResourceTicketCreateSpec resourceTicketCreateSpec = new ResourceTicketCreateSpec();
+      resourceTicketCreateSpec.setName("rt");
+      resourceTicketCreateSpec.setLimits(Arrays.asList(tenantTicketLimits));
+      resourceTicketBackend.create(tenantId1, resourceTicketCreateSpec);
+      resourceTicketBackend.create(tenantId2, resourceTicketCreateSpec);
+
+      ResourceTicketReservation reservation = new ResourceTicketReservation();
+      reservation.setName("rt");
+      reservation.setLimits(ImmutableList.of(new QuotaLineItem("vm", 10, QuotaUnit.COUNT)));
+
+      ProjectCreateSpec spec = new ProjectCreateSpec();
+      spec.setName("p");
+      spec.setResourceTicket(reservation);
+      projectBackend.createProject(tenantId1, spec);
+      projectBackend.createProject(tenantId2, spec);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testGetNumberProjectsByDeployment() throws Exception {
+      int num = projectBackend.getNumberProjects();
+      assertThat(num, is(2));
+    }
+
+    @Test
+    public void testGetNumberProjectsByValidTenantId() throws Exception {
+      int num = projectBackend.getNumberProjectsByTenant(tenantId1);
+      assertThat(num, is(1));
+      num = projectBackend.getNumberProjectsByTenant(tenantId2);
+      assertThat(num, is(1));
+    }
+
+    @Test
+    public void testGetNumberProjectsByInvalidTenantId() {
+      int num = projectBackend.getNumberProjectsByTenant("not_exist_tenant_id");
+      assertThat(num, is(0));
+    }
+  }
 }
