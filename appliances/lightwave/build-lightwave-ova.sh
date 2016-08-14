@@ -17,7 +17,7 @@ GERRIT_BRANCH=${GERRIT_BRANCH:-"develop"}
 if [ -z $NO_PHOTON_REBUILD ]; then
   echo "Building Photon OVA"
   pushd ${SCRIPT_DIR}/../photon-ova
-  build.sh
+  ./build.sh
   popd
 fi
 
