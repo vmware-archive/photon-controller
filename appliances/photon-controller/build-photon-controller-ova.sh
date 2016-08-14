@@ -18,7 +18,7 @@ GERRIT_BRANCH=${GERRIT_BRANCH:-"develop"}
 if [ -z "$NO_PHOTON_REBUILD" ]; then
   echo "Building Photon OVA"
   pushd ${SCRIPT_DIR}/../photon-ova
-  build.sh
+  ./build.sh
   popd
 fi
 
@@ -27,8 +27,8 @@ if [ -z "$NO_PHOTON_RPM_REBUILD" ]; then
   rm -rf ${SCRIPT_DIR}/photon-controller*.rpm
   pushd ${SCRIPT_DIR}/../../java
   ./gradlew :rpm
-  cp ${SCRIPT_DIR}../../artifacts/build/RPMS/x86_64/photon-controller-*.x86_64.rpm ${SCRIPT_DIR}
-  rm -rf photon-controller-debuginfo*.x86_64.rpm
+  cp ${SCRIPT_DIR}/../../artifacts/build/RPMS/x86_64/photon-controller-*.rpm ${SCRIPT_DIR}
+  rm -rf photon-controller-debuginfo*.rpm
   popd
 fi
 
