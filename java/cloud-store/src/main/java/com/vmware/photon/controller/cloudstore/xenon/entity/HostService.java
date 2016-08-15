@@ -17,6 +17,7 @@ import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.api.model.AgentState;
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.UsageTag;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteFactoryService;
 import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteService;
 import com.vmware.photon.controller.cloudstore.xenon.upgrade.HostTransformationService;
@@ -260,6 +261,9 @@ public class HostService extends StatefulService {
   @Override
   public void handlePeriodicMaintenance(Operation maintenance) {
     if (HostService.inUnitTests) {
+      return;
+    }
+    if (SystemConfig.getInstance().isBackgroundPaused()) {
       return;
     }
     try {
