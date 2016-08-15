@@ -20,9 +20,11 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.hamcrest.Matchers;
 import org.testng.annotations.AfterMethod;
@@ -306,6 +308,25 @@ public class IpLeaseCleanerServiceTest {
           request,
           IpLeaseCleanerService.State.class,
           (IpLeaseCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
+
+      // Check that subnetId from IpLease document was cleaned.
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(com.vmware.xenon.common.Utils.buildKind(IpLeaseService.State.class));
+      QueryTask.Query subnetClause = new QueryTask.Query()
+          .setTermPropertyName("subnetId")
+          .setTermMatchValue("subnet-id");
+
+      QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
+      spec.query.addBooleanClause(kindClause);
+      spec.query.addBooleanClause(subnetClause);
+
+      QueryTask query = QueryTask.create(spec)
+          .setDirect(true);
+      QueryTask queryResponse = machine.waitForQuery(query,
+          (QueryTask queryTask) ->
+              queryTask.results.documentLinks.size() == totalIpLeases - danglingIpLeases
+      );
     }
 
     @DataProvider(name = "Success")

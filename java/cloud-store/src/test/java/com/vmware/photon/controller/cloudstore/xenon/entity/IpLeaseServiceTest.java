@@ -195,7 +195,7 @@ public class IpLeaseServiceTest {
 
       IpLeaseService.IpLeaseOperationPatch ipLeaseOperationPatch =
           new IpLeaseService.IpLeaseOperationPatch(
-              IpLeaseService.IpLeaseOperationPatch.Kind.cleanIpLease,
+              IpLeaseService.IpLeaseOperationPatch.Kind.RELEASE,
               "vm-id");
       Operation patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
@@ -211,7 +211,7 @@ public class IpLeaseServiceTest {
     }
 
     @Test
-    public void testCleanIpLeaseWrongVmid() throws Throwable {
+    public void testCleanIpLeaseWrongVmId() throws Throwable {
       startState.vmId = "vm-wrong-id";
       Operation result = xenonClient.post(IpLeaseService.FACTORY_LINK, startState);
       assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
@@ -219,7 +219,7 @@ public class IpLeaseServiceTest {
 
       IpLeaseService.IpLeaseOperationPatch ipLeaseOperationPatch =
           new IpLeaseService.IpLeaseOperationPatch(
-              IpLeaseService.IpLeaseOperationPatch.Kind.cleanIpLease,
+              IpLeaseService.IpLeaseOperationPatch.Kind.RELEASE,
               "vm-id");
       Operation patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
