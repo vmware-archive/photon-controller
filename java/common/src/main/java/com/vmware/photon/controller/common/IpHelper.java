@@ -75,7 +75,11 @@ public class IpHelper {
    */
   public static long ipStringToLong(String ip) {
     InetAddress ipAddress = InetAddresses.forString(ip);
-    return ipToLong((Inet4Address) ipAddress);
+
+    if (!(ipAddress instanceof Inet4Address)) {
+      throw new IllegalArgumentException(ip + " is not an IPv4 address");
+    }
+    return IpHelper.ipToLong((Inet4Address) ipAddress);
   }
 
   /**
@@ -126,5 +130,19 @@ public class IpHelper {
     int cidr = (32 - Integer.numberOfTrailingZeros(subnetMask));
     InetAddress subnetAddress = longToIp(ipLow);
     return subnetAddress.getHostAddress() + "/" + cidr;
+  }
+
+  /**
+   * Converts a long to int only if the long value is small enough to fit into an int.
+   *
+   * @param l
+   * @return
+   */
+  public static int safeLongToInt(long l) {
+    if (l < Integer.MIN_VALUE || l > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException(l
+          + " cannot be cast to int without changing its value.");
+    }
+    return (int) l;
   }
 }

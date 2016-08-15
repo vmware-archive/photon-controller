@@ -25,7 +25,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.UriUtils;
 
-import com.google.common.net.InetAddresses;
 import org.apache.commons.net.util.SubnetUtils;
 import org.apache.http.HttpStatus;
 import org.testng.annotations.AfterMethod;
@@ -34,8 +33,6 @@ import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -95,18 +92,17 @@ public class DhcpSubnetServiceTest {
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
       DhcpSubnetService.State createdState = result.getBody(DhcpSubnetService.State.class);
-      startState.size = startState.highIp - startState.lowIp;
 
       assertThat(createdState.lowIp, is(startState.lowIp));
       assertThat(createdState.highIp, is(startState.highIp));
-      assertThat(createdState.size, is(startState.highIp - startState.lowIp));
+      assertThat(createdState.size, is(0x10000L));
       assertThat(createdState.doGarbageCollection, is(false));
 
       DhcpSubnetService.State savedState = host.getServiceState(DhcpSubnetService.State.class,
           createdState.documentSelfLink);
       assertThat(savedState.lowIp, is(startState.lowIp));
       assertThat(savedState.highIp, is(startState.highIp));
-      assertThat(savedState.size, is(startState.highIp - startState.lowIp));
+      assertThat(savedState.size, is(0x10000L));
       assertThat(savedState.doGarbageCollection, is(false));
     }
   }
@@ -259,14 +255,10 @@ public class DhcpSubnetServiceTest {
 
   private static DhcpSubnetService.State createInitialState() {
     SubnetUtils subnetUtils = new SubnetUtils("192.168.0.0/16");
+    subnetUtils.setInclusiveHostCount(true);
     SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
-    Long lowIp, highIp;
-
-    InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
-    lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
-
-    InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
-    highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
+    Long lowIp = IpHelper.ipStringToLong(subnetInfo.getLowAddress());
+    Long highIp = IpHelper.ipStringToLong(subnetInfo.getHighAddress());
 
     DhcpSubnetService.State startState = new DhcpSubnetService.State();
     startState.lowIp = lowIp;
