@@ -85,7 +85,7 @@ public class IpLeaseService extends StatefulService {
     myRouter.register(
         Action.PATCH,
         new RequestRouter.RequestBodyMatcher<>(
-            IpLeaseOperationPatch.class, "kind", IpLeaseOperationPatch.Kind.cleanIpLease),
+            IpLeaseOperationPatch.class, "kind", IpLeaseOperationPatch.Kind.RELEASE),
         this::handleCleanIpLease, "Clean Ip lease");
 
     OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
@@ -152,7 +152,8 @@ public class IpLeaseService extends StatefulService {
      * Defines type of IP lease operations that are supported.
      */
     public enum Kind {
-      cleanIpLease,
+      ACQUIRE,
+      RELEASE
     }
   }
 
