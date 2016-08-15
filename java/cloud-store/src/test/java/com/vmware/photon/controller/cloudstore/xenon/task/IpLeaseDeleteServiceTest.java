@@ -161,7 +161,7 @@ public class IpLeaseDeleteServiceTest {
     @DataProvider(name = "AutoInitializedFields")
     public Object[][] getAutoInitializedFieldsParams() {
       TaskState state = new TaskState();
-      state.stage = TaskState.TaskStage.CREATED;
+      state.stage = TaskState.TaskStage.STARTED;
 
       return new Object[][]{
           {"taskState", state},
@@ -336,22 +336,23 @@ public class IpLeaseDeleteServiceTest {
               host,
               null);
         }
-        for (ServiceHost host : machine.getHosts()) {
-          ServiceHostUtils.waitForServiceState(
-              ServiceDocumentQueryResult.class,
-              IpLeaseService.FACTORY_LINK,
-              (ServiceDocumentQueryResult result) -> {
-                logger.info(
-                    "Host:[{}] Service:[{}] Document Count- Expected [{}], Actual [{}]",
-                    host.getUri(),
-                    DhcpSubnetService.FACTORY_LINK,
-                    0,
-                    result.documentCount);
-                return result.documentCount == 0;
-              },
-              host,
-              null);
-        }
+      }
+
+      for (ServiceHost host : machine.getHosts()) {
+        ServiceHostUtils.waitForServiceState(
+            ServiceDocumentQueryResult.class,
+            IpLeaseService.FACTORY_LINK,
+            (ServiceDocumentQueryResult result) -> {
+              logger.info(
+                  "Host:[{}] Service:[{}] Document Count- Expected [{}], Actual [{}]",
+                  host.getUri(),
+                  DhcpSubnetService.FACTORY_LINK,
+                  0,
+                  result.documentCount);
+              return result.documentCount == 0;
+            },
+            host,
+            null);
       }
     }
 
@@ -387,7 +388,7 @@ public class IpLeaseDeleteServiceTest {
           DhcpSubnetService.FACTORY_LINK, subnetService);
 
       for (int i = 0; i < totalIpLeases; i++) {
-        IpLeaseDeleteService.State state = new IpLeaseDeleteService.State();
+        IpLeaseService.State state = new IpLeaseService.State();
 
         state.subnetId = "subnet-id";
         env.sendPostAndWaitForReplication(
