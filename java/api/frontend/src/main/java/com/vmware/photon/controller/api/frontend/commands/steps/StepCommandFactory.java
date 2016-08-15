@@ -123,6 +123,8 @@ public class StepCommandFactory {
         return new VmJoinVirtualNetworkStepCmd(taskCommand, stepBackend, stepEntity);
       case DISCONNECT_VM_SWITCH:
         return new VmUnjoinVirtualNetworkStepCmd(taskCommand, stepBackend, stepEntity);
+      case GET_VM_IP:
+        return new VmGetIpStepCmd(taskCommand, stepBackend, stepEntity);
       case RELEASE_VM_IP:
         return new VmReleaseIpStepCmd(taskCommand, stepBackend, stepEntity);
       case DELETE_VM:
