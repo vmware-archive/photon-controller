@@ -166,7 +166,7 @@ public class DhcpSubnetService extends StatefulService {
       State startState = createOperation.getBody(State.class);
 
       InitializationUtils.initialize(startState);
-      startState.size = startState.highIp - startState.lowIp;
+      startState.size = startState.highIp - startState.lowIp + 1;
       if (startState.isFloatingIpSubnet) {
         startState.lowIpDynamic = startState.lowIp;
         startState.highIpDynamic = startState.highIp;

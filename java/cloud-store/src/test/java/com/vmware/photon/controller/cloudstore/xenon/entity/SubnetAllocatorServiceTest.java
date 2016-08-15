@@ -31,8 +31,11 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -40,9 +43,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Tests {@link SubnetAllocatorService}.
@@ -233,12 +238,9 @@ public class SubnetAllocatorServiceTest {
       DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
           DhcpSubnetService.FACTORY_LINK + "/" + subnetId);
 
-      InetAddress lowAddress = IpHelper.longToIp(currentState.lowIp);
-      InetAddress highAddress = IpHelper.longToIp(currentState.highIp);
-
       assertThat(currentState.cidr, is("192.168.0.0/28"));
-      assertThat(lowAddress.getHostAddress(), is("192.168.0.0"));
-      assertThat(highAddress.getHostAddress(), is("192.168.0.15"));
+      assertThat(IpHelper.longToIpString(currentState.lowIp), is("192.168.0.0"));
+      assertThat(IpHelper.longToIpString(currentState.highIp), is("192.168.0.15"));
 
     }
 
@@ -264,6 +266,13 @@ public class SubnetAllocatorServiceTest {
           startState.documentSelfLink);
 
       assertThat(allocatorState.freeList.size(), is(1));
+
+      ServiceHostUtils.waitForServiceState(
+          ServiceDocumentQueryResult.class,
+          DhcpSubnetService.FACTORY_LINK,
+          (queryResult) -> queryResult.documentCount == 0,
+          host,
+          null);
     }
 
     @Test
@@ -295,10 +304,8 @@ public class SubnetAllocatorServiceTest {
 
       SubnetAllocatorService.IpV4Range freeRange = allocatorState.freeList.iterator().next();
 
-      InetAddress lowAddress = IpHelper.longToIp(freeRange.low);
-      InetAddress highAddress = IpHelper.longToIp(freeRange.high);
-      assertThat(lowAddress.getHostAddress(), is("192.168.0.0"));
-      assertThat(highAddress.getHostAddress(), is("192.168.255.255"));
+      assertThat(IpHelper.longToIpString(freeRange.low), is("192.168.0.0"));
+      assertThat(IpHelper.longToIpString(freeRange.high), is("192.168.255.255"));
 
       ServiceHostUtils.waitForServiceState(
           ServiceDocumentQueryResult.class,
@@ -320,10 +327,162 @@ public class SubnetAllocatorServiceTest {
           .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
       try {
         host.sendRequestAndWait(patchOperation);
-        Assert.fail("relase of non existent subnet should have failed");
+        Assert.fail("release of non existent subnet should have failed");
       } catch (BadRequestException ex) {
         assertThat(ex.getMessage(), containsString("Could not find the subnet service with the provided subnetId"));
       }
+    }
+  }
+
+  /**
+   * Tests that verify full lifecycle of subnets.
+   */
+  public static class EndToEndTest {
+    private static SubnetAllocatorService.State startState;
+
+    @BeforeClass
+    public void setupClass() throws Throwable {
+      commonHostAndClientSetup();
+      startState = createInitialState();
+      Operation result = xenonClient.post(SubnetAllocatorService.FACTORY_LINK, startState);
+      assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
+      startState = result.getBody(SubnetAllocatorService.State.class);
+    }
+
+    @AfterClass
+    public void tearDownClass() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test(dataProvider = "SubnetAllocationReleaseRequests")
+    public void testSubnetAllocationReleaseRequests(Boolean isAllocationRequest,
+                                                    String requestedSubnetId,
+                                                    Long requestedSize,
+                                                    Integer expectedFreeListCount,
+                                                    Integer expectedAllocatedSubnetCount,
+                                                    String expectedLowIp,
+                                                    String expectedHighIp,
+                                                    String expectedCidr
+    )
+        throws Throwable {
+
+      Operation patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+
+      if (isAllocationRequest) {
+        SubnetAllocatorService.AllocateSubnet allocateSubnetPatch =
+            new SubnetAllocatorService.AllocateSubnet(
+                requestedSubnetId, requestedSize, 2L);
+        patchOperation.setBody(allocateSubnetPatch);
+      } else {
+        SubnetAllocatorService.ReleaseSubnet releaseSubnetPatch =
+            new SubnetAllocatorService.ReleaseSubnet(requestedSubnetId);
+        patchOperation.setBody(releaseSubnetPatch);
+      }
+
+      Operation completedOperation = host.sendRequestAndWait(patchOperation);
+      assertThat(completedOperation.getStatusCode(), is(Operation.STATUS_CODE_OK));
+
+      SubnetAllocatorService.State allocatorState = host.getServiceState(SubnetAllocatorService.State.class,
+          startState.documentSelfLink);
+
+      logger.info("Free List Count=" + allocatorState.freeList.size());
+      List<SubnetAllocatorService.IpV4Range> sortedFreeList =
+          allocatorState.freeList.stream()
+              .sorted((left, right) -> Long.compare(left.low, right.low))
+              .collect(Collectors.toList());
+
+      for (SubnetAllocatorService.IpV4Range range : sortedFreeList) {
+        logger.info("Range Low= " + IpHelper.longToIpString(range.low)
+            + " High= " + IpHelper.longToIpString(range.high));
+      }
+
+      assertThat("free list count check failed", allocatorState.freeList.size(), is(expectedFreeListCount));
+
+      ServiceHostUtils.waitForServiceState(
+          ServiceDocumentQueryResult.class,
+          DhcpSubnetService.FACTORY_LINK,
+          (queryResult) -> queryResult.documentCount == (long) expectedAllocatedSubnetCount,
+          host,
+          null);
+
+      if (isAllocationRequest) {
+        DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
+            DhcpSubnetService.FACTORY_LINK + "/" + requestedSubnetId);
+
+        assertThat(currentState.cidr, is(expectedCidr));
+        assertThat(IpHelper.longToIpString(currentState.lowIp), is(expectedLowIp));
+        assertThat(IpHelper.longToIpString(currentState.highIp), is(expectedHighIp));
+      }
+
+    }
+
+    @DataProvider(name = "SubnetAllocationReleaseRequests")
+    public Object[][] getSubnetAllocationReleaseRequests() {
+      return new Object[][]{
+          // requested isAllocateRequest, subnet id, subnet size
+          // expected: free list count, subnet count, start ip, end ip, subnet CIDR
+          {true, "subnet1", 16L, 1, 1, "192.168.0.0", "192.168.0.15", "192.168.0.0/28"},
+          {true, "subnet2", 16L, 1, 2, "192.168.0.16", "192.168.0.31", "192.168.0.16/28"},
+          {false, "subnet1", null, 2, 1, null, null, null},
+          {false, "subnet2", null, 1, 0, null, null, null},
+          {true, "subnet3", 16L, 1, 1, "192.168.0.0", "192.168.0.15", "192.168.0.0/28"},
+          {true, "subnet4", 16L, 1, 2, "192.168.0.16", "192.168.0.31", "192.168.0.16/28"},
+          {false, "subnet4", null, 1, 1, null, null, null},
+          {false, "subnet3", null, 1, 0, null, null, null},
+          {true, "subnet5", 16L, 1, 1, "192.168.0.0", "192.168.0.15", "192.168.0.0/28"},
+          {true, "subnet6", 16L, 1, 2, "192.168.0.16", "192.168.0.31", "192.168.0.16/28"},
+          {true, "subnet7", 16L, 1, 3, "192.168.0.32", "192.168.0.47", "192.168.0.32/28"},
+          {false, "subnet5", null, 2, 2, null, null, null},
+          {false, "subnet6", null, 2, 1, null, null, null},
+          {false, "subnet7", null, 1, 0, null, null, null},
+          {true, "subnet8", 16L, 1, 1, "192.168.0.0", "192.168.0.15", "192.168.0.0/28"},
+          {true, "subnet9", 16L, 1, 2, "192.168.0.16", "192.168.0.31", "192.168.0.16/28"},
+          {true, "subnet10", 16L, 1, 3, "192.168.0.32", "192.168.0.47", "192.168.0.32/28"},
+          {true, "subnet11", 16L, 1, 4, "192.168.0.48", "192.168.0.63", "192.168.0.48/28"},
+          {false, "subnet8", null, 2, 3, null, null, null},
+          {false, "subnet10", null, 3, 2, null, null, null},
+          {false, "subnet11", null, 2, 1, null, null, null},
+          {false, "subnet9", null, 1, 0, null, null, null},
+          {true, "subnet12", 16L, 1, 1, "192.168.0.0", "192.168.0.15", "192.168.0.0/28"},
+          {true, "subnet13", 16L, 1, 2, "192.168.0.16", "192.168.0.31", "192.168.0.16/28"},
+          {true, "subnet14", 16L, 1, 3, "192.168.0.32", "192.168.0.47", "192.168.0.32/28"},
+          {true, "subnet15", 16L, 1, 4, "192.168.0.48", "192.168.0.63", "192.168.0.48/28"},
+          {false, "subnet12", null, 2, 3, null, null, null},
+          {false, "subnet14", null, 3, 2, null, null, null},
+          {false, "subnet13", null, 2, 1, null, null, null},
+          {false, "subnet15", null, 1, 0, null, null, null},
+          {true, "subnet16", 16L, 1, 1, "192.168.0.0", "192.168.0.15", "192.168.0.0/28"},
+          {true, "subnet17", 8L, 1, 2, "192.168.0.16", "192.168.0.23", "192.168.0.16/29"},
+          {true, "subnet18", 32L, 2, 3, "192.168.0.32", "192.168.0.63", "192.168.0.32/27"},
+          {true, "subnet19", 16L, 2, 4, "192.168.0.64", "192.168.0.79", "192.168.0.64/28"},
+          {true, "subnet20", 64L, 3, 5, "192.168.0.128", "192.168.0.191", "192.168.0.128/26"},
+          {false, "subnet16", null, 4, 4, null, null, null},
+          {false, "subnet18", null, 4, 3, null, null, null},
+          {false, "subnet19", null, 3, 2, null, null, null},
+          {false, "subnet17", null, 2, 1, null, null, null},
+          {false, "subnet20", null, 1, 0, null, null, null},
+          {true, "subnet21", 16L, 1, 1, "192.168.0.0", "192.168.0.15", "192.168.0.0/28"},
+          {true, "subnet22", 8L, 1, 2, "192.168.0.16", "192.168.0.23", "192.168.0.16/29"},
+          {true, "subnet23", 32L, 2, 3, "192.168.0.32", "192.168.0.63", "192.168.0.32/27"},
+          {true, "subnet24", 16L, 2, 4, "192.168.0.64", "192.168.0.79", "192.168.0.64/28"},
+          {true, "subnet25", 64L, 3, 5, "192.168.0.128", "192.168.0.191", "192.168.0.128/26"},
+          {false, "subnet21", null, 4, 4, null, null, null},
+          {true, "subnet26", 16L, 3, 5, "192.168.0.0", "192.168.0.15", "192.168.0.0/28"},
+          {false, "subnet23", null, 3, 4, null, null, null},
+          {true, "subnet27", 256L, 4, 5, "192.168.1.0", "192.168.1.255", "192.168.1.0/24"},
+          {false, "subnet24", null, 3, 4, null, null, null},
+          {true, "subnet28", 128L, 3, 5, "192.168.2.0", "192.168.2.127", "192.168.2.0/25"},
+          {false, "subnet27", null, 3, 4, null, null, null},
+          {true, "subnet29", 128L, 4, 5, "192.168.1.0", "192.168.1.127", "192.168.1.0/25"},
+          {false, "subnet22", null, 4, 4, null, null, null},
+          {false, "subnet25", null, 3, 3, null, null, null},
+          {false, "subnet26", null, 3, 2, null, null, null},
+          {false, "subnet28", null, 2, 1, null, null, null},
+          {false, "subnet29", null, 1, 0, null, null, null},
+      };
     }
   }
 

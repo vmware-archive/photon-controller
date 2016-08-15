@@ -34,11 +34,8 @@ import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 
-import com.google.common.net.InetAddresses;
 import org.apache.commons.net.util.SubnetUtils;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -173,9 +170,10 @@ public class SubnetAllocatorService extends StatefulService {
     try {
       Long requestedSize = allocateSubnetPatch.numberOfAllIpAddresses;
       List<IpV4Range> candidateRanges = currentState.freeList.stream()
-          .filter(ipV4Range -> (ipV4Range.high - ipV4Range.low) >= requestedSize)
+          .filter(ipV4Range -> (ipV4Range.high - ipV4Range.low) >= requestedSize - 1)
+          .sorted((left, right) -> Long.compare(left.low, right.low))
           .collect(Collectors.toList());
-      int inverseSubnetMask = safeLongToInt(requestedSize - 1);
+      int inverseSubnetMask = IpHelper.safeLongToInt(requestedSize - 1);
       int subnetMask = ~(inverseSubnetMask);
 
       IpV4Range createdIpv4Range = null;
@@ -183,11 +181,13 @@ public class SubnetAllocatorService extends StatefulService {
 
       for (IpV4Range ipV4Range : candidateRanges) {
         long currentLow = ipV4Range.low;
+
         while ((currentLow & subnetMask) != currentLow) {
           currentLow++;
         }
 
         long currentHigh = currentLow + inverseSubnetMask;
+
         if (currentHigh <= ipV4Range.high) {
           createdIpv4Range = new IpV4Range(currentLow, currentHigh);
           selectedIpv4Range = ipV4Range;
@@ -340,7 +340,9 @@ public class SubnetAllocatorService extends StatefulService {
     @Immutable
     public String rootCidr;
 
-    //    public Collection<AbstractMap.SimpleEntry<Long, Long>> freeList;
+    /**
+     * This is the list of free ranges available for subnet allocation.
+     */
     public Collection<IpV4Range> freeList;
 
     @Override
@@ -359,22 +361,8 @@ public class SubnetAllocatorService extends StatefulService {
     SubnetUtils subnetUtils = new SubnetUtils(rootCidr);
     subnetUtils.setInclusiveHostCount(true);
     SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
-    Long lowIp, highIp;
-
-    InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
-    if (lowIpAddress instanceof Inet4Address) {
-      lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
-    } else {
-      throw new IllegalArgumentException("lowIpAddress not an IPv4 address");
-    }
-
-    InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
-    if (highIpAddress instanceof Inet4Address) {
-      highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
-    } else {
-      throw new IllegalArgumentException("highIpAddress not an IPv4 address");
-    }
-
+    Long lowIp = IpHelper.ipStringToLong(subnetInfo.getLowAddress());
+    Long highIp = IpHelper.ipStringToLong(subnetInfo.getHighAddress());
     IpV4Range ipV4Range = new IpV4Range(lowIp, highIp);
 
     if (startState.freeList == null) {
@@ -382,14 +370,6 @@ public class SubnetAllocatorService extends StatefulService {
     }
 
     startState.freeList.add(ipV4Range);
-  }
-
-  private static int safeLongToInt(long l) {
-    if (l < Integer.MIN_VALUE || l > Integer.MAX_VALUE) {
-      throw new IllegalArgumentException(l
-          + " cannot be cast to int without changing its value.");
-    }
-    return (int) l;
   }
 
   /**
