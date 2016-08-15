@@ -365,6 +365,18 @@ class AttacheClient(HostClient):
     def get_networks(self):
         return self._client.GetNetworks(self._session)
 
+    @attache_error_handler
+    def get_dvs(self):
+        return self._client.GetDvs(self._session)
+
+    @attache_error_handler
+    def create_dvport(self, dvs):
+        return self._client.CreateDVPort(self._session, dvs)
+
+    @attache_error_handler
+    def delete_dvport(self, dvport):
+        self._client.DeleteDVPort(self._session, dvport.dvs, dvport.portKey)
+
     """ Nfc
     """
     @attache_error_handler
@@ -432,6 +444,10 @@ class AttacheVmConfigSpec(VmConfigSpec):
     @attache_error_handler
     def add_nic(self, network):
         self._client.AddNicToVMSpec(self._spec, str(network))
+
+    @attache_error_handler
+    def add_dvport(self, dvport):
+        self._client.AddDVPortToVMSpec(self._spec, dvport.dvs, dvport.portKey, dvport.connectionCookie)
 
     @attache_error_handler
     def set_extra_config(self, options):

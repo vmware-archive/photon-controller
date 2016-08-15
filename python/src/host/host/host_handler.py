@@ -204,9 +204,7 @@ class HostHandler(Host.Iface):
 
         if not self._hypervisor:
             raise HypervisorNotConfigured()
-        networks = self._hypervisor.network_manager.get_networks()
-        vm_network_names = self._hypervisor.network_manager.get_vm_networks()
-        config.networks = [network for network in networks if network.id in vm_network_names]
+        config.networks = self._hypervisor.network_manager.get_networks()
         dm = self._hypervisor.datastore_manager
         config.datastores = dm.get_datastores()
         config.image_datastore_ids = dm.image_datastores()
@@ -316,6 +314,7 @@ class HostHandler(Host.Iface):
                                         "create_vm not allowed in {0} mode".format(mode.name), CreateVmResponse())
 
         pm = self.hypervisor.placement_manager
+        dvports_to_cleanup = []
 
         try:
             vm = pm.consume_vm_reservation(request.reservation)
@@ -323,11 +322,13 @@ class HostHandler(Host.Iface):
             return CreateVmResponse(CreateVmResultCode.INVALID_RESERVATION, "Invalid VM reservation")
 
         try:
-            return self._do_create_vm(request, vm)
+            return self._do_create_vm(request, vm, dvports_to_cleanup)
         finally:
             pm.remove_vm_reservation(request.reservation)
+            for dvport in dvports_to_cleanup:
+                self._hypervisor.network_manager.delete_dvport(dvport)
 
-    def _do_create_vm(self, request, vm):
+    def _do_create_vm(self, request, vm, dvports_to_cleanup):
 
         try:
             datastore_id = self._select_datastore_for_vm_create(vm)
@@ -355,27 +356,35 @@ class HostHandler(Host.Iface):
         # In case of virtual network, add nic after vm creation.
         placement_virtual_network = self._get_network_ids_by_type(vm.networks, NetworkInfoType.VIRTUAL_NETWORK)
         if not placement_virtual_network:
-            networks = self._hypervisor.network_manager.get_vm_networks()
-            placement_networks = self._get_network_ids_by_type(vm.networks, NetworkInfoType.NETWORK)
-            if placement_networks and networks:
-                host_networks = set(networks)
+            port_groups = self._hypervisor.network_manager.get_vm_networks()
+            dvs = self._hypervisor.network_manager.get_dvs()
+            networks = port_groups + dvs
 
-                if not placement_networks.issubset(host_networks):
-                    intersected_networks = placement_networks & host_networks
-                    missing_networks = placement_networks - intersected_networks
-
-                    return CreateVmResponse(CreateVmResultCode.NETWORK_NOT_FOUND,
-                                            "Unknown non provisioned networks: {0}".format(missing_networks))
-                else:
-                    self._logger.debug("Using the placement networks: {0}".format(placement_networks))
-                    for network_name in placement_networks:
-                        spec.add_nic(network_name)
-            elif networks:
-                # Pick a default network.
-                self._logger.debug("Using the default network: %s" % networks[0])
-                spec.add_nic(networks[0])
+            if not networks:
+                self._logger.warning("Host does not have network, VM %s created without a NIC" % vm.id)
             else:
-                self._logger.warning("VM %s created without a NIC" % vm.id)
+                placement_networks = self._get_network_ids_by_type(vm.networks, NetworkInfoType.NETWORK)
+                if placement_networks:
+                    host_networks = set(networks)
+                    if not placement_networks.issubset(host_networks):
+                        intersected_networks = placement_networks & host_networks
+                        missing_networks = placement_networks - intersected_networks
+                        return CreateVmResponse(CreateVmResultCode.NETWORK_NOT_FOUND,
+                                                "Unknown non provisioned networks: {0}".format(missing_networks))
+                else:
+                    # Pick a default network.
+                    self._logger.debug("Using the default network: %s" % networks[0])
+                    placement_networks = [networks[0]]
+
+                self._logger.debug("Using the placement networks: {0}".format(placement_networks))
+                for network_name in placement_networks:
+                    if network_name in dvs:
+                        dvport = self._hypervisor.network_manager.create_dvport(network_name)
+                        # if vm creation fails, we need to cleanup dvports to avoid leak
+                        dvports_to_cleanup.append(dvport)
+                        spec.add_dvport(dvport)
+                    else:
+                        spec.add_nic(network_name)
 
             self._logger.debug("VM create, done creating nics, vm-id: %s" % vm.id)
 
@@ -397,6 +406,8 @@ class HostHandler(Host.Iface):
         # Step 5: Actually create the VM
         try:
             self.hypervisor.vm_manager.create_vm(vm.id, spec)
+            # vm creation succeeded, clear dvports_to_cleanup
+            del dvports_to_cleanup[:]
         except VmAlreadyExistException:
             self._logger.error("vm with id %s already exists" % vm.id)
             return CreateVmResponse(CreateVmResultCode.VM_ALREADY_EXIST, "Failed to create VM")

@@ -313,6 +313,9 @@ class EsxVmConfigSpec(VmConfigSpec):
 
         self._add_device(device)
 
+    def add_dvport(self, dvport):
+        pass
+
     def attach_iso(self, cfg_info, iso_file):
         """Create a cdrom spec to add a CD-ROM device with an iso
 
