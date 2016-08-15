@@ -237,6 +237,18 @@ class HostClient(object):
     def get_networks(self):
         pass
 
+    @abc.abstractmethod
+    def get_dvs(self):
+        pass
+
+    @abc.abstractmethod
+    def create_dvport(self, dvs):
+        pass
+
+    @abc.abstractmethod
+    def delete_dvport(self, dvport):
+        pass
+
     """ Nfc
     """
     @abc.abstractmethod
@@ -265,6 +277,10 @@ class VmConfigSpec(object):
 
     @abc.abstractmethod
     def add_nic(self, network):
+        pass
+
+    @abc.abstractmethod
+    def add_dvport(self, dvport):
         pass
 
     @abc.abstractmethod
