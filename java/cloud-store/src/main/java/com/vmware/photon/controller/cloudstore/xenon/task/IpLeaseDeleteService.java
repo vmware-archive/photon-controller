@@ -71,7 +71,7 @@ public class IpLeaseDeleteService extends StatefulService {
   public static State buildStartPatch() {
     State s = new State();
     s.taskState = new TaskState();
-    s.taskState.stage = TaskState.TaskStage.STARTED;
+    s.taskState.stage = TaskState.TaskStage.CREATED;
     return s;
   }
 
@@ -227,7 +227,7 @@ public class IpLeaseDeleteService extends StatefulService {
     for (IpLeaseService.State ipLease : ipLeaseList) {
       deleteIpLease(ipLease);
     }
-    finishTask(current);
+    sendStageProgressPatch(current);
   }
 
   /**
@@ -312,9 +312,20 @@ public class IpLeaseDeleteService extends StatefulService {
       return;
     }
 
+    State patchState = new State();
+    if (state.nextPageLink != null) {
+      patchState.nextPageLink = state.nextPageLink;
+    }
+
+    if (state.taskState == null) {
+      patchState.taskState.stage = TaskState.TaskStage.STARTED;
+    } else {
+      patchState.taskState = state.taskState;
+    }
+
     Operation patch = Operation
         .createPatch(UriUtils.buildUri(getHost(), getSelfLink()))
-        .setBody(state);
+        .setBody(patchState);
     this.sendRequest(patch);
   }
 
@@ -431,7 +442,7 @@ public class IpLeaseDeleteService extends StatefulService {
     /**
      * Service execution stage.
      */
-    @DefaultTaskState(value = TaskState.TaskStage.CREATED)
+    @DefaultTaskState(value = TaskState.TaskStage.STARTED)
     public TaskState taskState;
 
     /**
