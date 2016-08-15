@@ -747,7 +747,7 @@ public class VmXenonBackendTest {
     @Test
     public void testPrepareVmCreate() throws Throwable {
       String vmId = createdVmTaskEntity.getEntityId();
-      assertThat(createdVmTaskEntity.getSteps().size(), is(3));
+      assertThat(createdVmTaskEntity.getSteps().size(), is(4));
       assertThat(createdVmTaskEntity.getSteps().get(0).getOperation(),
           is(com.vmware.photon.controller.api.model.Operation.RESERVE_RESOURCE));
       assertThat(createdVmTaskEntity.getSteps().get(0).getTransientResourceEntities(ProjectEntity.KIND).size(), is(1));
@@ -760,6 +760,8 @@ public class VmXenonBackendTest {
       assertThat(createdVmTaskEntity.getToBeLockedEntities().get(0).getKind(), is(Vm.KIND));
       assertThat(createdVmTaskEntity.getSteps().get(2).getOperation(),
           is(com.vmware.photon.controller.api.model.Operation.CONNECT_VM_SWITCH));
+      assertThat(createdVmTaskEntity.getSteps().get(3).getOperation(),
+          is(com.vmware.photon.controller.api.model.Operation.GET_VM_IP));
 
       VmEntity vm = vmXenonBackend.findById(vmId);
       assertThat(vm, is(notNullValue()));

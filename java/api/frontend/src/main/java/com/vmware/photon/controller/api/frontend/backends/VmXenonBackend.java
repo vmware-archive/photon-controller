@@ -846,12 +846,17 @@ public class VmXenonBackend implements VmBackend {
     step.addResources(entityList);
     step.setOperation(Operation.CREATE_VM);
 
-    // Conditional step. If virtual network is to be used, we need to connect the vm
-    // with the logical switch.
+    // If sdn is enabled, we need to
+    // 1. connect the VM with the logical switch and
+    // 2. get private IP for this VM.
     if (useVirtualNetwork) {
       step = new StepEntity();
       step.setOperation(Operation.CONNECT_VM_SWITCH);
+      stepEntities.add(step);
 
+      step = new StepEntity();
+      step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, vm.getId());
+      step.setOperation(Operation.GET_VM_IP);
       stepEntities.add(step);
     }
 
