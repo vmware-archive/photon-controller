@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.cloudstore.xenon.task;
 
 import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -40,6 +41,9 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.net.URI;
 import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Class implementing a periodically triggered service to clean up IpLeaseService,
@@ -189,9 +193,85 @@ public class IpLeaseCleanerService extends StatefulService {
             return;
           }
           current.nextPageLink = op.getBody(QueryTask.class).results.nextPageLink;
-          sendStageProgressPatch(current);
+          List<IpLeaseService.State> ipLeaseList =
+              parseIpLeaseServiceQueryResults(op.getBody(QueryTask.class));
+          cleanIpLeaseDocuments(current, ipLeaseList);
         })
         .sendWith(this);
+  }
+
+  /**
+   * Clean the ip lease documents.
+   *
+   * @param ipLeaseList
+   */
+  private void cleanIpLeaseDocuments(final State current, List<IpLeaseService.State> ipLeaseList) {
+    if (ipLeaseList.size() == 0) {
+      ServiceUtils.logInfo(this, "No Ip Lease documents found any more.");
+      finishTask(current);
+      return;
+    }
+
+    for (IpLeaseService.State ipLease : ipLeaseList) {
+      cleanIpLease(ipLease);
+    }
+    finishTask(current);
+  }
+
+  /**
+   * Clean one ip lease document.
+   *
+   * @param state
+   */
+  private void cleanIpLease(IpLeaseService.State state) {
+    String ipLeaseId = ServiceUtils
+        .getIDFromDocumentSelfLink(state.documentSelfLink);
+
+    Operation getVmOperation =
+        Operation
+            .createGet(UriUtils.buildUri(getHost(), VmServiceFactory.SELF_LINK + "/" + state.vmId))
+            .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
+    getVmOperation.setCompletion(
+        (operation, ex) -> {
+          if (operation.getStatusCode() == 404) {
+            IpLeaseService.State patch = new IpLeaseService.State();
+            Operation patchOperation = Operation
+                .createDelete(UriUtils.buildUri(getHost(), IpLeaseService.FACTORY_LINK + "/" + ipLeaseId))
+                .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
+            patchOperation.setCompletion(
+                (op, t) -> {
+                  if (t != null) {
+                    failTask(t);
+                  }
+                  ServiceUtils.logInfo(this, "Ip Lease document %s has been released.", ipLeaseId);
+                }
+            ).sendWith(this);
+          }
+          ServiceUtils.logInfo(this, "Ip Lease document %s has been released.", ipLeaseId);
+        }
+    ).sendWith(this);
+
+
+  }
+
+  /**
+   * Parse IpLeaseServiec query results.
+   *
+   * @param result
+   */
+  private List<IpLeaseService.State> parseIpLeaseServiceQueryResults(QueryTask result) {
+    List<IpLeaseService.State> ipLeaseList = new LinkedList<>();
+
+    if (result != null && result.results != null && result.results.documentCount > 0) {
+      for (Map.Entry<String, Object> doc : result.results.documents.entrySet()) {
+        IpLeaseService.State ipLease = Utils.fromJson(doc.getValue(), IpLeaseService.State.class);
+        if (ipLease.vmId != null) {
+          ipLeaseList.add(ipLease);
+        }
+      }
+    }
+
+    return ipLeaseList;
   }
 
   private QueryTask buildIpLeaseQuery(State s) {
