@@ -148,7 +148,7 @@ public class DnsmasqDriverTest {
             Map<String, String> macAddressIPMap = new HashMap<>();
             macAddressIPMap.put(ipAddress, macAddress);
 
-            dnsmasqDriver.updateSubnetIPAllocation(macAddressIPMap, "subnet1");
+            dnsmasqDriver.updateSubnetIPLease("subnet1", macAddressIPMap);
 
             FileReader subnetHostFile = new FileReader(
                     DnsmasqDriverTest.class.getResource("/hosts").getPath() + "/subnet1");
@@ -175,7 +175,7 @@ public class DnsmasqDriverTest {
     public void testDeleteSubnetIPAllocation() {
         try {
             setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
-            dnsmasqDriver.deleteSubnetIPAllocation("subnet1");
+            dnsmasqDriver.deleteSubnetIPLease("subnet1");
 
             File hostFile = new File(DnsmasqDriverTest.class.getResource("/hosts").getPath() + "/subnet1");
             if (hostFile.exists() && !hostFile.isDirectory()) {
