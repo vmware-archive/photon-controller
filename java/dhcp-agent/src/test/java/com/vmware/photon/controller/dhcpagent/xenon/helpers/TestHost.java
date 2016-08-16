@@ -30,7 +30,7 @@ public class TestHost extends BasicServiceHost {
             "/usr/local/bin/dhcp_release",
             TestHost.class.getResource(successScript).getPath(),
             TestHost.class.getResource(successScript).getPath(),
-            "/etc/hosts");
+            TestHost.class.getResource("/hosts/subnet1").getPath());
 
     public TestHost() {
         super();

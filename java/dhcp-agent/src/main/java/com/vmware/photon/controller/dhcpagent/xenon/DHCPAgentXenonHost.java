@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DHCPDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.service.ReleaseIPService;
 import com.vmware.photon.controller.dhcpagent.xenon.service.StatusService;
+import com.vmware.photon.controller.dhcpagent.xenon.service.SubnetIPLeaseService;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
@@ -85,6 +86,7 @@ public class DHCPAgentXenonHost
 
     // Start all the factories
     super.startFactory(ReleaseIPService.class, ReleaseIPService::createFactory);
+    super.startFactory(SubnetIPLeaseService.class, SubnetIPLeaseService::createFactory);
     ServiceHostUtils.startServices(this, FACTORY_SERVICES);
 
     // Start all special services

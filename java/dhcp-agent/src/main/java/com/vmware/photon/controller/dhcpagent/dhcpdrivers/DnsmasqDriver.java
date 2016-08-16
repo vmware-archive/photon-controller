@@ -135,15 +135,15 @@ public class DnsmasqDriver implements DHCPDriver {
     }
 
     /**
-     * This method update subnet allocation of
+     * This method update subnet leases of
      * IP for MAC address.
      *
-     * @param ipAddressToMACAddressMap
      * @param subnetId
+     * @param ipAddressToMACAddressMap
      *
      * @return
      */
-    public Response updateSubnetIPAllocation(Map<String, String> ipAddressToMACAddressMap, String subnetId)
+    public Response updateSubnetIPLease(String subnetId, Map<String, String> ipAddressToMACAddressMap)
             throws Exception {
         Response response = new Response();
         String newSubnetFilename = dhcpHostFileCopyDir + "/" + subnetId;
@@ -162,23 +162,23 @@ public class DnsmasqDriver implements DHCPDriver {
 
         Files.move(newSubnetHostFile.toPath(), oldSubnetHostFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-        response.exitCode = 1;
+        response.exitCode = 0;
         return response;
     }
 
     /**
-     * This method deletes subnet.
+     * This method deletes subnet IP leases.
      *
      * @param subnetId
      *
      * @return
      */
-    public Response deleteSubnetIPAllocation(String subnetId) throws Exception {
+    public Response deleteSubnetIPLease(String subnetId) throws Exception {
         Response response = new Response();
         String subnetFilename = dhcpHostFileDir + "/" + subnetId;
         File subnetHostFile = new File(subnetFilename);
-        boolean result = Files.deleteIfExists(subnetHostFile.toPath());
-        response.exitCode = result ? 0 : 1;
+        Files.deleteIfExists(subnetHostFile.toPath());
+        response.exitCode = 0;
         return response;
     }
 }

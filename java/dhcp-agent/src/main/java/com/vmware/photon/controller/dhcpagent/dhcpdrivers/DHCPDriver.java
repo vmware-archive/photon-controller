@@ -43,12 +43,12 @@ public interface DHCPDriver {
      * This method update subnet allocation of
      * IP for MAC address.
      *
-     * @param ipAddressToMACAddressMap
      * @param subnetId
+     * @param ipAddressToMACAddressMap
      *
      * @return
      */
-    Response updateSubnetIPAllocation(Map<String, String> ipAddressToMACAddressMap, String subnetId) throws Exception;
+    Response updateSubnetIPLease(String subnetId, Map<String, String> ipAddressToMACAddressMap) throws Exception;
 
     /**
      * This method deletes subnet.
@@ -57,7 +57,7 @@ public interface DHCPDriver {
      *
      * @return
      */
-     Response deleteSubnetIPAllocation(String subnetId) throws Exception;
+     Response deleteSubnetIPLease(String subnetId) throws Exception;
 
     /**
      * Class to hold the response for Driver operations.
