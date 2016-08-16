@@ -52,17 +52,22 @@ wget "${ENVOY_VIB_URL}" -P "${SOURCES_DIR}" || true
 # Build the Photon-Controller vib from local repo and copy to SROUCES folder
 cd "${ROOT}"
 
-docker pull vmware/photon-controller-rpm-builder
+# this will allow us to provide a different possibly signed vib
+if [ -z "$VIB_PATH" ]; then
+  docker pull vmware/photon-controller-rpm-builder
 
-docker run -i --rm \
-  --net=host \
-  -v `pwd`:`pwd` \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -w `pwd`/python \
-  vmware/photon-controller-rpm-builder \
-  make clean vib-only
+  docker run -i --rm \
+    --net=host \
+    -v `pwd`:`pwd` \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -w `pwd`/python \
+    vmware/photon-controller-rpm-builder \
+    make clean vib-only
 
-cp "${ROOT}"/python/dist/* "${SOURCES_DIR}"
+  cp "${ROOT}"/python/dist/* "${SOURCES_DIR}"
+else
+  cp ${VIB_PATH} ${SOURCE_DIR}
+fi
 
 DEBUG_OPTIONS=""
 if [ "$DEBUG" == "true" ]; then
