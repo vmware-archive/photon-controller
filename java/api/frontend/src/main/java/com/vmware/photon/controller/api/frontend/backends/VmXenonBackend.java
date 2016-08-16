@@ -75,7 +75,9 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -665,6 +667,21 @@ public class VmXenonBackend implements VmBackend {
     patchVmService(vmEntity.getId(), vmPatch);
   }
 
+  @Override
+  public int getNumberVms() {
+    return getNumber(Optional.<String>absent(), Optional.<String>absent());
+  }
+
+  @Override
+  public int getNumberVmsByTenant(String tenantId) {
+    return getNumber(Optional.of(tenantId), Optional.<String>absent());
+  }
+
+  @Override
+  public int getNumberVmsByProject(String projectId) {
+    return getNumber(Optional.<String>absent(), Optional.of(projectId));
+  }
+
   private VmEntity toVmEntity(VmService.State vm) {
     VmEntity vmEntity = new VmEntity();
     String vmId = ServiceUtils.getIDFromDocumentSelfLink(vm.documentSelfLink);
@@ -1163,5 +1180,32 @@ public class VmXenonBackend implements VmBackend {
     isoEntity.setName(name);
 
     return isoEntity;
+  }
+
+  private int getNumber(Optional<String> tenantId, Optional<String> projectId) {
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(VmService.State.class));
+    querySpec.query.addBooleanClause(kindClause);
+    querySpec.options.add(QueryTask.QuerySpecification.QueryOption.COUNT);
+
+    if (tenantId.isPresent()) {
+      QueryTask.Query clause = new QueryTask.Query()
+          .setTermPropertyName("tenantId")
+          .setTermMatchValue(tenantId.get());
+      querySpec.query.addBooleanClause(clause);
+    }
+
+    if (projectId.isPresent()) {
+      QueryTask.Query clause = new QueryTask.Query()
+          .setTermPropertyName("projectId")
+          .setTermMatchValue(projectId.get());
+      querySpec.query.addBooleanClause(clause);
+    }
+
+    com.vmware.xenon.common.Operation result = xenonClient.query(querySpec, true);
+    ServiceDocumentQueryResult queryResult = result.getBody(QueryTask.class).results;
+    return queryResult.documentCount.intValue();
   }
 }

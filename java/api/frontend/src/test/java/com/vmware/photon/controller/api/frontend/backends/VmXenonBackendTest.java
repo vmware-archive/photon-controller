@@ -131,6 +131,7 @@ public class VmXenonBackendTest {
   private static TaskEntity createdVmTaskEntity;
   private static String imageId;
   private static ImageService.State createdImageState;
+  private static String tenantId;
 
   @Test
   private void dummy() {
@@ -194,7 +195,7 @@ public class VmXenonBackendTest {
       ProjectXenonBackend projectXenonBackend,
       FlavorXenonBackend flavorXenonBackend,
       FlavorLoader flavorLoader) throws Throwable {
-    String tenantId = XenonBackendTestHelper.createTenant(tenantXenonBackend, "vmware");
+    tenantId = XenonBackendTestHelper.createTenant(tenantXenonBackend, "vmware");
 
     QuotaLineItem ticketLimit = new QuotaLineItem("vm.cost", 100, QuotaUnit.COUNT);
     XenonBackendTestHelper.createTenantResourceTicket(resourceTicketXenonBackend,
@@ -582,6 +583,36 @@ public class VmXenonBackendTest {
       assertThat(foundVm.getHost(), is(vm.host));
       assertThat(foundVm.getDatastore(), is(vm.datastore));
       assertThat(foundVm.getProjectId(), is(vm.projectId));
+    }
+
+    @Test
+    public void testGetNumberVmsByDeployment() {
+      int num = vmXenonBackend.getNumberVms();
+      assertThat(num, is(1));
+    }
+
+    @Test
+    public void testGetNumberVmsByValidTenantId() {
+      int num = vmXenonBackend.getNumberVmsByTenant(tenantId);
+      assertThat(num, is(1));
+    }
+
+    @Test
+    public void testGetNumberVmsByInvalidTenantId() {
+      int num = vmXenonBackend.getNumberVmsByTenant("not_exist_tenant_id");
+      assertThat(num, is(0));
+    }
+
+    @Test
+    public void testGetNumberVmsByValidProjectId() {
+      int num = vmXenonBackend.getNumberVmsByProject(vm.projectId);
+      assertThat(num, is(1));
+    }
+
+    @Test
+    public void testGetNumberVmsByInvalidProjectId() {
+      int num = vmXenonBackend.getNumberVmsByProject("not_exist_project_id");
+      assertThat(num, is(0));
     }
   }
 

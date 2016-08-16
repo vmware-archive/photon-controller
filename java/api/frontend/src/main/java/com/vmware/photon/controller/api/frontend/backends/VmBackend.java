@@ -106,4 +106,9 @@ public interface VmBackend {
 
   void addIso(IsoEntity isoEntity, VmEntity vmEntity) throws VmNotFoundException;
 
+  int getNumberVms();
+
+  int getNumberVmsByTenant(String tenantId);
+
+  int getNumberVmsByProject(String projectId);
 }
