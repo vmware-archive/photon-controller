@@ -68,6 +68,36 @@ namespace "esxcloud" do
   end
 end
 
+def ensure_default_network_exists
+  EsxCloud::Config.init
+  EsxCloud::Config.client = ApiClientHelper.management
+
+  # Only ensure default network exists for physical network since virtual network
+  # is not global.
+  deployment = EsxCloud::Config.client.find_all_api_deployments.items.first
+  return if deployment.network_configuration.sdn_enabled
+
+  port_group = EsxCloud::TestHelpers.get_vm_port_group
+
+  networks = EsxCloud::Config.client.find_all_networks.items
+  if 0 < networks.size
+    # there already is a network, make sure there is a network marked as default
+    default = networks.find { |n| n.is_default }
+    return unless default.nil?
+
+    # find the network that contains the vm port group or pick the first one
+    default = networks.find { |n| n.portgroups.include? port_group }
+    default = networks.first if default.nil?
+
+    EsxCloud::Config.client.set_default default.id
+    return
+  end
+
+  spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [port_group])
+  network = EsxCloud::Config.client.create_network(spec.to_hash)
+  EsxCloud::Config.client.set_default(network.id)
+end
+
 namespace :seed do
   desc 'Seed host'
   RSpec::Core::RakeTask.new(:host) do |task|
@@ -77,33 +107,7 @@ namespace :seed do
 
   desc 'Ensure default network exists'
   task :ensure_default_network do |task|
-    EsxCloud::Config.init
-    EsxCloud::Config.client = ApiClientHelper.management
-
-    # Only ensure default network exists for physical network since virtual network
-    # is not global.
-    deployment = EsxCloud::Config.client.find_all_api_deployments.items.first
-    return if deployment.network_configuration.sdn_enabled
-
-    port_group = EsxCloud::TestHelpers.get_vm_port_group
-
-    networks = EsxCloud::Config.client.find_all_networks.items
-    if 0 < networks.size
-      # there already is a network, make sure there is a network marked as default
-      default = networks.find { |n| n.is_default }
-      return unless default.nil?
-
-      # find the network that contains the vm port group or pick the first one
-      default = networks.find { |n| n.portgroups.include? port_group }
-      default = networks.first if default.nil?
-
-      EsxCloud::Config.client.set_default default.id
-      return
-    end
-
-    spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [port_group])
-    network = EsxCloud::Config.client.create_network(spec.to_hash)
-    EsxCloud::Config.client.set_default(network.id)
+    ensure_default_network_exists
   end
 end
 
