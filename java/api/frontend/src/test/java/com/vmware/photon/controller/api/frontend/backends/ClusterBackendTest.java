@@ -495,6 +495,29 @@ public class ClusterBackendTest {
           Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertEquals(clusters.getItems().size(), 0);
     }
+
+    @Test
+    public void testGetNumberClustersByDeployment() {
+      int clusterNum = 3;
+      when(clusterManagerClient.getNumber(Optional.<String>absent())).thenReturn(clusterNum);
+      assertEquals(clusterBackend.getNumberClusters(), clusterNum);
+    }
+
+    @Test
+    public void testGetNumberClustersByValidProjectId() {
+      int clusterNum = 1;
+      String projectId = "projectId";
+      when(clusterManagerClient.getNumber(Optional.of(projectId))).thenReturn(clusterNum);
+      assertEquals(clusterBackend.getNumberClustersByProject(projectId), clusterNum);
+    }
+
+    @Test
+    public void testGetNumberClustersByInvalidProjectId() {
+      int clusterNum = 0;
+      String projectId = "not_exist_project_id";
+      when(clusterManagerClient.getNumber(Optional.of(projectId))).thenReturn(clusterNum);
+      assertEquals(clusterBackend.getNumberClustersByProject(projectId), clusterNum);
+    }
   }
 
   /**

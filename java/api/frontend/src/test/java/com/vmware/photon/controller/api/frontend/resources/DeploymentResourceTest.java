@@ -447,6 +447,7 @@ public class DeploymentResourceTest extends ResourceTest {
     deploymentSize.setNumberDatastores(5);
     deploymentSize.setNumberProjects(11);
     deploymentSize.setNumberVMs(24);
+    deploymentSize.setNumberClusters(6);
 
     String uri = UriBuilder.fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
         DeploymentResourceRoutes.DEPLOYMENT_SIZE_PATH)
@@ -467,6 +468,7 @@ public class DeploymentResourceTest extends ResourceTest {
     assertThat(deploymentSizeRetrieved.getNumberDatastores(), is(deploymentSize.getNumberDatastores()));
     assertThat(deploymentSizeRetrieved.getNumberProjects(), is(deploymentSize.getNumberProjects()));
     assertThat(deploymentSizeRetrieved.getNumberVMs(), is(deploymentSize.getNumberVMs()));
+    assertThat(deploymentSizeRetrieved.getNumberClusters(), is(deploymentSize.getNumberClusters()));
   }
 
   @Test

@@ -38,7 +38,10 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -211,6 +214,26 @@ public class ClusterManagerClient {
 
     return PaginationUtils.xenonQueryResultToResourceList(ClusterService.State.class, queryResult,
         state -> toApiRepresentation(state));
+  }
+
+  public int getNumber(Optional<String> projectId) {
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(ClusterService.State.class));
+    querySpec.query.addBooleanClause(kindClause);
+    querySpec.options.add(QueryTask.QuerySpecification.QueryOption.COUNT);
+
+    if (projectId.isPresent()) {
+      QueryTask.Query clause = new QueryTask.Query()
+          .setTermPropertyName("projectId")
+          .setTermMatchValue(projectId.get());
+      querySpec.query.addBooleanClause(clause);
+    }
+
+    com.vmware.xenon.common.Operation result = apiFeXenonClient.query(querySpec, true);
+    ServiceDocumentQueryResult queryResult = result.getBody(QueryTask.class).results;
+    return queryResult.documentCount.intValue();
   }
 
   private ClusterConfigurationService.State getClusterConfiguration(ClusterType clusterType)

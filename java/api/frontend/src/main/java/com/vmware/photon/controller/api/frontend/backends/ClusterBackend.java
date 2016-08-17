@@ -151,6 +151,14 @@ public class ClusterBackend {
     return clusterManagerClient.getClustersPages(pageLink);
   }
 
+  public int getNumberClusters() {
+    return clusterManagerClient.getNumber(Optional.<String>absent());
+  }
+
+  public int getNumberClustersByProject(String projectId) {
+    return clusterManagerClient.getNumber(Optional.of(projectId));
+  }
+
   private void checkClusterId(String clusterId) throws ClusterNotFoundException {
     Cluster cluster = clusterManagerClient.getCluster(clusterId);
     checkNotNull(cluster);
