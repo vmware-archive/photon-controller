@@ -85,7 +85,7 @@ public class SubnetIPLeaseService extends StatefulService {
             if (startState.subnetIPLease.subnetOperation == SubnetIPLeaseTask.SubnetOperation.UPDATE) {
                 handleUpdateSubnetIPLease(startState, start);
             } else if (startState.subnetIPLease.subnetOperation == SubnetIPLeaseTask.SubnetOperation.DELETE) {
-                handleDeleteSubnetIPLease(start);
+                handleDeleteSubnetIPLease(startState, start);
             }
         } catch (Throwable t) {
             failTask(buildPatch(TaskState.TaskStage.FAILED, t), t, start);
@@ -114,7 +114,7 @@ public class SubnetIPLeaseService extends StatefulService {
                 handleUpdateSubnetIPLease(currentState, patchOperation);
             } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage
                     && SubnetIPLeaseTask.SubnetOperation.DELETE == currentState.subnetIPLease.subnetOperation) {
-                handleDeleteSubnetIPLease(patchOperation);
+                handleDeleteSubnetIPLease(currentState, patchOperation);
             }
         } catch (Throwable t) {
             failTask(buildPatch(TaskState.TaskStage.FAILED, t), t, null);
@@ -165,11 +165,10 @@ public class SubnetIPLeaseService extends StatefulService {
      * This method generates request to DHCP agent for
      * deleting IP leases for subnet to cleanup network resources.
      *
+     * @param currentState
      * @param patchOperation
      */
-    public void handleDeleteSubnetIPLease(Operation patchOperation) {
-        SubnetIPLeaseTask currentState = getState(patchOperation);
-
+    public void handleDeleteSubnetIPLease(SubnetIPLeaseTask currentState, Operation patchOperation) {
         try {
             ((DHCPAgentXenonHost) getHost()).getDHCPDriver().deleteSubnetIPLease(currentState.subnetIPLease.subnetId);
 
