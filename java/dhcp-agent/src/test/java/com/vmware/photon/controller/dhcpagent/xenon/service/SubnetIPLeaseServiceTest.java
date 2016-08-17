@@ -334,6 +334,29 @@ public class SubnetIPLeaseServiceTest {
 
             assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
         }
+
+        /**
+         * Test subnet IP lease delete success.
+         */
+        @Test
+        public void testSubnetLeaseIPDeleteSuccess() throws Throwable {
+            setUpEnvironment();
+
+            SubnetIPLeaseTask subnetIPLeaseTask = new SubnetIPLeaseTask();
+            subnetIPLeaseTask.subnetIPLease = new SubnetIPLeaseTask.SubnetIPLease();
+            subnetIPLeaseTask.subnetIPLease.subnetId = subnetId;
+            subnetIPLeaseTask.subnetIPLease.subnetOperation = SubnetIPLeaseTask.SubnetOperation.DELETE;
+            subnetIPLeaseTask.taskState = new TaskState();
+            subnetIPLeaseTask.taskState.stage = TaskState.TaskStage.CREATED;
+
+            SubnetIPLeaseTask finalState = testEnvironment.callServiceAndWaitForState(
+                    SubnetIPLeaseService.FACTORY_LINK,
+                    subnetIPLeaseTask,
+                    SubnetIPLeaseTask.class,
+                    (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+            assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FINISHED));
+        }
     }
 
     private SubnetIPLeaseTask buildValidStartState(TaskState.TaskStage stage) {
