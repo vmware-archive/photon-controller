@@ -589,6 +589,66 @@ public class ProvisionHostTaskServiceTest {
     }
 
     @Test
+    public void testSuccessWithNsxAlreadyProvisioned() throws Throwable {
+      hostState = TestHelper.getHostServiceStartState(Collections.singleton(UsageTag.MGMT.name()),
+          HostState.NOT_PROVISIONED);
+      hostState.nsxFabricNodeId = "FABRIC_NODE_ID";
+      hostState = TestHelper.createHostService(cloudStoreEnvironment, hostState);
+
+      startState.hostServiceLink = hostState.documentSelfLink;
+      ProvisionHostTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              ProvisionHostTaskFactoryService.SELF_LINK,
+              startState,
+              ProvisionHostTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      TestHelper.assertTaskStateFinished(finalState.taskState);
+
+      verifyNoMoreInteractions(fabricApi);
+
+      verify(httpFileServiceClient)
+          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib1.vib"), anyString(), eq(false));
+      verify(httpFileServiceClient)
+          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib2.vib"), anyString(), eq(false));
+      verify(httpFileServiceClient)
+          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib3.vib"), anyString(), eq(false));
+      verifyNoMoreInteractions(httpFileServiceClient);
+
+      verify(agentControlClient, times(7))
+          .setIpAndPort(eq(hostState.hostAddress), eq(hostState.agentPort));
+
+      ArgumentCaptor<StatsPluginConfig> pluginConfigCaptor = ArgumentCaptor.forClass(StatsPluginConfig.class);
+
+      verify(agentControlClient)
+          .provision(
+              eq((List<String>) null),
+              eq(deploymentState.imageDataStoreNames),
+              eq(deploymentState.imageDataStoreUsedForVMs),
+              eq(hostState.hostAddress),
+              eq(hostState.agentPort),
+              eq(0.0),
+              eq(deploymentState.syslogEndpoint),
+              eq(finalState.agentLogLevel),
+              pluginConfigCaptor.capture(),
+              eq(true),
+              eq(ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink)),
+              eq(ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink)),
+              eq(deploymentState.ntpEndpoint),
+              any());
+
+      assertThat(pluginConfigCaptor.getValue().isStats_enabled(), is(deploymentState.statsEnabled));
+
+      verify(agentControlClient, times(6)).getAgentStatus(any());
+
+      verifyNoMoreInteractions(agentControlClient);
+
+      HostService.State finalHostState = cloudStoreEnvironment.getServiceState(hostState.documentSelfLink,
+          HostService.State.class);
+      assertThat(finalHostState.reportedDatastores, containsInAnyOrder("datastore1", "datastore2"));
+    }
+
+    @Test
     public void testSuccessWithoutNsx() throws Throwable {
 
       DeploymentService.State deploymentState = TestHelper.createDeploymentService(cloudStoreEnvironment, true, false);

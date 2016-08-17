@@ -555,7 +555,11 @@ public class ProvisionHostTaskService extends StatefulService {
 
   private void processCreateFabricNodeSubStage(State currentState, HostService.State hostState) throws Throwable {
 
-    checkState(hostState.nsxFabricNodeId == null);
+    if (hostState.nsxFabricNodeId != null) {
+      ServiceUtils.logInfo(this, "NSX has been provisioned, skipping");
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONFIGURE_SYSLOG);
+      return;
+    }
 
     NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
         currentState.networkManagerAddress,
