@@ -583,6 +583,24 @@ public class VmXenonBackendTest {
       assertThat(foundVm.getDatastore(), is(vm.datastore));
       assertThat(foundVm.getProjectId(), is(vm.projectId));
     }
+
+    @Test
+    public void testGetNumberVmsByDeployment() {
+      int num = vmXenonBackend.getNumberVms();
+      assertThat(num, is(1));
+    }
+
+    @Test
+    public void testGetNumberVmsByValidProjectId() {
+      int num = vmXenonBackend.getNumberVmsByProject(vm.projectId);
+      assertThat(num, is(1));
+    }
+
+    @Test
+    public void testGetNumberVmsByInvalidProjectId() {
+      int num = vmXenonBackend.getNumberVmsByProject("not_exist_project_id");
+      assertThat(num, is(0));
+    }
   }
 
   /**
