@@ -514,17 +514,20 @@ public class DeploymentFeClientTest {
       deploymentSize.setNumberTenants(7);
       deploymentSize.setNumberDatastores(5);
       deploymentSize.setNumberProjects(11);
+      deploymentSize.setNumberVMs(24);
 
       doReturn(deploymentSize.getNumberHosts()).when(hostBackend).getNumberHosts();
       doReturn(deploymentSize.getNumberTenants()).when(tenantBackend).getNumberTenants();
       doReturn(deploymentSize.getNumberDatastores()).when(datastoreBackend).getNumberDatastores();
       doReturn(deploymentSize.getNumberProjects()).when(projectBackend).getNumberProjects();
+      doReturn(deploymentSize.getNumberVMs()).when(vmBackend).getNumberVms();
 
       DeploymentSize deploymentRetrievedSize = feClient.getDeploymentSize(deploymentId);
       assertThat(deploymentRetrievedSize.getNumberHosts(), is(deploymentSize.getNumberHosts()));
       assertThat(deploymentRetrievedSize.getNumberTenants(), is(deploymentSize.getNumberTenants()));
       assertThat(deploymentRetrievedSize.getNumberDatastores(), is(deploymentSize.getNumberDatastores()));
       assertThat(deploymentRetrievedSize.getNumberProjects(), is(deploymentSize.getNumberProjects()));
+      assertThat(deploymentRetrievedSize.getNumberVMs(), is(deploymentSize.getNumberVMs()));
     }
 
     @Test(expectedExceptions = DeploymentNotFoundException.class,

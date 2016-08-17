@@ -75,7 +75,9 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -665,6 +667,16 @@ public class VmXenonBackend implements VmBackend {
     patchVmService(vmEntity.getId(), vmPatch);
   }
 
+  @Override
+  public int getNumberVms() {
+    return getNumber(Optional.<String>absent());
+  }
+
+  @Override
+  public int getNumberVmsByProject(String projectId) {
+    return getNumber(Optional.of(projectId));
+  }
+
   private VmEntity toVmEntity(VmService.State vm) {
     VmEntity vmEntity = new VmEntity();
     String vmId = ServiceUtils.getIDFromDocumentSelfLink(vm.documentSelfLink);
@@ -1163,5 +1175,25 @@ public class VmXenonBackend implements VmBackend {
     isoEntity.setName(name);
 
     return isoEntity;
+  }
+
+  private int getNumber(Optional<String> projectId) {
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(VmService.State.class));
+    querySpec.query.addBooleanClause(kindClause);
+    querySpec.options.add(QueryTask.QuerySpecification.QueryOption.COUNT);
+
+    if (projectId.isPresent()) {
+      QueryTask.Query clause = new QueryTask.Query()
+          .setTermPropertyName("projectId")
+          .setTermMatchValue(projectId.get());
+      querySpec.query.addBooleanClause(clause);
+    }
+
+    com.vmware.xenon.common.Operation result = xenonClient.query(querySpec, true);
+    ServiceDocumentQueryResult queryResult = result.getBody(QueryTask.class).results;
+    return queryResult.documentCount.intValue();
   }
 }

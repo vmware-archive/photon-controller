@@ -293,6 +293,7 @@ public class DeploymentFeClient {
     deploymentSize.setNumberTenants(tenantBackend.getNumberTenants());
     deploymentSize.setNumberDatastores(datastoreBackend.getNumberDatastores());
     deploymentSize.setNumberProjects(projectBackend.getNumberProjects());
+    deploymentSize.setNumberVMs(vmBackend.getNumberVms());
 
     return deploymentSize;
 
