@@ -39,6 +39,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetAddress;
@@ -239,7 +240,20 @@ public class SubnetAllocatorServiceTest {
           DhcpSubnetService.FACTORY_LINK + "/" + subnetId);
 
       assertThat(currentState.cidr, is("192.168.0.0/28"));
+      assertThat(currentState.size, is(16L));
+      assertThat(currentState.doGarbageCollection, is(false));
+      assertThat(currentState.isFloatingIpSubnet, is(false));
+      assertThat(currentState.ipAllocations, is(notNullValue()));
+      assertThat(currentState.ipAllocations.isEmpty(), is(true));
       assertThat(IpHelper.longToIpString(currentState.lowIp), is("192.168.0.0"));
+      assertThat(currentState.reservedIpList.size(), is(SubnetAllocatorService.COUNT_OF_RESERVED_IPS));
+      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(0)), is("192.168.0.1"));
+      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(1)), is("192.168.0.2"));
+      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(2)), is("192.168.0.3"));
+      assertThat(IpHelper.longToIpString(currentState.lowIpStatic), is("192.168.0.4"));
+      assertThat(IpHelper.longToIpString(currentState.highIpStatic), is("192.168.0.7"));
+      assertThat(IpHelper.longToIpString(currentState.lowIpDynamic), is("192.168.0.8"));
+      assertThat(IpHelper.longToIpString(currentState.highIpDynamic), is("192.168.0.14"));
       assertThat(IpHelper.longToIpString(currentState.highIp), is("192.168.0.15"));
 
     }

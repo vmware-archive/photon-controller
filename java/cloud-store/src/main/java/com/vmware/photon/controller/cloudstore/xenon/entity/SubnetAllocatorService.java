@@ -224,10 +224,11 @@ public class SubnetAllocatorService extends StatefulService {
       }
       if (allocateSubnetPatch.numberOfStaticIpAddresses > 0) {
         subnet.lowIpStatic = subnet.lowIp + 1 + COUNT_OF_RESERVED_IPS;
-        subnet.highIpStatic = subnet.lowIpStatic + allocateSubnetPatch.numberOfStaticIpAddresses;
+        subnet.highIpStatic = subnet.lowIpStatic + allocateSubnetPatch.numberOfStaticIpAddresses - 1;
       }
       subnet.lowIpDynamic = subnet.highIpStatic + 1;
       subnet.highIpDynamic = subnet.highIp - 1;
+      subnet.subnetId = allocateSubnetPatch.subnetId;
       subnet.documentSelfLink = allocateSubnetPatch.subnetId;
 
       Operation postOperation = Operation.createPost(this, DhcpSubnetService.FACTORY_LINK)
