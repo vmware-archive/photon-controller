@@ -50,6 +50,7 @@ import com.vmware.photon.controller.cloudstore.xenon.task.trigger.DatastoreClean
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.DhcpSubnetDeleteTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.EntityLockCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.EntityLockDeleteTriggerBuilder;
+import com.vmware.photon.controller.cloudstore.xenon.task.trigger.IpLeaseCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.TombstoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
@@ -155,7 +156,10 @@ public class CloudStoreServiceGroup
           DatastoreCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS),
       new DhcpSubnetDeleteTriggerBuilder(
           DhcpSubnetDeleteTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
-          DhcpSubnetDeleteTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
+          DhcpSubnetDeleteTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS),
+      new IpLeaseCleanerTriggerBuilder(
+          IpLeaseCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
+          IpLeaseCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
   };
 
   private PhotonControllerXenonHost photonControllerXenonHost;
@@ -236,7 +240,9 @@ public class CloudStoreServiceGroup
             && photonControllerXenonHost.checkServiceAvailable(TaskSchedulerServiceFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(IP_LEASE_DELETE_SERVICE)
             && photonControllerXenonHost.checkServiceAvailable(
-            TaskTriggerFactoryService.SELF_LINK + DhcpSubnetDeleteTriggerBuilder.TRIGGER_SELF_LINK);
+            TaskTriggerFactoryService.SELF_LINK + DhcpSubnetDeleteTriggerBuilder.TRIGGER_SELF_LINK)
+            && photonControllerXenonHost.checkServiceAvailable(
+            TaskTriggerFactoryService.SELF_LINK + IpLeaseCleanerTriggerBuilder.TRIGGER_SELF_LINK);
   }
 
   @Override
