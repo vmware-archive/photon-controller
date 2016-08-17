@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.api.frontend.clients;
 
 import com.vmware.photon.controller.api.frontend.BackendTaskExecutor;
+import com.vmware.photon.controller.api.frontend.backends.ClusterBackend;
 import com.vmware.photon.controller.api.frontend.backends.DatastoreBackend;
 import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
 import com.vmware.photon.controller.api.frontend.backends.HostBackend;
@@ -73,6 +74,7 @@ public class DeploymentFeClient {
   private final TenantBackend tenantBackend;
   private final ProjectBackend projectBackend;
   private final DatastoreBackend datastoreBackend;
+  private final ClusterBackend clusterBackend;
 
   private final AuthConfig authConfig;
 
@@ -88,6 +90,7 @@ public class DeploymentFeClient {
       TenantBackend tenantBackend,
       ProjectBackend projectBackend,
       DatastoreBackend datastoreBackend,
+      ClusterBackend clusterBackend,
       AuthConfig authConfig,
       TaskCommandFactory commandFactory,
       @BackendTaskExecutor ExecutorService executor) {
@@ -98,6 +101,7 @@ public class DeploymentFeClient {
     this.tenantBackend = tenantBackend;
     this.projectBackend = projectBackend;
     this.datastoreBackend = datastoreBackend;
+    this.clusterBackend = clusterBackend;
     this.authConfig = authConfig;
     this.commandFactory = commandFactory;
     this.executor = executor;
@@ -294,6 +298,7 @@ public class DeploymentFeClient {
     deploymentSize.setNumberDatastores(datastoreBackend.getNumberDatastores());
     deploymentSize.setNumberProjects(projectBackend.getNumberProjects());
     deploymentSize.setNumberVMs(vmBackend.getNumberVms());
+    deploymentSize.setNumberClusters(clusterBackend.getNumberClusters());
 
     return deploymentSize;
 

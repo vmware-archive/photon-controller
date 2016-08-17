@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api.frontend.clients;
 
+import com.vmware.photon.controller.api.frontend.backends.ClusterBackend;
 import com.vmware.photon.controller.api.frontend.backends.DatastoreBackend;
 import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
 import com.vmware.photon.controller.api.frontend.backends.HostBackend;
@@ -80,6 +81,7 @@ public class DeploymentFeClientTest {
   private TenantBackend tenantBackend;
   private ProjectBackend projectBackend;
   private DatastoreBackend datastoreBackend;
+  private ClusterBackend clusterBackend;
   private AuthConfig authConfig;
   private TaskCommandFactory commandFactory;
   private ExecutorService executorService;
@@ -92,6 +94,7 @@ public class DeploymentFeClientTest {
     tenantBackend = mock(TenantBackend.class);
     projectBackend = mock(ProjectBackend.class);
     datastoreBackend = mock(DatastoreBackend.class);
+    clusterBackend = mock(ClusterBackend.class);
     authConfig = new AuthConfig();
 
     commandFactory = mock(TaskCommandFactory.class);
@@ -99,7 +102,7 @@ public class DeploymentFeClientTest {
 
     feClient = new DeploymentFeClient(
         taskBackend, deploymentBackend, vmBackend, hostBackend, tenantBackend, projectBackend, datastoreBackend,
-        authConfig, commandFactory, executorService);
+        clusterBackend, authConfig, commandFactory, executorService);
   }
 
   /**
@@ -515,12 +518,14 @@ public class DeploymentFeClientTest {
       deploymentSize.setNumberDatastores(5);
       deploymentSize.setNumberProjects(11);
       deploymentSize.setNumberVMs(24);
+      deploymentSize.setNumberClusters(6);
 
       doReturn(deploymentSize.getNumberHosts()).when(hostBackend).getNumberHosts();
       doReturn(deploymentSize.getNumberTenants()).when(tenantBackend).getNumberTenants();
       doReturn(deploymentSize.getNumberDatastores()).when(datastoreBackend).getNumberDatastores();
       doReturn(deploymentSize.getNumberProjects()).when(projectBackend).getNumberProjects();
       doReturn(deploymentSize.getNumberVMs()).when(vmBackend).getNumberVms();
+      doReturn(deploymentSize.getNumberClusters()).when(clusterBackend).getNumberClusters();
 
       DeploymentSize deploymentRetrievedSize = feClient.getDeploymentSize(deploymentId);
       assertThat(deploymentRetrievedSize.getNumberHosts(), is(deploymentSize.getNumberHosts()));
@@ -528,6 +533,7 @@ public class DeploymentFeClientTest {
       assertThat(deploymentRetrievedSize.getNumberDatastores(), is(deploymentSize.getNumberDatastores()));
       assertThat(deploymentRetrievedSize.getNumberProjects(), is(deploymentSize.getNumberProjects()));
       assertThat(deploymentRetrievedSize.getNumberVMs(), is(deploymentSize.getNumberVMs()));
+      assertThat(deploymentRetrievedSize.getNumberClusters(), is(deploymentSize.getNumberClusters()));
     }
 
     @Test(expectedExceptions = DeploymentNotFoundException.class,
