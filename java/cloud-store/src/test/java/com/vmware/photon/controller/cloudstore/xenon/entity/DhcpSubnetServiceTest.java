@@ -254,7 +254,8 @@ public class DhcpSubnetServiceTest {
   }
 
   private static DhcpSubnetService.State createInitialState() {
-    SubnetUtils subnetUtils = new SubnetUtils("192.168.0.0/16");
+    String cidr = "192.168.0.0/16";
+    SubnetUtils subnetUtils = new SubnetUtils(cidr);
     subnetUtils.setInclusiveHostCount(true);
     SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
     Long lowIp = IpHelper.ipStringToLong(subnetInfo.getLowAddress());
@@ -266,6 +267,7 @@ public class DhcpSubnetServiceTest {
     startState.lowIpDynamic = lowIp + 1;
     startState.highIpDynamic = highIp - 1;
     startState.subnetId = UUID.randomUUID().toString();
+    startState.cidr = cidr;
 
     return startState;
   }

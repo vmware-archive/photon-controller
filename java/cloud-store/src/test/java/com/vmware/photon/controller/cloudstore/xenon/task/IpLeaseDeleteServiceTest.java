@@ -381,8 +381,8 @@ public class IpLeaseDeleteServiceTest {
       InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
       subnetService.lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
       subnetService.highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
-      subnetService.isAllocated = true;
       subnetService.cidr = "cidr";
+      subnetService.subnetId = "subnet-id";
 
       env.sendPostAndWaitForReplication(
           DhcpSubnetService.FACTORY_LINK, subnetService);

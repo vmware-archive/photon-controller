@@ -28,7 +28,6 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
-import com.google.common.net.InetAddresses;
 import org.apache.commons.net.util.SubnetUtils;
 import org.hamcrest.Matchers;
 import org.slf4j.Logger;
@@ -44,8 +43,6 @@ import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
@@ -359,20 +356,18 @@ public class DhcpSubnetDeleteServiceTest {
                                      int danglingDhcpSubnets) throws Throwable {
       SubnetUtils subnetUtils = new SubnetUtils("192.168.0.0/16");
       SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
-      InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
-      InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
 
       for (int i = 0; i < totalDhcpSubnets; i++) {
         DhcpSubnetService.State state = new DhcpSubnetService.State();
         if (i < danglingDhcpSubnets) {
           state.doGarbageCollection = true;
         }
-        state.lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
-        state.highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
-        state.isAllocated = true;
+        state.lowIp = IpHelper.ipStringToLong(subnetInfo.getLowAddress());
+        state.highIp = IpHelper.ipStringToLong(subnetInfo.getHighAddress());
         state.cidr = "cidr";
 
-        state.documentSelfLink = "subnet-" + i;
+        state.subnetId = "subnet-" + i;
+        state.documentSelfLink = state.subnetId;
         env.sendPostAndWaitForReplication(
             DhcpSubnetService.FACTORY_LINK, state);
       }

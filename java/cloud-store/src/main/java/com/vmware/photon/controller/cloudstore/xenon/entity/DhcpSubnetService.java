@@ -175,12 +175,12 @@ public class DhcpSubnetService extends StatefulService {
 
       Preconditions.checkArgument(startState.lowIp < startState.highIp, "lowIp should be less than highIp");
 
-      if (startState.isAllocated) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(startState.cidr),
-            "cidr should not be blank for an allocated subnet");
-      } else {
-        Preconditions.checkArgument(!startState.doGarbageCollection,
-            "garbage collection is not allowed for un-allocated subnets");
+      Preconditions.checkArgument(StringUtils.isNotBlank(startState.cidr),
+          "cidr should not be blank for an allocated subnet");
+
+      if (!startState.isFloatingIpSubnet) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(startState.subnetId),
+            "subnet should not be blank for an allocated private ip subnet");
       }
 
       startState.ipAllocations = new BitSet();
@@ -303,14 +303,6 @@ public class DhcpSubnetService extends StatefulService {
      */
     @Range(min = 0L, max = MAX_IPV4)
     public Long highIpStatic;
-
-    /**
-     * This flag indicates if the subnet range is available for extracting subnets that take up
-     * all or part of the range.
-     */
-    @DefaultBoolean(false)
-    @NotNull
-    public boolean isAllocated;
 
     /**
      * This is a calculated field based on the difference of highIp and lowIp however it is still
