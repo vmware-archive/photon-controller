@@ -36,7 +36,7 @@ public class SubnetIPLeaseTask extends ServiceDocument {
     public TaskState taskState;
 
     /**
-     * This value represents the ability control of executing operations or stage transitions of ReleaseIPService.
+     * This value represents the ability control of executing operations or stage transitions of SubnetIPLeaseService.
      */
     @DefaultInteger(0)
     @Immutable
