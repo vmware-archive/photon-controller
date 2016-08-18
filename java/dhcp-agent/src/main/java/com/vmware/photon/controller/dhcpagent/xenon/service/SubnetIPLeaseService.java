@@ -35,7 +35,7 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 public class SubnetIPLeaseService extends StatefulService {
 
-    public static final String FACTORY_LINK = ServiceUriPaths.DHCPAGENT_ROOT + "/subnetiplease";
+    public static final String FACTORY_LINK = ServiceUriPaths.DHCPAGENT_ROOT + "/subnet-ip-lease";
 
     /**
      * This class implements a Xenon micro-service that provides a factory for
@@ -59,10 +59,10 @@ public class SubnetIPLeaseService extends StatefulService {
     }
 
     @Override
-    public void handleStart(Operation start) {
+    public void handleStart(Operation startOperation) {
         ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
 
-        SubnetIPLeaseTask startState = start.getBody(SubnetIPLeaseTask.class);
+        SubnetIPLeaseTask startState = startOperation.getBody(SubnetIPLeaseTask.class);
         InitializationUtils.initialize(startState);
         validateState(startState);
 
@@ -78,17 +78,17 @@ public class SubnetIPLeaseService extends StatefulService {
         try {
             if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
                 ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
-                start.setBody(startState).complete();
+                startOperation.setBody(startState).complete();
                 return;
             }
 
             if (startState.subnetIPLease.subnetOperation == SubnetIPLeaseTask.SubnetOperation.UPDATE) {
-                handleUpdateSubnetIPLease(startState, start);
+                handleUpdateSubnetIPLease(startState, startOperation);
             } else if (startState.subnetIPLease.subnetOperation == SubnetIPLeaseTask.SubnetOperation.DELETE) {
-                handleDeleteSubnetIPLease(startState, start);
+                handleDeleteSubnetIPLease(startState, startOperation);
             }
         } catch (Throwable t) {
-            failTask(buildPatch(TaskState.TaskStage.FAILED, t), t, start);
+            failTask(buildPatch(TaskState.TaskStage.FAILED, t), t, startOperation);
         }
     }
 
@@ -136,77 +136,79 @@ public class SubnetIPLeaseService extends StatefulService {
     }
 
     /**
-     * This method generates request to DHCP agent for
+     * This method generates request to DHCP server for
      * updating IP leases for the subnet.
      *
      * @param currentState
-     * @param patchOperation
+     * @param operation
      */
-    public void handleUpdateSubnetIPLease(SubnetIPLeaseTask currentState, Operation patchOperation) {
+    public void handleUpdateSubnetIPLease(SubnetIPLeaseTask currentState, Operation operation) {
         try {
             ((DHCPAgentXenonHost) getHost()).getDHCPDriver().updateSubnetIPLease(
                     currentState.subnetIPLease.subnetId,
                     currentState.subnetIPLease.ipToMACAddressMap);
 
             SubnetIPLeaseTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-            if (patchOperation == null) {
+            if (operation == null) {
                 TaskUtils.sendSelfPatch(this, patchState);
             } else {
-                patchOperation.setBody(patchState).complete();
+                operation.setBody(patchState).complete();
             }
 
         } catch (Throwable ex) {
             SubnetIPLeaseTask patchState = buildPatch(TaskState.TaskStage.FAILED, null);
-            failTask(patchState, ex, patchOperation);
+            failTask(patchState, ex, operation);
         }
     }
 
     /**
-     * This method generates request to DHCP agent for
+     * This method generates request to DHCP server for
      * deleting IP leases for subnet to cleanup network resources.
      *
      * @param currentState
-     * @param patchOperation
+     * @param operation
      */
-    public void handleDeleteSubnetIPLease(SubnetIPLeaseTask currentState, Operation patchOperation) {
+    public void handleDeleteSubnetIPLease(SubnetIPLeaseTask currentState, Operation operation) {
         try {
             ((DHCPAgentXenonHost) getHost()).getDHCPDriver().deleteSubnetIPLease(currentState.subnetIPLease.subnetId);
 
             SubnetIPLeaseTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-            if (patchOperation == null) {
+            if (operation == null) {
                 TaskUtils.sendSelfPatch(this, patchState);
             } else {
-                patchOperation.setBody(patchState).complete();
+                operation.setBody(patchState).complete();
             }
         } catch (Throwable ex) {
             SubnetIPLeaseTask patchState = buildPatch(TaskState.TaskStage.FAILED, null);
-            failTask(patchState, ex, patchOperation);
+            failTask(patchState, ex, operation);
         }
     }
 
     /**
-     * This reports the error that caused the failure state of state before sending an update
+     * This reports the error that caused the failure state before sending an update
      * to itself.
-     * @param state the failed SubnetIPLeaseTask
-     * @param t the error associated with the failed SubnetIPLeaseTask
-     * @param postOperation if there is a postOperation, this is part of a direct task and will return
+     *
+     * @param state     the failed SubnetIPLeaseTask
+     * @param t         the error associated with the failed SubnetIPLeaseTask
+     * @param operation if there is a operation, this is part of a direct task and will return
      *                      once this update is complete, otherwise moves to a failed state
      */
-    private void failTask(SubnetIPLeaseTask state, Throwable t, Operation postOperation) {
+    private void failTask(SubnetIPLeaseTask state, Throwable t, Operation operation) {
         ServiceUtils.logSevere(this, t);
 
-        if (postOperation == null) {
+        if (operation == null) {
             TaskUtils.sendSelfPatch(this, state);
         } else {
-            postOperation.setBody(state).complete();
+            operation.setBody(state).complete();
         }
     }
 
     /**
      * Builds a new SubnetIPLeaseTask with the specified stage.
      * If Throwable t is set then the failure response is added to the task state.
+     *
      * @param patchStage the stage to set the created SubnetIPLeaseTask.
-     * @param t the error associated with this SubnetIPLeaseTask, if one occurred.
+     * @param t          the error associated with this SubnetIPLeaseTask, if one occurred.
      * @return
      */
     protected static SubnetIPLeaseTask buildPatch(TaskState.TaskStage patchStage, Throwable t) {
