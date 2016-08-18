@@ -236,7 +236,7 @@ describe "deployment", management: true do
     end
   end
 
-  describe "#update_image_datastores", go_cli: true, auth_disabled: true do
+  describe "#update_image_datastores", go_cli: true do
     before(:each) do
       @existing_image_datastores = deployment.image_datastores
     end
@@ -259,13 +259,7 @@ describe "deployment", management: true do
         updated_image_datastores = client.find_deployment_by_id(deployment.id).image_datastores
         expect(updated_image_datastores).to match_array(new_image_datastore_list)
       ensure
-        factory = EsxCloud::Dcp::CloudStore::DeploymentFactory.new
-        instance_link = factory.instance_link
-
-        payload = {
-            imageDataStoreNames: @existing_image_datastores
-        }
-        EsxCloud::Dcp::CloudStore::CloudStoreClient.instance.patch instance_link, payload
+        client.update_image_datastores(deployment.id, @existing_image_datastores)
       end
     end
   end
