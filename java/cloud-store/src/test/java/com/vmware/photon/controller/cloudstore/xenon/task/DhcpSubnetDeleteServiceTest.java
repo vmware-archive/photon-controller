@@ -364,6 +364,8 @@ public class DhcpSubnetDeleteServiceTest {
         }
         state.lowIp = IpHelper.ipStringToLong(subnetInfo.getLowAddress());
         state.highIp = IpHelper.ipStringToLong(subnetInfo.getHighAddress());
+        state.lowIpDynamic = state.lowIp + 1;
+        state.highIpDynamic = state.highIp - 1;
         state.cidr = "cidr";
 
         state.subnetId = "subnet-" + i;

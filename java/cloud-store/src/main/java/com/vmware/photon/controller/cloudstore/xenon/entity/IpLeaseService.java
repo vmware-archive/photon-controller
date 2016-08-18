@@ -30,7 +30,9 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationProcessingChain;
 import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.Utils;
 
 import org.apache.commons.lang3.StringUtils;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -121,7 +123,10 @@ public class IpLeaseService extends StatefulService {
       if (currentState.ownerVmId.equalsIgnoreCase(ipLeaseOperationPatch.ownerVmId)) {
         patchOperation.setStatusCode(Operation.STATUS_CODE_NOT_MODIFIED);
       } else {
-        throw new IllegalArgumentException("The lease is already ACQUIRED by Vm: " + currentState.ownerVmId);
+        ServiceUtils.failOperationAsBadRequest(this, patchOperation,
+            new IllegalArgumentException("The lease is already acquired by Vm: " + currentState.ownerVmId),
+            new LeaseAlreadyAcquiredError(currentState, ipLeaseOperationPatch.ownerVmId));
+        return;
       }
     }
 
@@ -150,6 +155,29 @@ public class IpLeaseService extends StatefulService {
 
     setState(patchOperation, currentState);
     patchOperation.complete();
+  }
+
+  /**
+   * Captures error details when an attempt is made to acquire a lease that is already owned by another VM.
+   */
+  public static class LeaseAlreadyAcquiredError extends ServiceErrorResponse {
+
+    public static final String KIND = Utils.buildKind(LeaseAlreadyAcquiredError.class);
+
+    public final State ipLeaseState;
+    public final String requestedByVmId;
+
+    public LeaseAlreadyAcquiredError(State ipLeaseState, String requestedByVmId) {
+      this.ipLeaseState = ipLeaseState;
+      this.requestedByVmId = requestedByVmId;
+      this.documentKind = KIND;
+      this.message = getMessage();
+    }
+
+    public String getMessage() {
+      return String.format("The request by Vm id [%s] failed because the following lease is already acquired: %s",
+          this.requestedByVmId, this.ipLeaseState.toString());
+    }
   }
 
   /**

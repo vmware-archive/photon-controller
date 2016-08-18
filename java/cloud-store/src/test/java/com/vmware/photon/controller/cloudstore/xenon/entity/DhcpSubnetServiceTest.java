@@ -210,6 +210,57 @@ public class DhcpSubnetServiceTest {
     }
 
     @Test
+    public void testAllocateIpWithExistingLease() throws Throwable {
+
+      IpLeaseService.State ipLease = new IpLeaseService.State();
+      ipLease.ip = "192.168.0.1";
+      ipLease.macAddress = "any-mac";
+      ipLease.ownerVmId = "any-vm-id";
+      ipLease.subnetId = startState.subnetId;
+      ipLease.documentSelfLink = DhcpSubnetService.makeIpLeaseUrl(false, startState.subnetId, ipLease.ip);
+
+      Operation postOperation = new Operation()
+          .setAction(Service.Action.POST)
+          .setBody(ipLease)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, IpLeaseService.FACTORY_LINK));
+      host.sendRequestAndWait(postOperation);
+
+      DhcpSubnetService.IpOperationPatch ipOperationPatch =
+          new DhcpSubnetService.IpOperationPatch(
+              DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+              "vm-id", macAddress, null);
+      Operation patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(ipOperationPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      host.sendRequestAndWait(patchOperation);
+
+      DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
+          startState.documentSelfLink);
+
+      assertThat(currentState.version, is(startState.version + 1));
+      assertThat(currentState.ipAllocations.length(), is(2));
+      assertThat(currentState.ipAllocations.nextClearBit(0), is(2));
+
+      ipLease.ip = "192.168.0.3";
+      ipLease.documentSelfLink = DhcpSubnetService.makeIpLeaseUrl(false, startState.subnetId, ipLease.ip);
+      postOperation.setBody(ipLease);
+
+      host.sendRequestAndWait(postOperation);
+
+      host.sendRequestAndWait(patchOperation);
+
+      currentState = host.getServiceState(DhcpSubnetService.State.class,
+          startState.documentSelfLink);
+
+      assertThat(currentState.version, is(startState.version + 2));
+      assertThat(currentState.ipAllocations.length(), is(4));
+      assertThat(currentState.ipAllocations.nextClearBit(0), is(4));
+    }
+
+    @Test
     public void testReleaseIpToMac() throws Throwable {
       DhcpSubnetService.IpOperationPatch ipOperationPatch =
           new DhcpSubnetService.IpOperationPatch(
@@ -230,7 +281,7 @@ public class DhcpSubnetServiceTest {
 
       assertThat(currentState.version, is(startState.version + 1));
       assertThat(currentState.ipAllocations.length(), is(1));
-      assertThat(currentState.ipAllocations.get(0), is(true));
+      assertThat(currentState.ipAllocations.nextClearBit(0), is(1));
 
       ipOperationPatch =
           new DhcpSubnetService.IpOperationPatch(
@@ -248,7 +299,7 @@ public class DhcpSubnetServiceTest {
 
       assertThat(currentState.version, is(startState.version + 2));
       assertThat(currentState.ipAllocations.length(), is(0));
-      assertThat(currentState.ipAllocations.get(0), is(false));
+      assertThat(currentState.ipAllocations.nextClearBit(0), is(0));
     }
 
   }
