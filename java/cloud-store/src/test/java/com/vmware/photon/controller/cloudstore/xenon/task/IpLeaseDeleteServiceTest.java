@@ -378,6 +378,8 @@ public class IpLeaseDeleteServiceTest {
       subnetService.highIp = IpHelper.ipStringToLong(subnetInfo.getHighAddress());
       subnetService.cidr = "cidr";
       subnetService.subnetId = "subnet-id";
+      subnetService.lowIpDynamic = subnetService.lowIp + 1;
+      subnetService.highIpDynamic = subnetService.highIp - 1;
 
       env.sendPostAndWaitForReplication(
           DhcpSubnetService.FACTORY_LINK, subnetService);

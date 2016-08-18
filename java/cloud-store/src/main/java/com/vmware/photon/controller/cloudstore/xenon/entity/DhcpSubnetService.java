@@ -21,6 +21,8 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
@@ -99,31 +101,60 @@ public class DhcpSubnetService extends StatefulService {
     ServiceUtils.logInfo(this, "Patching service %s to allocate IP to MAC", getSelfLink());
 
     try {
-      String allocatedIp;
+      String allocatedIp = null;
       IpOperationPatch ipOperationPatch = patch.getBody(IpOperationPatch.class);
       State currentState = getState(patch);
 
-      if (currentState.ipAllocations.length() >= currentState.highIpDynamic - currentState.lowIpDynamic) {
-        throw new IllegalArgumentException("range is full");
+      Long dynamicRangeSize = currentState.highIpDynamic - currentState.lowIpDynamic + 1;
+
+      while (currentState.ipAllocations.length() < dynamicRangeSize) {
+        int cur = currentState.ipAllocations.nextClearBit(0);
+        currentState.ipAllocations.set(cur);
+
+        allocatedIp = IpHelper.longToIpString(cur + currentState.lowIpDynamic);
+
+        IpLeaseService.IpLeaseOperationPatch ipLeaseOperationPatch =
+            new IpLeaseService.IpLeaseOperationPatch(
+                IpLeaseService.IpLeaseOperationPatch.Kind.ACQUIRE,
+                ipOperationPatch.ownerVmId,
+                ipOperationPatch.macAddress);
+
+        Operation patchOperation = Operation
+            .createPatch(this, makeIpLeaseUrl(currentState.isFloatingIpSubnet, currentState.subnetId, allocatedIp))
+            .setBody(ipLeaseOperationPatch);
+
+        try {
+          ServiceUtils.doServiceOperation(this, patchOperation);
+        } catch (DocumentNotFoundException de) {
+          IpLeaseService.State ipLease = new IpLeaseService.State();
+          ipLease.ownerVmId = ipOperationPatch.ownerVmId;
+          ipLease.macAddress = ipOperationPatch.macAddress;
+          ipLease.ip = allocatedIp;
+          ipLease.subnetId = currentState.subnetId;
+          ipLease.documentSelfLink =
+              makeIpLeaseUrl(currentState.isFloatingIpSubnet, currentState.subnetId, allocatedIp);
+
+          Operation postOperation = Operation
+              .createPost(this, IpLeaseService.FACTORY_LINK)
+              .setBody(ipLease);
+          ServiceUtils.doServiceOperation(this, postOperation);
+        } catch (BadRequestException be) {
+          IpLeaseService.LeaseAlreadyAcquiredError leaseAlreadyAcquiredError = be.getCompletedOperation()
+              .getBody(IpLeaseService.LeaseAlreadyAcquiredError.class);
+          if (leaseAlreadyAcquiredError != null) {
+            ServiceUtils.logWarning(this, leaseAlreadyAcquiredError.getMessage());
+            continue;
+          }
+          throw be;
+        }
+        ipOperationPatch.ipAddress = allocatedIp;
+        break;
       }
 
-      int cur = currentState.ipAllocations.nextClearBit(0);
-      currentState.ipAllocations.set(cur);
-
-      allocatedIp = IpHelper.longToIpString(cur + currentState.lowIpDynamic);
-
-      IpLeaseService.State ipLease = new IpLeaseService.State();
-      ipLease.ownerVmId = ipOperationPatch.ownerVmId;
-      ipLease.macAddress = ipOperationPatch.macAddress;
-      ipLease.ip = allocatedIp;
-      ipLease.subnetId = currentState.subnetId;
-      ipLease.documentSelfLink = makeIpLeaseUrl(currentState.isFloatingIpSubnet, currentState.subnetId, allocatedIp);
-
-      Operation postOperation = Operation
-          .createPost(this, IpLeaseService.FACTORY_LINK)
-          .setBody(ipLease);
-      ServiceUtils.doServiceOperation(this, postOperation);
-      ipOperationPatch.ipAddress = allocatedIp;
+      if (StringUtils.isBlank(ipOperationPatch.ipAddress)) {
+        //this should be converted to a custom RangeFullException
+        throw new IllegalArgumentException("range is full");
+      }
 
       currentState.version++;
       setState(patch, currentState);
@@ -172,6 +203,9 @@ public class DhcpSubnetService extends StatefulService {
       if (startState.isFloatingIpSubnet) {
         startState.lowIpDynamic = startState.lowIp;
         startState.highIpDynamic = startState.highIp;
+      } else {
+        Preconditions.checkNotNull(startState.lowIpDynamic, "lowIpDynamic should not be null");
+        Preconditions.checkNotNull(startState.highIpDynamic, "highIpDynamic should not be null");
       }
       ValidationUtils.validateState(startState);
 
@@ -185,7 +219,8 @@ public class DhcpSubnetService extends StatefulService {
             "subnet should not be blank for an allocated private ip subnet");
       }
 
-      startState.ipAllocations = new BitSet();
+      Long dynamicRangeSize = startState.highIpDynamic - startState.lowIpDynamic + 1;
+      startState.ipAllocations = new BitSet(IpHelper.safeLongToInt(dynamicRangeSize));
 
       createOperation.complete();
     } catch (IllegalStateException t) {
