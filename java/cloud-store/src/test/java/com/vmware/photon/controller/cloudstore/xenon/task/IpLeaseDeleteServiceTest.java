@@ -29,7 +29,6 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
-import com.google.common.net.InetAddresses;
 import org.apache.commons.net.util.SubnetUtils;
 import org.hamcrest.Matchers;
 import org.slf4j.Logger;
@@ -45,8 +44,6 @@ import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
@@ -346,7 +343,7 @@ public class IpLeaseDeleteServiceTest {
               logger.info(
                   "Host:[{}] Service:[{}] Document Count- Expected [{}], Actual [{}]",
                   host.getUri(),
-                  DhcpSubnetService.FACTORY_LINK,
+                  IpLeaseService.FACTORY_LINK,
                   0,
                   result.documentCount);
               return result.documentCount == 0;
@@ -377,10 +374,8 @@ public class IpLeaseDeleteServiceTest {
       subnetService.documentSelfLink = "subnet-id";
       SubnetUtils subnetUtils = new SubnetUtils("192.168.0.0/16");
       SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
-      InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
-      InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
-      subnetService.lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
-      subnetService.highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
+      subnetService.lowIp = IpHelper.ipStringToLong(subnetInfo.getLowAddress());
+      subnetService.highIp = IpHelper.ipStringToLong(subnetInfo.getHighAddress());
       subnetService.cidr = "cidr";
       subnetService.subnetId = "subnet-id";
 
@@ -390,6 +385,7 @@ public class IpLeaseDeleteServiceTest {
       for (int i = 0; i < totalIpLeases; i++) {
         IpLeaseService.State state = new IpLeaseService.State();
 
+        state.ip = "test-ip";
         state.subnetId = "subnet-id";
         env.sendPostAndWaitForReplication(
             IpLeaseService.FACTORY_LINK, state);

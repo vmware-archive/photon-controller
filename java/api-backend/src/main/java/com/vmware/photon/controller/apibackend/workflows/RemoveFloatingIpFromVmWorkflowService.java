@@ -246,7 +246,7 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
   private void releaseVmFloatingIp(RemoveFloatingIpFromVmWorkflowDocument state) {
     DhcpSubnetService.IpOperationPatch releaseIp = new DhcpSubnetService.IpOperationPatch(
         DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac,
-        state.vmMacAddress, state.vmFloatingIpAddress);
+        null, null, state.vmFloatingIpAddress);
 
     CloudStoreUtils.patchCloudStoreEntityAndProcess(
         this,

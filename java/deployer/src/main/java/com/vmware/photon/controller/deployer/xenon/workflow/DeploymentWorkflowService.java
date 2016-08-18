@@ -57,7 +57,6 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.FutureCallback;
 import org.apache.commons.net.util.SubnetUtils;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -65,8 +64,6 @@ import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -722,13 +719,14 @@ public class DeploymentWorkflowService extends StatefulService {
   private static DhcpSubnetService.State createDhcpSubnetServiceState(String cidr) {
     SubnetUtils subnetUtils = new SubnetUtils(cidr);
     SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
-    InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
-    InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
 
     DhcpSubnetService.State state = new DhcpSubnetService.State();
     state.cidr = cidr;
-    state.lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
-    state.highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
+    state.lowIp = IpHelper.ipStringToLong(subnetInfo.getLowAddress());
+    state.highIp = IpHelper.ipStringToLong(subnetInfo.getHighAddress());
+    state.isFloatingIpSubnet = true;
+    state.documentSelfLink = DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK;
+    state.subnetId = ServiceUtils.getIDFromDocumentSelfLink(state.documentSelfLink);
 
     return state;
   }
@@ -790,8 +788,8 @@ public class DeploymentWorkflowService extends StatefulService {
               .collect(Collectors.toList());
 
           migrateData(currentState, photonControllerCoreVms, destinationProtocol);
-      })
-      .sendWith(this);
+        })
+        .sendWith(this);
   }
 
   private void migrateData(State currentState,

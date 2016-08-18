@@ -83,7 +83,7 @@ public class VmReleaseIpStepCmd extends StepCommand {
     logger.info("Releasing one network info entry for vm, ipAddress is {}", ipAddress);
 
     DhcpSubnetService.IpOperationPatch patch = new DhcpSubnetService.IpOperationPatch(
-        DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac, null, ipAddress);
+        DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac, null, null, ipAddress);
 
     PhotonControllerXenonRestClient photonControllerXenonRestClient = taskCommand.getPhotonControllerXenonRestClient();
     photonControllerXenonRestClient.patch(DhcpSubnetService.FACTORY_LINK + "/" + subnetId, patch);

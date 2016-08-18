@@ -24,6 +24,7 @@ import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationProcessingChain;
@@ -85,8 +86,14 @@ public class IpLeaseService extends StatefulService {
     myRouter.register(
         Action.PATCH,
         new RequestRouter.RequestBodyMatcher<>(
+            IpLeaseOperationPatch.class, "kind", IpLeaseOperationPatch.Kind.ACQUIRE),
+        this::handleAcquireIpLease, "Acquire Ip lease");
+
+    myRouter.register(
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<>(
             IpLeaseOperationPatch.class, "kind", IpLeaseOperationPatch.Kind.RELEASE),
-        this::handleCleanIpLease, "Clean Ip lease");
+        this::handleReleaseIpLease, "Release Ip lease");
 
     OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
     opProcessingChain.add(myRouter);
@@ -100,22 +107,45 @@ public class IpLeaseService extends StatefulService {
     ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
   }
 
-  public void handleCleanIpLease(Operation patchOperation) {
-    ServiceUtils.logInfo(this, "Patching service with kind - cleanIpLease %s", getSelfLink());
-    IpLeaseOperationPatch subnetOperationPatch = patchOperation.getBody(IpLeaseOperationPatch.class);
+  public void handleAcquireIpLease(Operation patchOperation) {
+    ServiceUtils.logInfo(this, "handleAcquireIpLease invoked for service: %s", getSelfLink());
+    IpLeaseOperationPatch ipLeaseOperationPatch = patchOperation.getBody(IpLeaseOperationPatch.class);
+    State currentState = getState(patchOperation);
+
+    if (StringUtils.isBlank(currentState.ownerVmId)) {
+      // the ownerVmId is already cleaned up
+      currentState.ownerVmId = ipLeaseOperationPatch.ownerVmId;
+      currentState.macAddress = ipLeaseOperationPatch.macAddress;
+    } else {
+
+      if (currentState.ownerVmId.equalsIgnoreCase(ipLeaseOperationPatch.ownerVmId)) {
+        patchOperation.setStatusCode(Operation.STATUS_CODE_NOT_MODIFIED);
+      } else {
+        throw new IllegalArgumentException("The lease is already ACQUIRED by Vm: " + currentState.ownerVmId);
+      }
+    }
+
+    setState(patchOperation, currentState);
+    patchOperation.complete();
+  }
+
+  public void handleReleaseIpLease(Operation patchOperation) {
+    ServiceUtils.logInfo(this, "handleReleaseIpLease invoked for service: %s", getSelfLink());
+    IpLeaseOperationPatch ipLeaseOperationPatch = patchOperation.getBody(IpLeaseOperationPatch.class);
 
     State currentState = getState(patchOperation);
-    if (StringUtils.isBlank(currentState.vmId)) {
-      // the vmId is already cleaned up
+    if (StringUtils.isBlank(currentState.ownerVmId)) {
+      // the ownerVmId is already cleaned up
       patchOperation.setStatusCode(Operation.STATUS_CODE_NOT_MODIFIED);
     } else {
-      // if the release requester does not have the same vmId of the IpLease then throw BadRequestException
-      checkArgument(currentState.vmId.equalsIgnoreCase(subnetOperationPatch.vmId),
-          "Current vmId: %s, Request vmId: %s, selflink: %s",
-          currentState.vmId, subnetOperationPatch.vmId, currentState.documentSelfLink);
+      // if the release requester does not have the same ownerVmId of the IpLease then throw BadRequestException
+      checkArgument(currentState.ownerVmId.equalsIgnoreCase(ipLeaseOperationPatch.ownerVmId),
+          "Current ownerVmId: %s, Request ownerVmId: %s, selflink: %s",
+          currentState.ownerVmId, ipLeaseOperationPatch.ownerVmId, currentState.documentSelfLink);
 
-      //release vmId of the ip lease
-      currentState.vmId = null;
+      //release ownerVmId of the ip lease
+      currentState.ownerVmId = null;
+      currentState.macAddress = null;
     }
 
     setState(patchOperation, currentState);
@@ -129,23 +159,33 @@ public class IpLeaseService extends StatefulService {
   @NoMigrationDuringDeployment
   public static class IpLeaseOperationPatch extends ServiceDocument {
     public final Kind kind;
-    public final String vmId;
+    public final String ownerVmId;
+    public final String macAddress;
 
     private IpLeaseOperationPatch() {
       kind = null;
-      vmId = null;
+      ownerVmId = null;
+      macAddress = null;
     }
 
-    public IpLeaseOperationPatch(Kind kind, String vmId) {
+    public IpLeaseOperationPatch(Kind kind, String ownerVmId, String macAddress) {
       if (kind == null) {
         throw new IllegalArgumentException("kind cannot be null");
       }
 
-      if (vmId == null) {
-        throw new IllegalArgumentException("vmId cannot be null");
+      if (StringUtils.isBlank(ownerVmId)) {
+        throw new IllegalArgumentException("ownerVmId cannot be blank");
       }
+
+      if (kind == Kind.ACQUIRE) {
+        if (StringUtils.isBlank(macAddress)) {
+          throw new IllegalArgumentException("macAddress cannot be blank for an ACQUIRE request");
+        }
+      }
+
       this.kind = kind;
-      this.vmId = vmId;
+      this.ownerVmId = ownerVmId;
+      this.macAddress = macAddress;
     }
 
     /**
@@ -174,33 +214,35 @@ public class IpLeaseService extends StatefulService {
      * network.
      */
     @Immutable
+    @NotBlank
     public String subnetId;
 
     /**
      * This is IP for a given subnet that can be allocated to a MAC address.
      */
     @Immutable
+    @NotBlank
     public String ip;
 
     /**
-     * This is the MAC address to which the IP is allocated. Null value indicates the IP is available for
-     * allocation.
+     * This is the MAC address to which the IP is allocated.
      */
     public String macAddress;
 
     /**
      * This is the vm to which the IP is allocated. Null value indicates the IP is available for
-     * allocation, no vm is using the IP.
+     * allocation to a new vm.
      */
-    public String vmId;
+    public String ownerVmId;
 
     @Override
     public String toString() {
       return com.google.common.base.Objects.toStringHelper(this)
           .add("documentSelfLink", documentSelfLink)
-          .add("networkId", subnetId)
+          .add("subnetId", subnetId)
           .add("ip", ip)
           .add("macAddress", macAddress)
+          .add("ownerVmId", ownerVmId)
           .toString();
     }
   }
