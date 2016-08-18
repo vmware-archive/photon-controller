@@ -14,7 +14,7 @@ require 'dcp/cloud_store/cloud_store_client'
 require 'dcp/deployer_client'
 require 'thrift/thrift_helper'
 
-describe "deployment lifecycle", order: :defined, deployer: true, auth_disabled: true do
+describe "deployment lifecycle", order: :defined, deployer: true do
 
   let(:api_client) { ApiClientHelper.management(protocol: "http", port: "9000") }
 
