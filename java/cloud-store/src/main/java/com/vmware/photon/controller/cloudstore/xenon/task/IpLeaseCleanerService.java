@@ -48,7 +48,7 @@ import java.util.Map;
 /**
  * Class implementing a periodically triggered service to clean up IpLeaseService,
  * in the case that vm has been deleted,
- * but the vmId in IpLeaseService has not been cleared.
+ * but the ownerVmId in IpLeaseService has not been cleared.
  */
 public class IpLeaseCleanerService extends StatefulService {
 
@@ -229,13 +229,14 @@ public class IpLeaseCleanerService extends StatefulService {
 
     Operation getVmOperation =
         Operation
-            .createGet(UriUtils.buildUri(getHost(), VmServiceFactory.SELF_LINK + "/" + state.vmId))
+            .createGet(UriUtils.buildUri(getHost(), VmServiceFactory.SELF_LINK + "/" + state.ownerVmId))
             .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
     getVmOperation.setCompletion(
         (operation, ex) -> {
-          if (operation.getStatusCode() == 404) {
+          if (operation.getStatusCode() == Operation.STATUS_CODE_NOT_FOUND) {
             IpLeaseService.IpLeaseOperationPatch patch =
-                new IpLeaseService.IpLeaseOperationPatch(IpLeaseService.IpLeaseOperationPatch.Kind.RELEASE, state.vmId);
+                new IpLeaseService.IpLeaseOperationPatch(
+                    IpLeaseService.IpLeaseOperationPatch.Kind.RELEASE, state.ownerVmId, null);
             Operation patchOperation = Operation
                 .createPatch(UriUtils.buildUri(getHost(), IpLeaseService.FACTORY_LINK + "/" + ipLeaseId))
                 .setBody(patch)
@@ -267,7 +268,7 @@ public class IpLeaseCleanerService extends StatefulService {
     if (result != null && result.results != null && result.results.documentCount > 0) {
       for (Map.Entry<String, Object> doc : result.results.documents.entrySet()) {
         IpLeaseService.State ipLease = Utils.fromJson(doc.getValue(), IpLeaseService.State.class);
-        if (ipLease.vmId != null) {
+        if (ipLease.ownerVmId != null) {
           ipLeaseList.add(ipLease);
         }
       }

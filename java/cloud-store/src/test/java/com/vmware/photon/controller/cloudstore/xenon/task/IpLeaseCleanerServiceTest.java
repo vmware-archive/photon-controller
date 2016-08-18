@@ -13,7 +13,10 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.task;
 
+import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -309,17 +312,17 @@ public class IpLeaseCleanerServiceTest {
           IpLeaseCleanerService.State.class,
           (IpLeaseCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
 
-      // Check that subnetId from IpLease document was cleaned.
+      // Check that ownerVmId from IpLease document was cleaned.
       QueryTask.Query kindClause = new QueryTask.Query()
           .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
           .setTermMatchValue(com.vmware.xenon.common.Utils.buildKind(IpLeaseService.State.class));
-      QueryTask.Query subnetClause = new QueryTask.Query()
-          .setTermPropertyName("subnetId")
-          .setTermMatchValue("subnet-id");
+      QueryTask.Query ownerVmIdClause = new QueryTask.Query()
+          .setTermPropertyName("ownerVmId")
+          .setTermMatchValue("vm-id");
 
       QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
       spec.query.addBooleanClause(kindClause);
-      spec.query.addBooleanClause(subnetClause);
+      spec.query.addBooleanClause(ownerVmIdClause);
 
       QueryTask query = QueryTask.create(spec)
           .setDirect(true);
@@ -346,12 +349,26 @@ public class IpLeaseCleanerServiceTest {
 
     private void seedTestEnvironment(TestEnvironment env,
                                      int totalIpLeases, int danglingIpLeases) throws Throwable {
+
+      VmService.State vmState = new VmService.State();
+      vmState.name = "vm-name";
+      vmState.flavorId = "flavor-id";
+      vmState.imageId = "image-id";
+      vmState.documentSelfLink = "vm-id";
+      vmState.projectId = "project-id";
+      vmState.vmState = VmState.STARTED;
+
+      env.sendPostAndWait(VmServiceFactory.SELF_LINK, vmState);
+
       for (int i = 0; i < totalIpLeases; i++) {
         IpLeaseService.State state = new IpLeaseService.State();
         state.documentSelfLink = "ip-lease-" + i;
+        state.subnetId = "subnet-id";
+        state.ip = "dummy-ip";
+        state.ownerVmId = "non-existing-vm-id";
 
         if (i >= danglingIpLeases) {
-          state.subnetId = "subnet-id";
+          state.ownerVmId = "vm-id";
         }
         env.sendPostAndWaitForReplication(
             IpLeaseService.FACTORY_LINK, state);

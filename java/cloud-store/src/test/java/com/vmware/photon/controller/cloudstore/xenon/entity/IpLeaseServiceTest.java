@@ -97,7 +97,7 @@ public class IpLeaseServiceTest {
     public void testSuccessfulCreation() throws Throwable {
       IpLeaseService.State startState = createInitialState();
       startState.macAddress = "macAddress";
-      startState.vmId = "vm-id";
+      startState.ownerVmId = "vm-id";
 
       Operation result = xenonClient.post(IpLeaseService.FACTORY_LINK, startState);
       assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
@@ -187,8 +187,8 @@ public class IpLeaseServiceTest {
     }
 
     @Test
-    public void testCleanIpLease() throws Throwable {
-      startState.vmId = "vm-id";
+    public void testReleaseIpLease() throws Throwable {
+      startState.ownerVmId = "vm-id";
       Operation result = xenonClient.post(IpLeaseService.FACTORY_LINK, startState);
       assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
       startState = result.getBody(IpLeaseService.State.class);
@@ -196,7 +196,7 @@ public class IpLeaseServiceTest {
       IpLeaseService.IpLeaseOperationPatch ipLeaseOperationPatch =
           new IpLeaseService.IpLeaseOperationPatch(
               IpLeaseService.IpLeaseOperationPatch.Kind.RELEASE,
-              "vm-id");
+              "vm-id", null);
       Operation patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
           .setBody(ipLeaseOperationPatch)
@@ -207,12 +207,12 @@ public class IpLeaseServiceTest {
       IpLeaseService.State currentState = host.getServiceState(IpLeaseService.State.class,
           startState.documentSelfLink);
 
-      assertThat(currentState.vmId, nullValue());
+      assertThat(currentState.ownerVmId, nullValue());
     }
 
     @Test
-    public void testCleanIpLeaseWrongVmId() throws Throwable {
-      startState.vmId = "vm-wrong-id";
+    public void testReleaseIpLeaseWrongVmId() throws Throwable {
+      startState.ownerVmId = "vm-wrong-id";
       Operation result = xenonClient.post(IpLeaseService.FACTORY_LINK, startState);
       assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
       startState = result.getBody(IpLeaseService.State.class);
@@ -220,7 +220,7 @@ public class IpLeaseServiceTest {
       IpLeaseService.IpLeaseOperationPatch ipLeaseOperationPatch =
           new IpLeaseService.IpLeaseOperationPatch(
               IpLeaseService.IpLeaseOperationPatch.Kind.RELEASE,
-              "vm-id");
+              "vm-id", null);
       Operation patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
           .setBody(ipLeaseOperationPatch)
@@ -229,7 +229,7 @@ public class IpLeaseServiceTest {
       try {
         host.sendRequestAndWait(patchOperation);
       } catch (BadRequestException e) {
-        assertThat(e.getMessage(), containsString("Current vmId: vm-wrong-id, Request vmId: vm-id"));
+        assertThat(e.getMessage(), containsString("Current ownerVmId: vm-wrong-id, Request ownerVmId: vm-id"));
       }
     }
   }

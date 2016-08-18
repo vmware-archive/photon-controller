@@ -113,8 +113,10 @@ public class DhcpSubnetService extends StatefulService {
       allocatedIp = IpHelper.longToIpString(cur + currentState.lowIpDynamic);
 
       IpLeaseService.State ipLease = new IpLeaseService.State();
+      ipLease.ownerVmId = ipOperationPatch.ownerVmId;
       ipLease.macAddress = ipOperationPatch.macAddress;
       ipLease.ip = allocatedIp;
+      ipLease.subnetId = currentState.subnetId;
       ipLease.documentSelfLink = makeIpLeaseUrl(currentState.isFloatingIpSubnet, currentState.subnetId, allocatedIp);
 
       Operation postOperation = Operation
@@ -209,27 +211,34 @@ public class DhcpSubnetService extends StatefulService {
     public final Kind kind;
     public String macAddress;
     public String ipAddress;
+    public String ownerVmId;
 
     private IpOperationPatch() {
       kind = null;
     }
 
-    public IpOperationPatch(Kind kind, String macAddress, String ipAddress) {
+    public IpOperationPatch(Kind kind, String ownerVmId, String macAddress, String ipAddress) {
       if (kind == null) {
         throw new IllegalArgumentException("kind cannot be null");
       }
 
-      if (kind == Kind.AllocateIpToMac && macAddress == null) {
-        throw new IllegalArgumentException("macAddress cannot be null for allocate ip operation");
+      if (kind == Kind.AllocateIpToMac) {
+        if (StringUtils.isBlank(ownerVmId)) {
+          throw new IllegalArgumentException("ownerVmId cannot be blank for allocate ip operation");
+        }
+        if (StringUtils.isBlank(macAddress)) {
+          throw new IllegalArgumentException("macAddress cannot be blank for allocate ip operation");
+        }
       }
 
-      if (kind == Kind.ReleaseIpForMac && ipAddress == null) {
-        throw new IllegalArgumentException("ipAddress cannot be null for release ip operation");
+      if (kind == Kind.ReleaseIpForMac && StringUtils.isBlank(ipAddress)) {
+        throw new IllegalArgumentException("ipAddress cannot be blank for release ip operation");
       }
 
       this.kind = kind;
       this.macAddress = macAddress;
       this.ipAddress = ipAddress;
+      this.ownerVmId = ownerVmId;
     }
 
     /**

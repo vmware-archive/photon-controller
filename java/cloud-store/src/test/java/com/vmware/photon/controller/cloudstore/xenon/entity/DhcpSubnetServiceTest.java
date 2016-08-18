@@ -193,7 +193,7 @@ public class DhcpSubnetServiceTest {
       DhcpSubnetService.IpOperationPatch ipOperationPatch =
           new DhcpSubnetService.IpOperationPatch(
               DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
-              macAddress, null);
+              "vm-id", macAddress, null);
       Operation patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
           .setBody(ipOperationPatch)
@@ -214,7 +214,7 @@ public class DhcpSubnetServiceTest {
       DhcpSubnetService.IpOperationPatch ipOperationPatch =
           new DhcpSubnetService.IpOperationPatch(
               DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
-              macAddress, null);
+              "vm-id", macAddress, null);
       Operation patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
           .setBody(ipOperationPatch)
@@ -235,7 +235,7 @@ public class DhcpSubnetServiceTest {
       ipOperationPatch =
           new DhcpSubnetService.IpOperationPatch(
               DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac,
-              macAddress, operationResult.ipAddress);
+              null, null, operationResult.ipAddress);
       patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
           .setBody(ipOperationPatch)

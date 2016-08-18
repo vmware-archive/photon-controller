@@ -37,7 +37,6 @@ import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 
-import com.google.common.net.InetAddresses;
 import org.apache.commons.net.util.SubnetUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -52,8 +51,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 import java.lang.reflect.Field;
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -539,16 +536,14 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
     String cidr = "192.168.1.0/24";
     SubnetUtils subnetUtils = new SubnetUtils(cidr);
     SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
-    InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
-    InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
 
     DhcpSubnetService.State state = new DhcpSubnetService.State();
     state.cidr = cidr;
-    state.lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
-    state.highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
+    state.lowIp = IpHelper.ipStringToLong(subnetInfo.getLowAddress());
+    state.highIp = IpHelper.ipStringToLong(subnetInfo.getHighAddress());
     state.isFloatingIpSubnet = true;
     state.documentSelfLink = DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK;
-
+    state.subnetId = ServiceUtils.getIDFromDocumentSelfLink(state.documentSelfLink);
     Operation result = testEnvironment.sendPostAndWait(DhcpSubnetService.FACTORY_LINK, state);
     return result.getBody(DhcpSubnetService.State.class);
   }

@@ -79,11 +79,13 @@ public class VmGetIpStepCmdTest {
 
     DhcpSubnetService.IpOperationPatch ipOperationPatchResult = new DhcpSubnetService.IpOperationPatch(
         DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+        "vm-id",
         "macAddress",
         "10.0.0.1");
     Operation allocateIpResultOp = new Operation().setBody(ipOperationPatchResult);
     DhcpSubnetService.IpOperationPatch ipOperationPatchResult2 = new DhcpSubnetService.IpOperationPatch(
         DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+        "vm-id",
         "macAddress2",
         "10.0.0.2");
     Operation allocateIpResultOp2 = new Operation().setBody(ipOperationPatchResult2);
@@ -95,7 +97,7 @@ public class VmGetIpStepCmdTest {
     doReturn(allocateIpResultOp2).when(photonControllerXenonRestClient)
         .patch(eq(DhcpSubnetService.FACTORY_LINK + "/" + "network-id2"), any(DhcpSubnetService.IpOperationPatch.class));
     doReturn(vmServiceStateUpdateOp).when(photonControllerXenonRestClient)
-      .patch(eq(VmServiceFactory.SELF_LINK + "/" + "vm-id"), any(VmService.State.class));
+        .patch(eq(VmServiceFactory.SELF_LINK + "/" + "vm-id"), any(VmService.State.class));
 
     command.execute();
 
@@ -159,11 +161,13 @@ public class VmGetIpStepCmdTest {
 
     DhcpSubnetService.IpOperationPatch ipOperationPatchResult = new DhcpSubnetService.IpOperationPatch(
         DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+        "vm-id",
         "macAddress",
         "10.0.0.1");
     Operation allocateIpResultOp = new Operation().setBody(ipOperationPatchResult);
     DhcpSubnetService.IpOperationPatch ipOperationPatchResult2 = new DhcpSubnetService.IpOperationPatch(
         DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+        "vm-id",
         "macAddress2",
         "10.0.0.2");
     Operation allocateIpResultOp2 = new Operation().setBody(ipOperationPatchResult2);

@@ -66,21 +66,17 @@ public class IpHelperTest {
 
   @Test(dataProvider = "ValidIpRanges")
   public void testCidrCalculationSuccess(String startAddress, String endEddress, String expectedCidr) {
-    InetAddress lowAddress = InetAddresses.forString(startAddress);
-    InetAddress higAddress = InetAddresses.forString(endEddress);
-    long lowIp = IpHelper.ipToLong((Inet4Address) lowAddress);
-    long highIp = IpHelper.ipToLong((Inet4Address) higAddress);
+    long lowIp = IpHelper.ipStringToLong(startAddress);
+    long highIp = IpHelper.ipStringToLong(endEddress);
     String cidr = IpHelper.calculateCidrFromIpV4Range(lowIp, highIp);
     assertThat(cidr, is(equalTo(expectedCidr)));
   }
 
   @Test(dataProvider = "InvalidIpRanges", expectedExceptions = Exception.class)
   public void testCidrCalculationFailure(String startAddress, String endEddress) {
-    InetAddress lowAddress = InetAddresses.forString(startAddress);
-    InetAddress higAddress = InetAddresses.forString(endEddress);
-    long lowIp = IpHelper.ipToLong((Inet4Address) lowAddress);
-    long highIp = IpHelper.ipToLong((Inet4Address) higAddress);
-    String cidr = IpHelper.calculateCidrFromIpV4Range(lowIp, highIp);
+    long lowIp = IpHelper.ipStringToLong(startAddress);
+    long highIp = IpHelper.ipStringToLong(endEddress);
+    IpHelper.calculateCidrFromIpV4Range(lowIp, highIp);
   }
 
   @DataProvider(name = "ValidIpRanges")

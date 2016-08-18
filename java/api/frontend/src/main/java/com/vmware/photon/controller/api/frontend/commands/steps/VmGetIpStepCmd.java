@@ -55,7 +55,7 @@ public class VmGetIpStepCmd extends StepCommand {
 
     if (networkInfoMap.size() > 0) {
       for (VmService.NetworkInfo networkInfo : networkInfoMap.values()) {
-        networkInfo.privateIpAddress = allocateIpToMac(networkInfo.id, networkInfo.macAddress);
+        networkInfo.privateIpAddress = allocateIpToMac(networkInfo.id, vmId, networkInfo.macAddress);
       }
 
       updateVmNetworkInfo(vmId, networkInfoMap);
@@ -77,12 +77,12 @@ public class VmGetIpStepCmd extends StepCommand {
     }
   }
 
-  private String allocateIpToMac(String subnetId, String macAddress) {
+  private String allocateIpToMac(String subnetId, String vmId, String macAddress) {
     checkNotNull(subnetId, "subnetId is not available");
     checkNotNull(macAddress, "macAddress is not available");
 
     DhcpSubnetService.IpOperationPatch ipOperationPatch = new DhcpSubnetService.IpOperationPatch(
-        DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac, macAddress, null);
+        DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac, vmId, macAddress, null);
 
     PhotonControllerXenonRestClient photonControllerXenonRestClient = taskCommand.getPhotonControllerXenonRestClient();
     Operation allocateIpResult =
