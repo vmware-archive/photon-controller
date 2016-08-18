@@ -96,7 +96,8 @@ public class SubnetIPLeaseServiceTest {
 
         @Test(dataProvider = "ValidStartStages")
         public void testValidStartStage(TaskState.TaskStage taskStage) throws Throwable {
-            SubnetIPLeaseTask startState = buildValidStartState(taskStage);
+            SubnetIPLeaseTask startState = buildValidState(taskStage, true,
+                    SubnetIPLeaseTask.SubnetOperation.UPDATE);
             Operation startOp = testHost.startServiceSynchronously(taskService, startState);
             assertThat(startOp.getStatusCode(), is(Operation.STATUS_CODE_OK));
             assertThat(startState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
@@ -115,7 +116,8 @@ public class SubnetIPLeaseServiceTest {
 
         @Test(dataProvider = "TerminalStartStages")
         public void testTerminalStartStage(TaskState.TaskStage taskStage) throws Throwable {
-            SubnetIPLeaseTask startState = buildValidStartState(taskStage);
+            SubnetIPLeaseTask startState = buildValidState(taskStage, true,
+                    SubnetIPLeaseTask.SubnetOperation.UPDATE);
             Operation op = testHost.startServiceSynchronously(taskService, startState);
             assertThat(op.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
@@ -168,7 +170,8 @@ public class SubnetIPLeaseServiceTest {
         @Test(dataProvider = "ValidStageTransitions")
         public void testValidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
                 throws Throwable {
-            SubnetIPLeaseTask startState = buildValidStartState(startStage);
+            SubnetIPLeaseTask startState = buildValidState(startStage, true,
+                    SubnetIPLeaseTask.SubnetOperation.UPDATE);
             Operation op = testHost.startServiceSynchronously(taskService, startState);
             assertThat(op.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
@@ -201,7 +204,8 @@ public class SubnetIPLeaseServiceTest {
         @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
         public void testInvalidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
                 throws Throwable {
-            SubnetIPLeaseTask startState = buildValidStartState(startStage);
+            SubnetIPLeaseTask startState = buildValidState(startStage, true,
+                    SubnetIPLeaseTask.SubnetOperation.UPDATE);
             Operation op = testHost.startServiceSynchronously(taskService, startState);
             assertThat(op.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
@@ -292,14 +296,8 @@ public class SubnetIPLeaseServiceTest {
         public void testSubnetLeaseIPSuccess() throws Throwable {
             setUpEnvironment();
 
-            SubnetIPLeaseTask subnetIPLeaseTask = new SubnetIPLeaseTask();
-            subnetIPLeaseTask.subnetIPLease = new SubnetIPLeaseTask.SubnetIPLease();
-            subnetIPLeaseTask.subnetIPLease.ipToMACAddressMap = new HashMap<>();
-            subnetIPLeaseTask.subnetIPLease.ipToMACAddressMap.put(ipAddress, macAddress);
-            subnetIPLeaseTask.subnetIPLease.subnetId = subnetId;
-            subnetIPLeaseTask.subnetIPLease.subnetOperation = SubnetIPLeaseTask.SubnetOperation.UPDATE;
-            subnetIPLeaseTask.taskState = new TaskState();
-            subnetIPLeaseTask.taskState.stage = TaskState.TaskStage.CREATED;
+            SubnetIPLeaseTask subnetIPLeaseTask = buildValidState(TaskState.TaskStage.CREATED, false,
+                    SubnetIPLeaseTask.SubnetOperation.UPDATE);
 
             SubnetIPLeaseTask finalState = testEnvironment.callServiceAndWaitForState(
                     SubnetIPLeaseService.FACTORY_LINK,
@@ -317,14 +315,8 @@ public class SubnetIPLeaseServiceTest {
         public void testSubnetLeaseIPFailure() throws Throwable {
             setUpEnvironment("/etc/hosts");
 
-            SubnetIPLeaseTask subnetIPLeaseTask = new SubnetIPLeaseTask();
-            subnetIPLeaseTask.subnetIPLease = new SubnetIPLeaseTask.SubnetIPLease();
-            subnetIPLeaseTask.subnetIPLease.ipToMACAddressMap = new HashMap<>();
-            subnetIPLeaseTask.subnetIPLease.ipToMACAddressMap.put(ipAddress, macAddress);
-            subnetIPLeaseTask.subnetIPLease.subnetId = subnetId;
-            subnetIPLeaseTask.subnetIPLease.subnetOperation = SubnetIPLeaseTask.SubnetOperation.UPDATE;
-            subnetIPLeaseTask.taskState = new TaskState();
-            subnetIPLeaseTask.taskState.stage = TaskState.TaskStage.CREATED;
+            SubnetIPLeaseTask subnetIPLeaseTask = buildValidState(TaskState.TaskStage.CREATED, false,
+                    SubnetIPLeaseTask.SubnetOperation.UPDATE);
 
             SubnetIPLeaseTask finalState = testEnvironment.callServiceAndWaitForState(
                     SubnetIPLeaseService.FACTORY_LINK,
@@ -342,12 +334,8 @@ public class SubnetIPLeaseServiceTest {
         public void testSubnetLeaseIPDeleteSuccess() throws Throwable {
             setUpEnvironment();
 
-            SubnetIPLeaseTask subnetIPLeaseTask = new SubnetIPLeaseTask();
-            subnetIPLeaseTask.subnetIPLease = new SubnetIPLeaseTask.SubnetIPLease();
-            subnetIPLeaseTask.subnetIPLease.subnetId = subnetId;
-            subnetIPLeaseTask.subnetIPLease.subnetOperation = SubnetIPLeaseTask.SubnetOperation.DELETE;
-            subnetIPLeaseTask.taskState = new TaskState();
-            subnetIPLeaseTask.taskState.stage = TaskState.TaskStage.CREATED;
+            SubnetIPLeaseTask subnetIPLeaseTask = buildValidState(TaskState.TaskStage.CREATED, false,
+                    SubnetIPLeaseTask.SubnetOperation.DELETE);
 
             SubnetIPLeaseTask finalState = testEnvironment.callServiceAndWaitForState(
                     SubnetIPLeaseService.FACTORY_LINK,
@@ -357,20 +345,46 @@ public class SubnetIPLeaseServiceTest {
 
             assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FINISHED));
         }
+
+        /**
+         * Test subnet IP lease delete failure.
+         */
+        @Test
+        public void testSubnetLeaseIPDeleteFailure() throws Throwable {
+            setUpEnvironment("/etc/hosts");
+
+            SubnetIPLeaseTask subnetIPLeaseTask = buildValidState(TaskState.TaskStage.CREATED, false,
+                    SubnetIPLeaseTask.SubnetOperation.DELETE);
+
+            SubnetIPLeaseTask finalState = testEnvironment.callServiceAndWaitForState(
+                    SubnetIPLeaseService.FACTORY_LINK,
+                    subnetIPLeaseTask,
+                    SubnetIPLeaseTask.class,
+                    (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+            assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+        }
     }
 
-    private SubnetIPLeaseTask buildValidStartState(TaskState.TaskStage stage) {
+    private SubnetIPLeaseTask buildValidState(TaskState.TaskStage stage, boolean isProcessingDisabled,
+                                              SubnetIPLeaseTask.SubnetOperation subnetOperation) {
         SubnetIPLeaseTask subnetIPLeaseTask = new SubnetIPLeaseTask();
-        subnetIPLeaseTask.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
         subnetIPLeaseTask.subnetIPLease = new SubnetIPLeaseTask.SubnetIPLease();
-        subnetIPLeaseTask.subnetIPLease.ipToMACAddressMap = new HashMap<>();
-        subnetIPLeaseTask.subnetIPLease.ipToMACAddressMap.put(ipAddress, macAddress);
         subnetIPLeaseTask.subnetIPLease.subnetId = subnetId;
-        subnetIPLeaseTask.subnetIPLease.subnetOperation = SubnetIPLeaseTask.SubnetOperation.UPDATE;
+        subnetIPLeaseTask.subnetIPLease.subnetOperation = subnetOperation;
+
+        if (subnetOperation == SubnetIPLeaseTask.SubnetOperation.UPDATE) {
+            subnetIPLeaseTask.subnetIPLease.ipToMACAddressMap = new HashMap<>();
+            subnetIPLeaseTask.subnetIPLease.ipToMACAddressMap.put(ipAddress, macAddress);
+        }
 
         if (stage != null) {
             subnetIPLeaseTask.taskState = new TaskState();
             subnetIPLeaseTask.taskState.stage = stage;
+        }
+
+        if (isProcessingDisabled) {
+            subnetIPLeaseTask.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
         }
 
         return subnetIPLeaseTask;
