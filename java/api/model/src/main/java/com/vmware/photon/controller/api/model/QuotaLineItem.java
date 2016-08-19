@@ -32,6 +32,14 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class QuotaLineItem {
 
+  // Commonly used QuotaLineItem keys
+  public static final String VM = "vm";
+  public static final String VM_CPU = "vm.cpu";
+  public static final String VM_MEMORY = "vm.memory";
+  public static final String VM_COST = "vm.cost";
+  public static final String PERSISTENT_DISK_CAPACITY = "persistent-disk.capacity";
+  public static final String EPHEMERAL_DISK_CAPACITY = "ephemeral-disk.capacity";
+
   @JsonProperty
   @ApiModelProperty(value = "Item key (e.g., vm.cost, vm.memory, etc.)", required = true)
   private String key;

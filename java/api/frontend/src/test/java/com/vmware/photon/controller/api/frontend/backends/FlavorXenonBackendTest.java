@@ -18,9 +18,11 @@ import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRest
 import com.vmware.photon.controller.api.frontend.entities.FlavorEntity;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.FlavorNotFoundException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidFlavorSpecification;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.api.model.DiskState;
 import com.vmware.photon.controller.api.model.DiskType;
+import com.vmware.photon.controller.api.model.EphemeralDisk;
 import com.vmware.photon.controller.api.model.Flavor;
 import com.vmware.photon.controller.api.model.FlavorCreateSpec;
 import com.vmware.photon.controller.api.model.FlavorState;
@@ -102,11 +104,25 @@ public class FlavorXenonBackendTest {
     }
   }
 
-  private static FlavorCreateSpec createTestFlavorSpec() {
+  private static FlavorCreateSpec createTestFlavorSpec(String kind) {
     FlavorCreateSpec spec = new FlavorCreateSpec();
     spec.setName(UUID.randomUUID().toString());
-    spec.setKind("vm");
-    spec.setCost(ImmutableList.of(new QuotaLineItem(UUID.randomUUID().toString(), 2.0, QuotaUnit.COUNT)));
+    spec.setKind(kind);
+    switch (kind) {
+      case Vm.KIND:
+        spec.setCost(ImmutableList.of(
+            new QuotaLineItem(QuotaLineItem.VM_CPU, 1.0, QuotaUnit.COUNT),
+            new QuotaLineItem(QuotaLineItem.VM_MEMORY, 2.0, QuotaUnit.GB)));
+            break;
+      case EphemeralDisk.KIND:
+      case EphemeralDisk.KIND_SHORT_FORM:
+      case PersistentDisk.KIND:
+      case PersistentDisk.KIND_SHORT_FORM:
+      default:
+        spec.setCost(ImmutableList.of(new QuotaLineItem(UUID.randomUUID().toString(), 2.0, QuotaUnit.COUNT)));
+        break;
+    }
+
     return spec;
   }
 
@@ -129,13 +145,9 @@ public class FlavorXenonBackendTest {
     @Inject
     private FlavorBackend flavorBackend;
 
-    private FlavorCreateSpec spec;
-
     @BeforeMethod
     public void setUp() throws Throwable {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
-
-      spec = createTestFlavorSpec();
     }
 
     @AfterMethod
@@ -150,7 +162,7 @@ public class FlavorXenonBackendTest {
 
     @Test(dataProvider = "FlavorKind")
     public void testCreateFlavorSuccess(String kind, String expectedKind) throws Throwable {
-      spec.setKind(kind);
+      FlavorCreateSpec spec = createTestFlavorSpec(kind);
       TaskEntity taskEntity = flavorBackend.createFlavor(spec);
       String documentSelfLink = FlavorServiceFactory.SELF_LINK + "/" + taskEntity.getEntityId();
 
@@ -163,43 +175,42 @@ public class FlavorXenonBackendTest {
     @DataProvider(name = "FlavorKind")
     private Object[][] getFlavorKind() {
       return new Object[][]{
-          {"ephemeral", "ephemeral-disk"},
-          {"ephemeral-disk", "ephemeral-disk"},
-          {"persistent", "persistent-disk"},
-          {"persistent-disk", "persistent-disk"},
-          {"vm", "vm"}
+          { EphemeralDisk.KIND_SHORT_FORM, EphemeralDisk.KIND },
+          { EphemeralDisk.KIND, EphemeralDisk.KIND },
+          { PersistentDisk.KIND_SHORT_FORM, PersistentDisk.KIND },
+          { PersistentDisk.KIND, PersistentDisk.KIND },
+          { Vm.KIND, Vm.KIND }
       };
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = InvalidFlavorSpecification.class)
     public void testCreateFlavorFailedInvalidFlavorkind() throws Exception {
-      spec.setKind("invalid-kind");
+      FlavorCreateSpec spec = createTestFlavorSpec("invalid-kind");
       flavorBackend.createFlavor(spec);
     }
 
     @Test
     public void testCreateFlavorDuplicateNameDifferentKindSuccess() throws Exception {
-      flavorBackend.createFlavor(spec);
+      FlavorCreateSpec spec1 = createTestFlavorSpec(Vm.KIND);
+      FlavorCreateSpec spec2 = createTestFlavorSpec(PersistentDisk.KIND);
+      spec2.setName(spec1.getName());
 
-      FlavorCreateSpec newSpec = new FlavorCreateSpec();
-      newSpec.setName(spec.getName());
-      newSpec.setKind("persistent-disk");
-      newSpec.setCost(ImmutableList.of(new QuotaLineItem(UUID.randomUUID().toString(), 2.0, QuotaUnit.COUNT)));
+      flavorBackend.createFlavor(spec1);
+      TaskEntity newTaskEntity = flavorBackend.createFlavor(spec2);
 
-      TaskEntity newTaskEntity = flavorBackend.createFlavor(newSpec);
-
-      FlavorEntity flavorEntity = flavorBackend.getEntityByNameAndKind(newSpec.getName(), newSpec.getKind());
+      FlavorEntity flavorEntity = flavorBackend.getEntityByNameAndKind(spec2.getName(), spec2.getKind());
 
       assertThat(flavorEntity.getId(), is(newTaskEntity.getEntityId()));
-      assertThat(flavorEntity.getName(), is(newSpec.getName()));
-      assertThat(flavorEntity.getKind(), is(newSpec.getKind()));
-      assertThat(flavorEntity.getCost().get(0).getKey(), is(newSpec.getCost().get(0).getKey()));
-      assertThat(flavorEntity.getCost().get(0).getUnit(), is(newSpec.getCost().get(0).getUnit()));
-      assertThat(flavorEntity.getCost().get(0).getValue(), is(newSpec.getCost().get(0).getValue()));
+      assertThat(flavorEntity.getName(), is(spec2.getName()));
+      assertThat(flavorEntity.getKind(), is(spec2.getKind()));
+      assertThat(flavorEntity.getCost().get(0).getKey(), is(spec2.getCost().get(0).getKey()));
+      assertThat(flavorEntity.getCost().get(0).getUnit(), is(spec2.getCost().get(0).getUnit()));
+      assertThat(flavorEntity.getCost().get(0).getValue(), is(spec2.getCost().get(0).getValue()));
     }
 
     @Test(expectedExceptions = NameTakenException.class)
     public void testCreateFlavorDuplicateNameAndKind() throws Exception {
+      FlavorCreateSpec spec = createTestFlavorSpec(Vm.KIND);
       flavorBackend.createFlavor(spec);
       flavorBackend.createFlavor(spec);
     }
@@ -219,13 +230,9 @@ public class FlavorXenonBackendTest {
     @Inject
     private FlavorBackend flavorBackend;
 
-    private FlavorCreateSpec spec;
-
     @BeforeMethod
     public void setUp() throws Throwable {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
-
-      spec = createTestFlavorSpec();
     }
 
     @AfterMethod
@@ -240,6 +247,7 @@ public class FlavorXenonBackendTest {
 
     @Test
     public void testGetEntityByKindAndName() throws Exception {
+      FlavorCreateSpec spec = createTestFlavorSpec(Vm.KIND);
       flavorBackend.createFlavor(spec);
 
       FlavorEntity flavorEntity = flavorBackend.getEntityByNameAndKind(spec.getName(), spec.getKind());
@@ -267,12 +275,14 @@ public class FlavorXenonBackendTest {
 
     @Test
     public void testFindAllFlavors() throws Exception {
-      TaskEntity taskEntity = flavorBackend.createFlavor(spec);
+      FlavorCreateSpec spec1 = createTestFlavorSpec(Vm.KIND);
+
+      TaskEntity taskEntity = flavorBackend.createFlavor(spec1);
       String flavorId1 = taskEntity.getEntityId();
       FlavorCreateSpec spec2 = new FlavorCreateSpec();
       spec2.setName("flavor-200");
-      spec2.setKind(spec.getKind());
-      spec2.setCost(spec.getCost());
+      spec2.setKind(spec1.getKind());
+      spec2.setCost(spec1.getCost());
       taskEntity = flavorBackend.createFlavor(spec2);
       String flavorId2 = taskEntity.getEntityId();
 
@@ -282,38 +292,39 @@ public class FlavorXenonBackendTest {
       FlavorEntity firstItem = flavors.getItems().get(0);
       FlavorEntity secondItem = flavors.getItems().get(1);
       assertThat(firstItem.getId(), anyOf(is(flavorId1), is(flavorId2)));
-      assertThat(firstItem.getName(), anyOf(is(spec.getName()), is(spec2.getName())));
+      assertThat(firstItem.getName(), anyOf(is(spec1.getName()), is(spec2.getName())));
       assertThat(secondItem.getId(), anyOf(is(flavorId1), is(flavorId2)));
-      assertThat(secondItem.getName(), anyOf(is(spec.getName()), is(spec2.getName())));
+      assertThat(secondItem.getName(), anyOf(is(spec1.getName()), is(spec2.getName())));
     }
 
     @Test
     public void testFilterFlavors() throws Exception {
-      TaskEntity taskEntity = flavorBackend.createFlavor(spec);
+      FlavorCreateSpec spec1 = createTestFlavorSpec(Vm.KIND);
+      TaskEntity taskEntity = flavorBackend.createFlavor(spec1);
       String flavorId1 = taskEntity.getEntityId();
       FlavorCreateSpec spec2 = new FlavorCreateSpec();
       spec2.setName("flavor-200");
-      spec2.setKind(spec.getKind());
-      spec2.setCost(spec.getCost());
+      spec2.setKind(spec1.getKind());
+      spec2.setCost(spec1.getCost());
       taskEntity = flavorBackend.createFlavor(spec2);
       String flavorId2 = taskEntity.getEntityId();
 
-      Optional<String> name = Optional.of(spec.getName());
-      Optional<String> kind = Optional.of(spec.getKind());
+      Optional<String> name = Optional.of(spec1.getName());
+      Optional<String> kind = Optional.of(spec1.getKind());
       Optional<String> nullValue = Optional.fromNullable(null);
       ResourceList<Flavor> flavors = flavorBackend.filter(name, kind, Optional.absent());
       assertThat(flavors.getItems().size(), is(1));
 
       Flavor firstItem = flavors.getItems().get(0);
       assertThat(firstItem.getId(), is(flavorId1));
-      assertThat(firstItem.getName(), is(spec.getName()));
+      assertThat(firstItem.getName(), is(spec1.getName()));
 
       flavors = flavorBackend.filter(name, nullValue, Optional.absent());
       assertThat(flavors.getItems().size(), is(1));
 
       firstItem = flavors.getItems().get(0);
       assertThat(firstItem.getId(), is(flavorId1));
-      assertThat(firstItem.getName(), is(spec.getName()));
+      assertThat(firstItem.getName(), is(spec1.getName()));
 
       flavors = flavorBackend.filter(nullValue, kind, Optional.absent());
       assertThat(flavors.getItems().size(), is(2));
@@ -321,9 +332,9 @@ public class FlavorXenonBackendTest {
       firstItem = flavors.getItems().get(0);
       Flavor secondItem = flavors.getItems().get(1);
       assertThat(firstItem.getId(), anyOf(is(flavorId1), is(flavorId2)));
-      assertThat(firstItem.getName(), anyOf(is(spec.getName()), is(spec2.getName())));
+      assertThat(firstItem.getName(), anyOf(is(spec1.getName()), is(spec2.getName())));
       assertThat(secondItem.getId(), anyOf(is(flavorId1), is(flavorId2)));
-      assertThat(secondItem.getName(), anyOf(is(spec.getName()), is(spec2.getName())));
+      assertThat(secondItem.getName(), anyOf(is(spec1.getName()), is(spec2.getName())));
       assertThat(firstItem.getId(), is(not(secondItem.getId())));
       assertThat(firstItem.getName(), is(not(secondItem.getName())));
     }
@@ -337,7 +348,7 @@ public class FlavorXenonBackendTest {
       final int documentCount = 5;
       final int pageSize = 2;
       for (int i = 0; i < documentCount; i++) {
-        flavorBackend.createFlavor(createTestFlavorSpec());
+        flavorBackend.createFlavor(createTestFlavorSpec(Vm.KIND));
       }
 
       Set<Flavor> flavorSet = new HashSet<>();
@@ -368,13 +379,9 @@ public class FlavorXenonBackendTest {
     @Inject
     private FlavorBackend flavorBackend;
 
-    private FlavorCreateSpec spec;
-
     @BeforeMethod
     public void setUp() throws Throwable {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
-
-      spec = createTestFlavorSpec();
     }
 
     @AfterMethod
@@ -389,7 +396,7 @@ public class FlavorXenonBackendTest {
 
     @Test
     public void testDeleteFlavor() throws Exception {
-      spec.setKind(Vm.KIND);
+      FlavorCreateSpec spec = createTestFlavorSpec(Vm.KIND);
       TaskEntity taskEntity = flavorBackend.createFlavor(spec);
 
       String id = taskEntity.getEntityId();
@@ -404,7 +411,7 @@ public class FlavorXenonBackendTest {
 
     @Test
     public void testDeleteFlavorInUse() throws Exception {
-      spec.setKind(PersistentDisk.KIND);
+      FlavorCreateSpec spec = createTestFlavorSpec(PersistentDisk.KIND);
       TaskEntity taskEntity = flavorBackend.createFlavor(spec);
 
       String id = taskEntity.getEntityId();
@@ -426,7 +433,7 @@ public class FlavorXenonBackendTest {
 
     @Test
     public void testTombstoneFlavor() throws Exception {
-      spec.setKind(Vm.KIND);
+      FlavorCreateSpec spec = createTestFlavorSpec(Vm.KIND);
       TaskEntity taskEntity = flavorBackend.createFlavor(spec);
       FlavorEntity flavorEntity = flavorBackend.getEntityById(taskEntity.getEntityId());
       flavorBackend.tombstone(flavorEntity);
@@ -440,7 +447,7 @@ public class FlavorXenonBackendTest {
 
     @Test
     public void testTombstoneFlavorInUse() throws Exception {
-      spec.setKind(PersistentDisk.KIND);
+      FlavorCreateSpec spec = createTestFlavorSpec(PersistentDisk.KIND);
       TaskEntity taskEntity = flavorBackend.createFlavor(spec);
       FlavorEntity flavorEntity = flavorBackend.getEntityById(taskEntity.getEntityId());
 
@@ -464,7 +471,7 @@ public class FlavorXenonBackendTest {
 
     @Test
     public void testDeletePendingDeleteFlavor() throws Exception {
-      spec.setKind(PersistentDisk.KIND);
+      FlavorCreateSpec spec = createTestFlavorSpec(PersistentDisk.KIND);
       TaskEntity taskEntity = flavorBackend.createFlavor(spec);
 
       String id = taskEntity.getEntityId();
