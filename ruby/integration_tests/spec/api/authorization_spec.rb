@@ -35,22 +35,7 @@ describe "authorization", authorization: true, devbox: true do
         end
       end
 
-      [
-        *EsxCloud::ApiRoutesHelper.clusters_routes,
-        *EsxCloud::ApiRoutesHelper.datastores_routes,
-        *EsxCloud::ApiRoutesHelper.deployments_routes,
-        *EsxCloud::ApiRoutesHelper.disks_routes,
-        *EsxCloud::ApiRoutesHelper.flavors_routes,
-        *EsxCloud::ApiRoutesHelper.hosts_routes,
-        *EsxCloud::ApiRoutesHelper.networks_routes,
-        *EsxCloud::ApiRoutesHelper.images_routes,
-        *EsxCloud::ApiRoutesHelper.projects_routes,
-        *EsxCloud::ApiRoutesHelper.resource_tickets_routes,
-        *EsxCloud::ApiRoutesHelper.tasks_routes,
-        *EsxCloud::ApiRoutesHelper.tenants_routes,
-        *EsxCloud::ApiRoutesHelper.vms_routes,
-        *EsxCloud::ApiRoutesHelper.status_routes
-      ].each do |route|
+      EsxCloud::ApiRoutesHelper.all_routes_excluding_auth_routes.each do |route|
         it "dis-allows with error 401 #{route.action} #{route.uri}" do
           response = http_client_send route.action, route.uri
           expect(response.code).to eq 401
@@ -88,6 +73,7 @@ describe "authorization", authorization: true, devbox: true do
 
         @seeder.tenant!
         @seeder.project!
+        @seeder.network!
 
         @deployment_sgs = @seeder.deployment.auth.securityGroups
         client.update_security_groups(@seeder.deployment!.id,
@@ -129,6 +115,7 @@ describe "authorization", authorization: true, devbox: true do
         @cleaner = EsxCloud::SystemCleaner.new(client)
 
         @seeder.project!
+        @seeder.network!
         client.set_tenant_security_groups(@seeder.tenant!.id, {:items => [ENV["PHOTON_TENANT_ADMIN_GROUP"]]})
       }
 
@@ -164,6 +151,7 @@ describe "authorization", authorization: true, devbox: true do
         @seeder = EsxCloud::SystemSeeder.new([create_limit("vm", 100.0, "COUNT")])
         @cleaner = EsxCloud::SystemCleaner.new(client)
 
+        @seeder.network!
         client.set_project_security_groups(@seeder.project!.id,
                                            :items => [ENV["PHOTON_PROJECT_USER_GROUP"]])
       }
