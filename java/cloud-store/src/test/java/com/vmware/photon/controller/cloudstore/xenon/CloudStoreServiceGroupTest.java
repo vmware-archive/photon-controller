@@ -43,6 +43,7 @@ import com.vmware.photon.controller.cloudstore.xenon.task.EntityLockCleanerFacto
 import com.vmware.photon.controller.cloudstore.xenon.task.EntityLockDeleteFactoryService;
 import com.vmware.photon.controller.cloudstore.xenon.task.IpLeaseCleanerService;
 import com.vmware.photon.controller.cloudstore.xenon.task.IpLeaseDeleteService;
+import com.vmware.photon.controller.cloudstore.xenon.task.SubnetIPLeaseSyncService;
 import com.vmware.photon.controller.cloudstore.xenon.task.TombstoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.AvailabilityZoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.DatastoreCleanerTriggerBuilder;
@@ -137,6 +138,7 @@ public class CloudStoreServiceGroupTest {
       DhcpSubnetDeleteService.FACTORY_LINK,
       IpLeaseDeleteService.FACTORY_LINK,
       IpLeaseCleanerService.FACTORY_LINK,
+      SubnetIPLeaseSyncService.FACTORY_LINK,
 
       //schedulers
       TaskSchedulerServiceFactory.SELF_LINK,

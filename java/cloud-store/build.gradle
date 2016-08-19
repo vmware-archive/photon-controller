@@ -12,6 +12,7 @@ dependencies {
   compile project(':common')
   compile project(':common-xenon')
   compile project(':api:model')
+  compile project(':dhcp-agent')
 
   compile "org.apache.commons:commons-lang3:${versions.commons_lang3}"
   compile "commons-net:commons-net:${versions.commons_net}"
