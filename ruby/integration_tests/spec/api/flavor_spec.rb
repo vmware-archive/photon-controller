@@ -17,7 +17,11 @@ describe "flavor" do
     it "should create #{kind} flavor, get it, then delete it" do
       flavor_name = random_name("flavor-")
       flavor_kind = kind
-      flavor_cost = [create_limit("vm", 1.0, "COUNT")]
+      if flavor_kind = "vm" then
+        flavor_cost = [create_limit("vm.cpu", 1.0, "COUNT"), create_limit("vm.memory", 2.0, "GB")]
+      else
+        flavor_cost = [create_limit("vm", 1.0, "COUNT")]
+      end
       flavor = create_flavor(EsxCloud::FlavorCreateSpec.new(flavor_name, flavor_kind, flavor_cost))
       flavor.name.should == flavor_name
       flavor.kind.should == flavor_kind
@@ -100,7 +104,7 @@ describe "flavor" do
   it "should raise exception for duplicate flavor name and kind" do
     flavor_name = random_name("flavor-")
     flavor_kind = "vm"
-    flavor_cost = [create_limit("vm", 1.0, "COUNT")]
+    flavor_cost = [create_limit("vm.cpu", 1.0, "COUNT"), create_limit("vm.memory", 2.0, "GB")]
     create_flavor(EsxCloud::FlavorCreateSpec.new(flavor_name, flavor_kind, flavor_cost))
     begin
       create_flavor(EsxCloud::FlavorCreateSpec.new(flavor_name, flavor_kind, flavor_cost))
@@ -139,7 +143,7 @@ describe "flavor" do
 
     flavor_name = random_name("flavor-")
     flavor_kind = "vm"
-    flavor_cost = [create_limit("vm", 1.0, "COUNT")]
+    flavor_cost = [create_limit("vm.cpu", 1.0, "COUNT"), create_limit("vm.memory", 2.0, "GB")]
     flavor = create_flavor(EsxCloud::FlavorCreateSpec.new(flavor_name, flavor_kind, flavor_cost))
 
     tasks = client.get_flavor_tasks(flavor.id).items

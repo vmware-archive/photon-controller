@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.frontend.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.FlavorNotFoundException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidFlavorSpecification;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.frontend.utils.PaginationUtils;
@@ -30,6 +31,7 @@ import com.vmware.photon.controller.api.model.FlavorState;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.PersistentDisk;
 import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorService;
@@ -85,6 +87,7 @@ public class FlavorXenonBackend implements FlavorBackend {
         .isPresent()) {
       throw new NameTakenException(flavor.getKind(), flavor.getName());
     }
+    validateFlavor(flavor);
 
     FlavorService.State state = new FlavorService.State();
 
@@ -102,7 +105,7 @@ public class FlavorXenonBackend implements FlavorBackend {
         state.kind = Vm.KIND;
         break;
       default:
-        throw new IllegalArgumentException(String.format("Flavor kind %s is not allowed.", flavor.getKind()));
+        throw new InvalidFlavorSpecification(String.format("Flavor kind %s is not allowed.", flavor.getKind()));
     }
 
     List<FlavorService.State.QuotaLineItem> costEntity = new ArrayList<>();
@@ -129,6 +132,72 @@ public class FlavorXenonBackend implements FlavorBackend {
     flavorEntity.setKind(createdState.kind);
     flavorEntity.setState(createdState.state);
     return taskBackend.createCompletedTask(flavorEntity, Operation.CREATE_FLAVOR);
+  }
+
+  /**
+   * Validate the the flavor meets our rules.
+   */
+  private void validateFlavor(FlavorCreateSpec flavor) throws InvalidFlavorSpecification {
+
+    boolean haveVmCpu = false;
+    boolean haveVmMemory = false;
+    boolean havePersistentDiskCapacity = false;
+    boolean haveEphemeralDiskCapacity = false;
+
+    for (QuotaLineItem quota : flavor.getCost()) {
+      QuotaUnit unit = quota.getUnit();
+      switch (quota.getKey()) {
+        case QuotaLineItem.VM_CPU:
+          // Validate that the VM CPU is a count, and not a size (like GB)
+          if (unit != QuotaUnit.COUNT) {
+            throw new InvalidFlavorSpecification(
+                String.format("VM flavor '%s' has cost %s with unit %s instead of COUNT", flavor.getName(),
+                    QuotaLineItem.VM_CPU, unit));
+          }
+          haveVmCpu = true;
+          break;
+        case QuotaLineItem.VM_MEMORY:
+          // Validate that that the memory is a memory unit (e.g. GB) not a COUNT
+          if (unit != QuotaUnit.B && unit != QuotaUnit.KB && unit != QuotaUnit.MB && unit != QuotaUnit.GB) {
+            throw new InvalidFlavorSpecification(
+                String.format("VM flavor '%s' has cost %s with unit %s instead of B, KB, MB, or GB", flavor.getName(),
+                    QuotaLineItem.VM_MEMORY, unit));
+          }
+          haveVmMemory = true;
+          break;
+        case QuotaLineItem.PERSISTENT_DISK_CAPACITY:
+          havePersistentDiskCapacity = true;
+          break;
+        case QuotaLineItem.EPHEMERAL_DISK_CAPACITY:
+          haveEphemeralDiskCapacity = true;
+          break;
+      }
+    }
+
+    String flavorKind = flavor.getKind();
+    String flavorName = flavor.getName();
+
+    if (flavorKind.equals(Vm.KIND)) {
+      // VM flavors must specify vm.cpu and vm.memory because these are used by the agent
+      // when scoring and creating the VM
+      if (!haveVmCpu) {
+        throw new InvalidFlavorSpecification(
+            String.format("VM flavor '%s' is missing %s", flavorName, QuotaLineItem.VM_CPU));
+      }
+      if (!haveVmMemory) {
+        throw new InvalidFlavorSpecification(
+            String.format("VM flavor '%s' is missing %s", flavorName, QuotaLineItem.VM_MEMORY));
+      }
+    } else if (flavorKind.equals(PersistentDisk.KIND) && havePersistentDiskCapacity) {
+      // Persistent disk capacity must not be specified: the user specifies it when making the disk
+      throw new InvalidFlavorSpecification(String.format("Persistent flavor '%s' incorrectly specifies %s", flavorName,
+          QuotaLineItem.PERSISTENT_DISK_CAPACITY));
+    } else if (flavorKind.equals(EphemeralDisk.KIND) && haveEphemeralDiskCapacity) {
+      // The ephemeral disk (normally a boot disk) capacity must not be specified: it's determined from
+      // the VM image
+      throw new InvalidFlavorSpecification(String.format("Ephemeral flavor '%s' incorrectly specifies %s", flavorName,
+          QuotaLineItem.PERSISTENT_DISK_CAPACITY));
+    }
   }
 
   @Override

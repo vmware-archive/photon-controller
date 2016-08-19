@@ -112,6 +112,7 @@ public enum ErrorCode {
   INVALID_AUTH_CONFIG("InvalidAuthConfig", Response.Status.BAD_REQUEST),
   INVALID_STATS_CONFIG("InvalidStatsConfig", Response.Status.BAD_REQUEST),
   INVALID_SECURITY_GROUP_FORMAT("InvalidSecurityGroupFormat", Response.Status.BAD_REQUEST),
+  INVALID_FLAVOR_SPECIFICATION("InvalidFlavorSpecification", Response.Status.BAD_REQUEST),
   INVALID_FLAVOR_STATE("InvalidFlavorState", Response.Status.BAD_REQUEST),
   INVALID_NETWORK_STATE("InvalidNetworkState", Response.Status.BAD_REQUEST),
   INVALID_NETWORK_CONFIG("InvalidNetworkConfig", Response.Status.BAD_REQUEST),

@@ -147,7 +147,7 @@ public class ResourceTicketXenonBackendTest {
 
       ResourceTicketCreateSpec spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
-      spec.setLimits(ImmutableList.of(new QuotaLineItem("vm", 10, QuotaUnit.COUNT)));
+      spec.setLimits(ImmutableList.of(new QuotaLineItem(QuotaLineItem.VM, 10, QuotaUnit.COUNT)));
 
       ResourceTicketEntity resourceTicketEntity = resourceTicketBackend.create(tenantId, spec);
 
@@ -168,7 +168,7 @@ public class ResourceTicketXenonBackendTest {
 
       ResourceTicketCreateSpec spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
-      spec.setLimits(ImmutableList.of(new QuotaLineItem("vm", 10, QuotaUnit.COUNT)));
+      spec.setLimits(ImmutableList.of(new QuotaLineItem(QuotaLineItem.VM, 10, QuotaUnit.COUNT)));
 
       resourceTicketBackend.create(tenantId, spec);
       try {
@@ -210,7 +210,7 @@ public class ResourceTicketXenonBackendTest {
 
       spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
-      spec.setLimits(ImmutableList.of(new QuotaLineItem("vm", 10, QuotaUnit.COUNT)));
+      spec.setLimits(ImmutableList.of(new QuotaLineItem(QuotaLineItem.VM, 10, QuotaUnit.COUNT)));
 
       resourceTicketEntity = resourceTicketBackend.create(tenantId, spec);
 
@@ -349,7 +349,7 @@ public class ResourceTicketXenonBackendTest {
       tenantId = XenonBackendTestHelper.createTenant(tenantXenonBackend, "t1");
       spec = new ResourceTicketCreateSpec();
       spec.setName("rt1");
-      spec.setLimits(ImmutableList.of(new QuotaLineItem("vm", 10, QuotaUnit.COUNT)));
+      spec.setLimits(ImmutableList.of(new QuotaLineItem(QuotaLineItem.VM, 10, QuotaUnit.COUNT)));
 
       resourceTicketEntity = resourceTicketBackend.create(tenantId, spec);
 
@@ -462,19 +462,19 @@ public class ResourceTicketXenonBackendTest {
       resourceTicketEntity = resourceTicketBackend.findById(resourceTicketId);
 
       assertThat("usage is correct: vm",
-          resourceTicketEntity.getUsage("vm").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM).getValue(),
           is(1.0));
       assertThat("usage is correct: vm.cost",
-          resourceTicketEntity.getUsage("vm.cost").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(1.0));
       assertThat("usage is correct: vm.flavor.core-100",
           resourceTicketEntity.getUsage("vm.flavor.core-100").getValue(),
           is(1.0));
       assertThat("usage is correct: vm.cpu",
-          resourceTicketEntity.getUsage("vm.cpu").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_CPU).getValue(),
           is(1.0));
       assertThat("usage is correct: vm.memory",
-          resourceTicketEntity.getUsage("vm.memory").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_MEMORY).getValue(),
           is(2.0));
 
       for (int i = 0; i < 4; i++) {
@@ -485,19 +485,19 @@ public class ResourceTicketXenonBackendTest {
 
       // now validate that usage is as expected
       assertThat("usage is correct: vm",
-          resourceTicketEntity.getUsage("vm").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM).getValue(),
           is(5.0));
       assertThat("usage is correct: vm.cost",
-          resourceTicketEntity.getUsage("vm.cost").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(5.0));
       assertThat("usage is correct: vm.flavor.core-100",
           resourceTicketEntity.getUsage("vm.flavor.core-100").getValue(),
           is(5.0));
       assertThat("usage is correct: vm.cpu",
-          resourceTicketEntity.getUsage("vm.cpu").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_CPU).getValue(),
           is(5.0));
       assertThat("usage is correct: vm.memory",
-          resourceTicketEntity.getUsage("vm.memory").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_MEMORY).getValue(),
           is(10.0));
 
       try {
@@ -544,19 +544,19 @@ public class ResourceTicketXenonBackendTest {
 
       // now validate that usage is as expected
       assertThat("usage is correct: vm",
-          resourceTicketEntity.getUsage("vm").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM).getValue(),
           is(5.0));
       assertThat("usage is correct: vm.cost",
-          resourceTicketEntity.getUsage("vm.cost").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(5.0));
       assertThat("usage is correct: vm.flavor.core-100",
           resourceTicketEntity.getUsage("vm.flavor.core-100").getValue(),
           is(5.0));
       assertThat("usage is correct: vm.cpu",
-          resourceTicketEntity.getUsage("vm.cpu").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_CPU).getValue(),
           is(5.0));
       assertThat("usage is correct: vm.memory",
-          resourceTicketEntity.getUsage("vm.memory").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_MEMORY).getValue(),
           is(10.0));
 
       try {
@@ -603,19 +603,19 @@ public class ResourceTicketXenonBackendTest {
 
       // now validate that usage is as expected
       assertThat("usage is correct: vm",
-          resourceTicketEntity.getUsage("vm").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM).getValue(),
           is(10.0));
       assertThat("usage is correct: vm.cost",
-          resourceTicketEntity.getUsage("vm.cost").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(20.0));
       assertThat("usage is correct: vm.flavor.core-200",
           resourceTicketEntity.getUsage("vm.flavor.core-200").getValue(),
           is(10.0));
       assertThat("usage is correct: vm.cpu",
-          resourceTicketEntity.getUsage("vm.cpu").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_CPU).getValue(),
           is(20.0));
       assertThat("usage is correct: vm.memory",
-          resourceTicketEntity.getUsage("vm.memory").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_MEMORY).getValue(),
           is(40.0));
     }
 
@@ -652,19 +652,19 @@ public class ResourceTicketXenonBackendTest {
       resourceTicketEntity = resourceTicketBackend.findById(resourceTicketId);
 
       assertThat("usage is correct: vm",
-          resourceTicketEntity.getUsage("vm").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM).getValue(),
           is(0.0));
       assertThat("usage is correct: vm.cost",
-          resourceTicketEntity.getUsage("vm.cost").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(0.0));
       assertThat("usage is correct: vm.flavor.core-100",
           resourceTicketEntity.getUsage("vm.flavor.core-100").getValue(),
           is(0.0));
       assertThat("usage is correct: vm.cpu",
-          resourceTicketEntity.getUsage("vm.cpu").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_CPU).getValue(),
           is(0.0));
       assertThat("usage is correct: vm.memory",
-          resourceTicketEntity.getUsage("vm.memory").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_MEMORY).getValue(),
           is(0.0));
 
       for (int i = 0; i < 2; i++) {
@@ -677,19 +677,19 @@ public class ResourceTicketXenonBackendTest {
 
       // now validate that usage is as expected
       assertThat("usage is correct: vm",
-          resourceTicketEntity.getUsage("vm").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM).getValue(),
           is(1.0));
       assertThat("usage is correct: vm.cost",
-          resourceTicketEntity.getUsage("vm.cost").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(1.0));
       assertThat("usage is correct: vm.flavor.core-100",
           resourceTicketEntity.getUsage("vm.flavor.core-100").getValue(),
           is(1.0));
       assertThat("usage is correct: vm.cpu",
-          resourceTicketEntity.getUsage("vm.cpu").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_CPU).getValue(),
           is(1.0));
       assertThat("usage is correct: vm.memory",
-          resourceTicketEntity.getUsage("vm.memory").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_MEMORY).getValue(),
           is(2.0));
 
       for (int i = 0; i < 4; i++) {
@@ -712,19 +712,19 @@ public class ResourceTicketXenonBackendTest {
       resourceTicketEntity = resourceTicketBackend.findById(resourceTicketId);
 
       assertThat("usage is correct: vm",
-          resourceTicketEntity.getUsage("vm").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM).getValue(),
           is(0.0));
       assertThat("usage is correct: vm.cost",
-          resourceTicketEntity.getUsage("vm.cost").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(0.0));
       assertThat("usage is correct: vm.flavor.core-100",
           resourceTicketEntity.getUsage("vm.flavor.core-100").getValue(),
           is(0.0));
       assertThat("usage is correct: vm.cpu",
-          resourceTicketEntity.getUsage("vm.cpu").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_CPU).getValue(),
           is(0.0));
       assertThat("usage is correct: vm.memory",
-          resourceTicketEntity.getUsage("vm.memory").getValue(),
+          resourceTicketEntity.getUsage(QuotaLineItem.VM_MEMORY).getValue(),
           is(0.0));
     }
 
@@ -750,7 +750,7 @@ public class ResourceTicketXenonBackendTest {
       ResourceTicketEntity tenantTicketEntity = resourceTicketBackend.findById(tenantTicketId);
 
       assertThat("tenantTicket:usage: vm.cost",
-          tenantTicketEntity.getUsage("vm.cost").getValue(),
+          tenantTicketEntity.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(100.0));
       assertThat("t:usage: persistent-disk.cost",
           tenantTicketEntity.getUsage("persistent-disk.cost").getValue(),
@@ -768,7 +768,7 @@ public class ResourceTicketXenonBackendTest {
       tenantTicketEntity = resourceTicketBackend.findById(tenantTicketId);
 
       assertThat("tenantTicket:usage: vm.cost",
-          tenantTicketEntity.getUsage("vm.cost").getValue(),
+          tenantTicketEntity.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(0.0));
       assertThat("t:usage: persistent-disk.cost",
           tenantTicketEntity.getUsage("persistent-disk.cost").getValue(),
@@ -811,7 +811,7 @@ public class ResourceTicketXenonBackendTest {
       assertThat(projectTicket.getParentId(), is(tenantResourceTicketId));
 
       assertThat("projectTicket:limit: vm.cost",
-          projectTicket.getLimit("vm.cost").getValue(),
+          projectTicket.getLimit(QuotaLineItem.VM_COST).getValue(),
           is(100.0));
       assertThat("projectTicket:limit: persistent-disk.cost",
           projectTicket.getLimit("persistent-disk.cost").getValue(),
@@ -827,7 +827,7 @@ public class ResourceTicketXenonBackendTest {
           is(4));
 
       assertThat("tenantTicket:usage: vm.cost",
-          tenantTicket.getUsage("vm.cost").getValue(),
+          tenantTicket.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(100.0));
       assertThat("t:usage: persistent-disk.cost",
           tenantTicket.getUsage("persistent-disk.cost").getValue(),
@@ -844,7 +844,7 @@ public class ResourceTicketXenonBackendTest {
       tenantTicket = resourceTicketBackend.findById(tenantResourceTicketId);
 
       assertThat("tenantTicket:usage: vm.cost",
-          tenantTicket.getUsage("vm.cost").getValue(),
+          tenantTicket.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(500.0));
       assertThat("tenantTicket:usage: persistent-disk.cost",
           tenantTicket.getUsage("persistent-disk.cost").getValue(),
@@ -870,7 +870,7 @@ public class ResourceTicketXenonBackendTest {
       tenantTicket = resourceTicketBackend.findById(tenantResourceTicketId);
 
       assertThat("tenantTicket:usage:2: vm.cost",
-          tenantTicket.getUsage("vm.cost").getValue(),
+          tenantTicket.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(1000.0));
       assertThat("t:usage:2: persistent-disk.cost",
           tenantTicket.getUsage("persistent-disk.cost").getValue(),
@@ -890,7 +890,7 @@ public class ResourceTicketXenonBackendTest {
       }
 
       assertThat("tenantTicket:usage:3: vm.cost",
-          tenantTicket.getUsage("vm.cost").getValue(),
+          tenantTicket.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(1000.0));
       assertThat("t:usage:3: persistent-disk.cost",
           tenantTicket.getUsage("persistent-disk.cost").getValue(),
@@ -949,7 +949,7 @@ public class ResourceTicketXenonBackendTest {
       assertThat(projectTicket.getParentId(), is(tenantResourceTicketId));
 
       assertThat("projectTicket:limit: vm.cost",
-          projectTicket.getLimit("vm.cost").getValue(),
+          projectTicket.getLimit(QuotaLineItem.VM_COST).getValue(),
           is(10.0));
       assertThat("projectTicket:limit: persistent-disk.cost",
           projectTicket.getLimit("persistent-disk.cost").getValue(),
@@ -965,7 +965,7 @@ public class ResourceTicketXenonBackendTest {
           is(4));
 
       assertThat("tenantTicket:usage: vm.cost",
-          tenantTicket.getUsage("vm.cost").getValue(),
+          tenantTicket.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(10.0));
       assertThat("t:usage: persistent-disk.cost",
           tenantTicket.getUsage("persistent-disk.cost").getValue(),
@@ -982,7 +982,7 @@ public class ResourceTicketXenonBackendTest {
       tenantTicket = resourceTicketBackend.findById(tenantResourceTicketId);
 
       assertThat("projectTicket:limit: vm.cost",
-          projectTicket.getLimit("vm.cost").getValue(),
+          projectTicket.getLimit(QuotaLineItem.VM_COST).getValue(),
           is(80.0));
       assertThat("projectTicket:limit: persistent-disk.cost",
           projectTicket.getLimit("persistent-disk.cost").getValue(),
@@ -998,7 +998,7 @@ public class ResourceTicketXenonBackendTest {
           is(4));
 
       assertThat("tenantTicket:usage: vm.cost",
-          tenantTicket.getUsage("vm.cost").getValue(),
+          tenantTicket.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(90.0));
       assertThat("t:usage: persistent-disk.cost",
           tenantTicket.getUsage("persistent-disk.cost").getValue(),
@@ -1015,7 +1015,7 @@ public class ResourceTicketXenonBackendTest {
       tenantTicket = resourceTicketBackend.findById(tenantResourceTicketId);
 
       assertThat("projectTicket:limit: vm.cost",
-          projectTicket.getLimit("vm.cost").getValue(),
+          projectTicket.getLimit(QuotaLineItem.VM_COST).getValue(),
           is(1.5));
       assertThat("projectTicket:limit: persistent-disk.cost",
           projectTicket.getLimit("persistent-disk.cost").getValue(),
@@ -1031,7 +1031,7 @@ public class ResourceTicketXenonBackendTest {
           is(4));
 
       assertThat("tenantTicket:usage: vm.cost",
-          tenantTicket.getUsage("vm.cost").getValue(),
+          tenantTicket.getUsage(QuotaLineItem.VM_COST).getValue(),
           is(91.5));
       assertThat("t:usage: persistent-disk.cost",
           tenantTicket.getUsage("persistent-disk.cost").getValue(),
