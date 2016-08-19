@@ -141,7 +141,7 @@ describe "network", management: true, disable_for_cli_test: true do
         network_id
       end
 
-      xit "should fail to delete PENDING_DELETE network" do
+      it "should fail to delete PENDING_DELETE network" do
         begin
           client.delete_network(network_id)
           fail "delete network in PENDING_DELETE state should fail"
