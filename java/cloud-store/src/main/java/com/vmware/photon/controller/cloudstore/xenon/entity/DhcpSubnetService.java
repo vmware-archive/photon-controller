@@ -35,7 +35,9 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationProcessingChain;
 import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.Utils;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
@@ -82,13 +84,13 @@ public class DhcpSubnetService extends StatefulService {
     myRouter.register(
         Action.PATCH,
         new RequestRouter.RequestBodyMatcher<>(
-            IpOperationPatch.class, "kind", IpOperationPatch.Kind.AllocateIpToMac),
+            IpOperationPatch.class, "kind", IpOperationPatch.Kind.AllocateIp),
         this::handleAllocateIpToMacPatch, "Allocate IP to MAC address");
 
     myRouter.register(
         Action.PATCH,
         new RequestRouter.RequestBodyMatcher<>(
-            IpOperationPatch.class, "kind", IpOperationPatch.Kind.ReleaseIpForMac),
+            IpOperationPatch.class, "kind", IpOperationPatch.Kind.ReleaseIp),
         this::handleReleaseIpPatch, "Release Ip lease for the provided IP address");
 
     OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
@@ -105,6 +107,7 @@ public class DhcpSubnetService extends StatefulService {
       IpOperationPatch ipOperationPatch = patch.getBody(IpOperationPatch.class);
       State currentState = getState(patch);
 
+      ipOperationPatch.ipAddress = null;
       Long dynamicRangeSize = currentState.highIpDynamic - currentState.lowIpDynamic + 1;
 
       while (currentState.ipAllocations.length() < dynamicRangeSize) {
@@ -152,8 +155,9 @@ public class DhcpSubnetService extends StatefulService {
       }
 
       if (StringUtils.isBlank(ipOperationPatch.ipAddress)) {
-        //this should be converted to a custom RangeFullException
-        throw new IllegalArgumentException("range is full");
+        ServiceUtils.failOperationAsBadRequest(this, patch, new IllegalArgumentException("range is full"),
+            new RangeFullyAllocatedError(currentState, ipOperationPatch.ownerVmId));
+        return;
       }
 
       currentState.version++;
@@ -177,9 +181,21 @@ public class DhcpSubnetService extends StatefulService {
 
       long ipToRelease = IpHelper.ipStringToLong(ipOperationPatch.ipAddress);
 
-      Operation deleteOperation = Operation
-          .createDelete(this, ipLeaseLink);
-      ServiceUtils.doServiceOperation(this, deleteOperation);
+      IpLeaseService.IpLeaseOperationPatch ipLeaseOperationPatch =
+          new IpLeaseService.IpLeaseOperationPatch(
+              IpLeaseService.IpLeaseOperationPatch.Kind.RELEASE,
+              ipOperationPatch.ownerVmId,
+              ipOperationPatch.macAddress);
+
+      Operation patchOperation = Operation.createPatch(this, ipLeaseLink)
+          .setBody(ipLeaseOperationPatch);
+
+      try {
+        ServiceUtils.doServiceOperation(this, patchOperation);
+      } catch (DocumentNotFoundException de) {
+        ServiceUtils.logWarning(this, "Ignoring error: No lease file found for IP: %s for subnetId: %s",
+            ipOperationPatch.ipAddress, currentState.subnetId);
+      }
 
       currentState.ipAllocations.clear((int) (ipToRelease - currentState.lowIpDynamic));
 
@@ -238,6 +254,30 @@ public class DhcpSubnetService extends StatefulService {
   }
 
   /**
+   * Captures error details when an attempt is made to acquire a lease that is already owned by another VM.
+   */
+  public static class RangeFullyAllocatedError extends ServiceErrorResponse {
+
+    public static final String KIND = Utils.buildKind(RangeFullyAllocatedError.class);
+
+    public final State subnetState;
+    public final String requestedByVmId;
+
+    public RangeFullyAllocatedError(State subnetState, String requestedByVmId) {
+      this.subnetState = subnetState;
+      this.requestedByVmId = requestedByVmId;
+      this.documentKind = KIND;
+      this.message = getMessage();
+    }
+
+    public String getMessage() {
+      return String.format("The allocate IP request by Vm id [%s] failed because the subnet is already fully " +
+              "allocated: %s",
+          this.requestedByVmId, this.subnetState.toString());
+    }
+  }
+
+  /**
    * Class for allocating an available IP to the provided MAC address.
    */
   @NoMigrationDuringUpgrade
@@ -257,16 +297,17 @@ public class DhcpSubnetService extends StatefulService {
         throw new IllegalArgumentException("kind cannot be null");
       }
 
-      if (kind == Kind.AllocateIpToMac) {
-        if (StringUtils.isBlank(ownerVmId)) {
-          throw new IllegalArgumentException("ownerVmId cannot be blank for allocate ip operation");
-        }
+      if (StringUtils.isBlank(ownerVmId)) {
+        throw new IllegalArgumentException("ownerVmId cannot be blank for allocate or release ip operation");
+      }
+
+      if (kind == Kind.AllocateIp) {
         if (StringUtils.isBlank(macAddress)) {
           throw new IllegalArgumentException("macAddress cannot be blank for allocate ip operation");
         }
       }
 
-      if (kind == Kind.ReleaseIpForMac && StringUtils.isBlank(ipAddress)) {
+      if (kind == Kind.ReleaseIp && StringUtils.isBlank(ipAddress)) {
         throw new IllegalArgumentException("ipAddress cannot be blank for release ip operation");
       }
 
@@ -280,8 +321,8 @@ public class DhcpSubnetService extends StatefulService {
      * Defines type of IP operations that are supported.
      */
     public enum Kind {
-      AllocateIpToMac,
-      ReleaseIpForMac
+      AllocateIp,
+      ReleaseIp
     }
   }
 
@@ -405,7 +446,21 @@ public class DhcpSubnetService extends StatefulService {
     public String toString() {
       return com.google.common.base.Objects.toStringHelper(this)
           .add("documentSelfLink", documentSelfLink)
+          .add("subnetId", subnetId)
           .add("cidr", cidr)
+          .add("lowIp", lowIp)
+          .add("highIp", highIp)
+          .add("lowIpDynamic", lowIpDynamic)
+          .add("highIpDynamic", highIpDynamic)
+          .add("lowIpStatic", lowIpStatic)
+          .add("highIpStatic", highIpStatic)
+          .add("reservedIpList", reservedIpList)
+          .add("size", size)
+          .add("doGarbageCollection", doGarbageCollection)
+          .add("version", version)
+          .add("versionStaged", versionStaged)
+          .add("versionPushed", versionPushed)
+          .add("count of allocations", ipAllocations.length())
           .toString();
     }
   }

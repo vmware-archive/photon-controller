@@ -53,7 +53,7 @@ public class VmReleaseIpStepCmd extends StepCommand {
     Map<String, VmService.NetworkInfo> networkInfoMap = getNetworkInfo(vmId);
 
     for (VmService.NetworkInfo networkInfo : networkInfoMap.values()) {
-      patchIpRelease(networkInfo.id, networkInfo.privateIpAddress);
+      patchIpRelease(networkInfo.id, vmId, networkInfo.privateIpAddress);
     }
 
     logger.info("Released IP for VM {}", vmId);
@@ -75,7 +75,7 @@ public class VmReleaseIpStepCmd extends StepCommand {
     }
   }
 
-  private void patchIpRelease(String subnetId, String ipAddress) {
+  private void patchIpRelease(String subnetId, String ownerVmId, String ipAddress) {
     if (ipAddress == null || ipAddress.isEmpty()) {
       logger.info("Skip releasing one network info entry for vm , it is null or empty.");
       return;
@@ -83,7 +83,7 @@ public class VmReleaseIpStepCmd extends StepCommand {
     logger.info("Releasing one network info entry for vm, ipAddress is {}", ipAddress);
 
     DhcpSubnetService.IpOperationPatch patch = new DhcpSubnetService.IpOperationPatch(
-        DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac, null, null, ipAddress);
+        DhcpSubnetService.IpOperationPatch.Kind.ReleaseIp, ownerVmId, null, ipAddress);
 
     PhotonControllerXenonRestClient photonControllerXenonRestClient = taskCommand.getPhotonControllerXenonRestClient();
     photonControllerXenonRestClient.patch(DhcpSubnetService.FACTORY_LINK + "/" + subnetId, patch);

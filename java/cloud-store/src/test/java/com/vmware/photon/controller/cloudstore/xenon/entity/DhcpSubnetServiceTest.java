@@ -21,16 +21,19 @@ import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
+import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.UriUtils;
 
 import org.apache.commons.net.util.SubnetUtils;
 import org.apache.http.HttpStatus;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetSocketAddress;
@@ -95,14 +98,14 @@ public class DhcpSubnetServiceTest {
 
       assertThat(createdState.lowIp, is(startState.lowIp));
       assertThat(createdState.highIp, is(startState.highIp));
-      assertThat(createdState.size, is(0x10000L));
+      assertThat(createdState.size, is(16L));
       assertThat(createdState.doGarbageCollection, is(false));
 
       DhcpSubnetService.State savedState = host.getServiceState(DhcpSubnetService.State.class,
           createdState.documentSelfLink);
       assertThat(savedState.lowIp, is(startState.lowIp));
       assertThat(savedState.highIp, is(startState.highIp));
-      assertThat(savedState.size, is(0x10000L));
+      assertThat(savedState.size, is(16L));
       assertThat(savedState.doGarbageCollection, is(false));
     }
   }
@@ -192,7 +195,7 @@ public class DhcpSubnetServiceTest {
     public void testAllocateIpToMac() throws Throwable {
       DhcpSubnetService.IpOperationPatch ipOperationPatch =
           new DhcpSubnetService.IpOperationPatch(
-              DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+              DhcpSubnetService.IpOperationPatch.Kind.AllocateIp,
               "vm-id", macAddress, null);
       Operation patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
@@ -228,7 +231,7 @@ public class DhcpSubnetServiceTest {
 
       DhcpSubnetService.IpOperationPatch ipOperationPatch =
           new DhcpSubnetService.IpOperationPatch(
-              DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+              DhcpSubnetService.IpOperationPatch.Kind.AllocateIp,
               "vm-id", macAddress, null);
       Operation patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
@@ -264,7 +267,7 @@ public class DhcpSubnetServiceTest {
     public void testReleaseIpToMac() throws Throwable {
       DhcpSubnetService.IpOperationPatch ipOperationPatch =
           new DhcpSubnetService.IpOperationPatch(
-              DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+              DhcpSubnetService.IpOperationPatch.Kind.AllocateIp,
               "vm-id", macAddress, null);
       Operation patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
@@ -285,8 +288,8 @@ public class DhcpSubnetServiceTest {
 
       ipOperationPatch =
           new DhcpSubnetService.IpOperationPatch(
-              DhcpSubnetService.IpOperationPatch.Kind.ReleaseIpForMac,
-              null, null, operationResult.ipAddress);
+              DhcpSubnetService.IpOperationPatch.Kind.ReleaseIp,
+              "vm-id", null, operationResult.ipAddress);
       patchOperation = new Operation()
           .setAction(Service.Action.PATCH)
           .setBody(ipOperationPatch)
@@ -302,10 +305,134 @@ public class DhcpSubnetServiceTest {
       assertThat(currentState.ipAllocations.nextClearBit(0), is(0));
     }
 
+    @Test
+    public void testReleaseOfNonExistingLease() throws Throwable {
+      DhcpSubnetService.IpOperationPatch ipOperationPatch =
+          new DhcpSubnetService.IpOperationPatch(
+              DhcpSubnetService.IpOperationPatch.Kind.AllocateIp,
+              "vm-id", macAddress, null);
+      Operation patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(ipOperationPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      Operation completedOperation = host.sendRequestAndWait(patchOperation);
+
+      DhcpSubnetService.IpOperationPatch operationResult =
+          completedOperation.getBody(DhcpSubnetService.IpOperationPatch.class);
+
+      DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
+          startState.documentSelfLink);
+
+      assertThat(currentState.version, is(startState.version + 1));
+      assertThat(currentState.ipAllocations.length(), is(1));
+      assertThat(currentState.ipAllocations.nextClearBit(0), is(1));
+
+      host.deleteServiceSynchronously(
+          DhcpSubnetService.makeIpLeaseUrl(false, startState.subnetId, operationResult.ipAddress));
+
+      ipOperationPatch =
+          new DhcpSubnetService.IpOperationPatch(
+              DhcpSubnetService.IpOperationPatch.Kind.ReleaseIp,
+              "vm-id", null, operationResult.ipAddress);
+      patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(ipOperationPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      host.sendRequestAndWait(patchOperation);
+
+      currentState = host.getServiceState(DhcpSubnetService.State.class,
+          startState.documentSelfLink);
+
+      assertThat(currentState.version, is(startState.version + 2));
+      assertThat(currentState.ipAllocations.length(), is(0));
+      assertThat(currentState.ipAllocations.nextClearBit(0), is(0));
+    }
+
+    @Test
+    public void testFullAllocationAndReleaseOfLeases() throws Throwable {
+      Operation completedOperation = null;
+      DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
+          startState.documentSelfLink);
+
+      assertThat(currentState.version, is(startState.version));
+      assertThat(currentState.ipAllocations.length(), is(0));
+      assertThat(currentState.ipAllocations.nextClearBit(0), is(0));
+
+      DhcpSubnetService.IpOperationPatch ipOperationPatch =
+          new DhcpSubnetService.IpOperationPatch(
+              DhcpSubnetService.IpOperationPatch.Kind.AllocateIp,
+              "vm-id", macAddress, null);
+      Operation patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(ipOperationPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+
+      long dynamicRangeSize = currentState.highIpDynamic - currentState.lowIpDynamic + 1;
+      for (int i = 0; i < dynamicRangeSize; i++) {
+        completedOperation = host.sendRequestAndWait(patchOperation);
+        assertThat(completedOperation.getStatusCode(), is(Operation.STATUS_CODE_OK));
+
+        currentState = host.getServiceState(DhcpSubnetService.State.class,
+            startState.documentSelfLink);
+
+        assertThat(currentState.version, is(startState.version + i + 1));
+        assertThat(currentState.ipAllocations.length(), is(i + 1));
+        assertThat(currentState.ipAllocations.nextClearBit(0), is(i + 1));
+      }
+
+      try {
+        host.sendRequestAndWait(patchOperation);
+        Assert.fail("Allocation reuest when the range is full should have failed");
+      } catch (BadRequestException be) {
+        DhcpSubnetService.RangeFullyAllocatedError error = be.getCompletedOperation()
+            .getBody(DhcpSubnetService.RangeFullyAllocatedError.class);
+        assertThat(error, is(notNullValue()));
+      }
+
+      currentState = host.getServiceState(DhcpSubnetService.State.class,
+          startState.documentSelfLink);
+
+      assertThat(currentState.version, is(startState.version + dynamicRangeSize));
+      assertThat(currentState.ipAllocations.length(), is((int) dynamicRangeSize));
+      assertThat(currentState.ipAllocations.nextClearBit(0), is((int) dynamicRangeSize));
+
+      long lastDynamicIp = IpHelper.ipStringToLong("192.168.0.14");
+
+      ipOperationPatch =
+          new DhcpSubnetService.IpOperationPatch(
+              DhcpSubnetService.IpOperationPatch.Kind.ReleaseIp,
+              "vm-id", null, IpHelper.longToIpString(lastDynamicIp));
+      patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(ipOperationPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+
+      for (int i = 0; i < dynamicRangeSize; i++) {
+        ipOperationPatch.ipAddress = IpHelper.longToIpString(lastDynamicIp - i);
+        patchOperation.setBody(ipOperationPatch);
+        host.sendRequestAndWait(patchOperation);
+
+        currentState = host.getServiceState(DhcpSubnetService.State.class,
+            startState.documentSelfLink);
+
+        assertThat(currentState.version, is(startState.version + dynamicRangeSize + i + 1));
+        assertThat(currentState.ipAllocations.length(), is((int) dynamicRangeSize - i - 1));
+        assertThat(currentState.ipAllocations.nextClearBit(0), is((int) dynamicRangeSize - i - 1));
+      }
+
+      assertThat(currentState.version, is(startState.version + dynamicRangeSize + dynamicRangeSize));
+      assertThat(currentState.ipAllocations.length(), is(0));
+      assertThat(currentState.ipAllocations.nextClearBit(0), is(0));
+    }
+
   }
 
   private static DhcpSubnetService.State createInitialState() {
-    String cidr = "192.168.0.0/16";
+    String cidr = "192.168.0.0/28";
     SubnetUtils subnetUtils = new SubnetUtils(cidr);
     subnetUtils.setInclusiveHostCount(true);
     SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
