@@ -15,16 +15,29 @@ module EsxCloud
   class ApiRoutesHelper
     def self.all_routes
       [
-        *auth_routes,
+        *auth_routes
+      ].concat(all_routes_excluding_auth_routes)
+    end
+
+    def self.all_routes_excluding_auth_routes
+      seeder = EsxCloud::SystemSeeder.instance
+      if seeder.deployment.network_configuration.sdn_enabled
+        network_routes = virtual_networks_routes
+        project_routes = projects_routes_with_virtual_networks_routes
+      else
+        network_routes = networks_routes
+        project_routes = projects_routes
+      end
+      [
         *clusters_routes,
         *datastores_routes,
         *deployments_routes,
         *disks_routes,
         *flavors_routes,
         *hosts_routes,
-        *networks_routes,
+        *network_routes,
         *images_routes,
-        *projects_routes,
+        *project_routes,
         *resource_tickets_routes,
         *tasks_routes,
         *tenants_routes,
@@ -34,23 +47,31 @@ module EsxCloud
     end
 
     def self.all_routes_using_seeder(seeder)
-      [
-          *auth_routes,
-          *clusters_routes,
-          *datastores_routes,
-          *deployments_routes(seeder.deployment!.id),
-          *disks_routes(seeder.persistent_disk!.id),
-          *hosts_routes,
-          *networks_routes,
-          *vms_routes(seeder.vm!.id),
-          *images_routes(seeder.image!.id),
-          *flavors_routes(seeder.vm_flavor!.id),
-          *projects_routes(seeder.project!.id),
-          *resource_tickets_routes,
-          *tasks_routes,
-          *tenants_routes(seeder.tenant!.id),
-          *status_routes
+      routes = [
+        *auth_routes,
+        *clusters_routes,
+        *datastores_routes,
+        *deployments_routes(seeder.deployment!.id),
+        *disks_routes(seeder.persistent_disk!.id),
+        *hosts_routes,
+        *vms_routes(seeder.vm!.id),
+        *images_routes(seeder.image!.id),
+        *flavors_routes(seeder.vm_flavor!.id),
+        *resource_tickets_routes,
+        *tasks_routes,
+        *tenants_routes(seeder.tenant!.id),
+        *status_routes
       ]
+
+      if seeder.deployment.network_configuration.sdn_enabled
+        network_routes = *virtual_networks_routes
+        project_routes = *projects_routes_with_virtual_networks_routes(seeder.project!.id)
+      else
+        network_routes = *networks_routes
+        project_routes = *projects_routes(seeder.project!.id)
+      end
+
+      routes.concat(network_routes + project_routes)
     end
 
     def self.auth_routes
@@ -126,7 +147,16 @@ module EsxCloud
         EsxCloud::ApiRoute.new(:post, "/subnets", 400, 400, 403, 403, 403),
         EsxCloud::ApiRoute.new(:get, "/subnets/#{id}", 404, 404, 404, 404, 404),
         EsxCloud::ApiRoute.new(:post, "/subnets/#{id}/set_portgroups", 400, 400, 403, 403, 403),
-        EsxCloud::ApiRoute.new(:delete, "/subnets/#{SecureRandom.uuid}", 404, 404, 403, 403, 403)
+        EsxCloud::ApiRoute.new(:delete, "/subnets/#{SecureRandom.uuid}", 404, 404, 403, 403, 403),
+        EsxCloud::ApiRoute.new(:post, "/subnets/#{id}/set_default", 404, 404, 403, 403, 403)
+      ]
+    end
+
+    def self.virtual_networks_routes(id = SecureRandom.uuid)
+      [
+        EsxCloud::ApiRoute.new(:get, "/subnets/#{id}", 404, 404, 404, 404, 404),
+        EsxCloud::ApiRoute.new(:delete, "/subnets/#{SecureRandom.uuid}", 404, 404, 403, 403, 403),
+        EsxCloud::ApiRoute.new(:post, "/subnets/#{id}/set_default", 404, 404, 403, 403, 403)
       ]
     end
 
@@ -153,6 +183,15 @@ module EsxCloud
         EsxCloud::ApiRoute.new(:post, "/projects/#{id}/set_security_groups", 400, 400, 400, 403, 403),
         EsxCloud::ApiRoute.new(:delete, "/projects/#{id}", 404, 201, 201, 403, 403)
       ]
+    end
+
+    def self.projects_routes_with_virtual_networks_routes(id = SecureRandom.uuid)
+      projects_routes(id).concat(
+        [
+          EsxCloud::ApiRoute.new(:get, "/projects/#{id}/subnets", 404, 200, 200, 200, 403),
+          EsxCloud::ApiRoute.new(:post, "/projects/#{id}/subnets", 400, 400, 400, 400, 403),
+        ]
+      )
     end
 
     def self.resource_tickets_routes(id = SecureRandom.uuid)
