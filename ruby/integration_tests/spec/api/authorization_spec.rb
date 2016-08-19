@@ -35,6 +35,7 @@ describe "authorization", authorization: true, devbox: true do
         end
       end
 
+      # EsxCloud::ApiRoutesHelper.all_routes_excluding_auth_routes.each do |route|
       [
         *EsxCloud::ApiRoutesHelper.clusters_routes,
         *EsxCloud::ApiRoutesHelper.datastores_routes,
@@ -50,6 +51,20 @@ describe "authorization", authorization: true, devbox: true do
         *EsxCloud::ApiRoutesHelper.tenants_routes,
         *EsxCloud::ApiRoutesHelper.vms_routes,
         *EsxCloud::ApiRoutesHelper.status_routes
+        # *clusters_routes,
+        # *datastores_routes,
+        # *deployments_routes,
+        # *disks_routes,
+        # *flavors_routes,
+        # *hosts_routes,
+        # *networks_routes, #*network_routes,
+        # *images_routes,
+        # *projects_routes, #*project_routes,
+        # *resource_tickets_routes,
+        # *tasks_routes,
+        # *tenants_routes,
+        # *vms_routes,
+        # *status_routes
       ].each do |route|
         it "dis-allows with error 401 #{route.action} #{route.uri}" do
           response = http_client_send route.action, route.uri
