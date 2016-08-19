@@ -10,7 +10,6 @@
 # specific language governing permissions and limitations under the License.
 
 require "spec_helper"
-require_relative "../../lib/dcp/cloud_store/host_factory"
 
 describe "Availability Zone", availabilityzone: true do
   before(:all) do
@@ -45,10 +44,7 @@ describe "Availability Zone", availabilityzone: true do
         begin
           vm = create_vm(@seeder.project!, name: vm_name, affinities: [{id: availability_zone.id, kind: "availabilityZone"}])
         rescue EsxCloud::Error => e
-          host_service = EsxCloud::Dcp::CloudStore::HostFactory.get_host host.id
-          puts host_service.inspect
-
-          fail "Create VM failed. Host: #{host.id} HostState: #{host_service["agentState"]} Error: #{e}"
+          fail "Create VM failed. Host: #{host.id} Error: #{e}"
         end
 
         expect(vm).to_not be_nil
