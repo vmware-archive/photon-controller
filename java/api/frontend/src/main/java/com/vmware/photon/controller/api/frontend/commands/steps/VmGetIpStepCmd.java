@@ -82,7 +82,7 @@ public class VmGetIpStepCmd extends StepCommand {
     checkNotNull(macAddress, "macAddress is not available");
 
     DhcpSubnetService.IpOperationPatch ipOperationPatch = new DhcpSubnetService.IpOperationPatch(
-        DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac, vmId, macAddress, null);
+        DhcpSubnetService.IpOperationPatch.Kind.AllocateIp, vmId, macAddress, null);
 
     PhotonControllerXenonRestClient photonControllerXenonRestClient = taskCommand.getPhotonControllerXenonRestClient();
     Operation allocateIpResult =

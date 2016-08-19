@@ -221,7 +221,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
 
   private void allocateVmFloatingIp(AssignFloatingIpToVmWorkflowDocument state) {
     DhcpSubnetService.IpOperationPatch allocateIp = new DhcpSubnetService.IpOperationPatch(
-        DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+        DhcpSubnetService.IpOperationPatch.Kind.AllocateIp,
         state.vmId, state.vmMacAddress, null);
 
     CloudStoreUtils.patchCloudStoreEntityAndProcess(

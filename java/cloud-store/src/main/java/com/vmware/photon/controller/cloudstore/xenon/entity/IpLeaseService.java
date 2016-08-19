@@ -175,7 +175,8 @@ public class IpLeaseService extends StatefulService {
     }
 
     public String getMessage() {
-      return String.format("The request by Vm id [%s] failed because the following lease is already acquired: %s",
+      return String.format("The acquire lease request by Vm id [%s] failed because the following lease is already " +
+              "acquired: %s",
           this.requestedByVmId, this.ipLeaseState.toString());
     }
   }

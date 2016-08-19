@@ -78,13 +78,13 @@ public class VmGetIpStepCmdTest {
     VmService.State state = createVmServiceState();
 
     DhcpSubnetService.IpOperationPatch ipOperationPatchResult = new DhcpSubnetService.IpOperationPatch(
-        DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+        DhcpSubnetService.IpOperationPatch.Kind.AllocateIp,
         "vm-id",
         "macAddress",
         "10.0.0.1");
     Operation allocateIpResultOp = new Operation().setBody(ipOperationPatchResult);
     DhcpSubnetService.IpOperationPatch ipOperationPatchResult2 = new DhcpSubnetService.IpOperationPatch(
-        DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+        DhcpSubnetService.IpOperationPatch.Kind.AllocateIp,
         "vm-id",
         "macAddress2",
         "10.0.0.2");
@@ -160,13 +160,13 @@ public class VmGetIpStepCmdTest {
     VmService.State state = createVmServiceState();
 
     DhcpSubnetService.IpOperationPatch ipOperationPatchResult = new DhcpSubnetService.IpOperationPatch(
-        DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+        DhcpSubnetService.IpOperationPatch.Kind.AllocateIp,
         "vm-id",
         "macAddress",
         "10.0.0.1");
     Operation allocateIpResultOp = new Operation().setBody(ipOperationPatchResult);
     DhcpSubnetService.IpOperationPatch ipOperationPatchResult2 = new DhcpSubnetService.IpOperationPatch(
-        DhcpSubnetService.IpOperationPatch.Kind.AllocateIpToMac,
+        DhcpSubnetService.IpOperationPatch.Kind.AllocateIp,
         "vm-id",
         "macAddress2",
         "10.0.0.2");
