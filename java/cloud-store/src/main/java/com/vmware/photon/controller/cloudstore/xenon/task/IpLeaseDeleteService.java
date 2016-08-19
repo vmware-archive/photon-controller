@@ -71,7 +71,7 @@ public class IpLeaseDeleteService extends StatefulService {
   public static State buildStartPatch() {
     State s = new State();
     s.taskState = new TaskState();
-    s.taskState.stage = TaskState.TaskStage.CREATED;
+    s.taskState.stage = TaskState.TaskStage.STARTED;
     return s;
   }
 
@@ -94,7 +94,7 @@ public class IpLeaseDeleteService extends StatefulService {
     URI referer = patch.getReferer();
 
     validatePatch(currentState, patchState, referer);
-    applyPatch(currentState, patchState);
+    applyPatch(currentState, patchState, referer);
     validateState(currentState);
     patch.complete();
     processPatch(currentState);
@@ -378,9 +378,9 @@ public class IpLeaseDeleteService extends StatefulService {
    * @param current Supplies the start state object.
    * @param patch   Supplies the patch state object.
    */
-  private State applyPatch(State current, State patch) {
+  private State applyPatch(State current, State patch, URI referer) {
     ServiceUtils.logInfo(this, "Moving to stage %s", patch.taskState.stage);
-    if (patch.nextPageLink == null) {
+    if (patch.nextPageLink == null && !referer.getPath().contains(TaskSchedulerServiceFactory.SELF_LINK)) {
       current.nextPageLink = null;
     }
     PatchUtils.patchState(current, patch);
@@ -442,7 +442,7 @@ public class IpLeaseDeleteService extends StatefulService {
     /**
      * Service execution stage.
      */
-    @DefaultTaskState(value = TaskState.TaskStage.STARTED)
+    @DefaultTaskState(value = TaskState.TaskStage.CREATED)
     public TaskState taskState;
 
     /**
