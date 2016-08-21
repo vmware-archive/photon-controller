@@ -166,7 +166,7 @@ class AttacheClient(HostClient):
     def create_vm_spec(self, vm_id, datastore, memoryMB, cpus, metadata, env):
         vm_path = datastore_path(datastore, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
         spec = self._client.CreateVMSpec(vm_id, vm_path, memoryMB, cpus)
-        return AttacheVmConfigSpec(self._client, spec)
+        return AttacheVmConfigSpec(self._client, self._session, spec)
 
     @attache_error_handler
     def create_vm(self, vm_id, create_spec):
@@ -369,14 +369,6 @@ class AttacheClient(HostClient):
     def get_dvs(self):
         return self._client.GetDvs(self._session)
 
-    @attache_error_handler
-    def create_dvport(self, dvs):
-        return self._client.CreateDVPort(self._session, dvs)
-
-    @attache_error_handler
-    def delete_dvport(self, dvport):
-        self._client.DeleteDVPort(self._session, dvport.dvs, dvport.portKey)
-
     """ Nfc
     """
     @attache_error_handler
@@ -425,9 +417,10 @@ class AttacheClient(HostClient):
 
 
 class AttacheVmConfigSpec(VmConfigSpec):
-    def __init__(self, client, spec):
+    def __init__(self, client, session, spec):
         self._logger = logging.getLogger(__name__)
         self._client = client
+        self._session = session
         self._spec = spec
 
     def get_spec(self):
@@ -446,8 +439,8 @@ class AttacheVmConfigSpec(VmConfigSpec):
         self._client.AddNicToVMSpec(self._spec, str(network))
 
     @attache_error_handler
-    def add_dvport(self, dvport):
-        self._client.AddDVPortToVMSpec(self._spec, dvport.dvs, dvport.portKey, dvport.connectionCookie)
+    def add_dvs(self, dvs):
+        self._client.AddDVSToVMSpec(self._session, self._spec, dvs)
 
     @attache_error_handler
     def set_extra_config(self, options):

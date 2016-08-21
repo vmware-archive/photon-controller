@@ -529,14 +529,6 @@ class VimClient(HostClient):
         return []
 
     @hostd_error_handler
-    def create_dvport(self, dvs):
-        pass
-
-    @hostd_error_handler
-    def delete_dvport(self, dvport):
-        pass
-
-    @hostd_error_handler
     def create_disk(self, path, size):
         spec = vim.VirtualDiskManager.FileBackedVirtualDiskSpec()
         spec.capacityKb = size * (1024 ** 2)

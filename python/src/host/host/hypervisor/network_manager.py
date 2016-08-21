@@ -51,9 +51,3 @@ class NetworkManager(object):
 
         self.logger.debug("found %d vm_networks and %d dvs" % (len(vm_networks), len(dvs)))
         return networks
-
-    def create_dvport(self, dvs):
-        return self.vim_client.create_dvport(dvs)
-
-    def delete_dvport(self, dvport):
-        self.vim_client.delete_dvport(dvport)

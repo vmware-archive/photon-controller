@@ -241,14 +241,6 @@ class HostClient(object):
     def get_dvs(self):
         pass
 
-    @abc.abstractmethod
-    def create_dvport(self, dvs):
-        pass
-
-    @abc.abstractmethod
-    def delete_dvport(self, dvport):
-        pass
-
     """ Nfc
     """
     @abc.abstractmethod
@@ -280,7 +272,7 @@ class VmConfigSpec(object):
         pass
 
     @abc.abstractmethod
-    def add_dvport(self, dvport):
+    def add_dvs(self, dvs):
         pass
 
     @abc.abstractmethod

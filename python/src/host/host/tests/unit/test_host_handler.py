@@ -742,12 +742,6 @@ class HostHandlerTestCase(unittest.TestCase):
 
     def test_create_vm_on_dvs(self):
         """Check that we create the vm on the correct datastore"""
-        class DVPort:
-            def __init__(self, dvs, portKey, connectionCookie):
-                self.dvs = dvs
-                self.portKey = portKey
-                self.connectionCookie = connectionCookie
-
         vm = MagicMock()
         vm.id = str(uuid.uuid4())
         vm.networks = [NetworkInfo(NetworkInfoType.NETWORK, "dvs0")]
@@ -772,8 +766,6 @@ class HostHandlerTestCase(unittest.TestCase):
         # should succeed.
         handler.hypervisor.network_manager.get_vm_networks.return_value = []
         handler.hypervisor.network_manager.get_dvs.return_value = ["dvs0"]
-        dvport = DVPort("dvs0", "port0", 1)
-        handler.hypervisor.network_manager.create_dvport.return_value = dvport
 
         handler.hypervisor.vm_manager.create_vm_spec.reset_mock()
         pm.remove_vm_reservation.reset_mock()
@@ -781,26 +773,9 @@ class HostHandlerTestCase(unittest.TestCase):
         req = CreateVmRequest(reservation=mock_reservation)
         response = handler.create_vm(req)
 
-        handler.hypervisor.network_manager.create_dvport.assert_called_once_with("dvs0")
-        spec.add_dvport.assert_called_once_with(dvport)
+        spec.add_dvs.assert_called_once_with("dvs0")
         pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
         assert_that(response.result, equal_to(CreateVmResultCode.OK))
-
-        # Test when create_vm fails, dvport is cleaned up.
-        handler.hypervisor.network_manager.create_dvport.reset_mock()
-        handler.hypervisor.vm_manager.create_vm.side_effect = Exception("create_vm failed")
-
-        handler.hypervisor.vm_manager.create_vm_spec.reset_mock()
-        pm.remove_vm_reservation.reset_mock()
-        spec = handler.hypervisor.vm_manager.create_vm_spec.return_value
-        req = CreateVmRequest(reservation=mock_reservation)
-        response = handler.create_vm(req)
-
-        handler.hypervisor.network_manager.create_dvport.assert_called_once_with("dvs0")
-        spec.add_dvport.assert_called_once_with(dvport)
-        pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
-        handler.hypervisor.network_manager.delete_dvport.assert_called_once_with(dvport)
-        assert_that(response.result, equal_to(CreateVmResultCode.SYSTEM_ERROR))
 
     def test_delete_vm_wrong_state(self):
         handler = HostHandler(MagicMock())
