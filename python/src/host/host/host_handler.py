@@ -314,7 +314,6 @@ class HostHandler(Host.Iface):
                                         "create_vm not allowed in {0} mode".format(mode.name), CreateVmResponse())
 
         pm = self.hypervisor.placement_manager
-        dvports_to_cleanup = []
 
         try:
             vm = pm.consume_vm_reservation(request.reservation)
@@ -322,13 +321,11 @@ class HostHandler(Host.Iface):
             return CreateVmResponse(CreateVmResultCode.INVALID_RESERVATION, "Invalid VM reservation")
 
         try:
-            return self._do_create_vm(request, vm, dvports_to_cleanup)
+            return self._do_create_vm(request, vm)
         finally:
             pm.remove_vm_reservation(request.reservation)
-            for dvport in dvports_to_cleanup:
-                self._hypervisor.network_manager.delete_dvport(dvport)
 
-    def _do_create_vm(self, request, vm, dvports_to_cleanup):
+    def _do_create_vm(self, request, vm):
 
         try:
             datastore_id = self._select_datastore_for_vm_create(vm)
@@ -379,10 +376,7 @@ class HostHandler(Host.Iface):
                 self._logger.debug("Using the placement networks: {0}".format(placement_networks))
                 for network_name in placement_networks:
                     if network_name in dvs:
-                        dvport = self._hypervisor.network_manager.create_dvport(network_name)
-                        # if vm creation fails, we need to cleanup dvports to avoid leak
-                        dvports_to_cleanup.append(dvport)
-                        spec.add_dvport(dvport)
+                        spec.add_dvs(network_name)
                     else:
                         spec.add_nic(network_name)
 
@@ -406,8 +400,6 @@ class HostHandler(Host.Iface):
         # Step 5: Actually create the VM
         try:
             self.hypervisor.vm_manager.create_vm(vm.id, spec)
-            # vm creation succeeded, clear dvports_to_cleanup
-            del dvports_to_cleanup[:]
         except VmAlreadyExistException:
             self._logger.error("vm with id %s already exists" % vm.id)
             return CreateVmResponse(CreateVmResultCode.VM_ALREADY_EXIST, "Failed to create VM")

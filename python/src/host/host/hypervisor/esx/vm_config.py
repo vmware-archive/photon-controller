@@ -313,7 +313,7 @@ class EsxVmConfigSpec(VmConfigSpec):
 
         self._add_device(device)
 
-    def add_dvport(self, dvport):
+    def add_dvs(self, dvs):
         pass
 
     def attach_iso(self, cfg_info, iso_file):
