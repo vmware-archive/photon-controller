@@ -35,6 +35,8 @@ import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.entities.VmEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidLocalitySpecException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmNetworksSpecException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NoSuchResourceException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NotEnoughCpuResourceException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NotEnoughDatastoreCapacityException;
@@ -857,6 +859,16 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     String savedVirtualNetworkId = (String) connectVmSwitchStep
         .getTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID);
     assertThat(savedVirtualNetworkId, is(networkId));
+  }
+
+  @Test(expectedExceptions = InvalidVmNetworksSpecException.class,
+        expectedExceptionsMessageRegExp = "No default 'subnet' .*")
+  public void testFailedVmReservationWithNoNetworkSpec() throws Throwable {
+    when(networkBackend.getDefault()).thenThrow(NetworkNotFoundException.class);
+
+    ResourceReserveStepCmd command = getVmReservationCommand();
+    command.setInfrastructureEntity(vm);
+    command.execute();
   }
 
   @Test(expectedExceptions = NullPointerException.class)
