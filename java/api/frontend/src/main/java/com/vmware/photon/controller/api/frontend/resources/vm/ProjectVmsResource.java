@@ -18,7 +18,6 @@ import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidLocalitySpecException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmDisksSpecException;
-import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmNetworksSpecException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmSourceImageSpecException;
 import com.vmware.photon.controller.api.frontend.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRoutes;
@@ -131,7 +130,7 @@ public class ProjectVmsResource {
         VmResourceRoutes.VM_PATH);
   }
 
-  private void validate(VmCreateSpec spec) throws InvalidVmNetworksSpecException, InvalidVmDisksSpecException,
+  private void validate(VmCreateSpec spec) throws InvalidVmDisksSpecException,
       InvalidLocalitySpecException, InvalidVmSourceImageSpecException {
 
     if (spec.getAttachedDisks().isEmpty()) {
