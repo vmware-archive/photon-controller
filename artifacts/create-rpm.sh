@@ -79,6 +79,7 @@ fi
 docker pull vmware/photon-controller-rpm-builder
 docker run -i --rm ${DEBUG_OPTIONS} \
   --net=host \
+  -e GERRIT_BRANCH=${BRANCH}
   -v "${ROOT}":/photon-controller \
   -v "${SOURCES_DIR}":/usr/src/photon/SOURCES \
   -v "${RPMS_DIR}":/usr/src/photon/RPMS \
