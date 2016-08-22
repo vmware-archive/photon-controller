@@ -63,7 +63,7 @@ namespace "esxcloud" do
 
   desc "Run VM integration tests on virtual network"
   RSpec::Core::RakeTask.new(:vm_on_virtual_network) do |task|
-    task.pattern = FileList['spec/api/vm/vm_lifecycle_spec.rb']
+    task.pattern = FileList['spec/api/vm/*_spec.rb']
     task.rspec_opts = "--tag life_cycle --format RspecJunitFormatter --out reports/rspec-api.xml --tag ~slow --profile"
   end
 end
