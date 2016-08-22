@@ -20,7 +20,7 @@ cd "$DEVBOX"
 # Installs vagrant-guests-photon
 ./update_dependencies.sh
 
-# Exporting deployment id generated randomly used to create deployment document in cloudstore:seed
+# Exporting deployment id generated randomly used to create deployment document in ./seed_deployment.sh
 if [ "$(uname)" == "Darwin" ]; then
   export RANDOM_GENERATED_DEPLOYMENT_ID=fixed-test-deployemnt-id
 else
