@@ -369,6 +369,7 @@ public class HousekeeperServiceGroupTest {
         ImageDatastoreSweeperServiceFactory.SELF_LINK,
         ImageCleanerServiceFactory.SELF_LINK,
         ImageSeederSyncServiceFactory.SELF_LINK,
+        SubnetIPLeaseSyncService.FACTORY_LINK,
         TaskSchedulerServiceFactory.SELF_LINK,
         TaskTriggerFactoryService.SELF_LINK,
         HousekeeperServiceGroup.getTriggerCleanerServiceUri(),
