@@ -47,6 +47,7 @@ public class NetworkConfigurationCreateSpecTest {
           .networkManagerPassword("networkManagerPassword")
           .networkZoneId("networkZoneId")
           .networkTopRouterId("networkTopRouterId")
+          .edgeClusterId("edgeClusterId")
           .ipRange("10.0.0.1/24")
           .floatingIpRange("192.168.0.1/28")
           .build();
@@ -66,7 +67,8 @@ public class NetworkConfigurationCreateSpecTest {
         "networkManagerPassword may not be null (was null)",
         "networkManagerUsername may not be null (was null)",
         "networkTopRouterId may not be null (was null)",
-        "networkZoneId may not be null (was null)"
+        "networkZoneId may not be null (was null)",
+        "edgeClusterId may not be null (was null)"
     };
 
     private final String[] sdnDisabledErrorMsgs = new String[]{
@@ -76,7 +78,8 @@ public class NetworkConfigurationCreateSpecTest {
         "networkManagerPassword must be null (was p)",
         "networkManagerUsername must be null (was u)",
         "networkTopRouterId must be null (was r)",
-        "networkZoneId must be null (was z)"
+        "networkZoneId must be null (was z)",
+        "edgeClusterId must be null (was c)"
     };
 
     private Validator validator = new Validator();
@@ -130,6 +133,7 @@ public class NetworkConfigurationCreateSpecTest {
               .networkManagerPassword("p")
               .networkTopRouterId("r")
               .networkZoneId("z")
+              .edgeClusterId("c")
               .ipRange("i")
               .floatingIpRange("f")
               .build(),
@@ -147,8 +151,8 @@ public class NetworkConfigurationCreateSpecTest {
     public void testCorrectString() {
       String expectedString =
           "NetworkConfigurationCreateSpec{sdnEnabled=true, networkManagerAddress=1.2.3.4, " +
-          "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, ipRange=10.0.0.1/24, " +
-          "floatingIpRange=192.168.0.1/28}";
+          "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, edgeClusterId=edgeClusterId, " +
+          "ipRange=10.0.0.1/24, floatingIpRange=192.168.0.1/28}";
       assertThat(sampleNetworkConfigurationCreateSpec.toString(), is(expectedString));
     }
   }
