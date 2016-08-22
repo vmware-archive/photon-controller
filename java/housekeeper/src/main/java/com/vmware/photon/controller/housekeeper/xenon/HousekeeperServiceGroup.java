@@ -25,7 +25,9 @@ import com.vmware.photon.controller.common.xenon.scheduler.TaskStateBuilder;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
 import com.vmware.photon.controller.housekeeper.xenon.trigger.ImageCleanerTriggerBuilder;
 import com.vmware.photon.controller.housekeeper.xenon.trigger.ImageSeederSyncTriggerBuilder;
+import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
@@ -35,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Class to initialize the Housekeeper Xenon services.
@@ -78,6 +81,11 @@ public class HousekeeperServiceGroup
       TaskSchedulerServiceFactory.class,
   };
 
+  public static final Map<Class<? extends Service>, Supplier<FactoryService>> FACTORY_SERVICES_MAP =
+          ImmutableMap.<Class<? extends Service>, Supplier<FactoryService>>builder()
+                  .put(SubnetIPLeaseSyncService.class, SubnetIPLeaseSyncService::createFactory)
+                  .build();
+
   private PhotonControllerXenonHost photonControllerXenonHost;
 
   public HousekeeperServiceGroup() {
@@ -118,6 +126,7 @@ public class HousekeeperServiceGroup
   public void start() throws Throwable {
     //Start all the factories
     ServiceHostUtils.startServices(photonControllerXenonHost, FACTORY_SERVICES);
+    ServiceHostUtils.startFactoryServices(photonControllerXenonHost, FACTORY_SERVICES_MAP);
 
     //Start all factory services from api-backend
     ServiceHostUtils.startFactoryServices(photonControllerXenonHost, ApiBackendFactory.FACTORY_SERVICES_MAP);
@@ -143,6 +152,7 @@ public class HousekeeperServiceGroup
         && photonControllerXenonHost.checkServiceAvailable(ImageSeederSyncServiceFactory.SELF_LINK)
         && photonControllerXenonHost.checkServiceAvailable(ImageCleanerServiceFactory.SELF_LINK)
         && photonControllerXenonHost.checkServiceAvailable(ImageDatastoreSweeperServiceFactory.SELF_LINK)
+        && photonControllerXenonHost.checkServiceAvailable(SubnetIPLeaseSyncService.FACTORY_LINK)
 
         && photonControllerXenonHost.checkServiceAvailable(TaskTriggerFactoryService.SELF_LINK)
         && photonControllerXenonHost.checkServiceAvailable(getTriggerCleanerServiceUri())
