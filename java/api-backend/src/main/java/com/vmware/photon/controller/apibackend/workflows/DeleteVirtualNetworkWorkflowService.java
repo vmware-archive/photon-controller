@@ -596,8 +596,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
         .createGet(VirtualNetworkService.FACTORY_LINK + "/" + state.networkId)
         .setCompletion((op, ex) -> {
           if (ex != null) {
-            operation.fail(ex);
-            fail(state, ex);
+            operation.fail(new Exception("Failed to get network " + state.networkId));
             return;
           }
 

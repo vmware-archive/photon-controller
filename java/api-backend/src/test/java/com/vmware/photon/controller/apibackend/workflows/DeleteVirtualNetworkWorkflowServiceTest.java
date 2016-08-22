@@ -258,6 +258,26 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
       }
 
     }
+
+    /**
+     * Verify the operation would fail properly when an invalid network ID is offered.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void failsWithInvalidNetworkId() throws Throwable {
+      startState.networkId = "invalid-id";
+      try {
+        testEnvironment.callServiceAndWaitForState(
+            DeleteVirtualNetworkWorkflowService.FACTORY_LINK,
+            startState,
+            DeleteVirtualNetworkWorkflowDocument.class,
+            (state) -> TaskState.TaskStage.CREATED == state.taskState.stage
+        );
+      } catch (XenonRuntimeException e) {
+        assertThat(e.getMessage(), is("Failed to get network " + startState.networkId));
+      }
+    }
   }
 
   /**
