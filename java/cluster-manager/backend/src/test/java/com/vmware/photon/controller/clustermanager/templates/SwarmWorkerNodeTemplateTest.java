@@ -27,17 +27,17 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Implements tests for {@link SwarmSlaveNodeTemplate}.
+ * Implements tests for {@link SwarmWorkerNodeTemplate}.
  */
-public class SwarmSlaveNodeTemplateTest {
+public class SwarmWorkerNodeTemplateTest {
 
-  private SwarmSlaveNodeTemplate template = new SwarmSlaveNodeTemplate();
+  private SwarmWorkerNodeTemplate template = new SwarmWorkerNodeTemplate();
 
   private static final String ETCD_QUORUM_STRING =
       "10.0.0.1:2379,10.0.0.2:2379,10.0.0.3:2379,10.0.0.4:2379";
 
   private Map<String, String> createCloudConfigProperties() {
-    return SwarmSlaveNodeTemplate.createProperties(createEtcdAddresses());
+    return SwarmWorkerNodeTemplate.createProperties(createEtcdAddresses());
   }
 
   private List<String> createEtcdAddresses() {
@@ -66,7 +66,7 @@ public class SwarmSlaveNodeTemplateTest {
       nodeProperties.put(NodeTemplateUtils.HOST_ID_PROPERTY, hostId);
 
       String name = template.getVmName(nodeProperties);
-      assertEquals(name, "slave-" + hostId);
+      assertEquals(name, "worker-" + hostId);
     }
   }
 
@@ -137,12 +137,12 @@ public class SwarmSlaveNodeTemplateTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullEtcdAddresses() {
-      SwarmSlaveNodeTemplate.createProperties(null);
+      SwarmWorkerNodeTemplate.createProperties(null);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testEmpltyEtcdAddresses() {
-      SwarmSlaveNodeTemplate.createProperties(new ArrayList<>());
+      SwarmWorkerNodeTemplate.createProperties(new ArrayList<>());
     }
   }
 }

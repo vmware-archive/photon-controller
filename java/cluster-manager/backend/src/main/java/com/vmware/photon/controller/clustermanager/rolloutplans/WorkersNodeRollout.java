@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Represents a rollout plan that provisions one or more nodes and then waits for these nodes to register
  * with a server, using the appropriate statusChecker.
  */
-public class SlavesNodeRollout implements NodeRollout {
+public class WorkersNodeRollout implements NodeRollout {
 
   public void run(final Service service,
                   final NodeRolloutInput input,

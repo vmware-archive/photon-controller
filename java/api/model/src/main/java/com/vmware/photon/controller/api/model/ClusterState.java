@@ -33,7 +33,7 @@ package com.vmware.photon.controller.api.model;
  * <p/>
  * - READY - the Cluster is fully functioning.
  * <p/>
- * - RESIZING - a resizing task is scheduled and the Cluster DCP entity has been updated with the desired slave node
+ * - RESIZING - a resizing task is scheduled and the Cluster DCP entity has been updated with the desired worker node
  * count. Will transition to READY when resizing is successful. Otherwise will transfer to ERROR state.
  * <p/>
  * - PENDING_DELETE - a deleting task is scheduled. Will transition to DELETED when deleting is successful.

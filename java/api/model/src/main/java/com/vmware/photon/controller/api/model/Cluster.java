@@ -59,9 +59,14 @@ public class Cluster extends Base implements Named {
   private String projectId;
   @JsonProperty
   @ApiModelProperty(value = "This property specifies the number of slave VMs " +
-      "in the cluster.", required = true)
-  @Min(1)
+      "in the cluster.", required = false)
+  @Min(0)
   private int slaveCount;
+  @JsonProperty
+  @ApiModelProperty(value = "This property specifies the number of worker VMs " +
+      "in the cluster.", required = false)
+  @Min(1)
+  private int workerCount;
   @JsonProperty
   @ApiModelProperty(value = "This property specifies extended properties needed by " +
       "various cluster types.", required = true)
@@ -110,11 +115,19 @@ public class Cluster extends Base implements Named {
   }
 
   public int getSlaveCount() {
-    return slaveCount;
+    return workerCount;
   }
 
   public void setSlaveCount(int slaveCount) {
-    this.slaveCount = slaveCount;
+    this.workerCount = slaveCount;
+  }
+
+  public int getWorkerCount() {
+    return workerCount;
+  }
+
+  public void setWorkerCount(int workerCount) {
+    this.workerCount = workerCount;
   }
 
   public Map<String, String> getExtendedProperties() {
@@ -143,13 +156,13 @@ public class Cluster extends Base implements Named {
         Objects.equals(type, other.type) &&
         Objects.equals(state, other.state) &&
         Objects.equals(projectId, other.projectId) &&
-        Objects.equals(slaveCount, other.slaveCount) &&
+        Objects.equals(workerCount, other.workerCount) &&
         Objects.equals(extendedProperties, other.extendedProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), name, type, projectId, slaveCount, extendedProperties);
+    return Objects.hash(super.hashCode(), name, type, projectId, workerCount, extendedProperties);
   }
 
   @Override
@@ -159,7 +172,7 @@ public class Cluster extends Base implements Named {
         .add("type", type)
         .add("state", state)
         .add("projectId", projectId)
-        .add("slaveCount", slaveCount)
+        .add("workerCount", workerCount)
         .add("extendedProperties", extendedProperties)
         .toString();
   }

@@ -469,7 +469,7 @@ public class GarbageInspectionTaskServiceTest {
 
     private String mockClusterService() throws Throwable {
       ClusterService.State clusterState = ReflectionUtils.buildValidStartState(ClusterService.State.class);
-      clusterState.slaveCount = 1;
+      clusterState.workerCount = 1;
       clusterState.clusterState = ClusterState.READY;
       clusterState.clusterType = ClusterType.KUBERNETES;
       clusterState.extendedProperties = new HashMap<>();
@@ -498,7 +498,7 @@ public class GarbageInspectionTaskServiceTest {
     private void mockClusterApi(String clusterId) throws IOException {
       final List<Vm> vms = new ArrayList<>();
       String masterTag = ClusterUtil.createClusterNodeTag(clusterId, NodeType.KubernetesMaster);
-      String slaveTag = ClusterUtil.createClusterNodeTag(clusterId, NodeType.KubernetesSlave);
+      String workerTag = ClusterUtil.createClusterNodeTag(clusterId, NodeType.KubernetesWorker);
 
       Vm masterVm = new Vm();
       masterVm.setName("masterVm");
@@ -509,13 +509,13 @@ public class GarbageInspectionTaskServiceTest {
       Vm activeVm = new Vm();
       activeVm.setName("activeVm");
       activeVm.setId("activeVmId");
-      activeVm.setTags(ImmutableSet.of(slaveTag));
+      activeVm.setTags(ImmutableSet.of(workerTag));
       vms.add(activeVm);
 
       Vm inactiveVm = new Vm();
       inactiveVm.setName("inactiveVm");
       inactiveVm.setId("inactiveVmId");
-      inactiveVm.setTags(ImmutableSet.of(slaveTag));
+      inactiveVm.setTags(ImmutableSet.of(workerTag));
       vms.add(inactiveVm);
 
       doAnswer(invocation -> {

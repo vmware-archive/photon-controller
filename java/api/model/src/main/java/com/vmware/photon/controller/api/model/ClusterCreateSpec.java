@@ -74,15 +74,27 @@ public class ClusterCreateSpec implements Named {
 
   @JsonProperty
   @ApiModelProperty(value = "This property specifies the desired number of slave VMs " +
-      "in the cluster.", required = true)
-  @Min(1)
+      "in the cluster.", required = false)
+  @Min(0)
   @Max(1000)
   private int slaveCount;
+
+  @JsonProperty
+  @ApiModelProperty(value = "This property specifies the desired number of worker VMs " +
+      "in the cluster.", required = false)
+  @Min(1)
+  @Max(1000)
+  private int workerCount;
 
   @JsonProperty
   @ApiModelProperty(value = "This property specifies the size of batch expansion for slave VMs.",
   required = false)
   private int slaveBatchExpansionSize;
+
+  @JsonProperty
+  @ApiModelProperty(value = "This property specifies the size of batch expansion for worker VMs.",
+      required = false)
+  private int workerBatchExpansionSize;
 
   @JsonProperty
   @ApiModelProperty(value = "This property specifies extended properties needed by " +
@@ -133,19 +145,37 @@ public class ClusterCreateSpec implements Named {
   }
 
   public int getSlaveCount() {
-    return slaveCount;
+    return workerCount;
   }
 
   public void setSlaveCount(int slaveCount) {
-    this.slaveCount = slaveCount;
+    // this.slaveCount = slaveCount;
+    this.workerCount = slaveCount;
   }
 
   public int getSlaveBatchExpansionSize() {
-    return slaveBatchExpansionSize;
+    return workerBatchExpansionSize;
   }
 
   public void setSlaveBatchExpansionSize(int slaveBatchExpansionSize) {
-    this.slaveBatchExpansionSize = slaveBatchExpansionSize;
+    // this.slaveBatchExpansionSize = slaveBatchExpansionSize;
+    this.workerBatchExpansionSize = slaveBatchExpansionSize;
+  }
+
+  public int getWorkerCount() {
+    return workerCount;
+  }
+
+  public void setWorkerCount(int workerCount) {
+    this.workerCount = workerCount;
+  }
+
+  public int getWorkerBatchExpansionSize() {
+    return workerBatchExpansionSize;
+  }
+
+  public void setWorkerBatchExpansionSize(int workerBatchExpansionSize) {
+    this.workerBatchExpansionSize = workerBatchExpansionSize;
   }
 
   public Map<String, String> getExtendedProperties() {
@@ -172,14 +202,14 @@ public class ClusterCreateSpec implements Named {
         Objects.equals(vmFlavor, other.vmFlavor) &&
         Objects.equals(diskFlavor, other.diskFlavor) &&
         Objects.equals(vmNetworkId, other.vmNetworkId) &&
-        Objects.equals(slaveCount, other.slaveCount) &&
-        Objects.equals(slaveBatchExpansionSize, other.slaveBatchExpansionSize) &&
+        Objects.equals(workerCount, other.workerCount) &&
+        Objects.equals(workerBatchExpansionSize, other.workerBatchExpansionSize) &&
         Objects.equals(extendedProperties, other.extendedProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, type, vmFlavor, diskFlavor, vmNetworkId, slaveCount,
+    return Objects.hash(name, type, vmFlavor, diskFlavor, vmNetworkId, workerCount,
         extendedProperties);
   }
 
@@ -191,8 +221,8 @@ public class ClusterCreateSpec implements Named {
         .add("vmFlavor", vmFlavor)
         .add("diskFlavor", diskFlavor)
         .add("vmNetworkId", vmNetworkId)
-        .add("slaveCount", slaveCount)
-        .add("slaveBatchExpansionSize", slaveBatchExpansionSize)
+        .add("workerCount", workerCount)
+        .add("workerBatchExpansionSize", workerBatchExpansionSize)
         .add("extendedProperties", extendedProperties)
         .toString();
   }

@@ -150,19 +150,19 @@ public class KubernetesStatusCheckerTest {
   }
 
   /**
-   * Implements tests for the checkSlavesStatus method.
+   * Implements tests for the checkWorkersStatus method.
    */
-  public class CheckSlavesStatus {
+  public class CheckWorkersStatus {
 
     @Test
-    public void testSlavesAreReady() throws Throwable {
+    public void testWorkersAreReady() throws Throwable {
       KubernetesStatusChecker checker = new KubernetesStatusChecker(setupMockKubernetesClient());
 
       List<String> nodeAddresses = new ArrayList<>();
       nodeAddresses.add("10.0.0.1");
 
       final CountDownLatch latch = new CountDownLatch(1);
-      checker.checkSlavesStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
+      checker.checkWorkersStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
         @Override
         public void onSuccess(@Nullable Boolean isReady) {
           assertTrue(isReady);
@@ -180,7 +180,7 @@ public class KubernetesStatusCheckerTest {
     }
 
     @Test
-    public void testSlavesNotReady() throws Throwable {
+    public void testWorkersNotReady() throws Throwable {
       KubernetesClient kubernetesClient = setupMockKubernetesClient();
       KubernetesStatusChecker checker = new KubernetesStatusChecker(kubernetesClient);
 
@@ -188,7 +188,7 @@ public class KubernetesStatusCheckerTest {
       nodeAddresses.add("1.1.1.1");
 
       final CountDownLatch latch = new CountDownLatch(1);
-      checker.checkSlavesStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
+      checker.checkWorkersStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
         @Override
         public void onSuccess(@Nullable Boolean isReady) {
           assertFalse(isReady);
@@ -216,7 +216,7 @@ public class KubernetesStatusCheckerTest {
       nodeAddresses.add("1.1.1.1");
 
       final CountDownLatch latch = new CountDownLatch(1);
-      checker.checkSlavesStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
+      checker.checkWorkersStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
         @Override
         public void onSuccess(@Nullable Boolean isReady) {
           assertFalse(isReady);
@@ -235,17 +235,17 @@ public class KubernetesStatusCheckerTest {
   }
 
   /**
-   * Implements tests for the getSlavesStatus method.
+   * Implements tests for the getWorkersStatus method.
    */
-  public class GetSlavesTest {
+  public class GetWorkersTest {
 
     Set<String> hostnames;
 
     private KubernetesClient setupMockKubernetesClient() throws Throwable {
       hostnames = new HashSet<>();
-      hostnames.add("slave-69b546aa-eab3-42d4-9196-a9d3b1786b0d");
-      hostnames.add("slave-09461c65-7822-4c31-8f33-f10e2b6cb7e4");
-      hostnames.add("slave-b717db52-8e2c-4924-bf73-4e7a7503bee4");
+      hostnames.add("worker-69b546aa-eab3-42d4-9196-a9d3b1786b0d");
+      hostnames.add("worker-09461c65-7822-4c31-8f33-f10e2b6cb7e4");
+      hostnames.add("worker-b717db52-8e2c-4924-bf73-4e7a7503bee4");
 
       KubernetesClient kubernetesClient = mock(KubernetesClient.class);
       doAnswer((InvocationOnMock invocation) -> {
@@ -262,7 +262,7 @@ public class KubernetesStatusCheckerTest {
       KubernetesStatusChecker checker = new KubernetesStatusChecker(kubernetesClient);
 
       final CountDownLatch latch = new CountDownLatch(1);
-      checker.getSlavesStatus(SERVER_ADDRESS, new FutureCallback<Set<String>>() {
+      checker.getWorkersStatus(SERVER_ADDRESS, new FutureCallback<Set<String>>() {
         @Override
         public void onSuccess(@Nullable Set<String> set) {
           assertEquals(set, hostnames);
@@ -288,7 +288,7 @@ public class KubernetesStatusCheckerTest {
       KubernetesStatusChecker checker = new KubernetesStatusChecker(kubernetesClient);
 
       final CountDownLatch latch = new CountDownLatch(1);
-      checker.getSlavesStatus(SERVER_ADDRESS, new FutureCallback<Set<String>>() {
+      checker.getWorkersStatus(SERVER_ADDRESS, new FutureCallback<Set<String>>() {
         @Override
         public void onSuccess(@Nullable Set<String> set) {
           fail();

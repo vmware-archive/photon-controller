@@ -34,7 +34,7 @@ import com.vmware.photon.controller.clustermanager.helpers.TestHost;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
-import com.vmware.photon.controller.clustermanager.templates.KubernetesSlaveNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.KubernetesWorkerNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -424,11 +424,11 @@ public class ClusterExpandTaskServiceTest {
       scriptDirectory.mkdirs();
       scriptLogDirectory.mkdirs();
 
-      Path slaveUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), KubernetesSlaveNodeTemplate.SLAVE_USER_DATA_TEMPLATE);
+      Path workerUserDataTemplate =
+          Paths.get(scriptDirectory.getAbsolutePath(), KubernetesWorkerNodeTemplate.WORKER_USER_DATA_TEMPLATE);
       Path metaDataTemplate = Paths.get(scriptDirectory.getAbsolutePath(), NodeTemplateUtils.META_DATA_TEMPLATE);
 
-      Files.createFile(slaveUserDataTemplate);
+      Files.createFile(workerUserDataTemplate);
       Files.createFile(metaDataTemplate);
 
       taskReturnedByCreateVm = new Task();
@@ -483,10 +483,10 @@ public class ClusterExpandTaskServiceTest {
     }
 
     @Test(dataProvider = "successClusterExpandNodeCounts")
-    public void testEndToEndSuccess(int currentSlaveCount, int expectedSlaveCount) throws Throwable {
+    public void testEndToEndSuccess(int currentWorkerCount, int expectedWorkerCount) throws Throwable {
 
-      mockCluster(expectedSlaveCount);
-      mockGetClusterVms(currentSlaveCount, true);
+      mockCluster(expectedWorkerCount);
+      mockGetClusterVms(currentWorkerCount, true);
       mockVmProvision(true);
 
       ClusterExpandTaskService.State savedState = machine.callServiceAndWaitForState(
@@ -529,13 +529,13 @@ public class ClusterExpandTaskServiceTest {
         final List<Vm> vmList = new ArrayList<>();
         final Set<String> vmMasterTags = ImmutableSet.of(ClusterUtil.createClusterNodeTag(
             startState.clusterId, NodeType.KubernetesMaster));
-        final Set<String> vmSlaveTags = ImmutableSet.of(ClusterUtil.createClusterNodeTag(
-            startState.clusterId, NodeType.KubernetesSlave));
+        final Set<String> vmWorkerTags = ImmutableSet.of(ClusterUtil.createClusterNodeTag(
+            startState.clusterId, NodeType.KubernetesWorker));
 
         for (int i = 0; i < nodeCount; ++i) {
           Vm vm = new Vm();
           vm.setId(String.format("vm-%d", i));
-          vm.setTags(i == 0 ? vmMasterTags : vmSlaveTags);
+          vm.setTags(i == 0 ? vmMasterTags : vmWorkerTags);
           vmList.add(vm);
         }
 
@@ -601,9 +601,9 @@ public class ClusterExpandTaskServiceTest {
       }
     }
 
-    private void mockCluster(int slaveCount) throws Throwable {
+    private void mockCluster(int workerCount) throws Throwable {
       ClusterService.State clusterState = ReflectionUtils.buildValidStartState(ClusterService.State.class);
-      clusterState.slaveCount = slaveCount;
+      clusterState.workerCount = workerCount;
       clusterState.clusterState = ClusterState.READY;
       clusterState.clusterType = ClusterType.KUBERNETES;
       clusterState.extendedProperties = new HashMap<>();

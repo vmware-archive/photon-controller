@@ -19,14 +19,14 @@ import com.vmware.photon.controller.clustermanager.rolloutplans.BasicNodeRollout
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRollout;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRolloutInput;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRolloutResult;
-import com.vmware.photon.controller.clustermanager.rolloutplans.SlavesNodeRollout;
+import com.vmware.photon.controller.clustermanager.rolloutplans.WorkersNodeRollout;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask.TaskState;
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.templates.EtcdNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.KubernetesMasterNodeTemplate;
-import com.vmware.photon.controller.clustermanager.templates.KubernetesSlaveNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.KubernetesWorkerNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -52,7 +52,7 @@ import javax.annotation.Nullable;
  */
 public class KubernetesClusterCreateTaskService extends StatefulService {
 
-  private static final int MINIMUM_INITIAL_SLAVE_COUNT = 1;
+  private static final int MINIMUM_INITIAL_WORKER_COUNT = 1;
 
   public KubernetesClusterCreateTaskService() {
     super(KubernetesClusterCreateTask.class);
@@ -123,8 +123,8 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
         setupMaster(currentState);
         break;
 
-      case SETUP_SLAVES:
-        setupInitialSlaves(currentState);
+      case SETUP_WORKERS:
+        setupInitialWorkers(currentState);
         break;
 
       default:
@@ -187,7 +187,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
 
   /**
    * This method roll-outs Kubernetes Master Nodes. On successful roll-out,
-   * the methods moves the task sub-stage to SETUP_SLAVES.
+   * the methods moves the task sub-stage to SETUP_WORKERS.
    *
    * @param currentState
    */
@@ -227,7 +227,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
             public void onSuccess(@Nullable NodeRolloutResult result) {
               TaskUtils.sendSelfPatch(
                   KubernetesClusterCreateTaskService.this,
-                  buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.SETUP_SLAVES));
+                  buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.SETUP_WORKERS));
             }
 
             @Override
@@ -239,12 +239,12 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
   }
 
   /**
-   * This method roll-outs the initial Kubernetes Slave Nodes. On successful roll-out,
+   * This method roll-outs the initial Kubernetes Worker Nodes. On successful roll-out,
    * the method creates necessary tasks for cluster maintenance.
    *
    * @param currentState
    */
-  private void setupInitialSlaves(final KubernetesClusterCreateTask currentState) {
+  private void setupInitialWorkers(final KubernetesClusterCreateTask currentState) {
     sendRequest(HostUtils.getCloudStoreHelper(this)
         .createGet(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
         .setReferer(getUri())
@@ -263,37 +263,37 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
           rolloutInput.diskFlavorName = cluster.diskFlavorName;
           rolloutInput.vmFlavorName = cluster.otherVmFlavorName;
           rolloutInput.vmNetworkId = cluster.vmNetworkId;
-          rolloutInput.nodeCount = MINIMUM_INITIAL_SLAVE_COUNT;
-          rolloutInput.nodeType = NodeType.KubernetesSlave;
+          rolloutInput.nodeCount = MINIMUM_INITIAL_WORKER_COUNT;
+          rolloutInput.nodeType = NodeType.KubernetesWorker;
           rolloutInput.serverAddress =
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
-          rolloutInput.nodeProperties = KubernetesSlaveNodeTemplate.createProperties(
+          rolloutInput.nodeProperties = KubernetesWorkerNodeTemplate.createProperties(
               NodeTemplateUtils.deserializeAddressList(
                   cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS)),
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK),
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP));
 
-          NodeRollout rollout = new SlavesNodeRollout();
+          NodeRollout rollout = new WorkersNodeRollout();
           rollout.run(this, rolloutInput, new FutureCallback<NodeRolloutResult>() {
             @Override
             public void onSuccess(@Nullable NodeRolloutResult result) {
-              setupRemainingSlaves(currentState, cluster);
+              setupRemainingWorkers(currentState, cluster);
             }
 
             @Override
             public void onFailure(Throwable t) {
-              failTaskAndPatchDocument(currentState, NodeType.KubernetesSlave, t);
+              failTaskAndPatchDocument(currentState, NodeType.KubernetesWorker, t);
             }
           });
         }));
   }
 
-  private void setupRemainingSlaves(
+  private void setupRemainingWorkers(
       final KubernetesClusterCreateTask currentState,
       final ClusterService.State cluster) {
     // Maintenance task should be singleton for any cluster.
     ClusterMaintenanceTaskService.State startState = new ClusterMaintenanceTaskService.State();
-    startState.batchExpansionSize = currentState.slaveBatchExpansionSize;
+    startState.batchExpansionSize = currentState.workerBatchExpansionSize;
     startState.documentSelfLink = currentState.clusterId;
 
     Operation postOperation = Operation
@@ -301,10 +301,10 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
         .setBody(startState)
         .setCompletion((Operation operation, Throwable throwable) -> {
           if (null != throwable) {
-            failTaskAndPatchDocument(currentState, NodeType.KubernetesSlave, throwable);
+            failTaskAndPatchDocument(currentState, NodeType.KubernetesWorker, throwable);
             return;
           }
-          if (cluster.slaveCount == MINIMUM_INITIAL_SLAVE_COUNT) {
+          if (cluster.workerCount == MINIMUM_INITIAL_WORKER_COUNT) {
             // We short circuit here and set the clusterState as READY, since the desired size has
             // already been reached. Maintenance will kick-in when the maintenance interval elapses.
             KubernetesClusterCreateTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
@@ -351,7 +351,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
       switch (startState.taskState.subStage) {
         case SETUP_ETCD:
         case SETUP_MASTER:
-        case SETUP_SLAVES:
+        case SETUP_WORKERS:
           break;
         default:
           throw new IllegalStateException("Unknown task sub-stage: " + startState.taskState.subStage.toString());

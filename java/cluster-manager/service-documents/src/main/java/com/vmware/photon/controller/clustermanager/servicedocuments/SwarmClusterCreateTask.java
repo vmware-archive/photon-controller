@@ -63,7 +63,7 @@ public class SwarmClusterCreateTask extends ServiceDocument {
    */
   @DefaultInteger(value = ClusterManagerConstants.DEFAULT_BATCH_EXPANSION_SIZE)
   @Immutable
-  public Integer slaveBatchExpansionSize;
+  public Integer workerBatchExpansionSize;
 
   /**
    * This class defines the state of a SwarmClusterCreateTaskService task.
@@ -80,7 +80,7 @@ public class SwarmClusterCreateTask extends ServiceDocument {
     public enum SubStage {
       SETUP_ETCD,
       SETUP_MASTER,
-      SETUP_SLAVES,
+      SETUP_WORKERS,
     }
   }
 }

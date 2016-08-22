@@ -31,8 +31,8 @@ public class NodeTemplateFactory {
       case KubernetesMaster:
         return new KubernetesMasterNodeTemplate();
 
-      case KubernetesSlave:
-        return new KubernetesSlaveNodeTemplate();
+      case KubernetesWorker:
+        return new KubernetesWorkerNodeTemplate();
 
       case MesosZookeeper:
         return new ZookeeperNodeTemplate();
@@ -40,8 +40,8 @@ public class NodeTemplateFactory {
       case MesosMaster:
         return new MesosMasterNodeTemplate();
 
-      case MesosSlave:
-        return new MesosSlaveNodeTemplate();
+      case MesosWorker:
+        return new MesosWorkerNodeTemplate();
 
       case MesosMarathon:
         return new MarathonNodeTemplate();
@@ -52,8 +52,8 @@ public class NodeTemplateFactory {
       case SwarmMaster:
         return new SwarmMasterNodeTemplate();
 
-      case SwarmSlave:
-        return new SwarmSlaveNodeTemplate();
+      case SwarmWorker:
+        return new SwarmWorkerNodeTemplate();
 
       default:
         throw new RuntimeException("Unsupported nodeType: " + nodeType.toString());

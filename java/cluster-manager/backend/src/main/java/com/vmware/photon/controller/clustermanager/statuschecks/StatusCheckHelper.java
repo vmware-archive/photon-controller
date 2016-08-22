@@ -36,14 +36,14 @@ public class StatusCheckHelper {
 
     switch (nodeType) {
       case KubernetesMaster:
-      case KubernetesSlave:
+      case KubernetesWorker:
         return new KubernetesStatusChecker(HostUtils.getKubernetesClient(service));
 
       case MesosZookeeper:
         return new ZookeeperStatusChecker();
 
       case MesosMaster:
-      case MesosSlave:
+      case MesosWorker:
         return new MesosStatusChecker(HostUtils.getMesosClient(service));
 
       case MesosMarathon:
@@ -54,7 +54,7 @@ public class StatusCheckHelper {
         return new EtcdStatusChecker(HostUtils.getEtcdClient(service));
 
       case SwarmMaster:
-      case SwarmSlave:
+      case SwarmWorker:
         return new SwarmStatusChecker(HostUtils.getSwarmClient(service));
 
       default:
@@ -69,17 +69,17 @@ public class StatusCheckHelper {
    * @param nodeType Type of the Cluster Node.
    * @return
    */
-  public SlavesStatusChecker createSlavesStatusChecker(Service service, NodeType nodeType) {
+  public WorkersStatusChecker createWorkersStatusChecker(Service service, NodeType nodeType) {
     Preconditions.checkNotNull(service);
 
     switch (nodeType) {
-      case KubernetesSlave:
+      case KubernetesWorker:
         return new KubernetesStatusChecker(HostUtils.getKubernetesClient(service));
 
-      case MesosSlave:
+      case MesosWorker:
         return new MesosStatusChecker(HostUtils.getMesosClient(service));
 
-      case SwarmSlave:
+      case SwarmWorker:
         return new SwarmStatusChecker(HostUtils.getSwarmClient(service));
 
       default:
