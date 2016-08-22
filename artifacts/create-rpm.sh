@@ -66,7 +66,7 @@ if [ -z "$VIB_PATH" ]; then
 
   cp "${ROOT}"/python/dist/* "${SOURCES_DIR}"
 else
-  cp ${VIB_PATH} ${SOURCE_DIR}
+  cp ${VIB_PATH} ${SOURCES_DIR}
 fi
 
 DEBUG_OPTIONS=""
