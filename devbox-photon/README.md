@@ -6,7 +6,7 @@ Devbox uses [Vagrant], [Docker] and [Photon OS] to create a local VM and install
 
 All of the components are compiled, packaged and started in their own containers inside the photon VM. The process does not make any changes to your working copy.
 
-As part of photon controller security another VM that contains Lightwave container is created along with the photon VM above.
+As part of Photon Controller security another VM that contains a Lightwave container is created along with the photon VM above.
 
 The logs from the Photon Controller services are synced to the host and are located in `log` directory.
 
@@ -24,15 +24,19 @@ The logs from the Photon Controller services are synced to the host and are loca
 
 In order to control the devbox VM, Vagrant needs a plugin for Photon OS. The plugin is installed as a gem directly into Vagrant. Run the following to install the plugin:
 
-    vagrant plugin install vagrant-guests-photon
+    ./update_dependencies.sh
 
 #### Start and provision devbox
 
-We use Gradle for building and provisioning the devbox. The entire lifecycle can be controlled from Gradle. From `/java` or `/devbox`, run:
+We use Gradle for building and provisioning the devbox. From `/java` or `/devbox-photon`, run:
 
 	./gradlew :devbox:up
 
-This will bring up Vagrant, create ywo VMs, build all service containers, then start them. Your devbox is now ready.
+This will bring up Vagrant, create one VM (two if ENABLE_AUTH is set to `true`), build all service containers, then start them. Your devbox is now ready.
+
+If devbox is being used as a management VM, we seed a deployment document into Photon Controller for some system properties. These properties can be set from environment variables (see below). From `/devbox-photon`, run:
+
+    ./seed_deployment.sh
 
 #### Setting Vagrant box name and location
 
