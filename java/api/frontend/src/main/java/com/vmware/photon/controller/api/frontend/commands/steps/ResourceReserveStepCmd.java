@@ -37,6 +37,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.DiskNotFoun
 import com.vmware.photon.controller.api.frontend.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidLocalitySpecException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmNetworksSpecException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.StepNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.TaskNotFoundException;
@@ -488,7 +489,7 @@ public class ResourceReserveStepCmd extends StepCommand {
     PlacementTask taskResponse = placementResponse.getBody(PlacementTask.class);
 
     SchedulerErrorCodeToExceptionMapper.mapErrorCodeToException(
-          taskResponse.resultCode, taskResponse.error);
+        taskResponse.resultCode, taskResponse.error);
     return taskResponse;
   }
 
@@ -556,7 +557,7 @@ public class ResourceReserveStepCmd extends StepCommand {
   private void createNetworkConstraints(
       VmEntity entity,
       com.vmware.photon.controller.resource.gen.Vm vm)
-      throws NetworkNotFoundException, StepNotFoundException {
+      throws InvalidVmNetworksSpecException, NetworkNotFoundException, StepNotFoundException {
 
     // This is for the special routine of Deployer where network constraint for the management VM
     // is set via locality instead of the normal network constraint. Since the locality constraint
@@ -567,19 +568,7 @@ public class ResourceReserveStepCmd extends StepCommand {
       return;
     }
 
-    List<String> networks = entity.getNetworks();
-    if (networks == null) {
-      networks = new ArrayList<>();
-    }
-
-    if (networks.isEmpty()) {
-      if (!this.useVirtualNetwork) {
-        networks.add(networkBackend.getDefault().getId());
-      } else {
-        networks.add(getDefaultVirtualNetwork(entity.getProjectId()));
-      }
-    }
-
+    List<String> networks = getNetworks(entity);
     for (String network : networks) {
       ResourceConstraint resourceConstraint = new ResourceConstraint();
       if (!this.useVirtualNetwork) {
@@ -616,6 +605,31 @@ public class ResourceReserveStepCmd extends StepCommand {
     } catch (DocumentNotFoundException e) {
       throw new NetworkNotFoundException(id);
     }
+  }
+
+  private List<String> getNetworks(VmEntity entity) throws InvalidVmNetworksSpecException {
+    List<String> networks = entity.getNetworks();
+    if (networks == null) {
+      networks = new ArrayList<>();
+    }
+
+    try {
+      if (networks.isEmpty()) {
+        if (!this.useVirtualNetwork) {
+          networks.add(networkBackend.getDefault().getId());
+        } else {
+          networks.add(getDefaultVirtualNetwork(entity.getProjectId()));
+        }
+      }
+    } catch (NetworkNotFoundException ex) {
+      String error = String.format(
+          "No default 'subnet' if configured for project %s." +
+              " Please specify the 'subnets' the VM should be connected to explicitly.",
+          entity.getProjectId());
+      throw new InvalidVmNetworksSpecException(error);
+    }
+
+    return  networks;
   }
 
   private String getDefaultVirtualNetwork(String projectId) throws NetworkNotFoundException {
