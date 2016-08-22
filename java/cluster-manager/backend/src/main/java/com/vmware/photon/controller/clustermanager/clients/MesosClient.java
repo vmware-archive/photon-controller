@@ -141,15 +141,15 @@ public class MesosClient {
             }
 
             Set<String> nodes = new HashSet();
-            if (response != null && response.slaves != null) {
-              for (Slave s : response.slaves) {
+            if (response != null && response.workers != null) {
+              for (Worker s : response.workers) {
                 switch (nodeProperty) {
                   case IP_ADDRESS:
                     try {
                       String nodeAddress = s.getPid().split("@|:")[1];
                       nodes.add(nodeAddress);
                     } catch (Exception ex) {
-                      logger.error("malformed slave pid: " + s.getPid());
+                      logger.error("malformed worker pid: " + s.getPid());
                     }
                     break;
                   case HOSTNAME:
@@ -252,7 +252,7 @@ public class MesosClient {
    */
   public static class MasterState {
     private String leader;
-    private List<Slave> slaves;
+    private List<Worker> workers;
 
     public String getLeader() {
       return leader;
@@ -262,20 +262,20 @@ public class MesosClient {
       this.leader = leader;
     }
 
-    public List<Slave> getSlaves() {
-      return slaves;
+    public List<Worker> getWorkers() {
+      return workers;
     }
 
-    public void setSlaves(List<Slave> slaves) {
-      this.slaves = slaves;
+    public void setWorkers(List<Worker> workers) {
+      this.workers = workers;
     }
   }
 
   /**
-   * Represents the contract object used to represent a specific Mesos Cluster Slave,
+   * Represents the contract object used to represent a specific Mesos Cluster Worker,
    * as returned by the GET /nodes API.
    */
-  public static class Slave {
+  public static class Worker {
     private String hostname;
     private String pid;
 

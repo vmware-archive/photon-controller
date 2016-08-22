@@ -28,11 +28,11 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Implementes tests for {@link KubernetesSlaveNodeTemplate}.
+ * Implementes tests for {@link KubernetesWorkerNodeTemplate}.
  */
-public class KubernetesSlaveNodeTemplateTest {
+public class KubernetesWorkerNodeTemplateTest {
 
-  private KubernetesSlaveNodeTemplate template = new KubernetesSlaveNodeTemplate();
+  private KubernetesWorkerNodeTemplate template = new KubernetesWorkerNodeTemplate();
 
   private static final String CONTAINER_NETWORK = "1.1.1.1/16";
   private static final String MASTER_IP = "2.2.2.2";
@@ -40,7 +40,7 @@ public class KubernetesSlaveNodeTemplateTest {
       "10.0.0.1:2379,10.0.0.2:2379,10.0.0.3:2379,10.0.0.4:2379";
 
   private Map<String, String> createCloudConfigProperties() {
-    return KubernetesSlaveNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, MASTER_IP);
+    return KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, MASTER_IP);
   }
 
   private List<String> createEtcdAddresses() {
@@ -69,7 +69,7 @@ public class KubernetesSlaveNodeTemplateTest {
       nodeProperties.put(NodeTemplateUtils.HOST_ID_PROPERTY, hostId);
 
       String name = template.getVmName(nodeProperties);
-      assertEquals(name, "slave-" + hostId);
+      assertEquals(name, "worker-" + hostId);
     }
   }
 
@@ -148,17 +148,17 @@ public class KubernetesSlaveNodeTemplateTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testEmpltyEtcdAddresses() {
-      KubernetesSlaveNodeTemplate.createProperties(new ArrayList<>(), CONTAINER_NETWORK, MASTER_IP);
+      KubernetesWorkerNodeTemplate.createProperties(new ArrayList<>(), CONTAINER_NETWORK, MASTER_IP);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullContainerNetwork() {
-      KubernetesSlaveNodeTemplate.createProperties(createEtcdAddresses(), null, MASTER_IP);
+      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), null, MASTER_IP);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullMasterIp() {
-      KubernetesSlaveNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, null);
+      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, null);
     }
   }
 }

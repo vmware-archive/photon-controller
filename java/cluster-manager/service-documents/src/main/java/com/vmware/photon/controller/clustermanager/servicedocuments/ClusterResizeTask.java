@@ -51,11 +51,11 @@ public class ClusterResizeTask extends ServiceDocument {
   public String clusterId;
 
   /**
-   * The desired number of slave VMs.
+   * The desired number of worker VMs.
    */
   @NotNull
   @Immutable
-  public Integer newSlaveCount;
+  public Integer newWorkerCount;
 
   /**
    * This class defines the state of a KubernetesClusterResizeTaskService task.

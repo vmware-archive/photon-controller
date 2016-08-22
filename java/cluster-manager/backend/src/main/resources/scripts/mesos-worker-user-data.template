@@ -33,7 +33,7 @@ write_files:
         eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
         ipAddress=`ifconfig ${eno_name} | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
 
-        echo "Starting mesos slave"
+        echo "Starting mesos worker"
 
         docker run -d \
           --entrypoint="mesos-slave" \
@@ -60,7 +60,7 @@ write_files:
         echo "done"
     owner: root:root
     permissions: 0644
-    path: /tmp/start-mesos-slave.sh
+    path: /tmp/start-mesos-worker.sh
   - content: |
         retry_max="60"
         retry="0"
@@ -88,4 +88,4 @@ runcmd:
   - systemctl enable docker
   - systemctl start docker
   - sh /tmp/check-docker.sh
-  - sh /tmp/start-mesos-slave.sh > /var/log/mesos-slave.log
+  - sh /tmp/start-mesos-worker.sh > /var/log/mesos-worker.log

@@ -173,9 +173,9 @@ public class MesosClientTest {
     private static final String CONNECTION_STRING = "http://10.146.22.40:5050";
 
     private List<String> hostnames = Arrays.asList(
-        "slave-69b546aa-eab3-42d4-9196-a9d3b1786b0d",
-        "slave-09461c65-7822-4c31-8f33-f10e2b6cb7e4",
-        "slave-b717db52-8e2c-4924-bf73-4e7a7503bee4");
+        "worker-69b546aa-eab3-42d4-9196-a9d3b1786b0d",
+        "worker-09461c65-7822-4c31-8f33-f10e2b6cb7e4",
+        "worker-b717db52-8e2c-4924-bf73-4e7a7503bee4");
 
     @Test
     public void testGetAddressesSuccess() throws IOException, InterruptedException {

@@ -39,7 +39,7 @@ import com.vmware.photon.controller.clustermanager.statuschecks.SwarmStatusCheck
 import com.vmware.photon.controller.clustermanager.templates.EtcdNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.templates.SwarmMasterNodeTemplate;
-import com.vmware.photon.controller.clustermanager.templates.SwarmSlaveNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.SwarmWorkerNodeTemplate;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -202,7 +202,7 @@ public class SwarmClusterCreateTaskServiceTest {
           {TaskState.TaskStage.STARTED,
               SwarmClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.STARTED,
-              SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null},
           {TaskState.TaskStage.FAILED, null},
@@ -226,28 +226,28 @@ public class SwarmClusterCreateTaskServiceTest {
           {TaskState.TaskStage.CREATED,
               SwarmClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.CREATED,
-              SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
 
           {TaskState.TaskStage.FINISHED,
               SwarmClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.FINISHED,
               SwarmClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.FINISHED,
-              SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
 
           {TaskState.TaskStage.FAILED,
               SwarmClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.FAILED,
               SwarmClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.FAILED,
-              SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
 
           {TaskState.TaskStage.CANCELLED,
               SwarmClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.CANCELLED,
               SwarmClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.CANCELLED,
-              SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
       };
     }
 
@@ -339,17 +339,17 @@ public class SwarmClusterCreateTaskServiceTest {
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_MASTER,
-              TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_MASTER,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_MASTER,
               TaskState.TaskStage.CANCELLED, null},
 
-          {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.CANCELLED, null},
       };
     }
@@ -389,11 +389,11 @@ public class SwarmClusterCreateTaskServiceTest {
           {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_MASTER,
               TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
 
-          {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
-          {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
 
           {TaskState.TaskStage.FINISHED, null,
@@ -403,7 +403,7 @@ public class SwarmClusterCreateTaskServiceTest {
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FINISHED, null,
@@ -418,7 +418,7 @@ public class SwarmClusterCreateTaskServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null,
@@ -433,7 +433,7 @@ public class SwarmClusterCreateTaskServiceTest {
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              TaskState.TaskStage.STARTED, SwarmClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null,
@@ -537,13 +537,13 @@ public class SwarmClusterCreateTaskServiceTest {
           Paths.get(scriptDirectory.getAbsolutePath(), EtcdNodeTemplate.ETCD_USER_DATA_TEMPLATE);
       Path masterUserDataTemplate =
           Paths.get(scriptDirectory.getAbsolutePath(), SwarmMasterNodeTemplate.MASTER_USER_DATA_TEMPLATE);
-      Path slaveUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), SwarmSlaveNodeTemplate.SLAVE_USER_DATA_TEMPLATE);
+      Path workerUserDataTemplate =
+          Paths.get(scriptDirectory.getAbsolutePath(), SwarmWorkerNodeTemplate.WORKER_USER_DATA_TEMPLATE);
       Path metaDataTemplate = Paths.get(scriptDirectory.getAbsolutePath(), NodeTemplateUtils.META_DATA_TEMPLATE);
 
       Files.createFile(etcdUserDataTemplate);
       Files.createFile(masterUserDataTemplate);
-      Files.createFile(slaveUserDataTemplate);
+      Files.createFile(workerUserDataTemplate);
       Files.createFile(metaDataTemplate);
 
       taskReturnedByCreateVm = new Task();
@@ -704,7 +704,7 @@ public class SwarmClusterCreateTaskServiceTest {
       cluster.masterVmFlavorName = "masterVmFlavorName";
       cluster.otherVmFlavorName = "otherVmFlavorName";
       cluster.vmNetworkId = "vmNetworkId";
-      cluster.slaveCount = size;
+      cluster.workerCount = size;
       cluster.extendedProperties = new HashMap<>();
       cluster.extendedProperties.put(
           ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "2.2.2.2");

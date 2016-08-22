@@ -117,7 +117,7 @@ public class ClusterApi extends ApiBase {
     String path = String.format("%s/%s/resize", getBasePath(), clusterId);
 
     ClusterResizeOperation op = new ClusterResizeOperation();
-    op.setNewSlaveCount(size);
+    op.setNewWorkerCount(size);
 
     HttpResponse response = this.restClient.perform(RestClient.Method.POST, path, serializeObjectAsJson(op));
     this.restClient.checkResponse(response, HttpStatus.SC_CREATED);
@@ -139,7 +139,7 @@ public class ClusterApi extends ApiBase {
     String path = String.format("%s/%s/resize", getBasePath(), clusterId);
 
     ClusterResizeOperation op = new ClusterResizeOperation();
-    op.setNewSlaveCount(size);
+    op.setNewWorkerCount(size);
 
     createObjectAsync(path, serializeObjectAsJson(op), responseCallback);
   }

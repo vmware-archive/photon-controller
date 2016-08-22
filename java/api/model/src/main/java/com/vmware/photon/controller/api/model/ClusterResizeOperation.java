@@ -33,17 +33,31 @@ import java.util.Objects;
 public class ClusterResizeOperation {
 
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies the desired number of slave VMs.", required = true)
-  @Min(1)
+  @ApiModelProperty(value = "This property specifies the desired number of slave VMs.", required = false)
+  @Min(0)
   @Max(1000)
   private int newSlaveCount;
 
+  @JsonProperty
+  @ApiModelProperty(value = "This property specifies the desired number of worker VMs.", required = false)
+  @Min(1)
+  @Max(1000)
+  private int newWorkerCount;
+
   public int getNewSlaveCount() {
-    return newSlaveCount;
+    return newWorkerCount;
   }
 
   public void setNewSlaveCount(int newSlaveCount) {
-    this.newSlaveCount = newSlaveCount;
+    this.newWorkerCount = newSlaveCount;
+  }
+
+  public int getNewWorkerCount() {
+    return newWorkerCount;
+  }
+
+  public void setNewWorkerCount(int newWorkerCount) {
+    this.newWorkerCount = newWorkerCount;
   }
 
   @Override
@@ -57,18 +71,18 @@ public class ClusterResizeOperation {
 
     ClusterResizeOperation other = (ClusterResizeOperation) o;
 
-    return Objects.equals(newSlaveCount, other.newSlaveCount);
+    return Objects.equals(newWorkerCount, other.newWorkerCount);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(newSlaveCount);
+    return Objects.hash(newWorkerCount);
   }
 
   @Override
   public String toString() {
     return toStringHelper(this)
-        .add("newSlaveCount", newSlaveCount)
+        .add("newWorkerCount", newWorkerCount)
         .toString();
   }
 }

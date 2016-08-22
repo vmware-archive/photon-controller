@@ -150,10 +150,10 @@ public class ClusterService extends StatefulService {
     public String otherVmFlavorName;
 
     /**
-     * Number of slave Nodes in this cluster.
+     * Number of Worker Nodes in this cluster.
      */
     @NotNull
-    public Integer slaveCount;
+    public Integer workerCount;
 
     /**
      * This property specifies extended properties of the cluster.

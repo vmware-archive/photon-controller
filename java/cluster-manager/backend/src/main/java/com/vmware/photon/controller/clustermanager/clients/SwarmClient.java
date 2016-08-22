@@ -38,7 +38,7 @@ public class SwarmClient {
   private static final Logger logger = LoggerFactory.getLogger(SwarmClient.class);
   private static final String SWARM_STATUS_PATH = "/info";
   private static final String MASTER_VM_NAME_PREFIX = "master";
-  private static final String SLAVE_VM_NAME_PREFIX = "slave";
+  private static final String WORKER_VM_NAME_PREFIX = "worker";
 
   private enum NodeProperty {
     IP_ADDRESS,
@@ -95,7 +95,7 @@ public class SwarmClient {
               if (kv.size() == 2) {
                 try {
                   String key = kv.get(0).asText();
-                  if (key.startsWith(MASTER_VM_NAME_PREFIX) || key.startsWith(SLAVE_VM_NAME_PREFIX)) {
+                  if (key.startsWith(MASTER_VM_NAME_PREFIX) || key.startsWith(WORKER_VM_NAME_PREFIX)) {
                     switch (nodeProperty) {
                       case IP_ADDRESS:
                         String nodeAddress = kv.get(1).asText().split(":")[0];

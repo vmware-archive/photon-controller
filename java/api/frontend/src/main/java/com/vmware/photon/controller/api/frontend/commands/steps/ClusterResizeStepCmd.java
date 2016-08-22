@@ -50,8 +50,8 @@ public class ClusterResizeStepCmd extends StepCommand {
     checkNotNull(clusterId, "cluster-id is not defined in TransientResource");
     checkNotNull(resizeOperation, "resize-operation is not defined in TransientResource");
 
-    logger.info("ClusterResizeStepCmd started, clusterId={}, newSlaveCount={}",
-        clusterId, resizeOperation.getNewSlaveCount());
+    logger.info("ClusterResizeStepCmd started, clusterId={}, newWorkerCount={}",
+        clusterId, resizeOperation.getNewWorkerCount());
 
     ClusterResizeTask serviceDocument = clusterBackend.getClusterManagerClient()
         .resizeCluster(clusterId, resizeOperation);

@@ -19,7 +19,7 @@ import com.vmware.photon.controller.clustermanager.rolloutplans.BasicNodeRollout
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRollout;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRolloutInput;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRolloutResult;
-import com.vmware.photon.controller.clustermanager.rolloutplans.SlavesNodeRollout;
+import com.vmware.photon.controller.clustermanager.rolloutplans.WorkersNodeRollout;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants.Mesos;
 import com.vmware.photon.controller.clustermanager.servicedocuments.MesosClusterCreateTask;
@@ -27,7 +27,7 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.MesosCluster
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.templates.MarathonNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.MesosMasterNodeTemplate;
-import com.vmware.photon.controller.clustermanager.templates.MesosSlaveNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.MesosWorkerNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.templates.ZookeeperNodeTemplate;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;
@@ -54,7 +54,7 @@ import javax.annotation.Nullable;
  */
 public class MesosClusterCreateTaskService extends StatefulService {
 
-  private static final int MINIMUM_INITIAL_SLAVE_COUNT = 1;
+  private static final int MINIMUM_INITIAL_WORKER_COUNT = 1;
 
   public MesosClusterCreateTaskService() {
     super(MesosClusterCreateTask.class);
@@ -129,8 +129,8 @@ public class MesosClusterCreateTaskService extends StatefulService {
         setupMarathon(currentState);
         break;
 
-      case SETUP_SLAVES:
-        setupInitialSlaves(currentState);
+      case SETUP_WORKERS:
+        setupInitialWorkers(currentState);
         break;
 
       default:
@@ -242,7 +242,7 @@ public class MesosClusterCreateTaskService extends StatefulService {
 
   /**
    * This method roll-outs Marathon nodes. On successful
-   * rollout, the methods moves the task sub-stage to SETUP_SLAVES.
+   * rollout, the methods moves the task sub-stage to SET_WORKERS.
    *
    * @param currentState
    */
@@ -277,7 +277,7 @@ public class MesosClusterCreateTaskService extends StatefulService {
             public void onSuccess(@Nullable NodeRolloutResult result) {
               TaskUtils.sendSelfPatch(
                   MesosClusterCreateTaskService.this,
-                  buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.SETUP_SLAVES));
+                  buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.SETUP_WORKERS));
             }
 
             @Override
@@ -289,12 +289,12 @@ public class MesosClusterCreateTaskService extends StatefulService {
   }
 
   /**
-   * This method roll-outs the initial Mesos Slave Nodes. On successful roll-out,
+   * This method roll-outs the initial Mesos Worker Nodes. On successful roll-out,
    * the method creates necessary tasks for cluster maintenance.
    *
    * @param currentState
    */
-  private void setupInitialSlaves(MesosClusterCreateTask currentState) {
+  private void setupInitialWorkers(MesosClusterCreateTask currentState) {
     sendRequest(HostUtils.getCloudStoreHelper(this)
         .createGet(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
         .setReferer(getUri())
@@ -313,34 +313,34 @@ public class MesosClusterCreateTaskService extends StatefulService {
           rolloutInput.diskFlavorName = cluster.diskFlavorName;
           rolloutInput.vmNetworkId = cluster.vmNetworkId;
           rolloutInput.clusterId = currentState.clusterId;
-          rolloutInput.nodeCount = MINIMUM_INITIAL_SLAVE_COUNT;
-          rolloutInput.nodeType = NodeType.MesosSlave;
+          rolloutInput.nodeCount = MINIMUM_INITIAL_WORKER_COUNT;
+          rolloutInput.nodeType = NodeType.MesosWorker;
           rolloutInput.serverAddress = currentState.masterIps.get(0);
-          rolloutInput.nodeProperties = MesosSlaveNodeTemplate.createProperties(
+          rolloutInput.nodeProperties = MesosWorkerNodeTemplate.createProperties(
               NodeTemplateUtils.deserializeAddressList(
                   cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ZOOKEEPER_IPS)));
 
-          NodeRollout rollout = new SlavesNodeRollout();
+          NodeRollout rollout = new WorkersNodeRollout();
           rollout.run(this, rolloutInput, new FutureCallback<NodeRolloutResult>() {
             @Override
             public void onSuccess(@Nullable NodeRolloutResult result) {
-              setupRemainingSlaves(currentState, cluster);
+              setupRemainingWorkers(currentState, cluster);
             }
 
             @Override
             public void onFailure(Throwable t) {
-              failTaskAndPatchDocument(currentState, NodeType.MesosSlave, t);
+              failTaskAndPatchDocument(currentState, NodeType.MesosWorker, t);
             }
           });
         }));
   }
 
-  private void setupRemainingSlaves(
+  private void setupRemainingWorkers(
       final MesosClusterCreateTask currentState,
       final ClusterService.State cluster) {
     // Maintenance task should be singleton for any cluster.
     ClusterMaintenanceTaskService.State startState = new ClusterMaintenanceTaskService.State();
-    startState.batchExpansionSize = currentState.slaveBatchExpansionSize;
+    startState.batchExpansionSize = currentState.workerBatchExpansionSize;
     startState.documentSelfLink = currentState.clusterId;
 
     Operation postOperation = Operation
@@ -348,10 +348,10 @@ public class MesosClusterCreateTaskService extends StatefulService {
         .setBody(startState)
         .setCompletion((Operation operation, Throwable throwable) -> {
           if (null != throwable) {
-            failTaskAndPatchDocument(currentState, NodeType.MesosSlave, throwable);
+            failTaskAndPatchDocument(currentState, NodeType.MesosWorker, throwable);
             return;
           }
-          if (cluster.slaveCount == MINIMUM_INITIAL_SLAVE_COUNT) {
+          if (cluster.workerCount == MINIMUM_INITIAL_WORKER_COUNT) {
             // We short circuit here and set the clusterState as READY, since the desired size has
             // already been reached. Maintenance will kick-in when the maintenance interval elapses.
             MesosClusterCreateTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
@@ -399,7 +399,7 @@ public class MesosClusterCreateTaskService extends StatefulService {
         case SETUP_ZOOKEEPERS:
         case SETUP_MASTERS:
         case SETUP_MARATHON:
-        case SETUP_SLAVES:
+        case SETUP_WORKERS:
           break;
         default:
           throw new IllegalStateException("Unknown task sub-stage: " + startState.taskState.subStage.toString());

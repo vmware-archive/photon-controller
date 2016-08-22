@@ -108,7 +108,7 @@ public class ClusterManagerClientTest {
       createSpec.setVmFlavor("vmFlavor1");
       createSpec.setDiskFlavor("diskFlavor1");
       createSpec.setVmNetworkId("vmNetworkId1");
-      createSpec.setSlaveCount(50);
+      createSpec.setWorkerCount(50);
       Map<String, String> extendedProperty = new HashMap<>();
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "10.1.0.1");
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "10.1.0.2");
@@ -206,7 +206,7 @@ public class ClusterManagerClientTest {
       createSpec.setVmFlavor("vmFlavor1");
       createSpec.setDiskFlavor("diskFlavor1");
       createSpec.setVmNetworkId("vmNetworkId1");
-      createSpec.setSlaveCount(50);
+      createSpec.setWorkerCount(50);
       Map<String, String> extendedProperty = new HashMap<>();
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "10.1.0.1");
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "10.1.0.2");
@@ -301,7 +301,7 @@ public class ClusterManagerClientTest {
       createSpec.setVmFlavor("vmFlavor1");
       createSpec.setDiskFlavor("diskFlavor1");
       createSpec.setVmNetworkId("vmNetworkId1");
-      createSpec.setSlaveCount(50);
+      createSpec.setWorkerCount(50);
       Map<String, String> extendedProperty = new HashMap<>();
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "10.1.0.1");
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "10.1.0.2");
@@ -382,7 +382,7 @@ public class ClusterManagerClientTest {
       kc.clusterType = ClusterType.KUBERNETES;
       kc.clusterState = ClusterState.READY;
       kc.projectId = "projectId";
-      kc.slaveCount = 3;
+      kc.workerCount = 3;
       kc.extendedProperties = new HashMap();
       kc.extendedProperties.put(
           ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK,
@@ -409,7 +409,7 @@ public class ClusterManagerClientTest {
       assertEquals(cluster.getType(), ClusterType.KUBERNETES);
       assertEquals(cluster.getState(), ClusterState.READY);
       assertEquals(cluster.getProjectId(), clusterDocument.projectId);
-      assertEquals(cluster.getSlaveCount(), clusterDocument.slaveCount.intValue());
+      assertEquals(cluster.getWorkerCount(), clusterDocument.workerCount.intValue());
       assertEquals(cluster.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK),
           clusterDocument.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK));
     }
@@ -444,7 +444,7 @@ public class ClusterManagerClientTest {
       clusterDocument.documentSelfLink = "/abc/de305d54-75b4-431b-adb2-eb6b9e546014";
       clusterDocument.clusterName = "clusterName";
       clusterDocument.projectId = "projectId";
-      clusterDocument.slaveCount = 2;
+      clusterDocument.workerCount = 2;
       clusterDocument.clusterType = ClusterType.KUBERNETES;
       clusterDocument.clusterState = ClusterState.READY;
       clusterDocument.extendedProperties = new HashMap();
@@ -471,7 +471,7 @@ public class ClusterManagerClientTest {
       assertEquals(cluster.getType(), ClusterType.KUBERNETES);
       assertEquals(cluster.getState(), ClusterState.READY);
       assertEquals(cluster.getProjectId(), "projectId");
-      assertEquals(cluster.getSlaveCount(), 2);
+      assertEquals(cluster.getWorkerCount(), 2);
       assertEquals(cluster.getExtendedProperties().get(
               ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK),
           "10.10.10.10");
@@ -483,7 +483,7 @@ public class ClusterManagerClientTest {
       clusterDocument.documentSelfLink = "/abc/de305d54-75b4-431b-adb2-eb6b9e546014";
       clusterDocument.clusterName = "clusterName";
       clusterDocument.projectId = "projectId";
-      clusterDocument.slaveCount = 2;
+      clusterDocument.workerCount = 2;
       clusterDocument.clusterType = ClusterType.KUBERNETES;
       clusterDocument.clusterState = ClusterState.READY;
       clusterDocument.extendedProperties = new HashMap();
@@ -508,7 +508,7 @@ public class ClusterManagerClientTest {
       assertEquals(cluster.getType(), ClusterType.KUBERNETES);
       assertEquals(cluster.getState(), ClusterState.READY);
       assertEquals(cluster.getProjectId(), "projectId");
-      assertEquals(cluster.getSlaveCount(), 2);
+      assertEquals(cluster.getWorkerCount(), 2);
       assertEquals(cluster.getExtendedProperties().get(
               ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK),
           "10.10.10.10");

@@ -178,7 +178,7 @@ public class ClusterBackend {
     // Dummy steps that are mapped to KubernetesClusterCreateTask's subStages
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_KUBERNETES_CLUSTER_SETUP_ETCD);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_KUBERNETES_CLUSTER_SETUP_MASTER);
-    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_KUBERNETES_CLUSTER_SETUP_SLAVES);
+    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_KUBERNETES_CLUSTER_SETUP_WORKERS);
 
     return taskEntity;
   }
@@ -198,7 +198,7 @@ public class ClusterBackend {
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_MESOS_CLUSTER_SETUP_MASTERS);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_MESOS_CLUSTER_SETUP_MARATHON);
-    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_MESOS_CLUSTER_SETUP_SLAVES);
+    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_MESOS_CLUSTER_SETUP_WORKERS);
 
     return taskEntity;
   }
@@ -218,7 +218,7 @@ public class ClusterBackend {
     // Dummy steps that are mapped to SwarmClusterCreateTask's subStages
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_SWARM_CLUSTER_SETUP_ETCD);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_SWARM_CLUSTER_SETUP_MASTER);
-    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_SWARM_CLUSTER_SETUP_SLAVES);
+    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_SWARM_CLUSTER_SETUP_WORKERS);
 
     return taskEntity;
   }
