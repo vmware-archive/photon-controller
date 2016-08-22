@@ -106,7 +106,7 @@ public class KubernetesClient {
   }
 
   /**
-   * This method calls into the Kubernetes API endpoint to retrieve the hostnames of slave nodes.
+   * This method calls into the Kubernetes API endpoint to retrieve the hostnames of worker nodes.
    *
    * @param connectionString          connectionString of the master Node in the Cluster
    * @param callback                  callback that is invoked on completion of the operation.

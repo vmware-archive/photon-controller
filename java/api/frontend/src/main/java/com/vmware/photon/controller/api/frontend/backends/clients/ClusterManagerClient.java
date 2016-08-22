@@ -91,8 +91,8 @@ public class ClusterManagerClient {
     String clusterId = createKubernetesClusterEntity(projectId, spec, clusterConfiguration);
     KubernetesClusterCreateTask createTask = new KubernetesClusterCreateTask();
     createTask.clusterId = clusterId;
-    createTask.slaveBatchExpansionSize =
-        spec.getSlaveBatchExpansionSize() == 0 ? null : spec.getSlaveBatchExpansionSize();
+    createTask.workerBatchExpansionSize =
+        spec.getWorkerBatchExpansionSize() == 0 ? null : spec.getWorkerBatchExpansionSize();
 
     // Post createTask to KubernetesClusterCreateTaskService
     Operation operation = xenonClient.post(
@@ -112,8 +112,8 @@ public class ClusterManagerClient {
     String clusterId = createMesosClusterEntity(projectId, spec, clusterConfiguration);
     MesosClusterCreateTask createTask = new MesosClusterCreateTask();
     createTask.clusterId = clusterId;
-    createTask.slaveBatchExpansionSize =
-        spec.getSlaveBatchExpansionSize() == 0 ? null : spec.getSlaveBatchExpansionSize();
+    createTask.workerBatchExpansionSize =
+        spec.getWorkerBatchExpansionSize() == 0 ? null : spec.getWorkerBatchExpansionSize();
 
     // Post createSpec to MesosClusterCreateTaskService
     Operation operation = xenonClient.post(
@@ -133,8 +133,8 @@ public class ClusterManagerClient {
     String clusterId = createSwarmClusterEntity(projectId, spec, clusterConfiguration);
     SwarmClusterCreateTask createTask = new SwarmClusterCreateTask();
     createTask.clusterId = clusterId;
-    createTask.slaveBatchExpansionSize =
-        spec.getSlaveBatchExpansionSize() == 0 ? null : spec.getSlaveBatchExpansionSize();
+    createTask.workerBatchExpansionSize =
+        spec.getWorkerBatchExpansionSize() == 0 ? null : spec.getWorkerBatchExpansionSize();
 
     // Post createSpec to SwarmClusterCreateTaskService
     Operation operation = xenonClient.post(
@@ -152,7 +152,7 @@ public class ClusterManagerClient {
     // Translate API ClusterResizeOperation to cluster manager ClusterResizeTask
     ClusterResizeTask resizeTask = new ClusterResizeTask();
     resizeTask.clusterId = clusterId;
-    resizeTask.newSlaveCount = resizeOperation.getNewSlaveCount();
+    resizeTask.newWorkerCount = resizeOperation.getNewWorkerCount();
     Operation operation = xenonClient.post(
         ServiceUriPaths.CLUSTER_RESIZE_TASK_SERVICE, resizeTask);
     return operation.getBody(ClusterResizeTask.class);
@@ -295,7 +295,7 @@ public class ClusterManagerClient {
         spec.getVmFlavor() == null || spec.getVmFlavor().isEmpty() ?
             ClusterManagerConstants.OTHER_VM_FLAVOR : spec.getVmFlavor();
     cluster.vmNetworkId = spec.getVmNetworkId();
-    cluster.slaveCount = spec.getSlaveCount();
+    cluster.workerCount = spec.getWorkerCount();
     cluster.extendedProperties = new HashMap<>();
     cluster.documentSelfLink = UUID.randomUUID().toString();
     cluster.extendedProperties = new HashMap<>();
@@ -484,7 +484,7 @@ public class ClusterManagerClient {
     cluster.setType(clusterDocument.clusterType);
     cluster.setState(clusterDocument.clusterState);
     cluster.setProjectId(clusterDocument.projectId);
-    cluster.setSlaveCount(clusterDocument.slaveCount);
+    cluster.setWorkerCount(clusterDocument.workerCount);
     cluster.setExtendedProperties(clusterDocument.extendedProperties);
 
     return cluster;

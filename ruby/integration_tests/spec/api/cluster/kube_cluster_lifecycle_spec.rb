@@ -93,7 +93,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
           etcd_count += 1
         elsif i.name.start_with?("master")
           master_count += 1
-        elsif i.name.start_with?("slave")
+        elsif i.name.start_with?("worker")
           slave_count += 1
         else
           fail("Find an unknown vm #{i.name} in the cluster")

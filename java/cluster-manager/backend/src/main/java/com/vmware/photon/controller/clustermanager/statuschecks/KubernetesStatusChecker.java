@@ -30,7 +30,7 @@ import java.util.Set;
 /**
  * Determines the Status of a Kubernetes Node.
  */
-public class KubernetesStatusChecker implements StatusChecker, SlavesStatusChecker {
+public class KubernetesStatusChecker implements StatusChecker, WorkersStatusChecker {
   private static final Logger logger = LoggerFactory.getLogger(KubernetesStatusChecker.class);
 
   private KubernetesClient kubernetesClient;
@@ -71,9 +71,9 @@ public class KubernetesStatusChecker implements StatusChecker, SlavesStatusCheck
   }
 
   @Override
-  public void checkSlavesStatus(final String masterAddress,
-                                final List<String> slaveAddresses,
-                                final FutureCallback<Boolean> callback) {
+  public void checkWorkersStatus(final String masterAddress,
+                                 final List<String> workerAddresses,
+                                 final FutureCallback<Boolean> callback) {
     Preconditions.checkNotNull(masterAddress, "masterAddress cannot be null");
     logger.info("Checking Kubernetes: {}", masterAddress);
 
@@ -89,13 +89,13 @@ public class KubernetesStatusChecker implements StatusChecker, SlavesStatusCheck
           }
 
           try {
-            if (slaveAddresses == null || slaveAddresses.size() == 0) {
+            if (workerAddresses == null || workerAddresses.size() == 0) {
               // we are only checking the current master
               callback.onSuccess(true);
             } else {
-              for (String slaveAddress : slaveAddresses) {
-                if (!nodes.contains(slaveAddress)) {
-                  logger.info("Slave not registered with Kubernetes: {}", slaveAddress);
+              for (String workerAddress : workerAddresses) {
+                if (!nodes.contains(workerAddress)) {
+                  logger.info("Worker not registered with Kubernetes: {}", workerAddress);
                   callback.onSuccess(false);
                   return;
                 }
@@ -121,10 +121,10 @@ public class KubernetesStatusChecker implements StatusChecker, SlavesStatusCheck
   }
 
   @Override
-  public void getSlavesStatus(String serverAddress, final FutureCallback<Set<String>> callback) {
+  public void getWorkersStatus(String serverAddress, final FutureCallback<Set<String>> callback) {
 
     Preconditions.checkNotNull(serverAddress, "serverAddress cannot be null");
-    logger.info("Getting Kubernetes slaves: {}", serverAddress);
+    logger.info("Getting Kubernetes workers: {}", serverAddress);
 
     try {
       String connectionString = createConnectionString(serverAddress);

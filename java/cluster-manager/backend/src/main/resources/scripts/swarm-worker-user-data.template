@@ -43,13 +43,13 @@ write_files:
         systemctl start docker
         source /tmp/check-docker.sh
 
-        echo "Starting swarm slave"
+        echo "Starting swarm worker"
         docker -H tcp://0.0.0.0:2375 run -d --restart=always ${swarmImage} join --addr=${ipAddress}:2375 etcd://$ETCD_QUORUM/swarm
 
         echo "done"
     owner: root:root
     permissions: 0644
-    path: /tmp/start-swarm-slave.sh
+    path: /tmp/start-swarm-worker.sh
   - content: |
         retry_max="60"
         retry="0"
@@ -74,4 +74,4 @@ write_files:
 
 runcmd:
   - sh /tmp/init-network.sh
-  - sh /tmp/start-swarm-slave.sh > /var/log/swarm-slave.log
+  - sh /tmp/start-swarm-worker.sh > /var/log/swarm-worker.log

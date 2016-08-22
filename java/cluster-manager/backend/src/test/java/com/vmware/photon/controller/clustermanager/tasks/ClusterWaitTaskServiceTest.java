@@ -79,7 +79,7 @@ public class ClusterWaitTaskServiceTest {
     startState.nodeAddresses.add("10.146.22.42");
 
     startState.serverAddress = SERVER_ADDRESS;
-    startState.nodeType = NodeType.KubernetesSlave;
+    startState.nodeType = NodeType.KubernetesWorker;
 
     if (null != startStage) {
       startState.taskState = new TaskState();

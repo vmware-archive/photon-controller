@@ -129,7 +129,7 @@ public class ClusterBackendTest {
     cluster.setType(ClusterType.KUBERNETES);
     cluster.setState(ClusterState.READY);
     cluster.setProjectId("projectId");
-    cluster.setSlaveCount(2);
+    cluster.setWorkerCount(2);
     cluster.setExtendedProperties(ImmutableMap.of(
         ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "12.12.12.12"));
 
@@ -180,7 +180,7 @@ public class ClusterBackendTest {
       createSpec.setType(clusterType);
       createSpec.setVmFlavor("vmFlavor1");
       createSpec.setDiskFlavor("diskFlavor1");
-      createSpec.setSlaveCount(50);
+      createSpec.setWorkerCount(50);
       createSpec.setExtendedProperties(ImmutableMap.of(
           ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "10.1.0.0/16"));
       return createSpec;
@@ -210,7 +210,7 @@ public class ClusterBackendTest {
       assertEquals(taskEntity.getSteps().get(0).getOperation(), Operation.CREATE_KUBERNETES_CLUSTER_INITIATE);
       assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.CREATE_KUBERNETES_CLUSTER_SETUP_ETCD);
       assertEquals(taskEntity.getSteps().get(2).getOperation(), Operation.CREATE_KUBERNETES_CLUSTER_SETUP_MASTER);
-      assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.CREATE_KUBERNETES_CLUSTER_SETUP_SLAVES);
+      assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.CREATE_KUBERNETES_CLUSTER_SETUP_WORKERS);
     }
 
     @Test
@@ -238,7 +238,7 @@ public class ClusterBackendTest {
       assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS);
       assertEquals(taskEntity.getSteps().get(2).getOperation(), Operation.CREATE_MESOS_CLUSTER_SETUP_MASTERS);
       assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.CREATE_MESOS_CLUSTER_SETUP_MARATHON);
-      assertEquals(taskEntity.getSteps().get(4).getOperation(), Operation.CREATE_MESOS_CLUSTER_SETUP_SLAVES);
+      assertEquals(taskEntity.getSteps().get(4).getOperation(), Operation.CREATE_MESOS_CLUSTER_SETUP_WORKERS);
     }
 
     @Test
@@ -265,7 +265,7 @@ public class ClusterBackendTest {
       assertEquals(taskEntity.getSteps().get(0).getOperation(), Operation.CREATE_SWARM_CLUSTER_INITIATE);
       assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.CREATE_SWARM_CLUSTER_SETUP_ETCD);
       assertEquals(taskEntity.getSteps().get(2).getOperation(), Operation.CREATE_SWARM_CLUSTER_SETUP_MASTER);
-      assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.CREATE_SWARM_CLUSTER_SETUP_SLAVES);
+      assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.CREATE_SWARM_CLUSTER_SETUP_WORKERS);
     }
   }
 
@@ -388,7 +388,7 @@ public class ClusterBackendTest {
       when(clusterManagerClient.getCluster(clusterId)).thenReturn(cluster);
 
       ClusterResizeOperation resizeOperation = new ClusterResizeOperation();
-      resizeOperation.setNewSlaveCount(10);
+      resizeOperation.setNewWorkerCount(10);
 
       TaskEntity taskEntity = clusterBackend.resize(clusterId, resizeOperation);
       Assert.assertNotNull(taskEntity);
@@ -420,7 +420,7 @@ public class ClusterBackendTest {
       when(clusterManagerClient.getCluster(clusterId)).thenThrow(new ClusterNotFoundException(clusterId));
 
       ClusterResizeOperation resizeOperation = new ClusterResizeOperation();
-      resizeOperation.setNewSlaveCount(10);
+      resizeOperation.setNewWorkerCount(10);
 
       clusterBackend.resize(clusterId, resizeOperation);
     }

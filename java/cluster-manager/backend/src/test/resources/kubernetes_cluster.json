@@ -8,17 +8,17 @@
   "items": [
     {
       "metadata": {
-        "name": "slave-6a8e2d24-3118-4848-bdff-fe9daabf38b9",
+        "name": "worker-6a8e2d24-3118-4848-bdff-fe9daabf38b9",
         "selfLink": "/api/v1beta3/nodes/10.146.22.40",
         "uid": "1983665c-2b18-11e5-900e-000c2926acac",
         "resourceVersion": "6216",
         "creationTimestamp": "2015-07-15T17:37:01Z",
         "labels": {
-          "kubernetes.io/hostname": "slave-6a8e2d24-3118-4848-bdff-fe9daabf38b9"
+          "kubernetes.io/hostname": "worker-6a8e2d24-3118-4848-bdff-fe9daabf38b9"
         }
       },
       "spec": {
-        "externalID": "slave-6a8e2d24-3118-4848-bdff-fe9daabf38b9"
+        "externalID": "worker-6a8e2d24-3118-4848-bdff-fe9daabf38b9"
       },
       "status": {
         "capacity": {
@@ -55,17 +55,17 @@
     },
     {
       "metadata": {
-        "name": "slave-2e4ead33-7c01-4308-8669-7ebcb65bf98f",
+        "name": "worker-2e4ead33-7c01-4308-8669-7ebcb65bf98f",
         "selfLink": "/api/v1beta3/nodes/10.146.22.41",
         "uid": "4ef51f0c-2b18-11e5-900e-000c2926acac",
         "resourceVersion": "6213",
         "creationTimestamp": "2015-07-15T17:38:30Z",
         "labels": {
-          "kubernetes.io/hostname": "slave-2e4ead33-7c01-4308-8669-7ebcb65bf98f"
+          "kubernetes.io/hostname": "worker-2e4ead33-7c01-4308-8669-7ebcb65bf98f"
         }
       },
       "spec": {
-        "externalID": "slave-2e4ead33-7c01-4308-8669-7ebcb65bf98f"
+        "externalID": "worker-2e4ead33-7c01-4308-8669-7ebcb65bf98f"
       },
       "status": {
         "capacity": {
@@ -149,17 +149,17 @@
     },
     {
       "metadata": {
-        "name": "slave-8bd8b53b-e665-45cc-b7c9-83d9c02cc942",
+        "name": "worker-8bd8b53b-e665-45cc-b7c9-83d9c02cc942",
         "selfLink": "/api/v1beta3/nodes/10.146.22.43",
         "uid": "4ba3f796-2b18-11e5-900e-000c2926acac",
         "resourceVersion": "6214",
         "creationTimestamp": "2015-07-15T17:38:25Z",
         "labels": {
-          "kubernetes.io/hostname": "slave-8bd8b53b-e665-45cc-b7c9-83d9c02cc942"
+          "kubernetes.io/hostname": "worker-8bd8b53b-e665-45cc-b7c9-83d9c02cc942"
         }
       },
       "spec": {
-        "externalID": "slave-8bd8b53b-e665-45cc-b7c9-83d9c02cc942"
+        "externalID": "worker-8bd8b53b-e665-45cc-b7c9-83d9c02cc942"
       },
       "status": {
         "capacity": {

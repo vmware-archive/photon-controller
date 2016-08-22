@@ -88,7 +88,7 @@ public class ProjectClustersResourceTest extends ResourceTest {
     c.setType(ClusterType.KUBERNETES);
     c.setName(name);
     c.setProjectId(projectId);
-    c.setSlaveCount(3);
+    c.setWorkerCount(3);
     c.setExtendedProperties(ImmutableMap.of(
         ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "10.1.0.0/16"));
     return c;
@@ -100,7 +100,7 @@ public class ProjectClustersResourceTest extends ResourceTest {
     s.setType(ClusterType.KUBERNETES);
     s.setVmFlavor("vmFlavor1");
     s.setDiskFlavor("diskFlavor1");
-    s.setSlaveCount(50);
+    s.setWorkerCount(50);
     s.setExtendedProperties(ImmutableMap.of(
         ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "10.1.0.0/16"));
     return s;

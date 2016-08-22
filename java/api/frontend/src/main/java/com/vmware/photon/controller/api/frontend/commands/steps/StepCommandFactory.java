@@ -221,7 +221,7 @@ public class StepCommandFactory {
         return new KubernetesClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
       case CREATE_KUBERNETES_CLUSTER_SETUP_ETCD:
       case CREATE_KUBERNETES_CLUSTER_SETUP_MASTER:
-      case CREATE_KUBERNETES_CLUSTER_SETUP_SLAVES:
+      case CREATE_KUBERNETES_CLUSTER_SETUP_WORKERS:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new KubernetesClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
       case CREATE_MESOS_CLUSTER_INITIATE:
@@ -229,14 +229,14 @@ public class StepCommandFactory {
       case CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS:
       case CREATE_MESOS_CLUSTER_SETUP_MASTERS:
       case CREATE_MESOS_CLUSTER_SETUP_MARATHON:
-      case CREATE_MESOS_CLUSTER_SETUP_SLAVES:
+      case CREATE_MESOS_CLUSTER_SETUP_WORKERS:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new MesosClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
       case CREATE_SWARM_CLUSTER_INITIATE:
         return new SwarmClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
       case CREATE_SWARM_CLUSTER_SETUP_ETCD:
       case CREATE_SWARM_CLUSTER_SETUP_MASTER:
-      case CREATE_SWARM_CLUSTER_SETUP_SLAVES:
+      case CREATE_SWARM_CLUSTER_SETUP_WORKERS:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new SwarmClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
       case RESIZE_CLUSTER_INITIATE:

@@ -94,7 +94,7 @@ describe "Mesos cluster-service lifecycle", cluster: true do
           master_count += 1
         elsif i.name.start_with?("marathon")
           marathon_count += 1
-        elsif i.name.start_with?("slave")
+        elsif i.name.start_with?("worker")
             slave_count += 1
         else
             fail("Find an unknown vm #{i.name} in the cluster")

@@ -38,7 +38,7 @@ import com.vmware.photon.controller.clustermanager.statuschecks.KubernetesStatus
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
 import com.vmware.photon.controller.clustermanager.templates.EtcdNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.KubernetesMasterNodeTemplate;
-import com.vmware.photon.controller.clustermanager.templates.KubernetesSlaveNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.KubernetesWorkerNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
@@ -202,7 +202,7 @@ public class KubernetesClusterCreateTaskServiceTest {
           {TaskState.TaskStage.STARTED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.STARTED,
-              KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null},
           {TaskState.TaskStage.FAILED, null},
@@ -226,7 +226,7 @@ public class KubernetesClusterCreateTaskServiceTest {
           {TaskState.TaskStage.CREATED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.CREATED,
-              KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
 
           {TaskState.TaskStage.STARTED, null},
 
@@ -235,21 +235,21 @@ public class KubernetesClusterCreateTaskServiceTest {
           {TaskState.TaskStage.FINISHED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.FINISHED,
-              KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
 
           {TaskState.TaskStage.FAILED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.FAILED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.FAILED,
-              KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
 
           {TaskState.TaskStage.CANCELLED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
           {TaskState.TaskStage.CANCELLED,
               KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.CANCELLED,
-              KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
       };
     }
 
@@ -341,17 +341,17 @@ public class KubernetesClusterCreateTaskServiceTest {
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER,
-              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER,
               TaskState.TaskStage.CANCELLED, null},
 
-          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.CANCELLED, null},
       };
     }
@@ -391,11 +391,11 @@ public class KubernetesClusterCreateTaskServiceTest {
           {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER,
               TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
 
-          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_ETCD},
-          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
 
           {TaskState.TaskStage.FINISHED, null,
@@ -405,7 +405,7 @@ public class KubernetesClusterCreateTaskServiceTest {
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FINISHED, null,
@@ -420,7 +420,7 @@ public class KubernetesClusterCreateTaskServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null,
@@ -435,7 +435,7 @@ public class KubernetesClusterCreateTaskServiceTest {
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_MASTER},
           {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              TaskState.TaskStage.STARTED, KubernetesClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null,
@@ -537,13 +537,13 @@ public class KubernetesClusterCreateTaskServiceTest {
           Paths.get(scriptDirectory.getAbsolutePath(), EtcdNodeTemplate.ETCD_USER_DATA_TEMPLATE);
       Path masterUserDataTemplate =
           Paths.get(scriptDirectory.getAbsolutePath(), KubernetesMasterNodeTemplate.MASTER_USER_DATA_TEMPLATE);
-      Path slaveUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), KubernetesSlaveNodeTemplate.SLAVE_USER_DATA_TEMPLATE);
+      Path workerUserDataTemplate =
+          Paths.get(scriptDirectory.getAbsolutePath(), KubernetesWorkerNodeTemplate.WORKER_USER_DATA_TEMPLATE);
       Path metaDataTemplate = Paths.get(scriptDirectory.getAbsolutePath(), NodeTemplateUtils.META_DATA_TEMPLATE);
 
       Files.createFile(etcdUserDataTemplate);
       Files.createFile(masterUserDataTemplate);
-      Files.createFile(slaveUserDataTemplate);
+      Files.createFile(workerUserDataTemplate);
       Files.createFile(metaDataTemplate);
 
       taskReturnedByCreateVm = new Task();
@@ -701,7 +701,7 @@ public class KubernetesClusterCreateTaskServiceTest {
       cluster.masterVmFlavorName = "masterVmFlavorName";
       cluster.otherVmFlavorName = "otherVmFlavorName";
       cluster.vmNetworkId = "vmNetworkId";
-      cluster.slaveCount = size;
+      cluster.workerCount = size;
       cluster.extendedProperties = new HashMap<>();
       cluster.extendedProperties.put(
           ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "1.1.1.1");
