@@ -38,7 +38,7 @@ public class MesosClusterCreateTaskStatusPoller implements XenonTaskStatusStepCm
           .put(Operation.CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS, SubStage.SETUP_ZOOKEEPERS.ordinal())
           .put(Operation.CREATE_MESOS_CLUSTER_SETUP_MASTERS, SubStage.SETUP_MASTERS.ordinal())
           .put(Operation.CREATE_MESOS_CLUSTER_SETUP_MARATHON, SubStage.SETUP_MARATHON.ordinal())
-          .put(Operation.CREATE_MESOS_CLUSTER_SETUP_SLAVES, SubStage.SETUP_SLAVES.ordinal())
+          .put(Operation.CREATE_MESOS_CLUSTER_SETUP_WORKERS, SubStage.SETUP_WORKERS.ordinal())
           .build();
 
   private final TaskCommand taskCommand;

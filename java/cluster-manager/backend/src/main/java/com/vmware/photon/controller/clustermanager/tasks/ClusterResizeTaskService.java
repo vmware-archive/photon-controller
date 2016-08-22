@@ -114,7 +114,7 @@ public class ClusterResizeTaskService extends StatefulService {
   }
 
   /**
-   * This method calculates the delta between the current slaves count and the desired slaves count,
+   * This method calculates the delta between the current workers count and the desired workers count,
    * and saves the delta in the current state. On success, the method moves the task sub-stage
    * to RESIZE_CLUSTER.
    */
@@ -140,12 +140,12 @@ public class ClusterResizeTaskService extends StatefulService {
         return;
       }
 
-      int slaveCountDelta = currentState.newSlaveCount - clusterDocument.slaveCount;
-      if (slaveCountDelta < 0) {
+      int workerCountDelta = currentState.newWorkerCount - clusterDocument.workerCount;
+      if (workerCountDelta < 0) {
         String errorStr = String.format(
             "Reducing cluster size is not supported. Current cluster size: %d. New cluster size: %d.",
-            clusterDocument.slaveCount,
-            currentState.newSlaveCount);
+            clusterDocument.workerCount,
+            currentState.newWorkerCount);
 
         ServiceUtils.logInfo(ClusterResizeTaskService.this, errorStr);
         TaskUtils.sendSelfPatch(ClusterResizeTaskService.this, buildPatch(TaskState.TaskStage.FAILED, null,
@@ -153,8 +153,8 @@ public class ClusterResizeTaskService extends StatefulService {
         return;
       }
 
-      if (slaveCountDelta == 0) {
-        ServiceUtils.logInfo(ClusterResizeTaskService.this, "Slave count delta is 0. Skip resizing.");
+      if (workerCountDelta == 0) {
+        ServiceUtils.logInfo(ClusterResizeTaskService.this, "Worker count delta is 0. Skip resizing.");
         TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null));
         return;
       }
@@ -163,7 +163,7 @@ public class ClusterResizeTaskService extends StatefulService {
           TaskState.TaskStage.STARTED, ClusterResizeTask.TaskState.SubStage.RESIZE_CLUSTER);
 
       ClusterService.State clusterPatchState = new ClusterService.State();
-      clusterPatchState.slaveCount = currentState.newSlaveCount;
+      clusterPatchState.workerCount = currentState.newWorkerCount;
       clusterPatchState.clusterState = ClusterState.RESIZING;
 
       updateStates(currentState, patchState, clusterPatchState);
@@ -173,7 +173,7 @@ public class ClusterResizeTaskService extends StatefulService {
   }
 
   /**
-   * Performs the resize operation using SlavesNodeRollout. On successful completion, it marks the cluster as READY
+   * Performs the resize operation using WorkersNodeRollout. On successful completion, it marks the cluster as READY
    * and moves the current task to FINISHED state.
    */
   private void resizeCluster(final ClusterResizeTask currentState) {

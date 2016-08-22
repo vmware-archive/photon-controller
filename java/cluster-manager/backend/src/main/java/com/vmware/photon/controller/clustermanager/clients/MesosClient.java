@@ -149,7 +149,7 @@ public class MesosClient {
                       String nodeAddress = s.getPid().split("@|:")[1];
                       nodes.add(nodeAddress);
                     } catch (Exception ex) {
-                      logger.error("malformed slave pid: " + s.getPid());
+                      logger.error("malformed worker pid: " + s.getPid());
                     }
                     break;
                   case HOSTNAME:

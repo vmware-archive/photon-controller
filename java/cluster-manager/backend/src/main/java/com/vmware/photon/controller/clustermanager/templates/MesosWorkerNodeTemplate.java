@@ -23,13 +23,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Defines the template for Swarm Slave Nodes.
+ * Defines the template for Mesos Worker Nodes.
  */
-public class SwarmSlaveNodeTemplate implements NodeTemplate {
+public class MesosWorkerNodeTemplate implements NodeTemplate {
 
-  public static final String SLAVE_USER_DATA_TEMPLATE = "swarm-slave-user-data.template";
-  public static final String ETCD_IPS_PROPERTY = "etcdIps";
-  public static final String VM_NAME_PREFIX = "slave";
+  public static final String WORKER_USER_DATA_TEMPLATE = "mesos-worker-user-data.template";
+  public static final String ZOOKEEPER_IPS_PROPERTY = "zookeeperIps";
+  public static final String VM_NAME_PREFIX = "worker";
 
   public String getVmName(Map<String, String> properties) {
     Preconditions.checkNotNull(properties, "properties cannot be null");
@@ -42,13 +42,14 @@ public class SwarmSlaveNodeTemplate implements NodeTemplate {
     Preconditions.checkNotNull(scriptDirectory, "scriptDirectory cannot be null");
     Preconditions.checkNotNull(properties, "properties cannot be null");
 
-    List<String> etcdIps = NodeTemplateUtils.deserializeAddressList(properties.get(ETCD_IPS_PROPERTY));
+    List<String> zookeeperIps = NodeTemplateUtils.deserializeAddressList(properties.get(ZOOKEEPER_IPS_PROPERTY));
 
     Map<String, String> parameters = new HashMap();
-    parameters.put("$ETCD_QUORUM", NodeTemplateUtils.createEtcdQuorumString(etcdIps));
+    parameters.put("$ZK_QUORUM", NodeTemplateUtils.createZookeeperQuorumString(zookeeperIps));
+    parameters.put("$LOCAL_HOSTNAME", getVmName(properties));
 
     FileTemplate template = new FileTemplate();
-    template.filePath = Paths.get(scriptDirectory, SLAVE_USER_DATA_TEMPLATE).toString();
+    template.filePath = Paths.get(scriptDirectory, WORKER_USER_DATA_TEMPLATE).toString();
     template.parameters = parameters;
     return template;
   }
@@ -60,12 +61,12 @@ public class SwarmSlaveNodeTemplate implements NodeTemplate {
     return NodeTemplateUtils.createMetaDataTemplate(scriptDirectory, getVmName(properties));
   }
 
-  public static Map<String, String> createProperties(List<String> etcdAddresses) {
-    Preconditions.checkNotNull(etcdAddresses, "etcdAddresses cannot be null");
-    Preconditions.checkArgument(etcdAddresses.size() > 0, "etcdAddresses should contain at least one address");
+  public static Map<String, String> createProperties(List<String> zkAddresses) {
+    Preconditions.checkNotNull(zkAddresses, "zkAddresses cannot be null");
+    Preconditions.checkArgument(zkAddresses.size() > 0, "zkAddresses should contain at least one address");
 
     Map<String, String> properties = new HashMap();
-    properties.put(ETCD_IPS_PROPERTY, NodeTemplateUtils.serializeAddressList(etcdAddresses));
+    properties.put(ZOOKEEPER_IPS_PROPERTY, NodeTemplateUtils.serializeAddressList(zkAddresses));
 
     return properties;
   }

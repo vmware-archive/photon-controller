@@ -38,7 +38,7 @@ import com.vmware.photon.controller.clustermanager.statuschecks.MesosStatusCheck
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
 import com.vmware.photon.controller.clustermanager.templates.MarathonNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.MesosMasterNodeTemplate;
-import com.vmware.photon.controller.clustermanager.templates.MesosSlaveNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.MesosWorkerNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.templates.ZookeeperNodeTemplate;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -206,7 +206,7 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.STARTED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON},
           {TaskState.TaskStage.STARTED,
-              MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null},
           {TaskState.TaskStage.FAILED, null},
@@ -232,7 +232,7 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.CREATED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON},
           {TaskState.TaskStage.CREATED,
-              MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
 
           {TaskState.TaskStage.FINISHED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
@@ -241,7 +241,7 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.FINISHED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON},
           {TaskState.TaskStage.FINISHED,
-              MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
 
           {TaskState.TaskStage.FAILED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
@@ -250,7 +250,7 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.FAILED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON},
           {TaskState.TaskStage.FAILED,
-              MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
 
           {TaskState.TaskStage.CANCELLED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
@@ -259,7 +259,7 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.CANCELLED,
               MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON},
           {TaskState.TaskStage.CANCELLED,
-              MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
       };
     }
 
@@ -358,18 +358,18 @@ public class MesosClusterCreateTaskServiceTest {
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON,
-              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON,
               TaskState.TaskStage.CANCELLED, null},
 
 
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.CANCELLED, null},
       };
     }
@@ -416,13 +416,13 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MASTERS},
 
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_ZOOKEEPERS},
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MASTERS},
-          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES,
+          {TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON},
 
           {TaskState.TaskStage.FINISHED, null,
@@ -434,7 +434,7 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON},
           {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FINISHED, null,
@@ -451,7 +451,7 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON},
           {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null,
@@ -468,7 +468,7 @@ public class MesosClusterCreateTaskServiceTest {
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_MARATHON},
           {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_SLAVES},
+              TaskState.TaskStage.STARTED, MesosClusterCreateTask.TaskState.SubStage.SETUP_WORKERS},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null,
@@ -575,14 +575,14 @@ public class MesosClusterCreateTaskServiceTest {
           Paths.get(scriptDirectory.getAbsolutePath(), MesosMasterNodeTemplate.MASTER_USER_DATA_TEMPLATE);
       Path marathonUserDataTemplate =
           Paths.get(scriptDirectory.getAbsolutePath(), MarathonNodeTemplate.MARATHON_USER_DATA_TEMPLATE);
-      Path slaveUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), MesosSlaveNodeTemplate.SLAVE_USER_DATA_TEMPLATE);
+      Path workerUserDataTemplate =
+          Paths.get(scriptDirectory.getAbsolutePath(), MesosWorkerNodeTemplate.WORKER_USER_DATA_TEMPLATE);
       Path metaDataTemplate = Paths.get(scriptDirectory.getAbsolutePath(), NodeTemplateUtils.META_DATA_TEMPLATE);
 
       Files.createFile(zookeeperUserDataTemplate);
       Files.createFile(masterUserDataTemplate);
       Files.createFile(marathonUserDataTemplate);
-      Files.createFile(slaveUserDataTemplate);
+      Files.createFile(workerUserDataTemplate);
       Files.createFile(metaDataTemplate);
 
       taskReturnedByCreateVm = new Task();
@@ -746,7 +746,7 @@ public class MesosClusterCreateTaskServiceTest {
       cluster.masterVmFlavorName = "masterVmFlavorName";
       cluster.otherVmFlavorName = "otherVmFlavorName";
       cluster.vmNetworkId = "vmNetworkId";
-      cluster.slaveCount = size;
+      cluster.workerCount = size;
       cluster.extendedProperties = new HashMap<>();
       cluster.extendedProperties.put(
           ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "2.2.2.2");

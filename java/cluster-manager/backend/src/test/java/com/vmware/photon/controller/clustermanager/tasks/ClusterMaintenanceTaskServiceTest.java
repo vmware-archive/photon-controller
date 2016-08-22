@@ -35,7 +35,7 @@ import com.vmware.photon.controller.clustermanager.helpers.TestHost;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
-import com.vmware.photon.controller.clustermanager.templates.KubernetesSlaveNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.KubernetesWorkerNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
@@ -378,11 +378,11 @@ public class ClusterMaintenanceTaskServiceTest {
       scriptDirectory.mkdirs();
       scriptLogDirectory.mkdirs();
 
-      Path slaveUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), KubernetesSlaveNodeTemplate.SLAVE_USER_DATA_TEMPLATE);
+      Path workerUserDataTemplate =
+          Paths.get(scriptDirectory.getAbsolutePath(), KubernetesWorkerNodeTemplate.WORKER_USER_DATA_TEMPLATE);
       Path metaDataTemplate = Paths.get(scriptDirectory.getAbsolutePath(), NodeTemplateUtils.META_DATA_TEMPLATE);
 
-      Files.createFile(slaveUserDataTemplate);
+      Files.createFile(workerUserDataTemplate);
       Files.createFile(metaDataTemplate);
 
       taskService = new ClusterMaintenanceTaskService();
@@ -598,9 +598,9 @@ public class ClusterMaintenanceTaskServiceTest {
           });
     }
 
-    private void mockCluster(int slaveCount, ClusterState clusterState) throws Throwable {
+    private void mockCluster(int workerCount, ClusterState clusterState) throws Throwable {
       ClusterService.State cluster = ReflectionUtils.buildValidStartState(ClusterService.State.class);
-      cluster.slaveCount = slaveCount;
+      cluster.workerCount = workerCount;
       cluster.clusterState = clusterState;
       cluster.clusterType = ClusterType.KUBERNETES;
       cluster.extendedProperties = new HashMap<>();
@@ -622,15 +622,15 @@ public class ClusterMaintenanceTaskServiceTest {
         final Set<String> vmNames = new HashSet<>();
         final Set<String> vmMasterTags = ImmutableSet.of(ClusterUtil.createClusterNodeTag(
             clusterId, NodeType.KubernetesMaster));
-        final Set<String> vmSlaveTags = ImmutableSet.of(ClusterUtil.createClusterNodeTag(
-            clusterId, NodeType.KubernetesSlave));
+        final Set<String> vmWorkerTags = ImmutableSet.of(ClusterUtil.createClusterNodeTag(
+            clusterId, NodeType.KubernetesWorker));
 
         for (int i = 0; i < nodeCount; ++i) {
           String vmId = new UUID(0, i).toString();
           Vm vm = new Vm();
           vm.setId(vmId);
           vm.setName(vmId);
-          vm.setTags(i == 0 ? vmMasterTags : vmSlaveTags);
+          vm.setTags(i == 0 ? vmMasterTags : vmWorkerTags);
           vmList.add(vm);
           if (!hasInactiveVm || i % 2 == 0) {
             // make roughly half of the vms "inactive" and not return them in

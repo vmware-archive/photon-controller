@@ -96,7 +96,7 @@ write_files:
         echo "done"
     owner: root:root
     permissions: 0644
-    path: /etc/esxcloud/setup-kubernetes-slave.sh
+    path: /etc/esxcloud/setup-kubernetes-worker.sh
   - content: |
         retry_max="60"
         retry="0"
@@ -123,4 +123,4 @@ runcmd:
   - sh /tmp/init-network.sh
   - systemctl enable /lib/systemd/system/docker-bootstrap.service
   - systemctl start docker-bootstrap
-  - sh /etc/esxcloud/setup-kubernetes-slave.sh
+  - sh /etc/esxcloud/setup-kubernetes-worker.sh

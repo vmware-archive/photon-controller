@@ -5,7 +5,9 @@
   "diskFlavor": "diskFlavor1",
   "vmNetworkId": "vmNetworkId1",
   "slaveCount": 50,
-  "slaveBatchExpansionSize": 5,
+  "workerCount": 50,
+  "slaveBatchExpansionSize" : 5,
+  "workerBatchExpansionSize": 5,
   "extendedProperties": {
     "containerNetwork": "10.1.0.0/16"
   }

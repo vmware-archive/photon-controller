@@ -57,7 +57,7 @@ public class MesosClusterCreateTask extends ServiceDocument {
    */
   @DefaultInteger(value = ClusterManagerConstants.DEFAULT_BATCH_EXPANSION_SIZE)
   @Immutable
-  public Integer slaveBatchExpansionSize;
+  public Integer workerBatchExpansionSize;
 
   /**
    * The list of DHCP IP addresses of the master VMs.
@@ -82,7 +82,7 @@ public class MesosClusterCreateTask extends ServiceDocument {
       SETUP_ZOOKEEPERS,
       SETUP_MASTERS,
       SETUP_MARATHON,
-      SETUP_SLAVES,
+      SETUP_WORKERS,
     }
   }
 }

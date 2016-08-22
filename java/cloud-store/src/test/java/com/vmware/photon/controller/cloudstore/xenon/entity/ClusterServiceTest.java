@@ -59,7 +59,7 @@ public class ClusterServiceTest {
     testState.diskFlavorName = "diskFlavorName";
     testState.masterVmFlavorName = "masterVmFlavorName";
     testState.otherVmFlavorName = "otherVmFlavorName";
-    testState.slaveCount = 3;
+    testState.workerCount = 3;
     testState.extendedProperties = new HashMap<>();
   }
 
