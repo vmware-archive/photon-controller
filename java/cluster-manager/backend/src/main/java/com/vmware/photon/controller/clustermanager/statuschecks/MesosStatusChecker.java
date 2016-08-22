@@ -30,7 +30,7 @@ import java.util.Set;
 /**
  * Determines the Status of a Mesos Node.
  */
-public class MesosStatusChecker implements StatusChecker, SlavesStatusChecker {
+public class MesosStatusChecker implements StatusChecker, WorkersStatusChecker {
 
   private static final Logger logger = LoggerFactory.getLogger(MesosStatusChecker.class);
   private MesosClient mesosClient;
@@ -61,22 +61,22 @@ public class MesosStatusChecker implements StatusChecker, SlavesStatusChecker {
   }
 
   @Override
-  public void checkSlavesStatus(final String masterAddress,
-                                final List<String> slaveAddresses,
-                                final FutureCallback<Boolean> callback) {
-    Preconditions.checkNotNull(slaveAddresses, "slaveAddresses cannot be null");
-    Preconditions.checkArgument(slaveAddresses.size() > 0, "slaveAddresses cannot be empty");
+  public void checkWorkersStatus(final String masterAddress,
+                                 final List<String> workerAddresses,
+                                 final FutureCallback<Boolean> callback) {
+    Preconditions.checkNotNull(workerAddresses, "workerAddresses cannot be null");
+    Preconditions.checkArgument(workerAddresses.size() > 0, "workerAddresses cannot be empty");
 
     try {
       checkStatus(masterAddress, new FutureCallback<String>() {
         @Override
         public void onSuccess(@Nullable String leaderConnectionString) {
           try {
-            if (slaveAddresses == null || slaveAddresses.size() == 0) {
-              // no slaveAddresses - we are only checking the current master
+            if (workerAddresses == null || workerAddresses.size() == 0) {
+              // no workerAddresses - we are only checking the current master
               callback.onSuccess(true);
             } else {
-              checkSlaves(leaderConnectionString, slaveAddresses, callback);
+              checkWorkers(leaderConnectionString, workerAddresses, callback);
             }
           } catch (Throwable t) {
             callback.onFailure(t);
@@ -115,9 +115,9 @@ public class MesosStatusChecker implements StatusChecker, SlavesStatusChecker {
     });
   }
 
-  private void checkSlaves(final String connectionString,
-                           final List<String> slaveAddresses,
-                           final FutureCallback<Boolean> callback) {
+  private void checkWorkers(final String connectionString,
+                            final List<String> workerAddresses,
+                            final FutureCallback<Boolean> callback) {
     logger.info("Checking Mesos: {}", connectionString);
 
     try {
@@ -125,7 +125,7 @@ public class MesosStatusChecker implements StatusChecker, SlavesStatusChecker {
         @Override
         public void onSuccess(@Nullable Set<String> nodes) {
           try {
-            for (String nodeAddress : slaveAddresses) {
+            for (String nodeAddress : workerAddresses) {
               if (!nodes.contains(nodeAddress)) {
                 logger.info("Node not registered with Mesos Master: {}", nodeAddress);
                 callback.onSuccess(false);
@@ -152,7 +152,7 @@ public class MesosStatusChecker implements StatusChecker, SlavesStatusChecker {
   }
 
   @Override
-  public void getSlavesStatus(String serverAddress, final FutureCallback<Set<String>> callback) {
+  public void getWorkersStatus(String serverAddress, final FutureCallback<Set<String>> callback) {
     Preconditions.checkNotNull(serverAddress, "serverAddress cannot be null");
     logger.info("Checking Mesos: {}", serverAddress);
 
@@ -162,7 +162,7 @@ public class MesosStatusChecker implements StatusChecker, SlavesStatusChecker {
         @Override
         public void onSuccess(@Nullable String leaderConnectionString) {
           try {
-            logger.info("Getting Mesos slaves: {}", serverAddress);
+            logger.info("Getting Mesos workers: {}", serverAddress);
             mesosClient.getNodeNamesAsync(leaderConnectionString, callback);
           } catch (Throwable t) {
             callback.onFailure(t);

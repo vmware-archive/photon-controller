@@ -61,9 +61,9 @@
          "attributes":{
 
          },
-         "hostname":"slave-69b546aa-eab3-42d4-9196-a9d3b1786b0d",
+         "hostname":"worker-69b546aa-eab3-42d4-9196-a9d3b1786b0d",
          "id":"20150814-192021-1175884298-5050-1-2",
-         "pid":"slave(1)@10.146.22.76:5051",
+         "pid":"worker(1)@10.146.22.76:5051",
          "registered_time":1439580685.4203,
          "resources":{
             "cpus":1,
@@ -76,9 +76,9 @@
          "attributes":{
 
          },
-         "hostname":"slave-09461c65-7822-4c31-8f33-f10e2b6cb7e4",
+         "hostname":"worker-09461c65-7822-4c31-8f33-f10e2b6cb7e4",
          "id":"20150814-192021-1175884298-5050-1-1",
-         "pid":"slave(1)@10.146.22.74:5051",
+         "pid":"worker(1)@10.146.22.74:5051",
          "registered_time":1439580670.56625,
          "resources":{
             "cpus":1,
@@ -91,9 +91,9 @@
          "attributes":{
 
          },
-         "hostname":"slave-b717db52-8e2c-4924-bf73-4e7a7503bee4",
+         "hostname":"worker-b717db52-8e2c-4924-bf73-4e7a7503bee4",
          "id":"20150814-192021-1175884298-5050-1-0",
-         "pid":"slave(1)@10.146.22.73:5051",
+         "pid":"worker(1)@10.146.22.73:5051",
          "registered_time":1439580654.35118,
          "resources":{
             "cpus":1,

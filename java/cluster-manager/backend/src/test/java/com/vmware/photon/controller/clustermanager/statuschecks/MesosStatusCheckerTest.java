@@ -129,23 +129,23 @@ public class MesosStatusCheckerTest {
   }
 
   /**
-   * Implements tests for the checkSlavesStatus method.
+   * Implements tests for the checkWorkersStatus method.
    */
-  public class CheckSlavesStatusTest {
+  public class CheckWorkersStatusTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testZeroNode() throws Throwable {
       MesosStatusChecker checker = new MesosStatusChecker(setupMockMesosClient());
-      checker.checkSlavesStatus(SERVER_ADDRESS, new ArrayList<>(), null);
+      checker.checkWorkersStatus(SERVER_ADDRESS, new ArrayList<>(), null);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
-    public void testNullSlaves() throws Throwable {
+    public void testNullWorkers() throws Throwable {
       MesosStatusChecker checker = new MesosStatusChecker(setupMockMesosClient());
-      checker.checkSlavesStatus(SERVER_ADDRESS, null, null);
+      checker.checkWorkersStatus(SERVER_ADDRESS, null, null);
     }
 
     @Test
-    public void testMesosSlavesStatus() throws Throwable {
+    public void testMesosWorkersStatus() throws Throwable {
       MesosStatusChecker checker = new MesosStatusChecker(setupMockMesosClient());
 
       List<String> nodeAddresses = new ArrayList<>();
@@ -155,7 +155,7 @@ public class MesosStatusCheckerTest {
       nodeAddresses.add("10.0.0.4");
 
       final CountDownLatch latch = new CountDownLatch(1);
-      checker.checkSlavesStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
+      checker.checkWorkersStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
         @Override
         public void onSuccess(@Nullable Boolean isReady) {
           assertTrue(isReady);
@@ -181,7 +181,7 @@ public class MesosStatusCheckerTest {
       nodeAddresses.add("1.1.1.1");
 
       final CountDownLatch latch = new CountDownLatch(1);
-      checker.checkSlavesStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
+      checker.checkWorkersStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
         @Override
         public void onSuccess(@Nullable Boolean isReady) {
           assertFalse(isReady);
@@ -209,7 +209,7 @@ public class MesosStatusCheckerTest {
       nodeAddresses.add("10.1.1.1");
 
       final CountDownLatch latch = new CountDownLatch(1);
-      checker.checkSlavesStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
+      checker.checkWorkersStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
         @Override
         public void onSuccess(@Nullable Boolean isReady) {
           assertFalse(isReady);
@@ -242,7 +242,7 @@ public class MesosStatusCheckerTest {
       nodeAddresses.add("1.1.1.1");
 
       final CountDownLatch latch = new CountDownLatch(1);
-      checker.checkSlavesStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
+      checker.checkWorkersStatus(SERVER_ADDRESS, nodeAddresses, new FutureCallback<Boolean>() {
         @Override
         public void onSuccess(@Nullable Boolean isReady) {
           assertFalse(isReady);
@@ -261,17 +261,17 @@ public class MesosStatusCheckerTest {
   }
 
   /**
-   * Implements tests for the getSlavesStatus method.
+   * Implements tests for the getWorkersStatus method.
    */
-  public class GetSlavesTest {
+  public class GetWorkersTest {
 
     Set<String> hostNames;
 
     private MesosClient setupMockMesosClient() throws Throwable {
       hostNames = new HashSet<>();
-      hostNames.add("slave-69b546aa-eab3-42d4-9196-a9d3b1786b0d");
-      hostNames.add("slave-09461c65-7822-4c31-8f33-f10e2b6cb7e4");
-      hostNames.add("slave-b717db52-8e2c-4924-bf73-4e7a7503bee4");
+      hostNames.add("worker-69b546aa-eab3-42d4-9196-a9d3b1786b0d");
+      hostNames.add("worker-09461c65-7822-4c31-8f33-f10e2b6cb7e4");
+      hostNames.add("worker-b717db52-8e2c-4924-bf73-4e7a7503bee4");
 
       MesosClient mesosClient = mock(MesosClient.class);
       doAnswer((InvocationOnMock invocation) -> {
@@ -292,7 +292,7 @@ public class MesosStatusCheckerTest {
       MesosStatusChecker checker = new MesosStatusChecker(mesosClient);
 
       final CountDownLatch latch = new CountDownLatch(1);
-      checker.getSlavesStatus(SERVER_ADDRESS, new FutureCallback<Set<String>>() {
+      checker.getWorkersStatus(SERVER_ADDRESS, new FutureCallback<Set<String>>() {
         @Override
         public void onSuccess(@Nullable Set<String> set) {
           assertEquals(set, hostNames);
@@ -318,7 +318,7 @@ public class MesosStatusCheckerTest {
       MesosStatusChecker checker = new MesosStatusChecker(mesosClient);
 
       final CountDownLatch latch = new CountDownLatch(1);
-      checker.getSlavesStatus(SERVER_ADDRESS, new FutureCallback<Set<String>>() {
+      checker.getWorkersStatus(SERVER_ADDRESS, new FutureCallback<Set<String>>() {
         @Override
         public void onSuccess(@Nullable Set<String> set) {
           fail();
@@ -347,7 +347,7 @@ public class MesosStatusCheckerTest {
 
       MesosStatusChecker checker = new MesosStatusChecker(mesosClient);
       final CountDownLatch latch = new CountDownLatch(1);
-      checker.getSlavesStatus(SERVER_ADDRESS, new FutureCallback<Set<String>>() {
+      checker.getWorkersStatus(SERVER_ADDRESS, new FutureCallback<Set<String>>() {
         @Override
         public void onSuccess(@Nullable Set<String> set) {
           fail();

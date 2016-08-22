@@ -49,8 +49,8 @@ public class ClusterCreateSpecTest {
     s.setVmFlavor("vmFlavor1");
     s.setDiskFlavor("diskFlavor1");
     s.setVmNetworkId("vmNetworkId1");
-    s.setSlaveCount(50);
-    s.setSlaveBatchExpansionSize(5);
+    s.setWorkerCount(50);
+    s.setWorkerBatchExpansionSize(5);
     s.setExtendedProperties(ImmutableMap.of("containerNetwork", "10.1.0.0/16"));
     return s;
   }
@@ -138,23 +138,23 @@ public class ClusterCreateSpecTest {
   }
 
   /**
-   * Tests for {@link ClusterCreateSpec#slaveCount}.
+   * Tests for {@link ClusterCreateSpec#workerCount}.
    */
-  public class SlaveCountTest {
+  public class WorkerCountTest {
     @BeforeMethod
     public void setUp() {
       spec = createValidSpec();
     }
 
-    @Test(dataProvider = "validSlaveCounts")
-    public void testValidSlaveCounts(Integer slaveCount) {
-      spec.setSlaveCount(slaveCount);
+    @Test(dataProvider = "validWorkerCounts")
+    public void testValidWorkerCounts(Integer workerCount) {
+      spec.setWorkerCount(workerCount);
       ImmutableList<String> violations = validator.validate(spec);
       assertThat(violations.size(), is(0));
     }
 
-    @DataProvider(name = "validSlaveCounts")
-    public Object[][] getValidSlaveCounts() {
+    @DataProvider(name = "validWorkerCounts")
+    public Object[][] getValidWorkerCounts() {
       return new Object[][] {
           {1},
           {2},
@@ -164,23 +164,23 @@ public class ClusterCreateSpecTest {
       };
     }
 
-    @Test(dataProvider = "invalidSlaveCounts")
-    public void testInvalidSlaveCounts(Integer slaveCount, String violation) {
-      spec.setSlaveCount(slaveCount);
+    @Test(dataProvider = "invalidWorkerCounts")
+    public void testInvalidWorkerCounts(Integer workerCount, String violation) {
+      spec.setWorkerCount(workerCount);
       ImmutableList<String> violations = validator.validate(spec);
       assertThat(violations.size(), is(1));
       assertThat(violations.get(0), is(violation));
     }
 
-    @DataProvider(name = "invalidSlaveCounts")
-    public Object[][] getInvalidSlaveCounts() {
+    @DataProvider(name = "invalidWorkerCounts")
+    public Object[][] getInvalidWorkerCounts() {
       return new Object[][] {
-          {Integer.MIN_VALUE, "slaveCount must be greater than or equal to 1 (was -2147483648)"},
-          {-100, "slaveCount must be greater than or equal to 1 (was -100)"},
-          {0, "slaveCount must be greater than or equal to 1 (was 0)"},
-          {1001, "slaveCount must be less than or equal to 1000 (was 1001)"},
-          {1100, "slaveCount must be less than or equal to 1000 (was 1100)"},
-          {Integer.MAX_VALUE, "slaveCount must be less than or equal to 1000 (was 2147483647)"}
+          {Integer.MIN_VALUE, "workerCount must be greater than or equal to 1 (was -2147483648)"},
+          {-100, "workerCount must be greater than or equal to 1 (was -100)"},
+          {0, "workerCount must be greater than or equal to 1 (was 0)"},
+          {1001, "workerCount must be less than or equal to 1000 (was 1001)"},
+          {1100, "workerCount must be less than or equal to 1000 (was 1100)"},
+          {Integer.MAX_VALUE, "workerCount must be less than or equal to 1000 (was 2147483647)"}
       };
     }
   }
@@ -215,8 +215,8 @@ public class ClusterCreateSpecTest {
     @Test
     public void testToString() {
       String expectedString = "ClusterCreateSpec{name=clusterName, type=KUBERNETES," +
-          " vmFlavor=vmFlavor1, diskFlavor=diskFlavor1, vmNetworkId=vmNetworkId1, slaveCount=50," +
-          " slaveBatchExpansionSize=5, extendedProperties={containerNetwork=10.1.0.0/16}}";
+          " vmFlavor=vmFlavor1, diskFlavor=diskFlavor1, vmNetworkId=vmNetworkId1, workerCount=50," +
+          " workerBatchExpansionSize=5, extendedProperties={containerNetwork=10.1.0.0/16}}";
       assertThat(spec.toString(), is(expectedString));
     }
   }

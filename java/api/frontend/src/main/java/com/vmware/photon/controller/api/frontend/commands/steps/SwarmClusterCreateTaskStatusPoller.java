@@ -37,7 +37,7 @@ public class SwarmClusterCreateTaskStatusPoller implements XenonTaskStatusStepCm
       ImmutableMap.<Operation, Integer>builder()
           .put(Operation.CREATE_SWARM_CLUSTER_SETUP_ETCD, SubStage.SETUP_ETCD.ordinal())
           .put(Operation.CREATE_SWARM_CLUSTER_SETUP_MASTER, SubStage.SETUP_MASTER.ordinal())
-          .put(Operation.CREATE_SWARM_CLUSTER_SETUP_SLAVES, SubStage.SETUP_SLAVES.ordinal())
+          .put(Operation.CREATE_SWARM_CLUSTER_SETUP_WORKERS, SubStage.SETUP_WORKERS.ordinal())
           .build();
 
   private final TaskCommand taskCommand;

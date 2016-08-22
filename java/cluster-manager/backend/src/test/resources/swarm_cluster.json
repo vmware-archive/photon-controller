@@ -40,7 +40,7 @@
       "executiondriver=native-0.2, kernelversion=4.0.9, operatingsystem=VMware Photon/Linux, storagedriver=overlay"
     ],
     [
-      "slave-c6814407-dcc0-499b-8a7d-fd5115dfaf66",
+      "worker-c6814407-dcc0-499b-8a7d-fd5115dfaf66",
       "10.146.37.143:2375"
     ],
     [

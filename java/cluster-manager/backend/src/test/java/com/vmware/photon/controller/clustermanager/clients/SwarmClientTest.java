@@ -114,7 +114,7 @@ public class SwarmClientTest {
 
     private List<String> hostnames = Arrays.asList(
         "master-aaf38c9a-ee0a-426e-bf0f-3ae9c07fd9c7",
-        "slave-c6814407-dcc0-499b-8a7d-fd5115dfaf66");
+        "worker-c6814407-dcc0-499b-8a7d-fd5115dfaf66");
 
     @Test
     public void testGetNamesSuccess() throws IOException, InterruptedException {

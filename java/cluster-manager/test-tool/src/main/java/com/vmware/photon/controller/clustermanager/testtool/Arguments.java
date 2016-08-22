@@ -27,7 +27,7 @@ public class Arguments {
 
   private static final String CLUSTER_TYPE_ATTR_NAME = "clusterType";
   private static final String CLUSTER_COUNT_ATTR_NAME = "clusterCount";
-  private static final String SLAVE_COUNT_ATTR_NAME = "slaveCount";
+  private static final String SLAVE_COUNT_ATTR_NAME = "workerCount";
   private static final String MANAGEMENT_ADDR_ATTR_NAME = "managementAddress";
   private static final String PROJECT_ID_ATTR_NAME = "projectId";
 
