@@ -225,6 +225,7 @@ public class DeploymentsResourceTest extends ResourceTest {
         .networkManagerPassword("p")
         .networkTopRouterId("rid")
         .networkZoneId("zid")
+        .edgeClusterId("edgeId")
         .ipRange("192.168.1.1/24")
         .build());
 

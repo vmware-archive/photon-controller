@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api.model;
 
+import com.vmware.photon.controller.api.model.constraints.Cidr;
 import com.vmware.photon.controller.api.model.constraints.DomainOrIP;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -55,18 +56,28 @@ public class NetworkConfiguration {
 
   @JsonProperty
   @ApiModelProperty(value = "The ID of the network zone which inter-connects all hosts", required = true)
+  @NotNull
   private String networkZoneId;
 
   @JsonProperty
-  @ApiModelProperty(value = "The ID of the router for accessing outside network (i.e. Internet)", required = false)
+  @ApiModelProperty(value = "The ID of the router for accessing outside network (i.e. Internet)", required = true)
+  @NotNull
   private String networkTopRouterId;
 
   @JsonProperty
+  @ApiModelProperty(value = "The ID of the edge cluster that connects virtual network to physical network",
+      required = true)
+  @NotNull
+  private String edgeClusterId;
+
+  @JsonProperty
   @ApiModelProperty(value = "The global IP range for allocating private IP range to virtual network", required = true)
+  @NotNull
+  @Cidr
   private String ipRange;
 
   @JsonProperty
-  @ApiModelProperty(value = "The global floating IP range for allocating floating IP to VM")
+  @ApiModelProperty(value = "The global floating IP range for allocating floating IP to VM", required = false)
   private String floatingIpRange;
 
   public boolean getSdnEnabled() {
@@ -133,6 +144,14 @@ public class NetworkConfiguration {
     this.networkTopRouterId = networkTopRouterId;
   }
 
+  public String getEdgeClusterId() {
+    return edgeClusterId;
+  }
+
+  public void setEdgeClusterId(String edgeClusterId) {
+    this.edgeClusterId = edgeClusterId;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -149,7 +168,8 @@ public class NetworkConfiguration {
         && Objects.equals(this.getNetworkManagerUsername(), other.getNetworkManagerUsername())
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
         && Objects.equals(this.getNetworkZoneId(), other.getNetworkZoneId())
-        && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId());
+        && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
+        && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId());
   }
 
   @Override
@@ -161,7 +181,8 @@ public class NetworkConfiguration {
         this.getNetworkManagerUsername(),
         this.getNetworkManagerPassword(),
         this.getNetworkZoneId(),
-        this.getNetworkTopRouterId());
+        this.getNetworkTopRouterId(),
+        this.getEdgeClusterId());
   }
 
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
@@ -173,7 +194,8 @@ public class NetworkConfiguration {
         .add("networkZoneId", this.getNetworkZoneId())
         .add("networkTopRouterId", this.getNetworkTopRouterId())
         .add("ipRange", this.getIpRange())
-        .add("floatingIpRange", this.getFloatingIpRange());
+        .add("floatingIpRange", this.getFloatingIpRange())
+        .add("edgeClusterId", this.edgeClusterId);
   }
 
   @Override

@@ -70,6 +70,8 @@ public class DeploymentEntity extends BaseEntity {
 
   private String networkTopRouterId;
 
+  private String edgeClusterId;
+
   private String ipRange;
 
   private String floatingIpRange;
@@ -266,6 +268,14 @@ public class DeploymentEntity extends BaseEntity {
     this.networkTopRouterId = networkTopRouterId;
   }
 
+  public String getEdgeClusterId() {
+    return edgeClusterId;
+  }
+
+  public void setEdgeClusterId(String edgeClusterId) {
+    this.edgeClusterId = edgeClusterId;
+  }
+
   public String getIpRange() {
     return ipRange;
   }
@@ -368,6 +378,7 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
         && Objects.equals(this.getNetworkZoneId(), other.getNetworkZoneId())
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
+        && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId())
         && Objects.equals(this.getIpRange(), other.getIpRange())
         && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange())
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
@@ -400,6 +411,7 @@ public class DeploymentEntity extends BaseEntity {
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkZoneId", this.getNetworkZoneId())
         .add("networkTopRouterId", this.getNetworkTopRouterId())
+        .add("edgeClusterId", this.getEdgeClusterId())
         .add("ipRange", this.getIpRange())
         .add("floatingIpRange", this.getFloatingIpRange())
         .add("ntpEndpoint", this.getNtpEndpoint())

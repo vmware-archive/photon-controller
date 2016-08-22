@@ -56,6 +56,11 @@ public class NetworkConfigurationBuilder {
     return this;
   }
 
+  public NetworkConfigurationBuilder edgeClusterId(String edgeClusterId) {
+    this.networkConfiguration.setEdgeClusterId(edgeClusterId);
+    return this;
+  }
+
   public NetworkConfigurationBuilder ipRange(String ipRange) {
     this.networkConfiguration.setIpRange(ipRange);
     return this;
