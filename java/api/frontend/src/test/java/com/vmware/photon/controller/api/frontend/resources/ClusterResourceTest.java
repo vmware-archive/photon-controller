@@ -66,7 +66,7 @@ public class ClusterResourceTest extends ResourceTest {
     c.setState(ClusterState.READY);
     c.setName(clusterName);
     c.setProjectId(projectId);
-    c.setSlaveCount(3);
+    c.setWorkerCount(3);
     c.setExtendedProperties(ImmutableMap.of(
         ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "10.1.0.0/16"));
     return c;

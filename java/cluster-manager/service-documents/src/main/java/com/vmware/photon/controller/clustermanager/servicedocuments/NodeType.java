@@ -19,14 +19,14 @@ package com.vmware.photon.controller.clustermanager.servicedocuments;
 public enum NodeType {
   KubernetesEtcd,
   KubernetesMaster,
-  KubernetesSlave,
+  KubernetesWorker,
 
   MesosZookeeper,
   MesosMaster,
-  MesosSlave,
+  MesosWorker,
   MesosMarathon,
 
   SwarmEtcd,
   SwarmMaster,
-  SwarmSlave
+  SwarmWorker,
 }

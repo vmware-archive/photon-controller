@@ -19,7 +19,7 @@ import com.vmware.photon.controller.clustermanager.rolloutplans.BasicNodeRollout
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRollout;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRolloutInput;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRolloutResult;
-import com.vmware.photon.controller.clustermanager.rolloutplans.SlavesNodeRollout;
+import com.vmware.photon.controller.clustermanager.rolloutplans.WorkersNodeRollout;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants.Swarm;
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
@@ -28,7 +28,7 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.SwarmCluster
 import com.vmware.photon.controller.clustermanager.templates.EtcdNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.templates.SwarmMasterNodeTemplate;
-import com.vmware.photon.controller.clustermanager.templates.SwarmSlaveNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.SwarmWorkerNodeTemplate;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -53,7 +53,7 @@ import javax.annotation.Nullable;
  */
 public class SwarmClusterCreateTaskService extends StatefulService {
 
-  private static final int MINIMUM_INITIAL_SLAVE_COUNT = 1;
+  private static final int MINIMUM_INITIAL_WORKER_COUNT = 1;
 
   public SwarmClusterCreateTaskService() {
     super(SwarmClusterCreateTask.class);
@@ -124,8 +124,8 @@ public class SwarmClusterCreateTaskService extends StatefulService {
         setupMasters(currentState);
         break;
 
-      case SETUP_SLAVES:
-        setupInitialSlaves(currentState);
+      case SETUP_WORKERS:
+        setupInitialWorkers(currentState);
         break;
 
       default:
@@ -187,7 +187,7 @@ public class SwarmClusterCreateTaskService extends StatefulService {
 
   /**
    * This method roll-outs Swarm Master nodes. On successful
-   * rollout, the methods moves the task sub-stage to SETUP_SLAVES.
+   * rollout, the methods moves the task sub-stage to SETUP_WORKERS.
    *
    * @param currentState
    */
@@ -221,7 +221,7 @@ public class SwarmClusterCreateTaskService extends StatefulService {
             @Override
             public void onSuccess(@Nullable NodeRolloutResult result) {
               SwarmClusterCreateTask patchState = buildPatch(
-                  TaskState.TaskStage.STARTED, TaskState.SubStage.SETUP_SLAVES);
+                  TaskState.TaskStage.STARTED, TaskState.SubStage.SETUP_WORKERS);
               patchState.masterIps = result.nodeAddresses;
               TaskUtils.sendSelfPatch(SwarmClusterCreateTaskService.this, patchState);
             }
@@ -235,12 +235,12 @@ public class SwarmClusterCreateTaskService extends StatefulService {
   }
 
   /**
-   * This method roll-outs the initial Swarm Slave Nodes. On successful roll-out,
+   * This method roll-outs the initial Swarm Worker Nodes. On successful roll-out,
    * the method creates necessary tasks for cluster maintenance.
    *
    * @param currentState
    */
-  private void setupInitialSlaves(SwarmClusterCreateTask currentState) {
+  private void setupInitialWorkers(SwarmClusterCreateTask currentState) {
     sendRequest(HostUtils.getCloudStoreHelper(this)
         .createGet(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
         .setReferer(getUri())
@@ -259,34 +259,34 @@ public class SwarmClusterCreateTaskService extends StatefulService {
           rolloutInput.diskFlavorName = cluster.diskFlavorName;
           rolloutInput.vmNetworkId = cluster.vmNetworkId;
           rolloutInput.clusterId = currentState.clusterId;
-          rolloutInput.nodeCount = MINIMUM_INITIAL_SLAVE_COUNT;
-          rolloutInput.nodeType = NodeType.SwarmSlave;
+          rolloutInput.nodeCount = MINIMUM_INITIAL_WORKER_COUNT;
+          rolloutInput.nodeType = NodeType.SwarmWorker;
           rolloutInput.serverAddress = currentState.masterIps.get(0);
-          rolloutInput.nodeProperties = SwarmSlaveNodeTemplate.createProperties(
+          rolloutInput.nodeProperties = SwarmWorkerNodeTemplate.createProperties(
               NodeTemplateUtils.deserializeAddressList(
                   cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS)));
 
-          NodeRollout rollout = new SlavesNodeRollout();
+          NodeRollout rollout = new WorkersNodeRollout();
           rollout.run(this, rolloutInput, new FutureCallback<NodeRolloutResult>() {
             @Override
             public void onSuccess(@Nullable NodeRolloutResult result) {
-              setupRemainingSlaves(currentState, cluster);
+              setupRemainingWorkers(currentState, cluster);
             }
 
             @Override
             public void onFailure(Throwable t) {
-              failTaskAndPatchDocument(currentState, NodeType.SwarmSlave, t);
+              failTaskAndPatchDocument(currentState, NodeType.SwarmWorker, t);
             }
           });
         }));
   }
 
-  private void setupRemainingSlaves(
+  private void setupRemainingWorkers(
       final SwarmClusterCreateTask currentState,
       final ClusterService.State cluster) {
     // Maintenance task should be singleton for any cluster.
     ClusterMaintenanceTaskService.State startState = new ClusterMaintenanceTaskService.State();
-    startState.batchExpansionSize = currentState.slaveBatchExpansionSize;
+    startState.batchExpansionSize = currentState.workerBatchExpansionSize;
     startState.documentSelfLink = currentState.clusterId;
 
     Operation postOperation = Operation
@@ -294,10 +294,10 @@ public class SwarmClusterCreateTaskService extends StatefulService {
         .setBody(startState)
         .setCompletion((Operation operation, Throwable throwable) -> {
           if (null != throwable) {
-            failTaskAndPatchDocument(currentState, NodeType.SwarmSlave, throwable);
+            failTaskAndPatchDocument(currentState, NodeType.SwarmWorker, throwable);
             return;
           }
-          if (cluster.slaveCount == MINIMUM_INITIAL_SLAVE_COUNT) {
+          if (cluster.workerCount == MINIMUM_INITIAL_WORKER_COUNT) {
             // We short circuit here and set the clusterState as READY, since the desired size has
             // already been reached. Maintenance will kick-in when the maintenance interval elapses.
             SwarmClusterCreateTask patchState = buildPatch(SwarmClusterCreateTask.TaskState.TaskStage.FINISHED, null);
@@ -344,7 +344,7 @@ public class SwarmClusterCreateTaskService extends StatefulService {
       switch (startState.taskState.subStage) {
         case SETUP_ETCD:
         case SETUP_MASTER:
-        case SETUP_SLAVES:
+        case SETUP_WORKERS:
           break;
         default:
           throw new IllegalStateException("Unknown task sub-stage: " + startState.taskState.subStage.toString());

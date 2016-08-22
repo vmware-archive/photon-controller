@@ -19,28 +19,28 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Defines the interface for fetching set of slave nodes of a cluster.
+ * Defines the interface for fetching set of worker nodes of a cluster.
  */
-public interface SlavesStatusChecker {
+public interface WorkersStatusChecker {
   /**
    * Determines the status of a single or multiple nodes in a cluster.
    * Returns TRUE if the node(s) is ready. Otherwise returns false.
    *
-   * @param masterAddress    Address of the master server that will be queried to check the status of the slave(s).
-   * @param slaveAddresses   Slave addresses that will be verified if they have been registered with the server
+   * @param masterAddress    Address of the master server that will be queried to check the status of the worker(s).
+   * @param workerAddresses   Worker addresses that will be verified if they have been registered with the server
    * @param callback         Callback method that will be invoked with a flag representing if the Node(s) are Ready.
    */
-  void checkSlavesStatus(final String masterAddress,
-                         final List<String> slaveAddresses,
-                         final FutureCallback<Boolean> callback);
+  void checkWorkersStatus(final String masterAddress,
+                          final List<String> workerAddresses,
+                          final FutureCallback<Boolean> callback);
 
   /**
-   * Fetches slave nodes of a cluster.
-   * Returns set of slave nodes.
+   * Fetches worker nodes of a cluster.
+   * Returns set of worker nodes.
    *
    * @param serverAddress    Address of the Master that will be queried to check the status of the node(s).
-   * @param callback         Callback method that will be invoked with set of slave nodes.
+   * @param callback         Callback method that will be invoked with set of worker nodes.
    */
-  void getSlavesStatus(String serverAddress,
-                       final FutureCallback<Set<String>> callback);
+  void getWorkersStatus(String serverAddress,
+                        final FutureCallback<Set<String>> callback);
 }

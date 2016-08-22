@@ -27,17 +27,17 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Implements tests for {@link MesosSlaveNodeTemplate}.
+ * Implements tests for {@link MesosWorkerNodeTemplate}.
  */
-public class MesosSlaveNodeTemplateTest {
+public class MesosWorkerNodeTemplateTest {
 
-  private MesosSlaveNodeTemplate template = new MesosSlaveNodeTemplate();
+  private MesosWorkerNodeTemplate template = new MesosWorkerNodeTemplate();
 
   private static final String ZOOKEEPER_QUORUM_STRING =
       "10.0.0.1:2181,10.0.0.2:2181,10.0.0.3:2181,10.0.0.4:2181";
 
   private Map<String, String> createCloudConfigProperties() {
-    return MesosSlaveNodeTemplate.createProperties(createZookeeperAddresses());
+    return MesosWorkerNodeTemplate.createProperties(createZookeeperAddresses());
   }
 
   private List<String> createZookeeperAddresses() {
@@ -66,7 +66,7 @@ public class MesosSlaveNodeTemplateTest {
       nodeProperties.put(NodeTemplateUtils.HOST_ID_PROPERTY, hostId);
 
       String name = template.getVmName(nodeProperties);
-      assertEquals(name, "slave-" + hostId);
+      assertEquals(name, "worker-" + hostId);
     }
   }
 
@@ -137,12 +137,12 @@ public class MesosSlaveNodeTemplateTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullZookeeperAddresses() {
-      MesosSlaveNodeTemplate.createProperties(null);
+      MesosWorkerNodeTemplate.createProperties(null);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testEmpltyZookeeperAddresses() {
-      MesosSlaveNodeTemplate.createProperties(new ArrayList<>());
+      MesosWorkerNodeTemplate.createProperties(new ArrayList<>());
     }
   }
 }

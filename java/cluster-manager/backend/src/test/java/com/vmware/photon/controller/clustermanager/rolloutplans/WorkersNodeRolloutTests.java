@@ -23,9 +23,9 @@ import java.util.HashMap;
 import java.util.UUID;
 
 /**
- * Implements tests for {@link SlavesNodeRollout}.
+ * Implements tests for {@link WorkersNodeRollout}.
  */
-public class SlavesNodeRolloutTests {
+public class WorkersNodeRolloutTests {
 
   private NodeRolloutInput buildValidInput() {
     NodeRolloutInput input = new NodeRolloutInput();
@@ -34,7 +34,7 @@ public class SlavesNodeRolloutTests {
     input.vmFlavorName = "vm-flavor";
     input.imageId = UUID.randomUUID().toString();
     input.projectId = UUID.randomUUID().toString();
-    input.nodeType = NodeType.MesosSlave;
+    input.nodeType = NodeType.MesosWorker;
     input.clusterId = UUID.randomUUID().toString();
     input.nodeProperties = new HashMap<>();
     input.nodeProperties.put("key", "value");
@@ -53,7 +53,7 @@ public class SlavesNodeRolloutTests {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullService() {
-      SlavesNodeRollout rollout = new SlavesNodeRollout();
+      WorkersNodeRollout rollout = new WorkersNodeRollout();
       rollout.run(null, buildValidInput(), new FutureCallback<NodeRolloutResult>() {
         @Override
         public void onSuccess(NodeRolloutResult result) {
@@ -69,7 +69,7 @@ public class SlavesNodeRolloutTests {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullNodeRolloutInput() {
-      SlavesNodeRollout rollout = new SlavesNodeRollout();
+      WorkersNodeRollout rollout = new WorkersNodeRollout();
       rollout.run(new ClusterWaitTaskService(), null, new FutureCallback<NodeRolloutResult>() {
         @Override
         public void onSuccess(NodeRolloutResult result) {
@@ -88,7 +88,7 @@ public class SlavesNodeRolloutTests {
       NodeRolloutInput input = buildValidInput();
       input.serverAddress = null;
 
-      SlavesNodeRollout rollout = new SlavesNodeRollout();
+      WorkersNodeRollout rollout = new WorkersNodeRollout();
       rollout.run(new ClusterWaitTaskService(), input, new FutureCallback<NodeRolloutResult>() {
         @Override
         public void onSuccess(NodeRolloutResult result) {
@@ -107,7 +107,7 @@ public class SlavesNodeRolloutTests {
       NodeRolloutInput input = buildValidInput();
       input.projectId = null;
 
-      SlavesNodeRollout rollout = new SlavesNodeRollout();
+      WorkersNodeRollout rollout = new WorkersNodeRollout();
       rollout.run(new ClusterWaitTaskService(), input, new FutureCallback<NodeRolloutResult>() {
         @Override
         public void onSuccess(NodeRolloutResult result) {
@@ -123,7 +123,7 @@ public class SlavesNodeRolloutTests {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullCallback() {
-      SlavesNodeRollout rollout = new SlavesNodeRollout();
+      WorkersNodeRollout rollout = new WorkersNodeRollout();
       rollout.run(null, buildValidInput(), null);
     }
   }

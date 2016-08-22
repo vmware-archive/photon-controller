@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.clustermanager.templates;
 
+import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.FileTemplate;
 
 import com.google.common.base.Preconditions;
@@ -23,13 +24,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Defines the template for Mesos Slave Nodes.
+ * Defines the template for Kubernetes Worker Nodes.
  */
-public class MesosSlaveNodeTemplate implements NodeTemplate {
+public class KubernetesWorkerNodeTemplate implements NodeTemplate {
 
-  public static final String SLAVE_USER_DATA_TEMPLATE = "mesos-slave-user-data.template";
-  public static final String ZOOKEEPER_IPS_PROPERTY = "zookeeperIps";
-  public static final String VM_NAME_PREFIX = "slave";
+  public static final String WORKER_USER_DATA_TEMPLATE = "kubernetes-worker-user-data.template";
+  public static final String ETCD_IPS_PROPERTY = "etcdIps";
+  public static final String CONTAINER_NETWORK_PROPERTY = "containerNetwork";
+  public static final String MASTER_IP_PROPERTY = "masterIp";
+  public static final String VM_NAME_PREFIX = "worker";
 
   public String getVmName(Map<String, String> properties) {
     Preconditions.checkNotNull(properties, "properties cannot be null");
@@ -42,14 +45,17 @@ public class MesosSlaveNodeTemplate implements NodeTemplate {
     Preconditions.checkNotNull(scriptDirectory, "scriptDirectory cannot be null");
     Preconditions.checkNotNull(properties, "properties cannot be null");
 
-    List<String> zookeeperIps = NodeTemplateUtils.deserializeAddressList(properties.get(ZOOKEEPER_IPS_PROPERTY));
+    List<String> etcdIps = NodeTemplateUtils.deserializeAddressList(properties.get(ETCD_IPS_PROPERTY));
 
-    Map<String, String> parameters = new HashMap();
-    parameters.put("$ZK_QUORUM", NodeTemplateUtils.createZookeeperQuorumString(zookeeperIps));
+    Map<String, String> parameters = new HashMap<>();
+    parameters.put("$ETCD_QUORUM", NodeTemplateUtils.createEtcdQuorumString(etcdIps));
+    parameters.put("$CONTAINER_NETWORK", properties.get(CONTAINER_NETWORK_PROPERTY));
+    parameters.put("$KUBERNETES_PORT", String.valueOf(ClusterManagerConstants.Kubernetes.API_PORT));
+    parameters.put("$MASTER_ADDRESS", properties.get(MASTER_IP_PROPERTY));
     parameters.put("$LOCAL_HOSTNAME", getVmName(properties));
 
     FileTemplate template = new FileTemplate();
-    template.filePath = Paths.get(scriptDirectory, SLAVE_USER_DATA_TEMPLATE).toString();
+    template.filePath = Paths.get(scriptDirectory, WORKER_USER_DATA_TEMPLATE).toString();
     template.parameters = parameters;
     return template;
   }
@@ -61,13 +67,17 @@ public class MesosSlaveNodeTemplate implements NodeTemplate {
     return NodeTemplateUtils.createMetaDataTemplate(scriptDirectory, getVmName(properties));
   }
 
-  public static Map<String, String> createProperties(List<String> zkAddresses) {
-    Preconditions.checkNotNull(zkAddresses, "zkAddresses cannot be null");
-    Preconditions.checkArgument(zkAddresses.size() > 0, "zkAddresses should contain at least one address");
+  public static Map<String, String> createProperties(List<String> etcdAddresses,
+                                                     String containerNetwork, String masterIp) {
+    Preconditions.checkNotNull(etcdAddresses, "etcdAddresses cannot be null");
+    Preconditions.checkArgument(etcdAddresses.size() > 0, "etcdAddresses should contain at least one address");
+    Preconditions.checkNotNull(containerNetwork, "containerNetwork cannot be null");
+    Preconditions.checkNotNull(masterIp, "masterIp cannot be null");
 
-    Map<String, String> properties = new HashMap();
-    properties.put(ZOOKEEPER_IPS_PROPERTY, NodeTemplateUtils.serializeAddressList(zkAddresses));
-
+    Map<String, String> properties = new HashMap<>();
+    properties.put(ETCD_IPS_PROPERTY, NodeTemplateUtils.serializeAddressList(etcdAddresses));
+    properties.put(CONTAINER_NETWORK_PROPERTY, containerNetwork);
+    properties.put(MASTER_IP_PROPERTY, masterIp);
     return properties;
   }
 }

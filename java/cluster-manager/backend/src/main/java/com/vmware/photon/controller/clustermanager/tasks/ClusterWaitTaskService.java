@@ -16,9 +16,9 @@ package com.vmware.photon.controller.clustermanager.tasks;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactoryProvider;
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
-import com.vmware.photon.controller.clustermanager.statuschecks.SlavesStatusChecker;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusChecker;
+import com.vmware.photon.controller.clustermanager.statuschecks.WorkersStatusChecker;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -143,15 +143,15 @@ public class ClusterWaitTaskService extends StatefulService {
     };
 
     switch (currentState.nodeType) {
-      case KubernetesSlave:
-      case MesosSlave:
-      case SwarmSlave:
+      case KubernetesWorker:
+      case MesosWorker:
+      case SwarmWorker:
         Preconditions.checkNotNull(currentState.nodeAddresses, "nodeAddresses should not be null");
         Preconditions.checkArgument(currentState.nodeAddresses.size() > 0, "nodeAddresses should not be empty");
 
-        SlavesStatusChecker slavesStatusChecker = getStatusCheckHelper()
-            .createSlavesStatusChecker(this, currentState.nodeType);
-        slavesStatusChecker.checkSlavesStatus(currentState.serverAddress, currentState.nodeAddresses, callback);
+        WorkersStatusChecker workersStatusChecker = getStatusCheckHelper()
+            .createWorkersStatusChecker(this, currentState.nodeType);
+        workersStatusChecker.checkWorkersStatus(currentState.serverAddress, currentState.nodeAddresses, callback);
         break;
 
       case KubernetesEtcd:

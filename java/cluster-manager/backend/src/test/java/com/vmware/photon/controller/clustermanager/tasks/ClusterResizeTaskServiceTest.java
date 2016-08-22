@@ -36,7 +36,7 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManag
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterResizeTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
-import com.vmware.photon.controller.clustermanager.templates.KubernetesSlaveNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.KubernetesWorkerNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -443,7 +443,7 @@ public class ClusterResizeTaskServiceTest {
     @DataProvider(name = "immutableFieldNames")
     public Object[][] getImmutableFieldNames() {
       return TestHelper.toDataProvidersList(
-          ImmutableList.of("controlFlags", "clusterId", "newSlaveCount"));
+          ImmutableList.of("controlFlags", "clusterId", "newWorkerCount"));
     }
   }
 
@@ -503,11 +503,11 @@ public class ClusterResizeTaskServiceTest {
       scriptDirectory.mkdirs();
       scriptLogDirectory.mkdirs();
 
-      Path slaveUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), KubernetesSlaveNodeTemplate.SLAVE_USER_DATA_TEMPLATE);
+      Path workerUserDataTemplate =
+          Paths.get(scriptDirectory.getAbsolutePath(), KubernetesWorkerNodeTemplate.WORKER_USER_DATA_TEMPLATE);
       Path metaDataTemplate = Paths.get(scriptDirectory.getAbsolutePath(), NodeTemplateUtils.META_DATA_TEMPLATE);
 
-      Files.createFile(slaveUserDataTemplate);
+      Files.createFile(workerUserDataTemplate);
       Files.createFile(metaDataTemplate);
 
       startState = buildValidStartState(TaskState.TaskStage.CREATED, null);
@@ -538,14 +538,14 @@ public class ClusterResizeTaskServiceTest {
     }
 
     @Test(dataProvider = "endToEndSuccessData")
-    public void testEndToEndSuccess(Integer currentSlaveCount,
-                                    Integer newSlaveCount,
+    public void testEndToEndSuccess(Integer currentWorkerCount,
+                                    Integer newWorkerCount,
                                     ClusterState expectedClusterState) throws Throwable {
 
-      mockCluster(currentSlaveCount);
+      mockCluster(currentWorkerCount);
       mockGetClusterVms(5, true);
       mockResizeCluster(true);
-      startState.newSlaveCount = newSlaveCount;
+      startState.newWorkerCount = newWorkerCount;
 
       ClusterResizeTask savedState = machine.callServiceAndWaitForState(
           ClusterResizeTaskFactoryService.SELF_LINK,
@@ -570,7 +570,7 @@ public class ClusterResizeTaskServiceTest {
           ClusterService.State.class);
 
       assertThat(clusterState.documentSelfLink, containsString(savedState.clusterId));
-      verifyCluster(savedState.clusterId, newSlaveCount, expectedClusterState);
+      verifyCluster(savedState.clusterId, newWorkerCount, expectedClusterState);
     }
 
     @DataProvider(name = "endToEndSuccessData")
@@ -587,7 +587,7 @@ public class ClusterResizeTaskServiceTest {
       mockCluster(5);
       mockGetClusterVms(5, true);
       mockResizeCluster(true);
-      startState.newSlaveCount = 3;
+      startState.newWorkerCount = 3;
 
       ClusterResizeTask savedState = machine.callServiceAndWaitForState(
           ClusterResizeTaskFactoryService.SELF_LINK,
@@ -677,9 +677,9 @@ public class ClusterResizeTaskServiceTest {
       }
     }
 
-    private void mockCluster(int slaveCount) throws Throwable {
+    private void mockCluster(int workerCount) throws Throwable {
       ClusterService.State clusterState = ReflectionUtils.buildValidStartState(ClusterService.State.class);
-      clusterState.slaveCount = slaveCount;
+      clusterState.workerCount = workerCount;
       clusterState.clusterState = ClusterState.READY;
       clusterState.clusterType = ClusterType.KUBERNETES;
       clusterState.extendedProperties = new HashMap<>();
@@ -706,7 +706,7 @@ public class ClusterResizeTaskServiceTest {
       if (isSuccess) {
         final List<Vm> vmList = new ArrayList<>();
         final Set<String> vmTags = new HashSet<>();
-        vmTags.add(ClusterUtil.createClusterNodeTag(startState.clusterId, NodeType.KubernetesSlave));
+        vmTags.add(ClusterUtil.createClusterNodeTag(startState.clusterId, NodeType.KubernetesWorker));
 
         for (int i = 0; i < nodeCount; ++i) {
           Vm vm = new Vm();
@@ -727,7 +727,7 @@ public class ClusterResizeTaskServiceTest {
 
     private void verifyCluster(
         String clusterId,
-        int expectedSlaveCount,
+        int expectedWorkerCount,
         ClusterState expectedClusterState) throws Throwable {
 
       QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
@@ -744,7 +744,7 @@ public class ClusterResizeTaskServiceTest {
           ClusterService.State.class);
 
       assertThat(clusterState.documentSelfLink, containsString(clusterId));
-      assertThat(clusterState.slaveCount, is(expectedSlaveCount));
+      assertThat(clusterState.workerCount, is(expectedWorkerCount));
       assertThat(clusterState.clusterState, is(expectedClusterState));
     }
   }

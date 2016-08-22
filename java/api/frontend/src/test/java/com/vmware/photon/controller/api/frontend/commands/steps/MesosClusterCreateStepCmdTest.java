@@ -73,7 +73,7 @@ public class MesosClusterCreateStepCmdTest extends PowerMockTestCase {
     createSpec.setType(ClusterType.MESOS);
     createSpec.setVmFlavor("vmFlavor1");
     createSpec.setDiskFlavor("diskFlavor1");
-    createSpec.setSlaveCount(50);
+    createSpec.setWorkerCount(50);
     createSpec.setExtendedProperties(ImmutableMap.<String, String>builder()
         .put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "10.1.0.1")
         .put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "10.1.0.2")

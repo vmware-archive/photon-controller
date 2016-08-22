@@ -19,13 +19,13 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactor
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRollout;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRolloutInput;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRolloutResult;
-import com.vmware.photon.controller.clustermanager.rolloutplans.SlavesNodeRollout;
+import com.vmware.photon.controller.clustermanager.rolloutplans.WorkersNodeRollout;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
-import com.vmware.photon.controller.clustermanager.templates.KubernetesSlaveNodeTemplate;
-import com.vmware.photon.controller.clustermanager.templates.MesosSlaveNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.KubernetesWorkerNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.MesosWorkerNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
-import com.vmware.photon.controller.clustermanager.templates.SwarmSlaveNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.SwarmWorkerNodeTemplate;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -146,21 +146,21 @@ public class ClusterExpandTaskService extends StatefulService {
         new FutureCallback<ResourceList<Vm>>() {
           @Override
           public void onSuccess(@Nullable ResourceList<Vm> result) {
-            int currentSlaveCount = 0;
+            int currentWorkerCount = 0;
             String masterNodeTag;
-            String slaveNodeTag;
+            String workerNodeTag;
             switch (clusterDocument.clusterType) {
               case KUBERNETES:
                 masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.KubernetesMaster);
-                slaveNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.KubernetesSlave);
+                workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.KubernetesWorker);
                 break;
               case MESOS:
                 masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosMaster);
-                slaveNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosSlave);
+                workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosWorker);
                 break;
               case SWARM:
                 masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmMaster);
-                slaveNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmSlave);
+                workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmWorker);
                 break;
               default:
                 throw new UnsupportedOperationException(
@@ -169,8 +169,8 @@ public class ClusterExpandTaskService extends StatefulService {
 
             String masterVmId = null;
             for (Vm vm : result.getItems()) {
-              if (vm.getTags().contains(slaveNodeTag)) {
-                ++currentSlaveCount;
+              if (vm.getTags().contains(workerNodeTag)) {
+                ++currentWorkerCount;
               } else if (vm.getTags().contains(masterNodeTag)) {
                 if (masterVmId == null) {
                   masterVmId = vm.getId();
@@ -178,12 +178,12 @@ public class ClusterExpandTaskService extends StatefulService {
               }
             }
 
-            int slaveCountDelta = clusterDocument.slaveCount - currentSlaveCount;
+            int workerCountDelta = clusterDocument.workerCount - currentWorkerCount;
 
-            if (slaveCountDelta < 0) {
+            if (workerCountDelta < 0) {
               String errorMessage = String.format(
-                  "Slave count delta %d is negative. Target slave count is %d, current slave count is %d",
-                  slaveCountDelta, clusterDocument.slaveCount, currentSlaveCount);
+                  "Worker count delta %d is negative. Target worker count is %d, current worker count is %d",
+                  workerCountDelta, clusterDocument.workerCount, currentWorkerCount);
               ServiceUtils.logSevere(ClusterExpandTaskService.this, errorMessage);
               failTask(new IllegalStateException(errorMessage));
               return;
@@ -196,7 +196,7 @@ public class ClusterExpandTaskService extends StatefulService {
               return;
             }
 
-            getMasterIp(currentState, clusterDocument, slaveCountDelta, masterVmId);
+            getMasterIp(currentState, clusterDocument, workerCountDelta, masterVmId);
           }
 
           @Override
@@ -209,7 +209,7 @@ public class ClusterExpandTaskService extends StatefulService {
 
   private void getMasterIp(final State currentState,
                            final ClusterService.State clusterDocument,
-                           final int slaveCountDelta,
+                           final int workerCountDelta,
                            final String masterVmId) {
     WaitForNetworkTaskService.State startState = new WaitForNetworkTaskService.State();
     startState.vmId = masterVmId;
@@ -227,7 +227,7 @@ public class ClusterExpandTaskService extends StatefulService {
             switch (result.taskState.stage) {
               case FINISHED:
                 try {
-                  expandCluster(currentState, clusterDocument, slaveCountDelta, result.vmIpAddress);
+                  expandCluster(currentState, clusterDocument, workerCountDelta, result.vmIpAddress);
                 } catch (Throwable t) {
                   failTask(t);
                 }
@@ -252,18 +252,18 @@ public class ClusterExpandTaskService extends StatefulService {
 
   private void expandCluster(State currentState,
                              ClusterService.State clusterDocument,
-                             int slaveCountDelta,
+                             int workerCountDelta,
                              String masterIp) {
 
-    if (slaveCountDelta > 0) {
+    if (workerCountDelta > 0) {
       ServiceUtils.logInfo(this, String.format(
-          "Expected slave count is %d, delta is %d",
-          clusterDocument.slaveCount,
-          slaveCountDelta));
+          "Expected worker count is %d, delta is %d",
+          clusterDocument.workerCount,
+          workerCountDelta));
 
       NodeRolloutInput input = new NodeRolloutInput();
       input.clusterId = currentState.clusterId;
-      input.nodeCount = Math.min(slaveCountDelta, currentState.batchExpansionSize);
+      input.nodeCount = Math.min(workerCountDelta, currentState.batchExpansionSize);
       input.imageId = clusterDocument.imageId;
       input.diskFlavorName = clusterDocument.diskFlavorName;
       input.vmFlavorName = clusterDocument.otherVmFlavorName;
@@ -278,8 +278,8 @@ public class ClusterExpandTaskService extends StatefulService {
               ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK);
 
           input.serverAddress = masterIp;
-          input.nodeProperties = KubernetesSlaveNodeTemplate.createProperties(etcdIps, cn, masterIp);
-          input.nodeType = NodeType.KubernetesSlave;
+          input.nodeProperties = KubernetesWorkerNodeTemplate.createProperties(etcdIps, cn, masterIp);
+          input.nodeType = NodeType.KubernetesWorker;
           break;
         }
         case MESOS: {
@@ -287,8 +287,8 @@ public class ClusterExpandTaskService extends StatefulService {
               clusterDocument.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ZOOKEEPER_IPS));
 
           input.serverAddress = masterIp;
-          input.nodeProperties = MesosSlaveNodeTemplate.createProperties(zkIps);
-          input.nodeType = NodeType.MesosSlave;
+          input.nodeProperties = MesosWorkerNodeTemplate.createProperties(zkIps);
+          input.nodeType = NodeType.MesosWorker;
           break;
         }
         case SWARM: {
@@ -296,8 +296,8 @@ public class ClusterExpandTaskService extends StatefulService {
               clusterDocument.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS));
 
           input.serverAddress = masterIp;
-          input.nodeProperties = SwarmSlaveNodeTemplate.createProperties(etcdIps);
-          input.nodeType = NodeType.SwarmSlave;
+          input.nodeProperties = SwarmWorkerNodeTemplate.createProperties(etcdIps);
+          input.nodeType = NodeType.SwarmWorker;
           break;
         }
         default:
@@ -306,11 +306,11 @@ public class ClusterExpandTaskService extends StatefulService {
           return;
       }
 
-      NodeRollout rollout = new SlavesNodeRollout();
+      NodeRollout rollout = new WorkersNodeRollout();
       rollout.run(this, input, new FutureCallback<NodeRolloutResult>() {
         @Override
         public void onSuccess(@Nullable NodeRolloutResult result) {
-          expandCluster(currentState, clusterDocument, slaveCountDelta - input.nodeCount, masterIp);
+          expandCluster(currentState, clusterDocument, workerCountDelta - input.nodeCount, masterIp);
         }
 
         @Override

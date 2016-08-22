@@ -57,7 +57,7 @@ public class ClusterResizeResourceTest extends ResourceTest {
   @Test
   public void testResizeCluster() throws Exception {
     ClusterResizeOperation op = new ClusterResizeOperation();
-    op.setNewSlaveCount(100);
+    op.setNewWorkerCount(100);
 
     Task t1 = new Task();
     t1.setId(taskId);

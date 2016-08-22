@@ -22,8 +22,8 @@ import com.vmware.photon.controller.clustermanager.entities.InactiveVmFactorySer
 import com.vmware.photon.controller.clustermanager.entities.InactiveVmService;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
-import com.vmware.photon.controller.clustermanager.statuschecks.SlavesStatusChecker;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
+import com.vmware.photon.controller.clustermanager.statuschecks.WorkersStatusChecker;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -57,7 +57,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * This class implements a Xenon service representing a task to inspect cluster for inactive slave vms.
+ * This class implements a Xenon service representing a task to inspect cluster for inactive worker vms.
  */
 public class GarbageInspectionTaskService extends StatefulService {
 
@@ -140,7 +140,7 @@ public class GarbageInspectionTaskService extends StatefulService {
   }
 
   /**
-   * Call api-fe to get slave vms.
+   * Call api-fe to get worker vms.
    *
    * @param currentState
    */
@@ -153,19 +153,19 @@ public class GarbageInspectionTaskService extends StatefulService {
             public void onSuccess(@Nullable ResourceList<Vm> result) {
               try {
                 String masterNodeTag;
-                String slaveNodeTag;
+                String workerNodeTag;
                 switch (clusterState.clusterType) {
                   case KUBERNETES:
                     masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.KubernetesMaster);
-                    slaveNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.KubernetesSlave);
+                    workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.KubernetesWorker);
                     break;
                   case MESOS:
                     masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosMaster);
-                    slaveNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosSlave);
+                    workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosWorker);
                     break;
                   case SWARM:
                     masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmMaster);
-                    slaveNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmSlave);
+                    workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmWorker);
                     break;
                   default:
                     throw new UnsupportedOperationException(
@@ -173,10 +173,10 @@ public class GarbageInspectionTaskService extends StatefulService {
                 }
 
                 String masterVmId = null;
-                Set<Vm> slaveNodes = new HashSet<>();
+                Set<Vm> workerNodes = new HashSet<>();
                 for (Vm vm : result.getItems()) {
-                  if (vm.getTags().contains(slaveNodeTag)) {
-                    slaveNodes.add(vm);
+                  if (vm.getTags().contains(workerNodeTag)) {
+                    workerNodes.add(vm);
                   } else if (vm.getTags().contains(masterNodeTag)) {
                     if (masterVmId == null) {
                       masterVmId = vm.getId();
@@ -185,7 +185,7 @@ public class GarbageInspectionTaskService extends StatefulService {
                 }
                 Preconditions.checkNotNull(masterVmId, "No master vm is found.");
 
-                getMasterIp(currentState, clusterState, masterVmId, slaveNodes);
+                getMasterIp(currentState, clusterState, masterVmId, workerNodes);
 
               } catch (Throwable t) {
                 failTask(t);
@@ -206,7 +206,7 @@ public class GarbageInspectionTaskService extends StatefulService {
   private void getMasterIp(final State currentState,
                            final ClusterService.State clusterState,
                            final String masterVmId,
-                           final Set<Vm> allSlaves) {
+                           final Set<Vm> allWorkers) {
     WaitForNetworkTaskService.State startState = new WaitForNetworkTaskService.State();
     startState.vmId = masterVmId;
 
@@ -223,7 +223,7 @@ public class GarbageInspectionTaskService extends StatefulService {
             switch (result.taskState.stage) {
               case FINISHED:
                 try {
-                  getSlavesFromMaster(currentState, clusterState, result.vmIpAddress, allSlaves);
+                  getWorkersFromMaster(currentState, clusterState, result.vmIpAddress, allWorkers);
                 } catch (Throwable t) {
                   failTask(t);
                 }
@@ -247,36 +247,36 @@ public class GarbageInspectionTaskService extends StatefulService {
   }
 
   /**
-   * Call cluster masters to get slave nodes.
+   * Call cluster masters to get worker nodes.
    *
    * @param currentState
    */
-  private void getSlavesFromMaster(final State currentState,
-                                   final ClusterService.State clusterState,
-                                   final String masterIp,
-                                   final Set<Vm> allSlaves) {
+  private void getWorkersFromMaster(final State currentState,
+                                    final ClusterService.State clusterState,
+                                    final String masterIp,
+                                    final Set<Vm> allWorkers) {
 
     PhotonControllerXenonHost photonControllerXenonHost = (PhotonControllerXenonHost) getHost();
     ClusterManagerFactory clusterManagerFactory =
         ((ClusterManagerFactoryProvider) photonControllerXenonHost.getDeployer()).getClusterManagerFactory();
     StatusCheckHelper helper = clusterManagerFactory.createStatusCheckHelper();
-    SlavesStatusChecker checker;
+    WorkersStatusChecker checker;
     switch (clusterState.clusterType) {
       case KUBERNETES:
-        checker = helper.createSlavesStatusChecker(this, NodeType.KubernetesSlave);
+        checker = helper.createWorkersStatusChecker(this, NodeType.KubernetesWorker);
         break;
       case MESOS:
-        checker = helper.createSlavesStatusChecker(this, NodeType.MesosSlave);
+        checker = helper.createWorkersStatusChecker(this, NodeType.MesosWorker);
         break;
       case SWARM:
-        checker = helper.createSlavesStatusChecker(this, NodeType.SwarmSlave);
+        checker = helper.createWorkersStatusChecker(this, NodeType.SwarmWorker);
         break;
       default:
         failTask(new UnsupportedOperationException(
             "ClusterType is not supported. ClusterType: " + clusterState.clusterType));
         return;
     }
-    checker.getSlavesStatus(masterIp, new FutureCallback<Set<String>>() {
+    checker.getWorkersStatus(masterIp, new FutureCallback<Set<String>>() {
           @Override
           public void onSuccess(@Nullable Set<String> activeNodes) {
             try {
@@ -284,7 +284,7 @@ public class GarbageInspectionTaskService extends StatefulService {
 
               // Calculate inactive vms
               Set<String> inactiveVms = new HashSet<>();
-              for (Vm vm : allSlaves) {
+              for (Vm vm : allWorkers) {
                 if (activeNodes.contains(vm.getName())) {
                   continue;
                 }
