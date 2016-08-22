@@ -623,7 +623,6 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
         .setCompletion((op, ex) -> {
           if (ex != null) {
             operation.fail(ex);
-            fail(state, ex);
             return;
           }
 

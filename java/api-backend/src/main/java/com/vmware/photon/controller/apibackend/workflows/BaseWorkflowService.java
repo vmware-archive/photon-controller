@@ -96,7 +96,6 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
           (op, ex) -> {
             if (ex != null) {
               operation.fail(ex);
-              fail(state, ex);
               return;
             }
 
@@ -109,7 +108,6 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
               operation.setBody(state).complete();
             } catch (Throwable t) {
               operation.fail(t);
-              fail(state, t);
             }
           });
     } catch (Throwable t) {
