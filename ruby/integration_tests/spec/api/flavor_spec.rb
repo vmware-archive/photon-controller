@@ -20,7 +20,7 @@ describe "flavor" do
       if flavor_kind = "vm" then
         flavor_cost = [create_limit("vm.cpu", 1.0, "COUNT"), create_limit("vm.memory", 2.0, "GB")]
       else
-        flavor_cost = [create_limit("vm", 1.0, "COUNT")]
+        flavor_cost = [create_limit(kind, 1.0, "COUNT")]
       end
       flavor = create_flavor(EsxCloud::FlavorCreateSpec.new(flavor_name, flavor_kind, flavor_cost))
       flavor.name.should == flavor_name
@@ -63,7 +63,7 @@ describe "flavor" do
     end
   end
 
-  it "should raise exception for deleting non existed flavors" do
+  it "should raise exception for deleting flavors that do not exist" do
     flavor_name = random_name("fake-flavor")
     flavor_kind = "persistent-disk"
     begin
@@ -115,6 +115,102 @@ describe "flavor" do
       e.errors[0].code.should include("NameTaken")
     rescue EsxCloud::CliError => e
       e.output.should include("name '#{flavor_name}' already taken")
+    end
+  end
+
+  it "should raise exception for VM flavor without vm.cpu" do
+    flavor_name = random_name("flavor-")
+    flavor_kind = "vm"
+    flavor_cost = [create_limit("vm.memory", 2.0, "GB")]
+    begin
+      create_flavor(EsxCloud::FlavorCreateSpec.new(flavor_name, flavor_kind, flavor_cost))
+      fail("Creating VM flavor without vm.cpu should fail")
+    rescue EsxCloud::ApiError => e
+      e.response_code.should == 400
+      e.errors.size.should == 1
+      e.errors[0].code.should include("InvalidFlavorSpecification")
+    rescue EsxCloud::CliError => e
+      e.output.should include("is missing vm.cpu")
+    end
+  end
+
+  it "should raise exception for VM flavor without vm.memory" do
+    flavor_name = random_name("flavor-")
+    flavor_kind = "vm"
+    flavor_cost = [create_limit("vm.cpu", 1.0, "COUNT")]
+    begin
+      create_flavor(EsxCloud::FlavorCreateSpec.new(flavor_name, flavor_kind, flavor_cost))
+      fail("Creating VM flavor without vm.memory should fail")
+    rescue EsxCloud::ApiError => e
+      e.response_code.should == 400
+      e.errors.size.should == 1
+      e.errors[0].code.should include("InvalidFlavorSpecification")
+    rescue EsxCloud::CliError => e
+      e.output.should include("is missing vm.memory")
+    end
+  end
+
+  it "should raise exception for VM flavor with invalid vm.cpu" do
+    flavor_name = random_name("flavor-")
+    flavor_kind = "vm"
+    flavor_cost = [create_limit("vm.cpu", 1.0, "GB"), create_limit("vm.memory", 2.0, "GB")]
+    begin
+      create_flavor(EsxCloud::FlavorCreateSpec.new(flavor_name, flavor_kind, flavor_cost))
+      fail("Creating VM flavor wih invalid vm.cpu should fail")
+    rescue EsxCloud::ApiError => e
+      e.response_code.should == 400
+      e.errors.size.should == 1
+      e.errors[0].code.should include("InvalidFlavorSpecification")
+    rescue EsxCloud::CliError => e
+      e.output.should include("unit GB instead of COUNT")
+    end
+  end
+
+  it "should raise exception for VM flavor with invalid vm.memory" do
+    flavor_name = random_name("flavor-")
+    flavor_kind = "vm"
+    flavor_cost = [create_limit("vm.cpu", 1.0, "COUNT"), create_limit("vm.memory", 2.0, "COUNT")]
+    begin
+      create_flavor(EsxCloud::FlavorCreateSpec.new(flavor_name, flavor_kind, flavor_cost))
+      fail("Creating VM flavor with invalid vm.memory should fail")
+    rescue EsxCloud::ApiError => e
+      e.response_code.should == 400
+      e.errors.size.should == 1
+      e.errors[0].code.should include("InvalidFlavorSpecification")
+    rescue EsxCloud::CliError => e
+      e.output.should include("unit COUNT instead of B, KB, MB or GB")
+    end
+  end
+
+  it "should raise exception for ephemeral disk flavor with capacity" do
+    flavor_name = random_name("flavor-")
+    flavor_kind = "ephemeral-disk"
+    flavor_cost = [create_limit("ephemeral-disk.capacity", 1.0, "GB")]
+    begin
+      create_flavor(EsxCloud::FlavorCreateSpec.new(flavor_name, flavor_kind, flavor_cost))
+      fail("Creating ephemeral disk flavor with capacity")
+    rescue EsxCloud::ApiError => e
+      e.response_code.should == 400
+      e.errors.size.should == 1
+      e.errors[0].code.should include("InvalidFlavorSpecification")
+    rescue EsxCloud::CliError => e
+      e.output.should include("incorrectly specifies ephemeral-disk.capacity")
+    end
+  end
+
+  it "should raise exception for persistent disk flavor with capacity" do
+    flavor_name = random_name("flavor-")
+    flavor_kind = "persistent-disk"
+    flavor_cost = [create_limit("persistent-disk.capacity", 1.0, "GB")]
+    begin
+      create_flavor(EsxCloud::FlavorCreateSpec.new(flavor_name, flavor_kind, flavor_cost))
+      fail("Creating persistent disk flavor with capacity")
+    rescue EsxCloud::ApiError => e
+      e.response_code.should == 400
+      e.errors.size.should == 1
+      e.errors[0].code.should include("InvalidFlavorSpecification")
+    rescue EsxCloud::CliError => e
+      e.output.should include("incorrectly specifies persistent-disk.capacity")
     end
   end
 
