@@ -42,6 +42,7 @@ public class NetworkConfigurationTest {
       .networkManagerPassword("networkManagerPassword")
       .networkZoneId("networkZoneId")
       .networkTopRouterId("networkTopRouterId")
+      .edgeClusterId("edgeClusterId")
       .ipRange("10.0.0.1/24")
       .floatingIpRange("192.168.0.1/28")
       .build();
@@ -69,12 +70,15 @@ public class NetworkConfigurationTest {
           .networkManagerAddress("invalidAddress")
           .networkManagerUsername(null)
           .networkManagerPassword(null)
+          .ipRange("invalidIpRange")
           .build();
 
       String[] errorMsgs = new String[] {
           "networkManagerAddress invalidAddress is invalid IP or Domain Address (was invalidAddress)",
           "networkManagerPassword may not be null (was null)",
-          "networkManagerUsername may not be null (was null)"
+          "networkManagerUsername may not be null (was null)",
+          "networkZoneId may not be null (was null)",
+          "ipRange invalidIpRange is invalid CIDR (was invalidIpRange)"
       };
 
       ImmutableList<String> violations = validator.validate(networkConfiguration);
@@ -93,7 +97,8 @@ public class NetworkConfigurationTest {
       String expectedString =
           "NetworkConfiguration{sdnEnabled=true, networkManagerAddress=1.2.3.4, " +
           "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, " +
-          "ipRange=10.0.0.1/24, floatingIpRange=192.168.0.1/28}";
+          "ipRange=10.0.0.1/24, floatingIpRange=192.168.0.1/28, " +
+          "edgeClusterId=edgeClusterId}";
       assertThat(sampleNetworkConfiguration.toString(), is(expectedString));
     }
   }

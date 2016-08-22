@@ -167,6 +167,7 @@ public class DeploymentXenonBackendTest {
         .networkManagerPassword("networkManagerPassword")
         .networkZoneId("networkZoneId")
         .networkTopRouterId("networkTopRouterId")
+        .edgeClusterId("edgeClusterId")
         .ipRange("10.0.0.1/24")
         .floatingIpRange("192.168.0.1/28")
         .build());
@@ -252,6 +253,7 @@ public class DeploymentXenonBackendTest {
       assertThat(deployment.getNetworkManagerPassword(), is("networkManagerPassword"));
       assertThat(deployment.getNetworkZoneId(), is("networkZoneId"));
       assertThat(deployment.getNetworkTopRouterId(), is("networkTopRouterId"));
+      assertThat(deployment.getEdgeClusterId(), is("edgeClusterId"));
       assertThat(deployment.getIpRange(), is("10.0.0.1/24"));
       assertThat(deployment.getFloatingIpRange(), is("192.168.0.1/28"));
       assertThat(ListUtils.isEqualList(deployment.getOauthSecurityGroups(),
@@ -747,6 +749,7 @@ public class DeploymentXenonBackendTest {
       assertThat(networkConfiguration.getNetworkManagerPassword(), is(entity.getNetworkManagerPassword()));
       assertThat(networkConfiguration.getNetworkZoneId(), is(entity.getNetworkZoneId()));
       assertThat(networkConfiguration.getNetworkTopRouterId(), is(entity.getNetworkTopRouterId()));
+      assertThat(networkConfiguration.getEdgeClusterId(), is(entity.getEdgeClusterId()));
       assertThat(networkConfiguration.getIpRange(), is(entity.getIpRange()));
       assertThat(networkConfiguration.getFloatingIpRange(), is(entity.getFloatingIpRange()));
     }
@@ -1133,6 +1136,7 @@ public class DeploymentXenonBackendTest {
       deployment2.networkManagerPassword = deploymentCreateSpec.getNetworkConfiguration().getNetworkManagerPassword();
       deployment2.networkZoneId = deploymentCreateSpec.getNetworkConfiguration().getNetworkZoneId();
       deployment2.networkTopRouterId = deploymentCreateSpec.getNetworkConfiguration().getNetworkTopRouterId();
+      deployment2.edgeClusterId = deploymentCreateSpec.getNetworkConfiguration().getEdgeClusterId();
       deployment2.ipRange = deploymentCreateSpec.getNetworkConfiguration().getIpRange();
       deployment2.floatingIpRange = deploymentCreateSpec.getNetworkConfiguration().getFloatingIpRange();
 
@@ -1300,7 +1304,7 @@ public class DeploymentXenonBackendTest {
    * Tests for the configureDhcp method.
    */
   @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
-  public static class ConfigureDhcprTest {
+  public static class ConfigureDhcpTest {
 
     @Test
     public void testConfigureDhcpSuccess() throws Throwable {

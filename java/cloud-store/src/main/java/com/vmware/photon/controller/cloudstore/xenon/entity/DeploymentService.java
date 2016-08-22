@@ -298,6 +298,11 @@ public class DeploymentService extends StatefulService {
     public String networkZoneId;
 
     /**
+     * This value represents the edge cluster ID.
+     */
+    public String edgeClusterId;
+
+    /**
      * This value represents the ID of the DHCP relay profile.
      */
     public String dhcpRelayProfileId;
