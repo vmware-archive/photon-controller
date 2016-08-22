@@ -16,6 +16,7 @@ dependencies {
   compile project(':common-logging')
   compile project(':cloud-store')
   compile project(':common-tests')
+  compile project(':dhcp-agent')
   compile project(':nsx-client')
   compile project(':api-backend')
 
