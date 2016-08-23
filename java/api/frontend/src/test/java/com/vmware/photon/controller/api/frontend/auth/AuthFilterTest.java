@@ -63,9 +63,9 @@ public class AuthFilterTest {
   @BeforeMethod
   private void setUp() {
     AuthConfig config = new AuthConfig();
-    config.setAuthServerAddress(AUTH_SERVER_ADDRESS);
+    config.setAuthServerIPAddress(AUTH_SERVER_ADDRESS);
     config.setAuthServerPort(AUTH_SERVER_PORT);
-    config.setTenant(TENANT);
+    config.setAuthDomain(TENANT);
     config.setSharedSecret(SHARED_SECRET);
 
     AuthPolicyProvider provider = new AuthPolicyProvider(
