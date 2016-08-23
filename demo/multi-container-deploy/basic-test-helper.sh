@@ -1,6 +1,6 @@
 #!/bin/bash -xe
-set -e
-wget https://github.com/vmware/photon-controller/releases/download/v1.0.0/photon-linux64
+
+wget -nv https://github.com/vmware/photon-controller/releases/download/v1.0.0/photon-linux64
 mv photon-linux64 /usr/bin/photon
 chmod +x /usr/bin/photon
 photon target set https://192.168.114.11:9000 -c

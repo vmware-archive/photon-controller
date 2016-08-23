@@ -45,7 +45,9 @@ public class DeploymentServiceFactoryTest {
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING,
         Service.ServiceOption.CONCURRENT_GET_HANDLING,
         Service.ServiceOption.FACTORY,
+        Service.ServiceOption.IDEMPOTENT_POST,
         Service.ServiceOption.REPLICATION);
+
 
     assertThat(deploymentServiceFactory.getOptions(), is(expected));
     assertThat(deploymentServiceFactory.getPeerNodeSelectorPath(),
