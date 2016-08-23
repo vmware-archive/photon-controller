@@ -134,4 +134,9 @@ public class DeployerDefaults {
    * tagged with both MGMT and CLOUD usage tags.
    */
   public static final float MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO = 0.25f;
+
+  /**
+   * Default Id of default deployment object.
+   */
+  public static final String DEFAULT_DEPLOYMENT_ID = "default-deployment";
 }
