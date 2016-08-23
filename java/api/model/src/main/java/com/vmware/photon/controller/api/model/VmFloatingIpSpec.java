@@ -26,7 +26,7 @@ import java.util.Objects;
  * A floating IP is assigned to or released from a VM using a JSON payload that
  * maps to this class.
  */
-@ApiModel(value = "A class used as the payload when assigning a floating IP to a VM.")
+@ApiModel(value = "A request to assign or remove a floating IP on a specific network.")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class VmFloatingIpSpec {
 

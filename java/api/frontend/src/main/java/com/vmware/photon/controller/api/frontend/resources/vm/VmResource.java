@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.frontend.resources.routes.VmResourceRout
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmFloatingIpSpec;
 import static com.vmware.photon.controller.api.frontend.Responses.generateCustomResponse;
 
 import com.google.inject.Inject;
@@ -27,6 +28,7 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
+import io.dropwizard.validation.Validated;
 import org.glassfish.jersey.server.ContainerRequest;
 
 import javax.ws.rs.Consumes;
@@ -159,6 +161,22 @@ public class VmResource {
     return generateCustomResponse(
         Response.Status.CREATED,
         vmFeClient.operate(id, Operation.SUSPEND_VM),
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
+  }
+
+  @POST
+  @Path(VmResourceRoutes.VM_ASSIGN_FLOATING_IP_ACTION)
+  @ApiOperation(value = "Assign a floating IP to a VM", response = Task.class)
+  @ApiResponses(value = {
+      @ApiResponse(code = 201, message = "Floating IP is being assigned, progress communicated via the task")
+  })
+  public Response assignFloatingIp(@Context Request request,
+                                   @PathParam("id") String id,
+                                   @Validated VmFloatingIpSpec spec) throws ExternalException {
+    return generateCustomResponse(
+        Response.Status.CREATED,
+        vmFeClient.assignFloatingIp(id, spec),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

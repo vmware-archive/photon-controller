@@ -27,6 +27,7 @@ import com.vmware.photon.controller.api.model.Tag;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
+import com.vmware.photon.controller.api.model.VmFloatingIpSpec;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
@@ -185,5 +186,9 @@ public class VmFeClient {
     TaskCommand command = commandFactory.create(taskEntity);
     executor.submit(command);
     return task;
+  }
+
+  public Task assignFloatingIp(String vmId, VmFloatingIpSpec spec) throws ExternalException {
+    return null;
   }
 }
