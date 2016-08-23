@@ -62,6 +62,10 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
         <Label>Lightwave HTTPS port</Label> \
         <Description>HTTPS Lightwave port. (default: 443)</Description> \
       </Property> \
+      <Property ovf:key="lw_password" ovf:userConfigurable="true" ovf:type="password"> \
+        <Label>Lightwave Password</Label> \
+        <Description>Lightwave password used to register the vm with the Lightwave domain. (default: 443)</Description> \
+      </Property> \
       <Property ovf:key="pc_peer_nodes" ovf:userConfigurable="true" ovf:type="string"> \
         <Label>Peer node list</Label> \
         <Description>Comma seperated list of Photon Controller hostaddresses. (optional)</Description> \

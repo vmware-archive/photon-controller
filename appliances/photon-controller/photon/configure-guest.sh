@@ -180,7 +180,7 @@ function configure_photon() {
     \"PHOTON_CONTROLLER_PEER_NODES\" : ${pc_peer_nodes}, \
     \"APIFE_IP\" : \"${ip0}\", \
     \"APIFE_PORT\" : 9000, \
-    \"LIGHTWAVE_PASSWORD\" : \"${pc_keystore_password}\", \
+    \"LIGHTWAVE_PASSWORD\" : \"${lw_password}\", \
     \"LIGHTWAVE_HOSTNAME\" : \"${lw_host}\", \
     \"LIGHTWAVE_DOMAIN\" : \"${lw_domain}\", \
     \"USE_VIRTUAL_NETWORK\" : false, \
@@ -238,6 +238,7 @@ function parse_ovf_env() {
   lw_domain=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_domain']/../@*[local-name()='value'])") # some.domain.com
   lw_host=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_hostname']/../@*[local-name()='value'])")
   lw_port=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_port']/../@*[local-name()='value'])")
+  lw_password=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_password']/../@*[local-name()='value'])")
   pc_keystore_password=$(date +%s | base64 | head -c 8)
 
   if [ -z "$lw_port" ]; then
@@ -264,6 +265,9 @@ function parse_ovf_env() {
   fi
   if [ -z "$pc_secret_password" ]; then
     pc_secret_password=$(date +%s | base64 | head -c 8)
+  fi
+  if [ -z "$lw_password"]; then
+    lw_password="L1ghtwave!"
   fi
 }
 
