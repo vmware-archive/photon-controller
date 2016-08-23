@@ -110,6 +110,10 @@ public class Main {
         .defaultHelp(true)
         .description("Photon Controller Core");
     parser.addArgument("config-file").help("photon controller configuration file");
+    parser.addArgument("--manual")
+        .type(Boolean.class)
+        .setDefault(false)
+        .help("If true, create default deployment.");
 
     Namespace namespace = parser.parseArgsOrFail(args);
 
@@ -121,6 +125,13 @@ public class Main {
     ThriftModule thriftModule = new ThriftModule();
 
     ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig);
+
+    if (namespace.get("manual")) {
+      DefaultDeployment.createDefaultDeployment(
+          photonControllerConfig.getXenonConfig().getPeerNodes(),
+          deployerConfig,
+          xenonHost);
+    }
 
     // Creating a temp configuration file for apife with modification to some named sections in photon-controller-config
     // so that it can match the Configuration class of dropwizard.
