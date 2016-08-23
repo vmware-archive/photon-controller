@@ -29,6 +29,14 @@ public class DeploymentServiceFactory extends FactoryService {
 
   public DeploymentServiceFactory() {
     super(DeploymentService.State.class);
+
+    // By making deployment service support Idempotent POST, we make sure that
+    // a POST call to create new deployment service with same Id would not fail and
+    // will be converted into PUT call.
+    // We are adding this option so that we can create default deployment at startup.
+    // In multi-host environment, hosts creating deployment service will not fail,
+    // if its peer has already created this default deployment service object.
+    super.toggleOption(ServiceOption.IDEMPOTENT_POST, true);
     super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR);
   }
 

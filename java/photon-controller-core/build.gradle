@@ -27,6 +27,7 @@ dependencies {
   compile 'net.sourceforge.argparse4j:argparse4j:0.4.0'
 
   testCompile project(':common-tests')
+  testCompile(project(path: ':cloud-store', configuration: 'tests'))
 }
 
 ext.sharedManifest = manifest {

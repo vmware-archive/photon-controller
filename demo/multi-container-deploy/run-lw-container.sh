@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash
 
 LIGHTWAVE_IP=$1
 LIGHTWAVE_MASTER_IP=$2
@@ -30,6 +30,7 @@ replication-partner-hostname=$LIGHTWAVE_MASTER_IP
 disable-dns=1
 EOF
 
+echo "Starting Lightwave container #$NUMBER..."
 docker run -d \
            --name ${CONTAINER_NAME} \
            --privileged \
@@ -47,7 +48,7 @@ while [ $attempts -lt $total_attempts ] && [ $reachable != "true" ]; do
   http_code=$(docker exec -t $CONTAINER_NAME curl -I -so /dev/null -w "%{response_code}" -s -X GET --insecure https://127.0.0.1) || true
   # The curl returns 000 when it fails to connect to the lightwave server
   if [ "$http_code" == "000" ]; then
-    echo "Lightwave REST server $CONTAINER_NAME not reachable (attempt $attempts/$total_attempts), will try again."
+    echo "Waiting for Lightwave server to startup at $CONTAINER_NAME (attempt $attempts/$total_attempts), will try again."
     attempts=$[$attempts+1]
     sleep 5
   else

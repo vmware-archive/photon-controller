@@ -113,6 +113,32 @@ public class ServiceHostUtils {
 
   public static void waitForNodeGroupConvergence(
       ServiceHost localHost,
+      String[] peerNodes,
+      String nodeGroupPath,
+      int maxRetries,
+      int retryInterval
+  ) throws Throwable {
+
+    checkArgument(localHost != null, "hosts cannot be null");
+    checkArgument(!Strings.isNullOrEmpty(nodeGroupPath), "nodeGroupPath cannot be null or empty");
+    checkArgument(maxRetries > 0, "maxRetries must be > 0");
+
+    List<Pair<String, Integer>> remoteHostIpAndPortPairs = new ArrayList<>();
+    for (String peer : peerNodes) {
+      URI uri = new URI(peer);
+      remoteHostIpAndPortPairs.add(Pair.of(uri.getHost(), uri.getPort()));
+    }
+
+    waitForNodeGroupConvergence(
+        localHost,
+        remoteHostIpAndPortPairs,
+        nodeGroupPath,
+        maxRetries,
+        retryInterval);
+  }
+
+  public static void waitForNodeGroupConvergence(
+      ServiceHost localHost,
       Collection<Pair<String, Integer>> remoteHostIpAndPortPairs,
       String nodeGroupPath,
       int maxRetries,
