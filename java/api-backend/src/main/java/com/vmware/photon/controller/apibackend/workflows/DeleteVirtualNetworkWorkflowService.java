@@ -25,6 +25,7 @@ import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNet
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalPortsTaskService;
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalRouterTaskService;
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalSwitchTaskService;
+import com.vmware.photon.controller.apibackend.utils.CloudStoreUtils;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
@@ -44,9 +45,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
-import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
@@ -270,50 +269,11 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
    * entity in cloud-store, and save the configuration in the document of the workflow service.
    */
   private void getNsxConfiguration(DeleteVirtualNetworkWorkflowDocument state) {
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(DeploymentService.State.class));
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-        .setBody(queryTask)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            fail(state, ex);
-            return;
-          }
-
-          NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
-          Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
-          if (documentLinks.size() != 1) {
-            fail(state, new IllegalStateException(
-                String.format("Found %d deployment service(s).", documentLinks.size())));
-            return;
-          }
-
-          getNsxConfiguration(state, documentLinks.iterator().next());
-        })
-        .sendWith(this);
-  }
-
-  /**
-   * Gets NSX configuration from {@link com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService.State}
-   * entity in cloud-store, and saves the configuration in the document of the workflow service.
-   */
-  private void getNsxConfiguration(DeleteVirtualNetworkWorkflowDocument state, String deploymentServiceStateLink) {
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createGet(deploymentServiceStateLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            fail(state, ex);
-            return;
-          }
-
+    CloudStoreUtils.queryAndProcess(
+        this,
+        DeploymentService.State.class,
+        deploymentState -> {
           try {
-            DeploymentService.State deploymentState = op.getBody(DeploymentService.State.class);
             DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
                 DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
@@ -324,8 +284,11 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           } catch (Throwable t) {
             fail(state, t);
           }
-        })
-        .sendWith(this);
+        },
+        t -> {
+          fail(state, t);
+        }
+    );
   }
 
   /**
