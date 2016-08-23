@@ -134,4 +134,15 @@ public class DeployerDefaults {
    * tagged with both MGMT and CLOUD usage tags.
    */
   public static final float MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO = 0.25f;
+
+  /**
+   * Load balancer is used for finding API endpoint. After recent merge of all containers, API should
+   * be called on localhost.
+   */
+  public static final String DEFAULT_LOAD_BALANCER_ADDRESS = "https://localhost:9000";
+
+  /**
+   * Default Id of default deployment object.
+   */
+  public static final String DEFAULT_DEPLOYMENT_ID = "default-deployment";
 }

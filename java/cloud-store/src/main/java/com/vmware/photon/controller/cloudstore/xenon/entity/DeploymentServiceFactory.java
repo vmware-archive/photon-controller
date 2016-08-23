@@ -29,6 +29,7 @@ public class DeploymentServiceFactory extends FactoryService {
 
   public DeploymentServiceFactory() {
     super(DeploymentService.State.class);
+    super.toggleOption(ServiceOption.IDEMPOTENT_POST, true);
     super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR);
   }
 
