@@ -59,7 +59,7 @@ public class AuthPolicyProviderTest {
     fetcher = mock(MultiplexedSecurityGroupFetcher.class);
 
     config = new AuthConfig();
-    config.setTenant("esxcloud");
+    config.setAuthDomain("esxcloud");
     policyProvider = new AuthPolicyProvider(resolver, fetcher, config);
   }
 
@@ -142,7 +142,8 @@ public class AuthPolicyProviderTest {
     @Test
     public void testMatchDefaultAdminGroup() throws Throwable {
       doReturn(ImmutableSet.of()).when(fetcher).fetchSecurityGroups(authorizationObject);
-      token = AuthTestHelper.generateResourceServerAccessToken(ImmutableSet.of(config.getTenant() + AuthPolicyProvider
+      token = AuthTestHelper.generateResourceServerAccessToken(ImmutableSet.of(config.getAuthDomain() +
+          AuthPolicyProvider
           .DEFAULT_ADMIN_GROUP_NAME));
 
       policyProvider.checkAccessPermissions(request, token);

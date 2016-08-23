@@ -13,33 +13,70 @@
 
 package com.vmware.photon.controller.api.frontend.config;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 
 /**
  * Authentication configuration.
  */
 public class AuthConfig {
 
-  @JsonProperty("enable_auth")
   private boolean enableAuth;
 
-  @JsonProperty("auth_server_address")
-  private String authServerAddress;
-
-  @JsonProperty
   private String sharedSecret;
 
-  @JsonProperty("auth_server_port")
-  private int authServerPort;
 
-  @JsonProperty("tenant")
-  private String tenant;
+  private String authDomain;
+
+  /**
+   * This value represents the auth server address.
+   */
+  private String authServerAddress;
+
+  /**
+   * This value represents the OAuth server port.
+   */
+  private Integer authServerPort;
+
+  /**
+   * LightWave user name.
+   */
+  private String authUserName;
+
+  /**
+   * Password for the given LightWave user.
+   */
+  private String authPassword;
+
+  /**
+   * Endpoint to the oAuth login service for Swagger.
+   */
+  private String authSwaggerLoginEndpoint;
+
+  /**
+   * Endpoint to the oAuth logout service for Swagger.
+   */
+  private String authSwaggerLogoutEndpoint;
+
+  /**
+   * Endpoint to the oAuth login service for Mgmt UI.
+   */
+  private String authMgmtUiLoginEndpoint;
+
+  /**
+   * Endpoint to the oAuth logout service for Mgmt UI.
+   */
+  private String authMgmtUiLogoutEndpoint;
+
+  /**
+   * Security groups.
+   */
+  private List<String> authSecurityGroups;
 
   public boolean isAuthEnabled() {
     return this.enableAuth;
   }
 
-  public String getAuthServerAddress() {
+  public String getAuthServerIPAddress() {
     return this.authServerAddress;
   }
 
@@ -47,11 +84,11 @@ public class AuthConfig {
     return this.authServerPort;
   }
 
-  public String getTenant() {
-    return this.tenant;
+  public String getAuthDomain() {
+    return this.authDomain;
   }
 
-  public void setAuthServerAddress(String url) {
+  public void setAuthServerIPAddress(String url) {
     this.authServerAddress = url;
   }
 
@@ -71,7 +108,63 @@ public class AuthConfig {
     this.authServerPort = authServerPort;
   }
 
-  public void setTenant(String tenant) {
-    this.tenant = tenant;
+  public void setAuthDomain(String tenant) {
+    this.authDomain = tenant;
+  }
+
+  public String getAuthUserName() {
+    return authUserName;
+  }
+
+  public void setAuthUserName(String authUserName) {
+    this.authUserName = authUserName;
+  }
+
+  public String getAuthPassword() {
+    return authPassword;
+  }
+
+  public void setAuthPassword(String authPassword) {
+    this.authPassword = authPassword;
+  }
+
+  public String getAuthSwaggerLoginEndpoint() {
+    return authSwaggerLoginEndpoint;
+  }
+
+  public void setAuthSwaggerLoginEndpoint(String authSwaggerLoginEndpoint) {
+    this.authSwaggerLoginEndpoint = authSwaggerLoginEndpoint;
+  }
+
+  public String getAuthSwaggerLogoutEndpoint() {
+    return authSwaggerLogoutEndpoint;
+  }
+
+  public void setAuthSwaggerLogoutEndpoint(String authSwaggerLogoutEndpoint) {
+    this.authSwaggerLogoutEndpoint = authSwaggerLogoutEndpoint;
+  }
+
+  public String getAuthMgmtUiLoginEndpoint() {
+    return authMgmtUiLoginEndpoint;
+  }
+
+  public void setAuthMgmtUiLoginEndpoint(String authMgmtUiLoginEndpoint) {
+    this.authMgmtUiLoginEndpoint = authMgmtUiLoginEndpoint;
+  }
+
+  public String getAuthMgmtUiLogoutEndpoint() {
+    return authMgmtUiLogoutEndpoint;
+  }
+
+  public void setAuthMgmtUiLogoutEndpoint(String authMgmtUiLogoutEndpoint) {
+    this.authMgmtUiLogoutEndpoint = authMgmtUiLogoutEndpoint;
+  }
+
+  public List<String> getAuthSecurityGroups() {
+    return authSecurityGroups;
+  }
+
+  public void setAuthSecurityGroups(List<String> authSecurityGroups) {
+    this.authSecurityGroups = authSecurityGroups;
   }
 }
