@@ -1,31 +1,25 @@
-#!/bin/sh -xe
+#!/bin/bash
 
 MEMORY_MB=1024
 
 ENABLE_SYSLOG=False
 SYSLOG_ENDPOINT=
 NTP_ENDPOINT=
-IMAGE_DATASTORE_NAME=datastore1
-PHOTON_USER=photon
-PHOTON_USER_PASSWORD='P@ssword!'
-PHOTON_USER_FIRST_NAME="Light"
-PHOTON_USER_LAST_NAME="Wave"
-
 
 HOST_IP=$1
 PEER1_IP=$2
 PEER2_IP=$3
-LIGHTWAVE_MASTER_HOST_NAME=$4
+LIGHTWAVE_HOST_IP=$4
 NUMBER=$5
 
+LIGHTWAVE_USERNAME=Administrator
 LIGHTWAVE_PASSWORD='Admin!23'
-LIGHTWAVE_TENANT=photon.local
-LIGHTWAVE_DOMAIN_CONTROLLER=$LIGHTWAVE_MASTER_HOST_NAME
-LIGHTWAVE_SUBJECT_ALT_NAME=$HOST_IP
+LIGHTWAVE_DOMAIN=photon.local
+LIGHTWAVE_SECURITY_GROUPS="${LIGHTWAVE_DOMAIN}\\admins"
 
-rm -rf "$(PWD)/pc_tmp*"
+rm -rf "($PWD)/pc_tmp*"
 PC_TMP_DIR=$(mktemp -d "$PWD/pc_tmp.XXXXX")
-trap "rm -rf ${PC_TMP_DIR}" EXIT
+#trap "rm -rf ${PC_TMP_DIR}" EXIT
 
 PHOTON_CONTROLLER_CONFIG_DIR=${PC_TMP_DIR}/config
 LOG_DIRECTORY=${PC_TMP_DIR}/log/photon-controller
@@ -50,7 +44,10 @@ xenon:
 
 deployer:
   deployer:
-    createDefaultDeployment: "True"
+    defaultDeploymentEnabled: true
+    imageDataStoreNames:
+    - datastore1
+    imageDataStoreUsedForVMs: "True"
     apifeEndpoint: "https://${HOST_IP}:9000"
     configDirectory: "/etc/esxcloud-deployer/configurations/"
     maxMemoryGb: 10000
@@ -67,17 +64,11 @@ deployer:
     - photon-controller-agent
     - envoy
     memoryMb: ${MEMORY_MB}
-    installDirectory: "/usr/lib/esxcloud/photon-controller-core"
     enableSyslog: "${ENABLE_SYSLOG}"
     syslogEndpoint: "${SYSLOG_ENDPOINT}"
     logDirectory: /var/log/photon-controller/
     keyStorePath: /keystore.jks
     keyStorePassword: ${LIGHTWAVE_PASSWORD}
-    lightwaveDomain: ${LIGHTWAVE_TENANT}
-    lightwaveHostname: ${LIGHTWAVE_MASTER_HOST_NAME}
-    lightwaveDomainController: ${LIGHTWAVE_DOMAIN_CONTROLLER}
-    lightwaveDisableVmafdListener: True
-    lightwaveSubjectAltName: ${LIGHTWAVE_SUBJECT_ALT_NAME}
 
 photon-controller-logging:
   file:
@@ -128,14 +119,18 @@ image:
   use_esx_store: true
 
 auth:
-  enable_auth: true
+  enableAuth: true
   sharedSecret: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
-  auth_server_address: ${LIGHTWAVE_MASTER_HOST_NAME}
-  auth_server_port: 443
-  tenant: ${LIGHTWAVE_TENANT}
-
+  authServerAddress: ${LIGHTWAVE_HOST_IP}
+  authServerPort: 443
+  authDomain: ${LIGHTWAVE_DOMAIN}
+  authUserName: ${LIGHTWAVE_USERNAME}
+  authPassword: ${LIGHTWAVE_PASSWORD}
+  authSecurityGroups:
+    - ${LIGHTWAVE_SECURITY_GROUPS}
 EOF
 
+echo "Starting Photon-Controller container #$NUMBER..."
 docker run -d \
   --name photon-controller-${NUMBER} \
   --privileged \

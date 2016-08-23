@@ -44,12 +44,15 @@ if [ $attempts -eq $total_attempts ]; then
    exit 1
 fi
 
-echo "Creating Deployment"
-curl --key /etc/keys/machine.privkey --cert /etc/keys/machine.crt --capath /etc/ssl/certs -X POST   -H "Content-type: application/json" -d "{   \"state\" : \"READY\",   \"imageDataStoreNames\" : [\"datastore1\"],   \"imageDataStoreUsedForVMs\" : \"true\",   \"imageId\" : \"none\",   \"projectId\" : \"none\",   \"ntpEndpoint\" : \"\",   \"virtualNetworkEnabled\" : \"false\",   \"syslogEndpoint\" : \"\",   \"statsEnabled\" : \"false\",   \"loadBalancerEnabled\": \"false\",   \"loadBalancerAddress\" : \"$PHOTON_CONTROLLER_HOST_IP:9000\",   \"oAuthEnabled\" : \"true\",   \"oAuthTenantName\" : \"photon.local\",   \"oAuthUserName\" : \"Administrator\",   \"oAuthPassword\" : \"Admin!23\",   \"oAuthServerAddress\" : \"$LIGHTWAVE_HOST_IP\",   \"oAuthServerPort\" : 443,   \"oAuthSecurityGroups\": [\"photon.local\\\admins\"],   \"documentSelfLink\" : \"deployment\"   }"   https://$PHOTON_CONTROLLER_HOST_IP:19000/photon/cloudstore/deployments
+deployment_count=$(curl --key /etc/keys/machine.privkey --cert /etc/keys/machine.crt --capath /etc/ssl/certs https://$PHOTON_CONTROLLER_HOST_IP:19000/photon/cloudstore/deployments | grep documentCount | cut -f2 -d ':' | cut -f1 -d ',')
+if [ $deployment_count -eq 0 ]; then
+   echo "Creating Deployment"
+   curl --key /etc/keys/machine.privkey --cert /etc/keys/machine.crt --capath /etc/ssl/certs -X POST   -H "Content-type: application/json" -d "{   \"state\" : \"READY\",   \"imageDataStoreNames\" : [\"datastore1\"],   \"imageDataStoreUsedForVMs\" : \"true\",   \"imageId\" : \"none\",   \"projectId\" : \"none\",   \"ntpEndpoint\" : \"\",   \"virtualNetworkEnabled\" : \"false\",   \"syslogEndpoint\" : \"\",   \"statsEnabled\" : \"false\",   \"loadBalancerEnabled\": \"false\",   \"loadBalancerAddress\" : \"$PHOTON_CONTROLLER_HOST_IP:9000\",   \"oAuthEnabled\" : \"true\",   \"oAuthTenantName\" : \"photon.local\",   \"oAuthUserName\" : \"Administrator\",   \"oAuthPassword\" : \"Admin!23\",   \"oAuthServerAddress\" : \"$LIGHTWAVE_HOST_IP\",   \"oAuthServerPort\" : 443,   \"oAuthSecurityGroups\": [\"photon.local\\\admins\"],   \"documentSelfLink\" : \"deployment\"   }"   https://$PHOTON_CONTROLLER_HOST_IP:19000/photon/cloudstore/deployments
 
-rc=$?
+   rc=$?
 
-if [ $rc -ne 0 ]; then
-    echo "Failed to create Deployment"
-    exit 1
+   if [ $rc -ne 0 ]; then
+      echo "Failed to create Deployment"
+      exit 1
+   fi
 fi
