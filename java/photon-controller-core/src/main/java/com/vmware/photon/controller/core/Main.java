@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.core;
 
 import com.vmware.photon.controller.api.frontend.ApiFeService;
+import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
@@ -84,6 +85,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.InputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.nio.file.Paths;
@@ -117,6 +119,8 @@ public class Main {
 
     PhotonControllerConfig photonControllerConfig = getPhotonControllerConfig(namespace);
     DeployerConfig deployerConfig = photonControllerConfig.getDeployerConfig();
+    AuthConfig authConfig = photonControllerConfig.getAuth();
+    File apiFeTempConfig = makeApiFeConfigFile(args[0]);
 
     new LoggingFactory(photonControllerConfig.getLogging(), "photon-controller-core").configure();
 
@@ -141,26 +145,13 @@ public class Main {
 
     ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig, sslContext);
 
-    // Creating a temp configuration file for apife with modification to some named sections in photon-controller-config
-    // so that it can match the Configuration class of dropwizard.
-    File apiFeTempConfig = File.createTempFile("apiFeTempConfig", ".tmp");
-    File source = new File(args[0]);
-    FileInputStream fis = new FileInputStream(source);
-    BufferedReader in = new BufferedReader(new InputStreamReader(fis));
-
-    FileWriter fstream = new FileWriter(apiFeTempConfig, true);
-    BufferedWriter out = new BufferedWriter(fstream);
-
-    String aLine = null;
-    while ((aLine = in.readLine()) != null) {
-      if (aLine.equals("apife:")) {
-        aLine = aLine.replace("apife:", "server:");
-      }
-      out.write(aLine);
-      out.newLine();
+    if (deployerConfig.getDeployerContext().getDefaultDeploymentEnabled()) {
+      DefaultDeployment.createDefaultDeployment(
+          photonControllerConfig.getXenonConfig().getPeerNodes(),
+          deployerConfig,
+          authConfig,
+          xenonHost);
     }
-    in.close();
-    out.close();
 
     // This approach can be simplified once the apife container is gone, but for the time being
     // it expects the first arg to be the string "server".
@@ -188,6 +179,30 @@ public class Main {
         LoggingFactory.detachAndStop();
       }
     });
+  }
+
+  private static File makeApiFeConfigFile(String arg) throws IOException {
+    // Creating a temp configuration file for apife with modification to some named sections in photon-controller-config
+    // so that it can match the Configuration class of dropwizard.
+    File apiFeTempConfig = File.createTempFile("apiFeTempConfig", ".tmp");
+    File source = new File(arg);
+    FileInputStream fis = new FileInputStream(source);
+    BufferedReader in = new BufferedReader(new InputStreamReader(fis));
+
+    FileWriter fstream = new FileWriter(apiFeTempConfig, true);
+    BufferedWriter out = new BufferedWriter(fstream);
+
+    String aLine = null;
+    while ((aLine = in.readLine()) != null) {
+      if (aLine.equals("apife:")) {
+        aLine = aLine.replace("apife:", "server:");
+      }
+      out.write(aLine);
+      out.newLine();
+    }
+    in.close();
+    out.close();
+    return apiFeTempConfig;
   }
 
   private static ServiceHost startXenonHost(PhotonControllerConfig photonControllerConfig,

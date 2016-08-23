@@ -73,22 +73,22 @@ public class AuthConfigTest {
     public void testWithValidData() throws Exception {
       config = ConfigurationUtils.parseConfiguration(
           AuthConfigTest.class.getResource("/config.yml").getPath()).getAuth();
-      assertThat(config.getAuthServerAddress(), is(notNullValue()));
+      assertThat(config.getAuthServerIPAddress(), is(notNullValue()));
     }
 
     @Test
     public void testWithoutConfig() throws Exception {
       config = ConfigurationUtils.parseConfiguration(
           AuthConfigTest.class.getResource("/local_image_datastore_config.yml").getPath()).getAuth();
-      assertThat(config.getAuthServerAddress(), nullValue());
+      assertThat(config.getAuthServerIPAddress(), nullValue());
     }
 
     @Test
     public void testSetServiceLocatorUrl() throws BadConfigException {
       config = new AuthConfig();
 
-      config.setAuthServerAddress("http://testSetServiceLocatorUrl");
-      assertThat(config.getAuthServerAddress(), is(equalTo("http://testSetServiceLocatorUrl")));
+      config.setAuthServerIPAddress("http://testSetServiceLocatorUrl");
+      assertThat(config.getAuthServerIPAddress(), is(equalTo("http://testSetServiceLocatorUrl")));
     }
   }
 }

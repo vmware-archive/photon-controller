@@ -60,9 +60,9 @@ public class AuthFilter implements ContainerRequestFilter {
 
   @Inject
   public AuthFilter(AuthConfig config, com.vmware.photon.controller.api.frontend.auth.AuthPolicyProvider provider) {
-    this.authServerAddress = config.getAuthServerAddress();
+    this.authServerAddress = config.getAuthServerIPAddress();
     this.authServerPort = config.getAuthServerPort();
-    this.tenant = config.getTenant();
+    this.tenant = config.getAuthDomain();
     this.sharedSecret = config.getSharedSecret();
     this.policyProvider = provider;
   }
