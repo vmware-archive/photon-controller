@@ -20,6 +20,8 @@ import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHelper;
 import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
 import com.vmware.photon.controller.apibackend.utils.TaskStateHelper;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
@@ -434,6 +436,7 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     }
 
     private RemoveFloatingIpFromVmWorkflowDocument startService() throws Throwable {
+      createDeploymentInCloudStore(testEnvironment);
       createDhcpRootSubnetServiceInCloudStore(testEnvironment);
       VirtualNetworkService.State virtualNetworkState = createVirtualNetworkInCloudStore(testEnvironment);
       String networkId = ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkState.documentSelfLink);
@@ -537,6 +540,21 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     return result.getBody(DhcpSubnetService.State.class);
   }
 
+  private static DeploymentService.State createDeploymentInCloudStore(TestEnvironment testEnvironment)
+      throws Throwable {
+    DeploymentService.State deployment = ReflectionUtils.buildValidStartState(DeploymentService.State.class);
+    deployment.sdnEnabled = true;
+    deployment.networkManagerAddress = "networkManagerAddress";
+    deployment.networkManagerUsername = "networkManagerUsername";
+    deployment.networkManagerPassword = "networkManagerPassword";
+    deployment.networkZoneId = "networkZoneId";
+    deployment.networkTopRouterId = "networkTopRouterId";
+    deployment.dhcpRelayServiceId = "dhcpRelayServiceId";
+
+    Operation result = testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, deployment);
+    return result.getBody(DeploymentService.State.class);
+  }
+
   private static RemoveFloatingIpFromVmWorkflowDocument buildStartState(
       RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage startStage,
       RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage subStage,
@@ -549,9 +567,6 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     startState.taskState.subStage = subStage;
     startState.controlFlags = controlFlags;
     startState.networkId = networkId;
-    startState.nsxAddress = "https://192.168.1.1";
-    startState.nsxUsername = "nsxUsername";
-    startState.nsxPassword = "nsxPassword";
     startState.vmId = vmId;
 
     return startState;

@@ -46,6 +46,7 @@ public class RemoveFloatingIpFromVmWorkflowDocument extends ServiceDocument {
      */
     public enum SubStage {
       GET_VM_MAC,
+      GET_NSX_CONFIGURATION,
       REMOVE_NAT_RULE,
       RELEASE_VM_FLOATING_IP,
       UPDATE_VM,
@@ -79,23 +80,20 @@ public class RemoveFloatingIpFromVmWorkflowDocument extends ServiceDocument {
   /**
    * Endpoint to the nsx manager.
    */
-  @NotBlank
-  @Immutable
+  @WriteOnce
   public String nsxAddress;
 
   /**
    * Username to access nsx manager.
    */
-  @NotBlank
-  @Immutable
+  @WriteOnce
   @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
   public String nsxUsername;
 
   /**
    * Password to access nsx manager.
    */
-  @NotBlank
-  @Immutable
+  @WriteOnce
   @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
   public String nsxPassword;
 

@@ -18,6 +18,7 @@ import com.vmware.photon.controller.apibackend.exceptions.RemoveFloatingIpFromVm
 import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
 import com.vmware.photon.controller.apibackend.utils.CloudStoreUtils;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
@@ -70,7 +71,7 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
         return;
       }
 
-      CloudStoreUtils.getCloudStoreEntityAndProcess(
+      CloudStoreUtils.getAndProcess(
           this,
           VirtualNetworkService.FACTORY_LINK + "/" + state.networkId,
           VirtualNetworkService.State.class,
@@ -153,6 +154,9 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
         case GET_VM_MAC:
           getVmMac(state);
           break;
+        case GET_NSX_CONFIGURATION:
+          getNsxConfiguration(state);
+          break;
         case REMOVE_NAT_RULE:
           removeNatRule(state);
           break;
@@ -172,7 +176,7 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
   }
 
   private void getVmMac(RemoveFloatingIpFromVmWorkflowDocument state) {
-    CloudStoreUtils.getCloudStoreEntityAndProcess(
+    CloudStoreUtils.getAndProcess(
         this,
         VmServiceFactory.SELF_LINK + "/" + state.vmId,
         VmService.State.class,
@@ -192,7 +196,7 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
 
             RemoveFloatingIpFromVmWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
-                RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE);
+                RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
             patchState.vmMacAddress = vmNetworkInfo.macAddress;
             patchState.vmFloatingIpAddress = vmNetworkInfo.floatingIpAddress;
 
@@ -205,6 +209,30 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
           fail(state, throwable);
         }
     );
+  }
+
+  private void getNsxConfiguration(RemoveFloatingIpFromVmWorkflowDocument state) {
+    CloudStoreUtils.queryAndProcess(
+        this,
+        DeploymentService.State.class,
+        deploymentState -> {
+          try {
+            RemoveFloatingIpFromVmWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.STARTED,
+                RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE);
+            patchState.nsxAddress = deploymentState.networkManagerAddress;
+            patchState.nsxUsername = deploymentState.networkManagerUsername;
+            patchState.nsxPassword = deploymentState.networkManagerPassword;
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        },
+        t -> {
+          fail(state, t);
+        }
+    );
+
   }
 
   private void removeNatRule(RemoveFloatingIpFromVmWorkflowDocument state) throws Throwable {
@@ -248,7 +276,7 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
         DhcpSubnetService.IpOperationPatch.Kind.ReleaseIp,
         state.vmId, null, state.vmFloatingIpAddress);
 
-    CloudStoreUtils.patchCloudStoreEntityAndProcess(
+    CloudStoreUtils.patchAndProcess(
         this,
         DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK,
         releaseIp,
@@ -263,7 +291,7 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
   }
 
   private void updateVm(RemoveFloatingIpFromVmWorkflowDocument state) {
-    CloudStoreUtils.getCloudStoreEntityAndProcess(
+    CloudStoreUtils.getAndProcess(
         this,
         VmServiceFactory.SELF_LINK + "/" + state.vmId,
         VmService.State.class,
@@ -284,7 +312,7 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
   }
 
   private void updateVm(RemoveFloatingIpFromVmWorkflowDocument state, VmService.State vmPatchState) {
-    CloudStoreUtils.patchCloudStoreEntityAndProcess(
+    CloudStoreUtils.patchAndProcess(
         this,
         VmServiceFactory.SELF_LINK + "/" + state.vmId,
         vmPatchState,
@@ -302,7 +330,7 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
     VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
     virtualNetworkPatchState.vmIdToNatRuleIdMap = state.taskServiceEntity.vmIdToNatRuleIdMap;
 
-    CloudStoreUtils.patchCloudStoreEntityAndProcess(
+    CloudStoreUtils.patchAndProcess(
         this,
         VirtualNetworkService.FACTORY_LINK + "/" + state.networkId,
         virtualNetworkPatchState,

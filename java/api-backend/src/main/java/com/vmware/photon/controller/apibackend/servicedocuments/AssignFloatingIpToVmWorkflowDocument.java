@@ -47,6 +47,7 @@ public class AssignFloatingIpToVmWorkflowDocument extends ServiceDocument {
     public enum SubStage {
       GET_VM_PRIVATE_IP_AND_MAC,
       ALLOCATE_VM_FLOATING_IP,
+      GET_NSX_CONFIGURATION,
       CREATE_NAT_RULE,
       UPDATE_VM,
       UPDATE_VIRTUAL_NETWORK
@@ -79,23 +80,20 @@ public class AssignFloatingIpToVmWorkflowDocument extends ServiceDocument {
   /**
    * Endpoint to the nsx manager.
    */
-  @NotBlank
-  @Immutable
+  @WriteOnce
   public String nsxAddress;
 
   /**
    * Username to access nsx manager.
    */
-  @NotBlank
-  @Immutable
+  @WriteOnce
   @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
   public String nsxUsername;
 
   /**
    * Password to access nsx manager.
    */
-  @NotBlank
-  @Immutable
+  @WriteOnce
   @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
   public String nsxPassword;
 

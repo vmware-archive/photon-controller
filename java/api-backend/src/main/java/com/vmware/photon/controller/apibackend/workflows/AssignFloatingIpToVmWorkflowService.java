@@ -17,6 +17,7 @@ import com.vmware.photon.controller.apibackend.exceptions.AssignFloatingIpToVmEx
 import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIpToVmWorkflowDocument;
 import com.vmware.photon.controller.apibackend.utils.CloudStoreUtils;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
@@ -73,7 +74,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
         return;
       }
 
-      CloudStoreUtils.getCloudStoreEntityAndProcess(
+      CloudStoreUtils.getAndProcess(
           this,
           VirtualNetworkService.FACTORY_LINK + "/" + state.networkId,
           VirtualNetworkService.State.class,
@@ -159,6 +160,9 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
         case ALLOCATE_VM_FLOATING_IP:
           allocateVmFloatingIp(state);
           break;
+        case GET_NSX_CONFIGURATION:
+          getNsxConfiguration(state);
+          break;
         case CREATE_NAT_RULE:
           createNatRule(state);
           break;
@@ -175,7 +179,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
   }
 
   private void getVmPrivateIpAndMac(AssignFloatingIpToVmWorkflowDocument state) {
-    CloudStoreUtils.getCloudStoreEntityAndProcess(
+    CloudStoreUtils.getAndProcess(
         this,
         VmServiceFactory.SELF_LINK + "/" + state.vmId,
         VmService.State.class,
@@ -224,7 +228,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
         DhcpSubnetService.IpOperationPatch.Kind.AllocateIp,
         state.vmId, state.vmMacAddress, null);
 
-    CloudStoreUtils.patchCloudStoreEntityAndProcess(
+    CloudStoreUtils.patchAndProcess(
         this,
         DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK,
         allocateIp,
@@ -242,13 +246,37 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
     try {
       AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
           TaskState.TaskStage.STARTED,
-          AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.CREATE_NAT_RULE);
+          AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
       patchState.vmFloatingIpAddress = ipAddress;
 
       progress(state, patchState);
     } catch (Throwable t) {
       fail(state, t);
     }
+  }
+
+  private void getNsxConfiguration(AssignFloatingIpToVmWorkflowDocument state) {
+    CloudStoreUtils.queryAndProcess(
+        this,
+        DeploymentService.State.class,
+        deploymentState -> {
+          try {
+            AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.STARTED,
+                AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.CREATE_NAT_RULE);
+            patchState.nsxAddress = deploymentState.networkManagerAddress;
+            patchState.nsxUsername = deploymentState.networkManagerUsername;
+            patchState.nsxPassword = deploymentState.networkManagerPassword;
+
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        },
+        t -> {
+          fail(state, t);
+        }
+    );
   }
 
   private void createNatRule(AssignFloatingIpToVmWorkflowDocument state) throws Throwable {
@@ -295,7 +323,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
   }
 
   private void updateVm(AssignFloatingIpToVmWorkflowDocument state) {
-    CloudStoreUtils.getCloudStoreEntityAndProcess(
+    CloudStoreUtils.getAndProcess(
         this,
         VmServiceFactory.SELF_LINK + "/" + state.vmId,
         VmService.State.class,
@@ -316,7 +344,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
   }
 
   private void updateVm(AssignFloatingIpToVmWorkflowDocument state, VmService.State vmPatchState) {
-    CloudStoreUtils.patchCloudStoreEntityAndProcess(
+    CloudStoreUtils.patchAndProcess(
         this,
         VmServiceFactory.SELF_LINK + "/" + state.vmId,
         vmPatchState,
@@ -334,7 +362,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
     VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
     virtualNetworkPatchState.vmIdToNatRuleIdMap = state.taskServiceEntity.vmIdToNatRuleIdMap;
 
-    CloudStoreUtils.patchCloudStoreEntityAndProcess(
+    CloudStoreUtils.patchAndProcess(
         this,
         VirtualNetworkService.FACTORY_LINK + "/" + state.networkId,
         virtualNetworkPatchState,
