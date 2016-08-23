@@ -16,10 +16,15 @@ package com.vmware.photon.controller.api.frontend.clients;
 import com.vmware.photon.controller.api.frontend.BackendTaskExecutor;
 import com.vmware.photon.controller.api.frontend.backends.TaskBackend;
 import com.vmware.photon.controller.api.frontend.backends.VmBackend;
+import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControllerXenonRestClient;
+import com.vmware.photon.controller.api.frontend.backends.utils.TaskUtils;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
+import com.vmware.photon.controller.api.frontend.entities.VmEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.model.ImageCreateSpec;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.ResourceList;
@@ -28,6 +33,8 @@ import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
 import com.vmware.photon.controller.api.model.VmFloatingIpSpec;
+import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIpToVmWorkflowDocument;
+import com.vmware.photon.controller.apibackend.workflows.AssignFloatingIpToVmWorkflowService;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
@@ -52,14 +59,26 @@ public class VmFeClient {
   private final ExecutorService executor;
   private final VmBackend vmBackend;
   private final TaskBackend taskBackend;
+  private final PhotonControllerXenonRestClient backendClient;
+  private final ApiFeXenonRestClient cloudStoreClient;
 
   @Inject
-  public VmFeClient(TaskCommandFactory commandFactory, VmBackend vmBackend,
-                    @BackendTaskExecutor ExecutorService executor, TaskBackend taskBackend) {
+  public VmFeClient(TaskCommandFactory commandFactory,
+                    VmBackend vmBackend,
+                    @BackendTaskExecutor ExecutorService executor,
+                    TaskBackend taskBackend,
+                    PhotonControllerXenonRestClient photonControllerXenonRestClient,
+                    ApiFeXenonRestClient cloudStoreClient) {
     this.commandFactory = commandFactory;
     this.executor = executor;
     this.vmBackend = vmBackend;
     this.taskBackend = taskBackend;
+
+    this.backendClient = photonControllerXenonRestClient;
+    this.backendClient.start();
+
+    this.cloudStoreClient = cloudStoreClient;
+    this.cloudStoreClient.start();
   }
 
   public Vm get(String id) throws ExternalException {
@@ -189,6 +208,20 @@ public class VmFeClient {
   }
 
   public Task assignFloatingIp(String vmId, VmFloatingIpSpec spec) throws ExternalException {
-    return null;
+    VmEntity vmEntity = vmBackend.findById(vmId);
+
+    if (!vmEntity.getNetworks().contains(spec.getNetworkId())) {
+      throw new NetworkNotFoundException(spec.getNetworkId());
+    }
+
+    AssignFloatingIpToVmWorkflowDocument startState = new AssignFloatingIpToVmWorkflowDocument();
+    startState.vmId = vmId;
+    startState.networkId = spec.getNetworkId();
+
+    AssignFloatingIpToVmWorkflowDocument finalState = backendClient.post(
+        AssignFloatingIpToVmWorkflowService.FACTORY_LINK,
+        startState).getBody(AssignFloatingIpToVmWorkflowDocument.class);
+
+    return TaskUtils.convertBackEndToFrontEnd(finalState.taskServiceState);
   }
 }
