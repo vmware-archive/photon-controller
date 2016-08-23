@@ -3,10 +3,10 @@ background_workers_queue_size: 200
 use_virtual_network: false
 
 auth:
-  enable_auth: true
-  auth_server_address: 10.146.64.236
-  auth_server_port: 443
-  tenant: esxcloud
+  enableAuth: true
+  authServerAddress: 10.146.64.236
+  authServerPort: 443
+  authDomain: esxcloud
 
 pagination:
   default_page_size: 10

@@ -7,7 +7,11 @@ photon target set https://192.168.114.11:9000 -c
 photon target login --username photon@photon.local --password Photon123$
 deployment_ready=$(photon deployment show | grep READY | wc -l)
 
+
+
 if [ "$deployment_ready" != "1" ]; then
   echo "ERROR: Deployment not ready"
+  ./delete-pc-cluster.sh
+  ./delete-lw-cluster.sh
   exit 1
 fi

@@ -32,6 +32,9 @@ deployer:
     vibDirectory: "/tmp/deployAgent/vibs"
     waitForServiceMaxRetryCount: 17
     sharedSecret: "shared-secret"
+    imageDataStoreNames:
+    - datastore1
+    imageDataStoreUsedForVMs: "True"
 
   xenon:
     bindAddress: localhost
@@ -60,3 +63,6 @@ deployer:
     scanPeriodMs: 5000
     hostConfigPoolSize: 10
     enableScan: true
+
+auth:
+  enableAuth: false
