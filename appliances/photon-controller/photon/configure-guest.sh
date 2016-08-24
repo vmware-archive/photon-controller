@@ -216,6 +216,31 @@ function configure_photon() {
   systemctl start photon-controller
 }
 
+function build_sample_config() {
+  # compute memory available on the system
+  memory_mb=`free -m | grep Mem | tr -s " " | cut -d " " -f 2`
+  ip=`ip addr show | grep "inet " | grep -v 127.0.0.1 | cut -d' ' -f6 | cut -d'/' -f1`
+  custom_context="{ \
+    \"PHOTON_CONTROLLER_PEER_NODES\": [{\"peerAddress\": \"${ip}\", \"peerPort\": 19000}], \
+    \"APIFE_IP\": \"${ip}\", \
+    \"REGISTRATION_ADDRESS\": \"${ip}\", \
+    \"memoryMb\" : ${memory_mb} \
+  }"
+
+  mkdir -p /etc/esxcloud/example
+  predefined_context=`cat /etc/photon/config-templates/photon-controller-core_example.json`
+  context=`echo "${custom_context}" "${predefined_context}" | jq -s add`
+
+  content=`cat /etc/photon/config-templates/photon-controller-core.yml`
+  pystache "$content" "$context" > /etc/esxcloud/example/photon-controller-core.yml
+
+  content=`cat /etc/photon/config-templates/run.sh`
+  pystache "$content" "$context" > /etc/esxcloud/example/run.sh
+
+  content=`cat /etc/photon/config-templates/swagger-config.js`
+  pystache "$content" "$context" > /etc/esxcloud/example/swagger-config.js
+}
+
 function parse_ovf_env() {
   # vm config
   ip0=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ip0']/../@*[local-name()='value'])")
@@ -280,12 +305,12 @@ set_ntp_servers
 set_network_properties
 set_root_password
 set_photon_password
+build_sample_config
 configure_photon
 
 # the XML file contains passwords
 rm -rf $XML_FILE
 set -e
-
 
 
 #remove itself from startup

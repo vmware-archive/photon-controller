@@ -11,6 +11,7 @@
 # specific language governing permissions and limitations under the License.
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+JQ_URL=${JQ_URL:-"https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64"}
 
 GERRIT_BRANCH=${GERRIT_BRANCH:-"develop"}
 
@@ -22,6 +23,7 @@ if [ -z $NO_PHOTON_REBUILD ]; then
 fi
 
 export SOURCE_OVA=${SCRIPT_DIR}/../photon-ova/build/`basename ${SCRIPT_DIR}/../photon-ova/build/photon*.ova`
+cp ${SCRIPT_DIR}/../../java/photon-controller-core/src/dist/configuration/lightwave/lightwave_example.json ${SCRIPT_DIR}/photon/config
 
 if [ -d ./build ] ; then
   rm -rf ./build/*
@@ -31,7 +33,9 @@ fi
 
 export PACKER_LOG=1
 
-packer build -force lightwave-packer.json
+packer build -force \
+  -var "jq_url=$JQ_URL" \
+  lightwave-packer.json
 
 # make ova vmware compatible
 pushd build

@@ -172,6 +172,20 @@ function configure_lightwave() {
   rm -rf /etc/photon/config/lightwave-server-instance.cfg
 }
 
+function build_sample_config() {
+  ip=`ip addr show | grep "inet " | grep -v 127.0.0.1 | cut -d' ' -f6 | cut -d'/' -f1`
+  custom_context="{ \
+    \"LIGHTWAVE_HOSTNAME\": \"${ip}\" \
+  }"
+
+  predefined_context=`cat /etc/photon/config/lightwave_example.json`
+  context=`echo "${custom_context}" "${predefined_context}" | jq -s add`
+
+
+  content=`cat /etc/photon/config/lightwave-server.cfg`
+  pystache "$content" "$context" > /etc/photon/config/lightwave-server-example.cfg
+}
+
 function parse_ovf_env() {
   # vm config
   ip0=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ip0']/../@*[local-name()='value'])")
@@ -239,6 +253,7 @@ rm -rf $XML_FILE
 
 set -e
 
+build_sample_config
 
 
 #remove itself from startup

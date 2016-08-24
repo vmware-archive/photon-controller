@@ -38,6 +38,7 @@ cp ${SCRIPT_DIR}/../../java/photon-controller-core/src/dist/configuration/photon
 cp ${SCRIPT_DIR}/../../java/photon-controller-core/src/dist/configuration/photon-controller-core_release.json ${SCRIPT_DIR}/photon/config-templates
 cp ${SCRIPT_DIR}/../../java/photon-controller-core/src/dist/configuration/run.sh ${SCRIPT_DIR}/photon/config-templates
 cp ${SCRIPT_DIR}/../../java/photon-controller-core/src/dist/configuration/swagger-config.js ${SCRIPT_DIR}/photon/config-templates
+cp ${SCRIPT_DIR}/../../java/photon-controller-core/src/dist/configuration/photon-controller-core_example.json ${SCRIPT_DIR}/photon/config-templates
 
 export SOURCE_OVA=${SCRIPT_DIR}/../photon-ova/build/`basename ${SCRIPT_DIR}/../photon-ova/build/photon*.ova`
 

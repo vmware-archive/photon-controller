@@ -1,0 +1,6 @@
+{
+  "LIGHTWAVE_DOMAIN": "photon-example",
+  "DEPLOYMENT": "standalone",
+  "IS_FIRST_INSTANCE": "true",
+  "LIGHTWAVE_PASSWORD": "L1ghtwave!"
+}

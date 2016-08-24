@@ -30,6 +30,10 @@
       "inline": "echo Installing libxml2 for xmlint && tdnf install -y libxml2"
     },
     {
+      "type": "shell",
+      "inline": "wget -nv {{ user `jq_url` }} -O /usr/local/bin/jq && chmod +x /usr/local/bin/jq"
+    },
+    {
       "type": "file",
       "source": "scripts",
       "destination": "/tmp"
