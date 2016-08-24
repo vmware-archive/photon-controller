@@ -127,6 +127,7 @@ public class CreateLogicalRouterTaskService extends StatefulService {
       logicalRouterCreateSpec.setDisplayName(NameUtils.getLogicalRouterName(currentState.networkId));
       logicalRouterCreateSpec.setDescription(NameUtils.getLogicalRouterDescription(currentState.networkId));
       logicalRouterCreateSpec.setRouterType(NsxRouter.RouterType.TIER1);
+      logicalRouterCreateSpec.setEdgeClusterId(currentState.edgeClusterId);
       logicalRouterCreateSpec.setTags(TagUtils.getLogicalRouterTags(currentState.networkId));
       if (currentState.edgeClusterId != null) {
         logicalRouterCreateSpec.setEdgeClusterId(currentState.edgeClusterId);

@@ -76,6 +76,7 @@ public class CreateLogicalRouterTaskServiceTest {
     state.nsxUsername = "nsxUsername";
     state.nsxPassword = "nsxPassword";
     state.networkId = "virtualNetworkId";
+    state.edgeClusterId = "edgeClusterId";
 
     return state;
   }

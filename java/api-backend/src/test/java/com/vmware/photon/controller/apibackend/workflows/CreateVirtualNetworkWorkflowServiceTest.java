@@ -624,6 +624,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     private static final String NETWORK_MANAGER_PASSWORD = "networkManagerPassword";
     private static final String NETWORK_ZONE_ID = "networkZoneId";
     private static final String NETWORK_TOP_ROUTER_ID = "networkTopRouterId";
+    private static final String NETWORK_EDGE_CLUSTER_ID = "networkEdgeClusterId";
     private static final String LOGICAL_SWITCH_ID = "logicalSwitchId";
     private static final String LOGICAL_ROUTER_ID = "logicalRouterId";
     private static final String LOGICAL_SWITCH_UPLINK_PORT_ID = "logicalSwitchUplinkPortId";
@@ -657,6 +658,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       deploymentStartState.networkManagerPassword = NETWORK_MANAGER_PASSWORD;
       deploymentStartState.networkZoneId = NETWORK_ZONE_ID;
       deploymentStartState.networkTopRouterId = NETWORK_TOP_ROUTER_ID;
+      deploymentStartState.edgeClusterId = NETWORK_EDGE_CLUSTER_ID;
       deploymentStartState.dhcpRelayServiceId = DHCP_RELAY_SERVICE_ID;
 
       subnetAllocatorServiceState = new SubnetAllocatorService.State();

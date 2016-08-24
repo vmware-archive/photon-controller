@@ -172,6 +172,12 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   public String tier0RouterId;
 
   /**
+   * ID of the edge cluster.
+   */
+  @WriteOnce
+  public String edgeClusterId;
+
+  /**
    * ID of the nsx DHCP relay service.
    */
   @WriteOnce
