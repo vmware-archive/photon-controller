@@ -385,6 +385,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
             patchState.nsxPassword = deploymentState.networkManagerPassword;
             patchState.transportZoneId = deploymentState.networkZoneId;
             patchState.tier0RouterId = deploymentState.networkTopRouterId;
+            patchState.edgeClusterId = deploymentState.edgeClusterId;
             patchState.dhcpRelayServiceId = deploymentState.dhcpRelayServiceId;
             progress(state, patchState);
           } catch (Throwable t) {
@@ -455,6 +456,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     createLogicalRouterTask.nsxUsername = state.nsxUsername;
     createLogicalRouterTask.nsxPassword = state.nsxPassword;
     createLogicalRouterTask.networkId = getVirtualNetworkId(state);
+    createLogicalRouterTask.edgeClusterId = state.edgeClusterId;
 
     TaskUtils.startTaskAsync(
         this,
