@@ -29,6 +29,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -50,6 +51,7 @@ public class NetworkConfigurationCreateSpecTest {
           .edgeClusterId("edgeClusterId")
           .ipRange("10.0.0.1/24")
           .floatingIpRange("192.168.0.1/28")
+          .dhcpServers(new ArrayList<>(Arrays.asList("192.0.0.1", "192.0.0.2")))
           .build();
 
   @Test(enabled = false)
@@ -136,6 +138,7 @@ public class NetworkConfigurationCreateSpecTest {
               .edgeClusterId("c")
               .ipRange("i")
               .floatingIpRange("f")
+              .dhcpServers(Arrays.asList("d"))
               .build(),
               sdnDisabledErrorMsgs},
       };
