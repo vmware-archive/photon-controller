@@ -43,8 +43,8 @@ describe EsxCloud::Cluster do
         :vmFlavor => "core-100",
         :diskFlavor => "core-100",
         :vmNetworkId => "network",
-        :slaveCount => 2,
-        :slaveBatchExpansionSize => 5,
+        :workerCount => 2,
+        :workerBatchExpansionSize => 5,
         :extendedProperties => {
           "dns" => "10.0.0.1",
           "gateway" => "10.0.0.2",
@@ -68,7 +68,7 @@ describe EsxCloud::Cluster do
           "name" => "name",
           "type" => "KUBERNETES",
           "state" => "CREATING",
-          "slaveCount" => 2,
+          "workerCount" => 2,
           "extendedProperties" => {
             "dns" => "10.0.0.1",
             "gateway" => "10.0.0.2",
@@ -85,7 +85,7 @@ describe EsxCloud::Cluster do
           cluster.name.should == "name"
           cluster.type.should == "KUBERNETES"
           cluster.state.should == "CREATING"
-          cluster.slave_count.should == 2
+          cluster.worker_count.should == 2
           cluster.extended_properties["dns"].should == "10.0.0.1"
           cluster.extended_properties["gateway"].should == "10.0.0.2"
           cluster.extended_properties["netmask"].should == "255.255.255.128"
