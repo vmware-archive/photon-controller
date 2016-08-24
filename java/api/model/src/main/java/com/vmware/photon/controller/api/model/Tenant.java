@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.api.model;
 
-import com.vmware.photon.controller.api.model.base.BaseCompact;
 import com.vmware.photon.controller.api.model.base.VisibleModel;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -41,8 +40,8 @@ public class Tenant extends VisibleModel {
   private String kind = KIND;
 
   @JsonProperty
-  @ApiModelProperty(value = "Compact representation (id, name) of tenant resource tickets", required = true)
-  private List<BaseCompact> resourceTickets = new ArrayList<>();
+  @ApiModelProperty(value = "Full ResourceTicket API representation of tenant resource tickets", required = true)
+  private List<ResourceTicket> resourceTickets = new ArrayList<>();
 
   @JsonProperty
   @ApiModelProperty(value = "This property is the list of security groups of this tenant")
@@ -53,11 +52,11 @@ public class Tenant extends VisibleModel {
     return kind;
   }
 
-  public List<BaseCompact> getResourceTickets() {
+  public List<ResourceTicket> getResourceTickets() {
     return resourceTickets;
   }
 
-  public void setResourceTickets(List<BaseCompact> resourceTickets) {
+  public void setResourceTickets(List<ResourceTicket> resourceTickets) {
     this.resourceTickets = resourceTickets;
   }
 

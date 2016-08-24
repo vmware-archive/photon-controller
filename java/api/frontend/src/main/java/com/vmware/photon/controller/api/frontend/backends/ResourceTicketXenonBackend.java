@@ -309,6 +309,11 @@ public class ResourceTicketXenonBackend implements ResourceTicketBackend {
     return findById(id).toApiRepresentation();
   }
 
+  public ResourceTicket getApiRepresentation(ResourceTicketService.State resourceTicketDocument) {
+    ResourceTicketEntity resourceTicketEntity = convertToResourceTicketEntity(resourceTicketDocument);
+    return resourceTicketEntity.toApiRepresentation();
+  }
+
   @Override
   public ResourceTicketEntity create(String tenantId, ResourceTicketCreateSpec spec) throws ExternalException {
     tenantBackend.findById(tenantId);
