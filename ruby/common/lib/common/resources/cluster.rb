@@ -11,26 +11,26 @@
 
 module EsxCloud
   class Cluster
-    attr_reader :id, :name, :type, :state, :slave_count, :extended_properties
+    attr_reader :id, :name, :type, :state, :worker_count, :extended_properties
 
     # @param [String] id
     # @param [String] name
     # @param [String] type
     # @param [String] state
-    # @param [int] slave_count
+    # @param [int] worker_count
     # @param [Hash] extended_properties
-    def initialize(id, name, type, state, slave_count, extended_properties)
+    def initialize(id, name, type, state, worker_count, extended_properties)
       @id = id
       @name = name
       @type = type
       @state = state
-      @slave_count = slave_count
+      @worker_count = worker_count
       @extended_properties = extended_properties
     end
 
     def ==(other)
       @id == other.id && @name == other.name && @type == other.type &&
-      @state == state && @slave_count == other.slave_count &&
+      @state == state && @worker_count == other.worker_count &&
       @extended_properties == other.extended_properties
     end
 
@@ -42,7 +42,7 @@ module EsxCloud
       end
 
       new(hash["id"], hash["name"], hash["type"], hash["state"],
-          hash["slaveCount"], hash["extendedProperties"])
+          hash["workerCount"], hash["extendedProperties"])
     end
 
     # @param [String] project_id

@@ -68,7 +68,7 @@ module EsxCloud::Cli
         table.headings = %w(ID Name Type State Size) unless summary_view
         summary = Hash.new(0)
         clusters.each do |cluster|
-          table.add_row([cluster.id, cluster.name, cluster.type, cluster.state, cluster.slave_count]) unless summary_view
+          table.add_row([cluster.id, cluster.name, cluster.type, cluster.state, cluster.worker_count]) unless summary_view
           table.add_separator unless cluster == clusters[-1] && !summary_view
           summary[cluster.name] += 1
         end
@@ -161,7 +161,7 @@ module EsxCloud::Cli
       # @param [Array<EsxCloud::Cluster>] clusters
       def render_cluster_list(clusters)
         table = Terminal::Table.new
-        table.headings = ["Cluster", "Type", "Master Count", "Slave Count"]
+        table.headings = ["Cluster", "Type", "Master Count", "Worker Count"]
         clusters = clusters.sort_by { |c| c.name }
 
         clusters.each do |cluster|
@@ -169,7 +169,7 @@ module EsxCloud::Cli
             "#{cluster.id}\n#{cluster.name}",
             cluster.type,
             cluster.master_count,
-            cluster.slave_count])
+            cluster.worker_count])
           table.add_separator unless cluster == clusters[-1]
         end
 

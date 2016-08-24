@@ -43,7 +43,7 @@ describe EsxCloud::ApiClient do
       cluster = double(EsxCloud::Cluster)
 
       expect(@http_client).to receive(:post_json)
-                              .with("/clusters/foo/resize", {:newSlaveCount=>100})
+                              .with("/clusters/foo/resize", {:newWorkerCount=>100})
                               .and_return(task_created("aaa"))
       expect(@http_client).to receive(:get).with(URL_HOST + "/tasks/aaa").and_return(task_done("aaa", "cluster-id"))
 
