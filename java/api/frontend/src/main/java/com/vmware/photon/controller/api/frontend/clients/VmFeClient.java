@@ -33,7 +33,9 @@ import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
 import com.vmware.photon.controller.api.model.VmFloatingIpSpec;
 import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIpToVmWorkflowDocument;
+import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.AssignFloatingIpToVmWorkflowService;
+import com.vmware.photon.controller.apibackend.workflows.RemoveFloatingIpFromVmWorkflowService;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
@@ -215,6 +217,24 @@ public class VmFeClient {
     AssignFloatingIpToVmWorkflowDocument finalState = backendClient.post(
         AssignFloatingIpToVmWorkflowService.FACTORY_LINK,
         startState).getBody(AssignFloatingIpToVmWorkflowDocument.class);
+
+    return TaskUtils.convertBackEndToFrontEnd(finalState.taskServiceState);
+  }
+
+  public Task releaseFloatingIp(String vmId, VmFloatingIpSpec spec) throws ExternalException {
+    VmEntity vmEntity = vmBackend.findById(vmId);
+
+    if (!vmEntity.getNetworks().contains(spec.getNetworkId())) {
+      throw new NetworkNotFoundException(spec.getNetworkId());
+    }
+
+    RemoveFloatingIpFromVmWorkflowDocument startState = new RemoveFloatingIpFromVmWorkflowDocument();
+    startState.vmId = vmId;
+    startState.networkId = spec.getNetworkId();
+
+    RemoveFloatingIpFromVmWorkflowDocument finalState = backendClient.post(
+        RemoveFloatingIpFromVmWorkflowService.FACTORY_LINK,
+        startState).getBody(RemoveFloatingIpFromVmWorkflowDocument.class);
 
     return TaskUtils.convertBackEndToFrontEnd(finalState.taskServiceState);
   }
