@@ -238,32 +238,22 @@ function parse_ovf_env() {
   lw_domain=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_domain']/../@*[local-name()='value'])") # some.domain.com
   lw_host=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_hostname']/../@*[local-name()='value'])")
   lw_port=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_port']/../@*[local-name()='value'])")
+  pc_secret_password=$(date +%s | base64 | head -c 8)
   pc_keystore_password=$(date +%s | base64 | head -c 8)
 
   if [ -z "$lw_port" ]; then
-    lw_port=443
+    missing_values = "Missing lw_port"
   fi
   # default are meant for running test setup in fusion
   if [ -z "$lw_host" ]; then
-    lw_host="172.16.127.67"
+    missing_values = ${missing_values}", lw_host"
   fi
   if [ -z "$lw_domain" ]; then
-    lw_domain="photon.vmware.com"
+    missing_values = ${missing_values}", lw_domain"
   fi
-  if [ -z "$ip0" ]; then
-    ip0="172.16.127.66"
-  fi
-  if [ -z "$netmask0" ]; then
-    netmask0="255.255.255.0"
-  fi
-  if [ -z "$gateway" ]; then
-    gateway="172.16.127.2"
-  fi
-  if [ -z "$dns" ]; then
-    dns="172.16.127.2"
-  fi
-  if [ -z "$pc_secret_password" ]; then
-    pc_secret_password=$(date +%s | base64 | head -c 8)
+  if [ ! -z "$missing_values" ]; then
+    echo $missing_values
+    exit -1
   fi
 }
 
@@ -273,17 +263,19 @@ ovf_env=$(vmtoolsd --cmd 'info-get guestinfo.ovfEnv')
 # remove passwords from guestinfo.ovfEnv
 vmtoolsd --cmd "info-set guestinfo.ovfEnv `vmtoolsd --cmd 'info-get guestinfo.ovfEnv' | grep -v password`"
 # this file needs to be deleted since it contains passwords
-echo "$ovf_env" > $XML_FILE
-parse_ovf_env
+if [ ! -z "$ovf_env" ]; then
+  echo "$ovf_env" > $XML_FILE
+  parse_ovf_env
 
-set_ntp_servers
-set_network_properties
-set_root_password
-set_photon_password
-configure_photon
+  set_ntp_servers
+  set_network_properties
+  set_root_password
+  set_photon_password
+  configure_photon
 
-# the XML file contains passwords
-rm -rf $XML_FILE
+  # the XML file contains passwords
+  rm -rf $XML_FILE
+fi
 set -e
 
 

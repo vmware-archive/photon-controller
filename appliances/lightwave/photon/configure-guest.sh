@@ -197,46 +197,39 @@ function parse_ovf_env() {
     lw_is_first_instance="false"
   fi
   if [ -z "$lw_password" ]; then
-    lw_password='L1ghtwave!'
+    missing_values = "Missing lw_password"
   fi
   if [ -z "$lw_hostname" ]; then
-    lw_hostname="172.16.127.67"
+    missing_values = ${missing_values}", lw_hostname"
   fi
   if [ -z "$lw_domain" ]; then
-    lw_domain="photon.vmware.com"
+    missing_values = ${missing_values}", lw_domain"
   fi
-  if [ -z "$ip0" ]; then
-    ip0="172.16.127.67"
-  fi
-  if [ -z "$netmask0" ]; then
-    netmask0="255.255.255.0"
-  fi
-  if [ -z "$gateway" ]; then
-    gateway="172.16.127.2"
-  fi
-  if [ -z "$dns" ]; then
-    dns="172.16.127.2"
+  if [ ! -z "$missing_values" ]; then
+    echo $missing_values
+    exit -1
   fi
 }
 
 set +e
 # Get env variables set in this OVF thru properties
 ovf_env=$(vmtoolsd --cmd 'info-get guestinfo.ovfEnv')
-# remove passwords from guestinfo.ovfEnv
-vmtoolsd --cmd "info-set guestinfo.ovfEnv `vmtoolsd --cmd 'info-get guestinfo.ovfEnv' | grep -v password`"
-# this file needs to be deleted since it contains passwords
-echo "$ovf_env" > $XML_FILE
-parse_ovf_env
+if [ ! -z "${ova_enf}" ]; then
+  # remove passwords from guestinfo.ovfEnv
+  vmtoolsd --cmd "info-set guestinfo.ovfEnv `vmtoolsd --cmd 'info-get guestinfo.ovfEnv' | grep -v password`"
+  # this file needs to be deleted since it contains passwords
+  echo "$ovf_env" > $XML_FILE
+  parse_ovf_env
 
-set_ntp_servers
-set_network_properties
-set_root_password
-set_photon_password
-configure_lightwave
+  set_ntp_servers
+  set_network_properties
+  set_root_password
+  set_photon_password
+  configure_lightwave
 
-# the XML file contains passwords
-rm -rf $XML_FILE
-
+  # the XML file contains passwords
+  rm -rf $XML_FILE
+fi
 set -e
 
 
