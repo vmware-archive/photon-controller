@@ -55,12 +55,12 @@ public class QueryTaskUtilsTest {
       assertThat(spec.query.term, nullValue());
       assertThat(spec.query.booleanClauses.size(), is(2));
       assertThat(spec.query.booleanClauses.get(0).term.matchValue, is(Utils.buildKind(Class.class)));
-      assertThat(spec.query.booleanClauses.get(0).term.matchType, nullValue());
+      assertThat(spec.query.booleanClauses.get(0).term.matchType, is(QueryTask.QueryTerm.MatchType.TERM));
       assertThat(spec.query.booleanClauses.get(0).occurance, is(QueryTask.Query.Occurance.MUST_OCCUR));
       assertThat(spec.query.booleanClauses.get(0).term.propertyName, is(ServiceDocument.FIELD_NAME_KIND));
       assertThat(spec.query.booleanClauses.get(1).term.propertyName, is(QueryTaskUtils.PARENT_LINK_FIELD_NAME));
       assertThat(spec.query.booleanClauses.get(1).term.matchValue, is("parentLink"));
-      assertThat(spec.query.booleanClauses.get(1).term.matchType, nullValue());
+      assertThat(spec.query.booleanClauses.get(1).term.matchType, is(QueryTask.QueryTerm.MatchType.TERM));
       assertThat(spec.query.booleanClauses.get(1).occurance, is(QueryTask.Query.Occurance.MUST_OCCUR));
     }
 
@@ -79,7 +79,7 @@ public class QueryTaskUtilsTest {
       assertThat(spec.query.booleanClauses.size(), is(3));
       assertThat(spec.query.booleanClauses.get(1).term.propertyName, is("extraTerm"));
       assertThat(spec.query.booleanClauses.get(1).term.matchValue, is("extraTermValue"));
-      assertThat(spec.query.booleanClauses.get(1).term.matchType, nullValue());
+      assertThat(spec.query.booleanClauses.get(1).term.matchType, is(QueryTask.QueryTerm.MatchType.TERM));
       assertThat(spec.query.booleanClauses.get(1).occurance, is(QueryTask.Query.Occurance.MUST_OCCUR));
     }
 
@@ -149,7 +149,7 @@ public class QueryTaskUtilsTest {
       // validate that we have a parent link
       assertThat(spec.query.booleanClauses.get(2).term.propertyName, is(QueryTaskUtils.PARENT_LINK_FIELD_NAME));
       assertThat(spec.query.booleanClauses.get(2).term.matchValue, is("parentLink"));
-      assertThat(spec.query.booleanClauses.get(2).term.matchType, nullValue());
+      assertThat(spec.query.booleanClauses.get(2).term.matchType, is(QueryTask.QueryTerm.MatchType.TERM));
       assertThat(spec.query.booleanClauses.get(2).occurance, is(QueryTask.Query.Occurance.MUST_OCCUR));
     }
 
@@ -186,7 +186,7 @@ public class QueryTaskUtilsTest {
       // validate that we have a parent link
       assertThat(spec.query.booleanClauses.get(2).term.propertyName, is(QueryTaskUtils.PARENT_LINK_FIELD_NAME));
       assertThat(spec.query.booleanClauses.get(2).term.matchValue, is("parentLink"));
-      assertThat(spec.query.booleanClauses.get(2).term.matchType, nullValue());
+      assertThat(spec.query.booleanClauses.get(2).term.matchType, is(QueryTask.QueryTerm.MatchType.TERM));
       assertThat(spec.query.booleanClauses.get(2).occurance, is(QueryTask.Query.Occurance.MUST_OCCUR));
     }
 
