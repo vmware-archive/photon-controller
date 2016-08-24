@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.api.model;
 
-import com.vmware.photon.controller.api.model.base.BaseCompact;
 import com.vmware.photon.controller.api.model.base.VisibleModel;
 import com.vmware.photon.controller.api.model.helpers.JsonHelpers;
 
@@ -47,8 +46,28 @@ public class TenantTest {
       tenant.setId("t1");
       tenant.setSelfLink("http://localhost:9080/v1/tenants/t1");
       tenant.setName("t1name");
-      tenant.setResourceTickets(ImmutableList.of(BaseCompact.create("rt1", "rt1name"),
-          BaseCompact.create("rt2", "rt2name")));
+
+      ResourceTicket ticket1 = new ResourceTicket();
+      ticket1.setId("rt1");
+      ticket1.setSelfLink("http://localhost:9080/v1/resource-tickets/rt1");
+      ticket1.setName("rt1name");
+      ticket1.setTenantId("t1");
+      ticket1.setLimits(ImmutableList.of(
+          new QuotaLineItem("a", 1.0, QuotaUnit.COUNT), new QuotaLineItem("b", 2.0, QuotaUnit.MB)));
+      ticket1.setUsage(ImmutableList.of(
+          new QuotaLineItem("a", 0.5, QuotaUnit.COUNT), new QuotaLineItem("b", 1.0, QuotaUnit.MB)));
+      ticket1.setTags(ImmutableSet.of("foo", "bar"));
+
+      ResourceTicket ticket2 = new ResourceTicket();
+      ticket2.setId("rt2");
+      ticket2.setSelfLink("http://localhost:9080/v1/resource-tickets/rt2");
+      ticket2.setName("rt2name");
+      ticket2.setTenantId("t1");
+      ticket2.setLimits(ImmutableList.of(new QuotaLineItem("a", 1.0, QuotaUnit.GB)));
+      ticket2.setUsage(ImmutableList.of(new QuotaLineItem("a", 0.5, QuotaUnit.GB)));
+      ticket2.setTags(ImmutableSet.of("foo", "bar"));
+
+      tenant.setResourceTickets(ImmutableList.of(ticket1, ticket2));
 
       tenant.setTags(ImmutableSet.of("foo", "bar"));
 

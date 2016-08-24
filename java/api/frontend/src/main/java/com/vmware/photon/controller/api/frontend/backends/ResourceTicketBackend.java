@@ -23,6 +23,7 @@ import com.vmware.photon.controller.api.frontend.lib.QuotaCost;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.ResourceTicket;
 import com.vmware.photon.controller.api.model.ResourceTicketCreateSpec;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
 
 import com.google.common.base.Optional;
 
@@ -104,6 +105,8 @@ public interface ResourceTicketBackend {
   ResourceList<ResourceTicket> getPage(String pageLink) throws ExternalException;
 
   ResourceTicket getApiRepresentation(String id) throws ResourceTicketNotFoundException;
+
+  ResourceTicket getApiRepresentation(ResourceTicketService.State resourceTicketDocument);
 
   ResourceTicketEntity create(String tenantId, ResourceTicketCreateSpec spec) throws ExternalException;
 

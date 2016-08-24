@@ -36,7 +36,6 @@ import com.vmware.photon.controller.api.model.ResourceTicket;
 import com.vmware.photon.controller.api.model.SecurityGroup;
 import com.vmware.photon.controller.api.model.Tenant;
 import com.vmware.photon.controller.api.model.TenantCreateSpec;
-import com.vmware.photon.controller.api.model.base.BaseCompact;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantService;
@@ -339,12 +338,11 @@ public class TenantXenonBackend implements TenantBackend {
     tenant.setId(id);
     tenant.setName(state.name);
 
-    List<BaseCompact> tickets = new ArrayList<>();
+    List<ResourceTicket> tickets = new ArrayList<>();
     Set<String> tags = new HashSet<>();
 
     for (ResourceTicketService.State ticket : filterResourceTicketByTenant(id)) {
-      String ticketId = ServiceUtils.getIDFromDocumentSelfLink(ticket.documentSelfLink);
-      tickets.add(BaseCompact.create(ticketId, ticket.name));
+      tickets.add(resourceTicketBackend.getApiRepresentation(ticket));
     }
 
     if (state.tagIds != null) {
@@ -373,12 +371,11 @@ public class TenantXenonBackend implements TenantBackend {
     tenant.setId(tenantEntity.getId());
     tenant.setName(tenantEntity.getName());
 
-    List<BaseCompact> tickets = new ArrayList<>();
+    List<ResourceTicket> tickets = new ArrayList<>();
     Set<String> tags = new HashSet<>();
 
     for (ResourceTicketService.State ticket : filterResourceTicketByTenant(tenantEntity.getId())) {
-      String id = ServiceUtils.getIDFromDocumentSelfLink(ticket.documentSelfLink);
-      tickets.add(BaseCompact.create(id, ticket.name));
+      tickets.add(resourceTicketBackend.getApiRepresentation(ticket));
     }
 
     for (TagEntity tag : tenantEntity.getTags()) {

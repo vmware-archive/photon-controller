@@ -5,11 +5,57 @@
     "resourceTickets": [
         {
             "id": "rt1",
-            "name": "rt1name"
+            "selfLink": "http://localhost:9080/v1/resource-tickets/rt1",
+            "name": "rt1name",
+            "tenantId": "t1",
+            "kind": "resource-ticket",
+            "limits": [
+                {
+                    "key": "a",
+                    "value": 1.0,
+                    "unit": "COUNT"
+                },
+                {
+                    "key": "b",
+                    "value": 2.0,
+                    "unit": "MB"
+                }
+            ],
+            "usage": [
+                {
+                    "key": "a",
+                    "value": 0.5,
+                    "unit": "COUNT"
+                },
+                {
+                    "key": "b",
+                    "value": 1.0,
+                    "unit": "MB"
+                }
+            ],
+            "tags": ["foo", "bar"]
         },
         {
             "id": "rt2",
-            "name": "rt2name"
+            "selfLink": "http://localhost:9080/v1/resource-tickets/rt2",
+            "name": "rt2name",
+            "tenantId": "t1",
+            "kind": "resource-ticket",
+            "limits": [
+                {
+                    "key": "a",
+                    "value": 1.0,
+                    "unit": "GB"
+                }
+            ],
+            "usage": [
+                {
+                    "key": "a",
+                    "value": 0.5,
+                    "unit": "GB"
+                }
+            ],
+            "tags": ["foo", "bar"]
         }
     ],
     "kind": "tenant",
