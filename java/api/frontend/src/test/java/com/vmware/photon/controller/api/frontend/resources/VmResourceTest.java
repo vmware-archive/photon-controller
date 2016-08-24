@@ -79,7 +79,7 @@ public class VmResourceTest extends ResourceTest {
       UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_RESUME_ACTION).build(vmId).toString();
 
   private String vmAssignFloatingIpRoute =
-      UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_ASSIGN_FLOATING_IP_ACTION).build(vmId)
+      UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_AQUIRE_FLOATING_IP_ACTION).build(vmId)
           .toString();
 
   private String taskId = "task1";
@@ -204,13 +204,13 @@ public class VmResourceTest extends ResourceTest {
   }
 
   @Test
-  public void testAssignFloatingIp() throws Exception {
+  public void testAquireFloatingIp() throws Exception {
 
     Task task = new Task();
     task.setId(taskId);
     VmFloatingIpSpec spec = new VmFloatingIpSpec();
     spec.setNetworkId("networkId");
-    when(vmFeClient.assignFloatingIp(vmId, spec)).thenReturn(task);
+    when(vmFeClient.aquireFloatingIp(vmId, spec)).thenReturn(task);
 
     Response response = client()
         .target(vmAssignFloatingIpRoute)

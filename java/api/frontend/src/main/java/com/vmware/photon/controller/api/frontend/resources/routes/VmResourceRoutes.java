@@ -52,6 +52,6 @@ public class VmResourceRoutes {
 
   public static final String VM_SUSPEND_ACTION = "/suspend";
 
-  public static final String VM_ASSIGN_FLOATING_IP_ACTION = "/assign_floating_ip";
+  public static final String VM_AQUIRE_FLOATING_IP_ACTION = "/aquire_floating_ip";
 
 }

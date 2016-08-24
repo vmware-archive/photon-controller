@@ -16,7 +16,6 @@ package com.vmware.photon.controller.api.frontend.clients;
 import com.vmware.photon.controller.api.frontend.BackendTaskExecutor;
 import com.vmware.photon.controller.api.frontend.backends.TaskBackend;
 import com.vmware.photon.controller.api.frontend.backends.VmBackend;
-import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.api.frontend.backends.utils.TaskUtils;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
@@ -60,15 +59,13 @@ public class VmFeClient {
   private final VmBackend vmBackend;
   private final TaskBackend taskBackend;
   private final PhotonControllerXenonRestClient backendClient;
-  private final ApiFeXenonRestClient cloudStoreClient;
 
   @Inject
   public VmFeClient(TaskCommandFactory commandFactory,
                     VmBackend vmBackend,
                     @BackendTaskExecutor ExecutorService executor,
                     TaskBackend taskBackend,
-                    PhotonControllerXenonRestClient photonControllerXenonRestClient,
-                    ApiFeXenonRestClient cloudStoreClient) {
+                    PhotonControllerXenonRestClient photonControllerXenonRestClient) {
     this.commandFactory = commandFactory;
     this.executor = executor;
     this.vmBackend = vmBackend;
@@ -76,9 +73,6 @@ public class VmFeClient {
 
     this.backendClient = photonControllerXenonRestClient;
     this.backendClient.start();
-
-    this.cloudStoreClient = cloudStoreClient;
-    this.cloudStoreClient.start();
   }
 
   public Vm get(String id) throws ExternalException {
@@ -207,7 +201,7 @@ public class VmFeClient {
     return task;
   }
 
-  public Task assignFloatingIp(String vmId, VmFloatingIpSpec spec) throws ExternalException {
+  public Task aquireFloatingIp(String vmId, VmFloatingIpSpec spec) throws ExternalException {
     VmEntity vmEntity = vmBackend.findById(vmId);
 
     if (!vmEntity.getNetworks().contains(spec.getNetworkId())) {
