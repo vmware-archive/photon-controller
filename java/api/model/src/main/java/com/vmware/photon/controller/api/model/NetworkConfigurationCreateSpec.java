@@ -23,10 +23,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Null;
+import javax.validation.constraints.Size;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -89,6 +92,13 @@ public class NetworkConfigurationCreateSpec {
   @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
   @Cidr
   private String floatingIpRange;
+
+  @JsonProperty
+  @ApiModelProperty(value = "List of Dhcp Servers to be used for SDN.")
+  @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
+  @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
+  @Size(min = 1, groups = {SoftwareDefinedNetworkingEnabled.class})
+  private List<String> dhcpServers;
 
   public boolean getSdnEnabled() {
     return sdnEnabled;
@@ -161,6 +171,14 @@ public class NetworkConfigurationCreateSpec {
     this.floatingIpRange = floatingIpRange;
   }
 
+  public List<String> getDhcpServers() {
+    return dhcpServers;
+  }
+
+  public void setDhcpServers(List<String> dhcpServers) {
+    this.dhcpServers = dhcpServers;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -180,7 +198,8 @@ public class NetworkConfigurationCreateSpec {
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
         && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId())
         && Objects.equals(this.getIpRange(), other.getIpRange())
-        && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange());
+        && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange())
+        && Objects.deepEquals(this.getDhcpServers(), other.getDhcpServers());
   }
 
   @Override
@@ -195,7 +214,8 @@ public class NetworkConfigurationCreateSpec {
         this.getNetworkTopRouterId(),
         this.getEdgeClusterId(),
         this.getIpRange(),
-        this.getFloatingIpRange());
+        this.getFloatingIpRange(),
+        this.getDhcpServers());
   }
 
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
@@ -208,7 +228,8 @@ public class NetworkConfigurationCreateSpec {
         .add("networkTopRouterId", this.getNetworkTopRouterId())
         .add("edgeClusterId", this.getEdgeClusterId())
         .add("ipRange", this.getIpRange())
-        .add("floatingIpRange", this.getFloatingIpRange());
+        .add("floatingIpRange", this.getFloatingIpRange())
+        .add("dhcpServers", StringUtils.join(this.getDhcpServers(), ','));
   }
 
   @Override
