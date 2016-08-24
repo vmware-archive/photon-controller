@@ -308,6 +308,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     networkConfiguration.setEdgeClusterId(deploymentEntity.getEdgeClusterId());
     networkConfiguration.setIpRange(deploymentEntity.getIpRange());
     networkConfiguration.setFloatingIpRange(deploymentEntity.getFloatingIpRange());
+    networkConfiguration.setDhcpServers(deploymentEntity.getDhcpServers());
     deployment.setNetworkConfiguration(networkConfiguration);
 
     deployment.setLoadBalancerEnabled(deploymentEntity.getLoadBalancerEnabled());
@@ -514,6 +515,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
 
       // Todo: Need to reverse the first IP for SNAT
       deployment.floatingIpRange = spec.getNetworkConfiguration().getExternalIpRange();
+      deployment.dhcpServers = spec.getNetworkConfiguration().getDhcpServers();
     }
     deployment.loadBalancerEnabled = spec.getLoadBalancerEnabled();
 
@@ -554,6 +556,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     entity.setEdgeClusterId(deployment.edgeClusterId);
     entity.setIpRange(deployment.ipRange);
     entity.setFloatingIpRange(deployment.floatingIpRange);
+    entity.setDhcpServers(deployment.dhcpServers);
     entity.setLoadBalancerEnabled(deployment.loadBalancerEnabled);
     entity.setLoadBalancerAddress(deployment.loadBalancerAddress);
     entity.setMigrationProgress(deployment.dataMigrationProgress);
