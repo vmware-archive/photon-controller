@@ -21,9 +21,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.validation.constraints.NotNull;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -79,6 +81,10 @@ public class NetworkConfiguration {
   @JsonProperty
   @ApiModelProperty(value = "The global floating IP range for allocating floating IP to VM", required = false)
   private String floatingIpRange;
+
+  @JsonProperty
+  @ApiModelProperty(value = "IP addresses of DHCP servers", required = false)
+  private List<String> dhcpServers;
 
   public boolean getSdnEnabled() {
     return sdnEnabled;
@@ -152,6 +158,14 @@ public class NetworkConfiguration {
     this.edgeClusterId = edgeClusterId;
   }
 
+  public List<String> getDhcpServers() {
+    return dhcpServers;
+  }
+
+  public void setDhcpServers(List<String> dhcpServers) {
+    this.dhcpServers = dhcpServers;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -169,7 +183,8 @@ public class NetworkConfiguration {
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
         && Objects.equals(this.getNetworkZoneId(), other.getNetworkZoneId())
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
-        && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId());
+        && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId())
+        && Objects.deepEquals(this.getDhcpServers(), other.getDhcpServers());
   }
 
   @Override
@@ -182,7 +197,8 @@ public class NetworkConfiguration {
         this.getNetworkManagerPassword(),
         this.getNetworkZoneId(),
         this.getNetworkTopRouterId(),
-        this.getEdgeClusterId());
+        this.getEdgeClusterId(),
+        this.getDhcpServers());
   }
 
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
@@ -195,7 +211,8 @@ public class NetworkConfiguration {
         .add("networkTopRouterId", this.getNetworkTopRouterId())
         .add("ipRange", this.getIpRange())
         .add("floatingIpRange", this.getFloatingIpRange())
-        .add("edgeClusterId", this.edgeClusterId);
+        .add("edgeClusterId", this.edgeClusterId)
+        .add("dhcpServers", StringUtils.join(this.getDhcpServers(), ','));
   }
 
   @Override

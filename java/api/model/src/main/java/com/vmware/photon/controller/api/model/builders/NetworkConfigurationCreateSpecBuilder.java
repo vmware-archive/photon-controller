@@ -15,6 +15,8 @@ package com.vmware.photon.controller.api.model.builders;
 
 import com.vmware.photon.controller.api.model.NetworkConfigurationCreateSpec;
 
+import java.util.List;
+
 /**
  * This class implements a builder for {@link NetworkConfigurationCreateSpec} object.
  */
@@ -68,6 +70,11 @@ public class NetworkConfigurationCreateSpecBuilder {
 
   public NetworkConfigurationCreateSpecBuilder floatingIpRange(String floatingIpRange) {
     this.networkConfigurationCreateSpec.setFloatingIpRange(floatingIpRange);
+    return this;
+  }
+
+  public NetworkConfigurationCreateSpecBuilder dhcpServers(List<String> dhcpServers) {
+    this.networkConfigurationCreateSpec.setDhcpServers(dhcpServers);
     return this;
   }
 
