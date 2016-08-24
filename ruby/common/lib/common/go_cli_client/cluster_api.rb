@@ -22,7 +22,7 @@ module EsxCloud
 
         cmd = "cluster create -t '#{tenant.name}' -p '#{project.name}' " +
             "-n '#{payload[:name]}' -k '#{payload[:type]}' -v '#{payload[:vmFlavor]}' " +
-            "-d '#{payload[:diskFlavor]}' -w '#{payload[:vmNetworkId]}' -s #{payload[:slaveCount]} " +
+            "-d '#{payload[:diskFlavor]}' -w '#{payload[:vmNetworkId]}' -c #{payload[:workerCount]} " +
             "--dns '#{payload[:extendedProperties]["dns"]}' " +
             "--gateway '#{payload[:extendedProperties]["gateway"]}' " +
             "--netmask '#{payload[:extendedProperties]["netmask"]}' "
@@ -63,10 +63,10 @@ module EsxCloud
       end
 
       # @param [String] id
-      # @param [int] new_slave_count
+      # @param [int] new_worker_count
       # @return [Boolean]
-      def resize_cluster(id, new_slave_count)
-        run_cli("cluster resize '#{id}' '#{new_slave_count}'")
+      def resize_cluster(id, new_worker_count)
+        run_cli("cluster resize '#{id}' '#{new_worker_count}'")
         true
       end
 
@@ -87,7 +87,7 @@ module EsxCloud
         cluster_hash["name"]               = cluster_attributes[1] unless cluster_attributes[1] == ""
         cluster_hash["state"]              = cluster_attributes[2] unless cluster_attributes[2] == ""
         cluster_hash["type"]               = cluster_attributes[3] unless cluster_attributes[3] == ""
-        cluster_hash["slaveCount"]         = cluster_attributes[4].to_i unless cluster_attributes[4] == ""
+        cluster_hash["workerCount"]        = cluster_attributes[4].to_i unless cluster_attributes[4] == ""
         cluster_hash["extendedProperties"] = extendedProperties_to_hash(cluster_attributes[5])
 
         Cluster.create_from_hash(cluster_hash)

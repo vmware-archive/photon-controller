@@ -12,7 +12,7 @@
 module EsxCloud
   class ClusterCreateSpec
 
-    attr_accessor :name, :type, :vm_flavor, :disk_flavor, :slave_count, :batch_size,
+    attr_accessor :name, :type, :vm_flavor, :disk_flavor, :worker_count, :batch_size,
                   :extended_properties
 
     # @param [String] name
@@ -20,17 +20,17 @@ module EsxCloud
     # @param [String] vm_flavor
     # @param [String] disk_flavor
     # @param [String] network_id
-    # @param [int] slave_count
+    # @param [int] worker_count
     # @param [int] batch_size
     # @param [Hash] extended_properties
-    def initialize(name, type, vm_flavor, disk_flavor, network_id, slave_count, batch_size,
+    def initialize(name, type, vm_flavor, disk_flavor, network_id, worker_count, batch_size,
                    extended_properties)
       @name = name
       @type = type
       @vm_flavor = vm_flavor
       @disk_flavor = disk_flavor
       @network_id = network_id
-      @slave_count = slave_count
+      @worker_count = worker_count
       @batch_size = batch_size
       @extended_properties = extended_properties
     end
@@ -42,8 +42,8 @@ module EsxCloud
         vmFlavor: @vm_flavor,
         diskFlavor: @disk_flavor,
         vmNetworkId: @network_id,
-        slaveCount: @slave_count,
-        slaveBatchExpansionSize: @batch_size,
+        workerCount: @worker_count,
+        workerBatchExpansionSize: @batch_size,
         extendedProperties: @extended_properties
       }
     end

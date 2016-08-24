@@ -80,7 +80,7 @@ module EsxCloud
         options[:vm_flavor],
         options[:disk_flavor],
         options[:network_id],
-        options[:slave_count],
+        options[:worker_count],
         options[:batch_size],
         options[:extended_properties])
 

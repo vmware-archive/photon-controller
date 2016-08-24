@@ -20,7 +20,7 @@ describe EsxCloud::ClusterList do
           "name" => "name-#{i}",
           "type" => "type-#{i}",
           "masterCount" => i,
-          "slaveCount" => i + 1,
+          "workerCount" => i + 1,
           "countainerNetwork" => "container-network-#{i}"
       }
     end

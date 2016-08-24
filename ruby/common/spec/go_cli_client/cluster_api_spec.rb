@@ -40,7 +40,7 @@ describe EsxCloud::GoCliClient do
         :vmFlavor => "core-100",
         :diskFlavor => "core-100",
         :vmNetworkId => "network-id",
-        :slaveCount => 2,
+        :workerCount => 2,
         :extendedProperties => {"dns" => "10.0.0.1",
                                  "gateway" => "10.0.0.2",
                                  "netmask" => "255.255.255.128",
@@ -58,7 +58,7 @@ You can run 'cluster show bar' to see the state of the cluster."
     expect(client).to receive(:find_project_by_id).with("foo").and_return(project)
     expect(client).to receive(:run_cli)
     .with("cluster create -t 't1' -p 'p1' -n 'cluster1' -k 'KUBERNETES' " +
-              "-v 'core-100' -d 'core-100' -w 'network-id' -s 2 --dns '10.0.0.1' --gateway '10.0.0.2' " +
+              "-v 'core-100' -d 'core-100' -w 'network-id' -c 2 --dns '10.0.0.1' --gateway '10.0.0.2' " +
               "--netmask '255.255.255.128' --etcd1 '10.0.0.3' --etcd2 '10.0.0.4' --etcd3 '10.0.0.5' " +
               "--master-ip '10.0.0.6' --container-network '10.0.0.0/12'")
     .and_return(result)
@@ -82,7 +82,7 @@ You can run 'cluster show bar' to see the state of the cluster."
         :vmFlavor => "core-100",
         :diskFlavor => "core-100",
         :vmNetworkId => "network-id",
-        :slaveCount => 2,
+        :workerCount => 2,
         :extendedProperties => {"dns" => "10.0.0.1",
                                  "gateway" => "10.0.0.2",
                                  "netmask" => "255.255.255.128",
@@ -99,7 +99,7 @@ You can run 'cluster show bar' to see the state of the cluster."
     expect(client).to receive(:find_project_by_id).with("foo").and_return(project)
     expect(client).to receive(:run_cli)
     .with("cluster create -t 't1' -p 'p1' -n 'cluster1' -k 'MESOS' " +
-              "-v 'core-100' -d 'core-100' -w 'network-id' -s 2 --dns '10.0.0.1' " +
+              "-v 'core-100' -d 'core-100' -w 'network-id' -c 2 --dns '10.0.0.1' " +
               "--gateway '10.0.0.2' --netmask '255.255.255.128' --zookeeper1 '10.0.0.3' "+
               "--zookeeper2 '10.0.0.4' --zookeeper3 '10.0.0.5'")
     .and_return(result)
@@ -123,7 +123,7 @@ You can run 'cluster show bar' to see the state of the cluster."
         :vmFlavor => "core-100",
         :diskFlavor => "core-100",
         :vmNetworkId => "network-id",
-        :slaveCount => 2,
+        :workerCount => 2,
         :extendedProperties => {"dns" => "10.0.0.1",
                                  "gateway" => "10.0.0.2",
                                  "netmask" => "255.255.255.128",
@@ -140,7 +140,7 @@ You can run 'cluster show bar' to see the state of the cluster."
     expect(client).to receive(:find_project_by_id).with("foo").and_return(project)
     expect(client).to receive(:run_cli)
     .with("cluster create -t 't1' -p 'p1' -n 'cluster1' -k 'SWARM' " +
-              "-v 'core-100' -d 'core-100' -w 'network-id' -s 2 --dns '10.0.0.1' " +
+              "-v 'core-100' -d 'core-100' -w 'network-id' -c 2 --dns '10.0.0.1' " +
               "--gateway '10.0.0.2' --netmask '255.255.255.128' --etcd1 '10.0.0.3' "+
               "--etcd2 '10.0.0.4' --etcd3 '10.0.0.5'")
     .and_return(result)
@@ -157,7 +157,7 @@ You can run 'cluster show bar' to see the state of the cluster."
                    "name" => "cluster1",
                    "state" => "READY",
                    "type" => "SWARM",
-                   "slaveCount" => 2,
+                   "workerCount" => 2,
                    "extendedProperties" =>{"dns" => "10.0.0.1",
                                            "gateway" => "10.0.0.2",
                                            "netmask" => "255.255.255.128",

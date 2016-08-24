@@ -59,7 +59,7 @@ describe "Swarm cluster-service lifecycle", cluster: true do
         vm_flavor: @seeder.vm_flavor!.name,
         disk_flavor: @seeder.ephemeral_disk_flavor!.name,
         network_id: @seeder.network!.id,
-        slave_count: 1,
+        worker_count: 1,
         batch_size: nil,
         extended_properties: props
       )
@@ -68,22 +68,22 @@ describe "Swarm cluster-service lifecycle", cluster: true do
       cluster = client.find_cluster_by_id(cid)
       expect(cluster.name).to start_with("swarm-")
       expect(cluster.type).to eq("SWARM")
-      expect(cluster.slave_count).to eq 1
+      expect(cluster.worker_count).to eq 1
       expect(cluster.state).to eq "READY"
 
-      N_SLAVES = (ENV["N_SLAVES"] || 2).to_i
+      N_WORKERS = (ENV["N_SLAVES"] || 2).to_i
 
       puts "Starting to resize a Swarm cluster"
-      client.resize_cluster(cid, N_SLAVES)
+      client.resize_cluster(cid, N_WORKERS)
       cluster = client.find_cluster_by_id(cid)
-      expect(cluster.slave_count).to eq N_SLAVES
+      expect(cluster.worker_count).to eq N_WORKERS
 
       puts "Waiting for cluster to become READY after resize"
       EsxCloud::ClusterHelper.wait_for_cluster_state(cid, "READY", 5, 120, client)
 
       puts "Getting Cluster VM list"
       master_count = 0
-      slave_count = 0
+      worker_count = 0
       etcd_count = 0
       client.get_cluster_vms(cid).items.each do |i|
         puts i.inspect
@@ -92,14 +92,14 @@ describe "Swarm cluster-service lifecycle", cluster: true do
         elsif i.name.start_with?("master")
           master_count += 1
         elsif i.name.start_with?("worker")
-            slave_count += 1
+            worker_count += 1
         else
             fail("Find an unknown vm #{i.name} in the cluster")
         end
       end
       expect(etcd_count).to eq expected_etcd_count
       expect(master_count).to eq 1
-      expect(slave_count).to eq N_SLAVES
+      expect(worker_count).to eq N_WORKERS
 
       puts "Starting to delete a Swarm cluster"
       client.delete_cluster(cid)

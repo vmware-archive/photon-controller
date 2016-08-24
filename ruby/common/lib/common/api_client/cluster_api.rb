@@ -47,10 +47,10 @@ module EsxCloud
       end
 
       # @param [String] id
-      # @param [int] new_slave_count
+      # @param [int] new_worker_count
       # @return [Boolean]
-      def resize_cluster(id, new_slave_count)
-        payload = {newSlaveCount: new_slave_count}
+      def resize_cluster(id, new_worker_count)
+        payload = {newWorkerCount: new_worker_count}
         response = @http_client.post_json("#{CLUSTERS_ROOT}/#{id}/resize", payload)
         check_response("Resize cluster '#{id}'", response, 201)
 

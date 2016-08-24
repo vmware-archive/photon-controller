@@ -19,7 +19,7 @@ module EsxCloud::Cli
       desc "Create a new cluster"
       def create(args = [])
         tenant, project_name, name, type = nil, nil, nil, nil
-        vm_flavor, disk_flavor, network_id, slave_count, batch_size = nil, nil, nil, nil, nil
+        vm_flavor, disk_flavor, network_id, worker_count, batch_size = nil, nil, nil, nil, nil
         dns, gateway, netmask = nil, nil, nil
         master_ip, container_network = nil, nil
         zookeeper1, zookeeper2, zookeeper3 = nil, nil, nil
@@ -35,7 +35,7 @@ module EsxCloud::Cli
           opts.on("-v", "--vm_flavor VM_FLAVOR", "VM flavor name") { |v| vm_flavor = v }
           opts.on("-d", "--disk_flavor DISK_FLAVOR", "Disk flavor name") { |v| disk_flavor = v }
           opts.on("-w", "--network_id NETWORK_ID", "VM network ID") { |v| network_id = v }
-          opts.on("-s", "--slave_count COUNT", "Slave count") { |v| slave_count = v }
+          opts.on("-s", "--worker_count COUNT", "Worker count") { |v| worker_count = v }
           opts.on("--dns DNS_SERVER", "DNS server.") { |v| dns = v }
           opts.on("--gateway GATEWAY_SERVER", "Gateway server.") { |v| gateway = v }
           opts.on("--netmask NETMASK", "netmask.") { |v| netmask = v }
@@ -56,13 +56,13 @@ module EsxCloud::Cli
           opts.on("--etcd3 ETCD_IP3",
                   "Etcd server 3. Optional for Kubernetes and Swarm cluster.") { |v| etcd3 = v }
           opts.on("--batch-size BATCH_SIZE",
-                  "Size of the batch used during slave expansion process.") { |v| batch_size = v }
+                  "Size of the batch used during worker expansion process.") { |v| batch_size = v }
           opts.on("--wait-for-ready", "Waits for the cluster to become ready.") { |v| wait_for_ready = true }
         end
 
         parse_options(args, opts_parser)
 
-        default_slave_count = 1
+        default_worker_count = 1
         default_batch_size = 0
         default_container_network = "10.2.0.0/16"
 
@@ -80,8 +80,8 @@ module EsxCloud::Cli
           name ||= ask("Cluster Name: ")
           type ||= ask("Cluster Type: ")
 
-          slave_count ||= ask("Slave Nodes Count (default: #{default_slave_count}): ")
-          slave_count = default_slave_count if slave_count.empty?
+          worker_count ||= ask("Worker Nodes Count (default: #{default_worker_count}): ")
+          worker_count = default_worker_count if worker_count.empty?
         else
           project = find_project_by_name(tenant, project_name) if tenant && project_name
         end
@@ -172,14 +172,14 @@ module EsxCloud::Cli
             vm_flavor: vm_flavor,
             disk_flavor: disk_flavor,
             network_id: network_id,
-            slave_count: slave_count,
+            worker_count: worker_count,
             batch_size: batch_size,
             extended_properties: extended_properties)
 
           puts green("Cluster '#{cluster.id}' created")
           puts "  Name: #{cluster.name}"
           puts "  Type: #{cluster.type.upcase}"
-          puts "  Number of Slave Nodes: #{cluster.slave_count}"
+          puts "  Number of Worker Nodes: #{cluster.worker_count}"
           puts
 
           if (wait_for_ready)
@@ -212,7 +212,7 @@ module EsxCloud::Cli
         puts "  Name: #{cluster.name}"
         puts "  Type: #{cluster.type.upcase}"
         puts "  State: #{cluster.state.upcase}"
-        puts "  Number of Slave Nodes: #{cluster.slave_count}"
+        puts "  Number of Worker Nodes: #{cluster.worker_count}"
         puts
 
         puts "Querying Cluster VMs ..."
@@ -221,7 +221,7 @@ module EsxCloud::Cli
         vms_detail = Array.new
         vms.map do |vm|
           vm.tags.map do |tag|
-            if (tag.count(':') == 2) && (!tag.downcase.include? "slave")
+            if (tag.count(':') == 2) && (!tag.downcase.include? "worker")
               connections = client.get_vm_networks(vm.id).network_connections.select { |n| !n.network.blank? }
               vms_detail << [vm, connections.first.ip_address]
               break
@@ -267,7 +267,7 @@ module EsxCloud::Cli
         render_vms(client.get_cluster_vms(id).items)
       end
 
-      usage "cluster resize <id> <new_slave_count> <options>"
+      usage "cluster resize <id> <new_worker_count> <options>"
       desc "Resize the cluster"
       def resize(args = [])
         wait_for_ready = false
@@ -280,16 +280,16 @@ module EsxCloud::Cli
         if id.blank?
           usage_error("Please provide a cluster id")
         end
-        new_slave_count = shift_keyword_arg(args)
-        if new_slave_count.blank?
-          usage_error("Please provide new slave count.")
+        new_worker_count = shift_keyword_arg(args)
+        if new_worker_count.blank?
+          usage_error("Please provide new worker count.")
         end
         parse_options(args, opts_parser)
 
         initialize_client
 
         confirm
-        client.resize_cluster(id, new_slave_count)
+        client.resize_cluster(id, new_worker_count)
         puts green("Cluster '#{id}' resized.")
 
         if (wait_for_ready)

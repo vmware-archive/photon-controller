@@ -168,9 +168,9 @@ module EsxCloud
     end
 
     # @param [String] id
-    # @param [int] new_slave_count
+    # @param [int] new_worker_count
     # @return [Boolean]
-    def resize_cluster(id, new_slave_count)
+    def resize_cluster(id, new_worker_count)
     end
 
     # @param [String] id
