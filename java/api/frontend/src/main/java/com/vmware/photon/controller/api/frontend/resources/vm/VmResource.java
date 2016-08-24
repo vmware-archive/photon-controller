@@ -166,17 +166,17 @@ public class VmResource {
   }
 
   @POST
-  @Path(VmResourceRoutes.VM_ASSIGN_FLOATING_IP_ACTION)
+  @Path(VmResourceRoutes.VM_AQUIRE_FLOATING_IP_ACTION)
   @ApiOperation(value = "Assign a floating IP to a VM", response = Task.class)
   @ApiResponses(value = {
       @ApiResponse(code = 201, message = "Floating IP is being assigned, progress communicated via the task")
   })
-  public Response assignFloatingIp(@Context Request request,
+  public Response aquireFloatingIp(@Context Request request,
                                    @PathParam("id") String id,
                                    @Validated VmFloatingIpSpec spec) throws ExternalException {
     return generateCustomResponse(
         Response.Status.CREATED,
-        vmFeClient.assignFloatingIp(id, spec),
+        vmFeClient.aquireFloatingIp(id, spec),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
