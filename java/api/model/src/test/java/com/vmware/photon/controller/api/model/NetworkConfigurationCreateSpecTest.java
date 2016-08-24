@@ -29,6 +29,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -56,6 +57,7 @@ public class NetworkConfigurationCreateSpecTest {
           .edgeClusterId("edgeClusterId")
           .ipRange("10.0.0.1/24")
           .externalIpRange(sampleIpRange)
+          .dhcpServers(new ArrayList<>(Arrays.asList("192.10.0.1", "192.20.0.1")))
           .build();
 
   @Test(enabled = false)
@@ -68,6 +70,7 @@ public class NetworkConfigurationCreateSpecTest {
   public class ValidationTest {
 
     private final String[] sdnEnabledErrorMsgs = new String[]{
+        "dhcpServers may not be null (was null)",
         "ipRange may not be null (was null)",
         "networkManagerAddress is invalid IP or Domain address (was null)",
         "networkManagerPassword may not be null (was null)",
@@ -79,6 +82,7 @@ public class NetworkConfigurationCreateSpecTest {
     };
 
     private final String[] sdnDisabledErrorMsgs = new String[]{
+        "dhcpServers must be null (was [d])",
         "externalIpRange must be null (was IpRange{start=null, end=null})",
         "ipRange must be null (was i)",
         "networkManagerAddress must be null (was e)",
@@ -148,6 +152,7 @@ public class NetworkConfigurationCreateSpecTest {
               .edgeClusterId("c")
               .ipRange("i")
               .externalIpRange(new IpRange())
+              .dhcpServers(Arrays.asList("d"))
               .build(),
               sdnDisabledErrorMsgs},
       };
@@ -164,7 +169,8 @@ public class NetworkConfigurationCreateSpecTest {
       String expectedString =
           "NetworkConfigurationCreateSpec{sdnEnabled=true, networkManagerAddress=1.2.3.4, " +
           "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, edgeClusterId=edgeClusterId, " +
-          "ipRange=10.0.0.1/24, externalIpRange=IpRange{start=192.168.0.1, end=192.168.0.254}}";
+          "ipRange=10.0.0.1/24, externalIpRange=IpRange{start=192.168.0.1, end=192.168.0.254}, " +
+              "dhcpServers=192.10.0.1,192.20.0.1}";
       assertThat(sampleNetworkConfigurationCreateSpec.toString(), is(expectedString));
     }
   }

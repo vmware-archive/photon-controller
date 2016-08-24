@@ -304,6 +304,10 @@ public class DeploymentService extends StatefulService {
     public String edgeClusterId;
 
     /**
+     * This value represents the list of the DHCP servers.
+     */
+    public List<String> dhcpServers;
+    /**
      * This value represents the ID of the DHCP relay profile.
      */
     public String dhcpRelayProfileId;
