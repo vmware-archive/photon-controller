@@ -54,4 +54,5 @@ public class VmResourceRoutes {
 
   public static final String VM_AQUIRE_FLOATING_IP_ACTION = "/aquire_floating_ip";
 
+  public static final String VM_RELEASE_FLOATING_IP_ACTION = "/release_floating_ip";
 }

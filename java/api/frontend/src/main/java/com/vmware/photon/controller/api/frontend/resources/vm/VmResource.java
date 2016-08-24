@@ -180,4 +180,20 @@ public class VmResource {
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
+
+  @POST
+  @Path(VmResourceRoutes.VM_RELEASE_FLOATING_IP_ACTION)
+  @ApiOperation(value = "Release a floating IP from a VM", response = Task.class)
+  @ApiResponses(value = {
+      @ApiResponse(code = 201, message = "Floating IP is being released, progress communicated via the task")
+  })
+  public Response releaseFloatingIp(@Context Request request,
+                                    @PathParam("id") String id,
+                                    @Validated VmFloatingIpSpec spec) throws ExternalException {
+    return generateCustomResponse(
+        Response.Status.CREATED,
+        vmFeClient.releaseFloatingIp(id, spec),
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
+  }
 }
