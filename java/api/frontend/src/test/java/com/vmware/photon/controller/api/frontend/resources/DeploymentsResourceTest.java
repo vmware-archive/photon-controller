@@ -233,6 +233,7 @@ public class DeploymentsResourceTest extends ResourceTest {
         .edgeClusterId("edgeId")
         .ipRange("192.168.1.1/24")
         .externalIpRange(externalIpRange)
+        .dhcpServers(Arrays.asList("192.10.0.1", "192.20.0.1"))
         .build());
 
     Task task = new Task();
