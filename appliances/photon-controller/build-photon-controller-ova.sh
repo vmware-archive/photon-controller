@@ -11,7 +11,7 @@
 # specific language governing permissions and limitations under the License.
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-JQ_URL=${JQ_URL:-"http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/external/jq/1.5/jq-linux64"}
+JQ_URL=${JQ_URL:-"https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64"}
 
 GERRIT_BRANCH=${GERRIT_BRANCH:-"develop"}
 
