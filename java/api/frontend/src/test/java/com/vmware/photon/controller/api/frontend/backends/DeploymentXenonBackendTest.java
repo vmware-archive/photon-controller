@@ -38,6 +38,7 @@ import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
+import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.NetworkConfiguration;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.StatsInfo;
@@ -161,6 +162,10 @@ public class DeploymentXenonBackendTest {
         .password("p")
         .securityGroups(Arrays.asList(new String[]{"securityGroup1", "securityGroup2"}))
         .build());
+
+    IpRange externalIpRange = new IpRange();
+    externalIpRange.setStart("192.168.0.1");
+    externalIpRange.setEnd("192.168.0.254");
     deploymentCreateSpec.setNetworkConfiguration(new NetworkConfigurationCreateSpecBuilder()
         .networkManagerAddress("1.2.3.4")
         .networkManagerUsername("networkManagerUsername")
@@ -169,7 +174,7 @@ public class DeploymentXenonBackendTest {
         .networkTopRouterId("networkTopRouterId")
         .edgeClusterId("edgeClusterId")
         .ipRange("10.0.0.1/24")
-        .floatingIpRange("192.168.0.1/28")
+        .externalIpRange(externalIpRange)
         .build());
   }
 
@@ -255,7 +260,8 @@ public class DeploymentXenonBackendTest {
       assertThat(deployment.getNetworkTopRouterId(), is("networkTopRouterId"));
       assertThat(deployment.getEdgeClusterId(), is("edgeClusterId"));
       assertThat(deployment.getIpRange(), is("10.0.0.1/24"));
-      assertThat(deployment.getFloatingIpRange(), is("192.168.0.1/28"));
+      assertThat(deployment.getFloatingIpRange(),
+          is(deploymentCreateSpec.getNetworkConfiguration().getExternalIpRange()));
       assertThat(ListUtils.isEqualList(deployment.getOauthSecurityGroups(),
           Arrays.asList(new String[]{"securityGroup1", "securityGroup2"})), is(true));
     }
@@ -1138,7 +1144,7 @@ public class DeploymentXenonBackendTest {
       deployment2.networkTopRouterId = deploymentCreateSpec.getNetworkConfiguration().getNetworkTopRouterId();
       deployment2.edgeClusterId = deploymentCreateSpec.getNetworkConfiguration().getEdgeClusterId();
       deployment2.ipRange = deploymentCreateSpec.getNetworkConfiguration().getIpRange();
-      deployment2.floatingIpRange = deploymentCreateSpec.getNetworkConfiguration().getFloatingIpRange();
+      deployment2.floatingIpRange = deploymentCreateSpec.getNetworkConfiguration().getExternalIpRange();
 
       xenonClient2.post(DeploymentServiceFactory.SELF_LINK, deployment2);
     }

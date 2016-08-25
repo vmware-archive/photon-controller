@@ -16,6 +16,7 @@ package com.vmware.photon.controller.api.frontend.entities;
 import com.vmware.photon.controller.api.frontend.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentState;
+import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.StatsStoreType;
 
 import com.google.common.base.Objects.ToStringHelper;
@@ -74,7 +75,7 @@ public class DeploymentEntity extends BaseEntity {
 
   private String ipRange;
 
-  private String floatingIpRange;
+  private IpRange floatingIpRange;
 
   private String ntpEndpoint;
 
@@ -284,11 +285,11 @@ public class DeploymentEntity extends BaseEntity {
     this.ipRange = ipRange;
   }
 
-  public String getFloatingIpRange() {
+  public IpRange getFloatingIpRange() {
     return floatingIpRange;
   }
 
-  public void setFloatingIpRange(String floatingIpRange) {
+  public void setFloatingIpRange(IpRange floatingIpRange) {
     this.floatingIpRange = floatingIpRange;
   }
 

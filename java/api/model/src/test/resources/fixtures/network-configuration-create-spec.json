@@ -7,5 +7,8 @@
   "networkTopRouterId": "networkTopRouterId",
   "edgeClusterId": "edgeClusterId",
   "ipRange": "10.0.0.1/24",
-  "floatingIpRange": "192.168.0.1/28"
+  "externalIpRange": {
+    "start": "192.168.0.1",
+    "end": "192.168.0.254"
+  }
 }

@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
+import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.StatsStoreType;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.UsageTag;
@@ -182,7 +183,11 @@ public class TestHelper {
       startState.networkManagerUsername = "networkManagerUsername";
       startState.networkManagerPassword = "networkManagerPassword";
       startState.ipRange = "10.0.0.1/24";
-      startState.floatingIpRange = "192.168.0.1/28";
+
+      IpRange floatingIpRange = new IpRange();
+      floatingIpRange.setStart("192.168.0.2");
+      floatingIpRange.setEnd("192.168.0.253");
+      startState.floatingIpRange = floatingIpRange;
     }
     return startState;
   }
