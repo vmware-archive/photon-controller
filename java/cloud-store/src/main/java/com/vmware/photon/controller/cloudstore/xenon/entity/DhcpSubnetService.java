@@ -227,10 +227,9 @@ public class DhcpSubnetService extends StatefulService {
 
       Preconditions.checkArgument(startState.lowIp < startState.highIp, "lowIp should be less than highIp");
 
-      Preconditions.checkArgument(StringUtils.isNotBlank(startState.cidr),
-          "cidr should not be blank for an allocated subnet");
-
       if (!startState.isFloatingIpSubnet) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(startState.cidr),
+            "cidr should not be blank for an allocated private ip subnet");
         Preconditions.checkArgument(StringUtils.isNotBlank(startState.subnetId),
             "subnet should not be blank for an allocated private ip subnet");
       }

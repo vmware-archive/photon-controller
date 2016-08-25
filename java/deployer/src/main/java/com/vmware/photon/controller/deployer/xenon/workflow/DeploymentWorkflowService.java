@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.api.model.DeploymentState;
+import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
@@ -58,7 +59,6 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
-import org.apache.commons.net.util.SubnetUtils;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -688,9 +688,7 @@ public class DeploymentWorkflowService extends StatefulService {
   }
 
   private void createDhcpSubnet(DeploymentService.State deploymentState) {
-    if (!deploymentState.sdnEnabled ||
-        deploymentState.floatingIpRange == null ||
-        deploymentState.floatingIpRange.isEmpty()) {
+    if (!deploymentState.sdnEnabled || deploymentState.floatingIpRange == null) {
       TaskUtils.sendSelfPatch(this, buildPatch(
           TaskState.TaskStage.STARTED,
           TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
@@ -716,14 +714,10 @@ public class DeploymentWorkflowService extends StatefulService {
         ));
   }
 
-  private static DhcpSubnetService.State createDhcpSubnetServiceState(String cidr) {
-    SubnetUtils subnetUtils = new SubnetUtils(cidr);
-    SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
-
+  private static DhcpSubnetService.State createDhcpSubnetServiceState(IpRange ipRange) {
     DhcpSubnetService.State state = new DhcpSubnetService.State();
-    state.cidr = cidr;
-    state.lowIp = IpHelper.ipStringToLong(subnetInfo.getLowAddress());
-    state.highIp = IpHelper.ipStringToLong(subnetInfo.getHighAddress());
+    state.lowIp = IpHelper.ipStringToLong(ipRange.getStart());
+    state.highIp = IpHelper.ipStringToLong(ipRange.getEnd());
     state.isFloatingIpSubnet = true;
     state.documentSelfLink = DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK;
     state.subnetId = ServiceUtils.getIDFromDocumentSelfLink(state.documentSelfLink);

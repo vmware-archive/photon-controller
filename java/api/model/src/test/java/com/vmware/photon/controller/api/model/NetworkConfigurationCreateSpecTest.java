@@ -39,6 +39,12 @@ public class NetworkConfigurationCreateSpecTest {
   private static final String NETWORK_CONFIGURATION_CREATE_SPEC_JSON_FILE =
       "fixtures/network-configuration-create-spec.json";
 
+  private IpRange sampleIpRange = new IpRange();
+  {
+    sampleIpRange.setStart("192.168.0.1");
+    sampleIpRange.setEnd("192.168.0.254");
+  }
+
   private NetworkConfigurationCreateSpec sampleNetworkConfigurationCreateSpec =
       new NetworkConfigurationCreateSpecBuilder()
           .sdnEnabled(true)
@@ -49,7 +55,7 @@ public class NetworkConfigurationCreateSpecTest {
           .networkTopRouterId("networkTopRouterId")
           .edgeClusterId("edgeClusterId")
           .ipRange("10.0.0.1/24")
-          .floatingIpRange("192.168.0.1/28")
+          .externalIpRange(sampleIpRange)
           .build();
 
   @Test(enabled = false)
@@ -68,11 +74,12 @@ public class NetworkConfigurationCreateSpecTest {
         "networkManagerUsername may not be null (was null)",
         "networkTopRouterId may not be null (was null)",
         "networkZoneId may not be null (was null)",
-        "edgeClusterId may not be null (was null)"
+        "edgeClusterId may not be null (was null)",
+        "externalIpRange.start s is invalid IPv4 Address (was s)"
     };
 
     private final String[] sdnDisabledErrorMsgs = new String[]{
-        "floatingIpRange must be null (was f)",
+        "externalIpRange must be null (was IpRange{start=null, end=null})",
         "ipRange must be null (was i)",
         "networkManagerAddress must be null (was e)",
         "networkManagerPassword must be null (was p)",
@@ -121,9 +128,14 @@ public class NetworkConfigurationCreateSpecTest {
 
     @DataProvider(name = "invalidNetworkConfiguration")
     public Object[][] getInvalidNetworkConfig() {
+      IpRange invalidIpRange = new IpRange();
+      invalidIpRange.setStart("s");
+      invalidIpRange.setEnd("192.168.0.254");
+
       return new Object[][]{
           {new NetworkConfigurationCreateSpecBuilder()
               .sdnEnabled(true)
+              .externalIpRange(invalidIpRange)
               .build(),
               sdnEnabledErrorMsgs},
           {new NetworkConfigurationCreateSpecBuilder()
@@ -135,7 +147,7 @@ public class NetworkConfigurationCreateSpecTest {
               .networkZoneId("z")
               .edgeClusterId("c")
               .ipRange("i")
-              .floatingIpRange("f")
+              .externalIpRange(new IpRange())
               .build(),
               sdnDisabledErrorMsgs},
       };
@@ -152,7 +164,7 @@ public class NetworkConfigurationCreateSpecTest {
       String expectedString =
           "NetworkConfigurationCreateSpec{sdnEnabled=true, networkManagerAddress=1.2.3.4, " +
           "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, edgeClusterId=edgeClusterId, " +
-          "ipRange=10.0.0.1/24, floatingIpRange=192.168.0.1/28}";
+          "ipRange=10.0.0.1/24, externalIpRange=IpRange{start=192.168.0.1, end=192.168.0.254}}";
       assertThat(sampleNetworkConfigurationCreateSpec.toString(), is(expectedString));
     }
   }

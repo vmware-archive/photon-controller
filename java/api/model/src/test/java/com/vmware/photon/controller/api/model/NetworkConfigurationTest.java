@@ -35,6 +35,12 @@ public class NetworkConfigurationTest {
 
   private static final String NETWORK_CONFIGURATION_JSON_FILE = "fixtures/network-configuration.json";
 
+  private IpRange sampleIpRange = new IpRange();
+  {
+    sampleIpRange.setStart("192.168.0.2");
+    sampleIpRange.setEnd("192.168.0.253");
+  }
+
   private NetworkConfiguration sampleNetworkConfiguration = new NetworkConfigurationBuilder()
       .sdnEnabled(true)
       .networkManagerAddress("1.2.3.4")
@@ -44,7 +50,7 @@ public class NetworkConfigurationTest {
       .networkTopRouterId("networkTopRouterId")
       .edgeClusterId("edgeClusterId")
       .ipRange("10.0.0.1/24")
-      .floatingIpRange("192.168.0.1/28")
+      .floatingIpRange(sampleIpRange)
       .build();
 
   @Test(enabled = false)
@@ -66,11 +72,16 @@ public class NetworkConfigurationTest {
 
     @Test
     public void testInvalidNetworkConfiguration() {
+      IpRange ipRange = new IpRange();
+      ipRange.setStart("s");
+      ipRange.setEnd("192.168.0.253");
+
       NetworkConfiguration networkConfiguration = new NetworkConfigurationBuilder()
           .networkManagerAddress("invalidAddress")
           .networkManagerUsername(null)
           .networkManagerPassword(null)
           .ipRange("invalidIpRange")
+          .floatingIpRange(ipRange)
           .build();
 
       String[] errorMsgs = new String[] {
@@ -80,7 +91,8 @@ public class NetworkConfigurationTest {
           "networkZoneId may not be null (was null)",
           "networkTopRouterId may not be null (was null)",
           "edgeClusterId may not be null (was null)",
-          "ipRange invalidIpRange is invalid CIDR (was invalidIpRange)"
+          "ipRange invalidIpRange is invalid CIDR (was invalidIpRange)",
+          "floatingIpRange.start s is invalid IPv4 Address (was s)"
       };
 
       ImmutableList<String> violations = validator.validate(networkConfiguration);
@@ -99,7 +111,7 @@ public class NetworkConfigurationTest {
       String expectedString =
           "NetworkConfiguration{sdnEnabled=true, networkManagerAddress=1.2.3.4, " +
           "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, " +
-          "ipRange=10.0.0.1/24, floatingIpRange=192.168.0.1/28, " +
+          "ipRange=10.0.0.1/24, floatingIpRange=IpRange{start=192.168.0.2, end=192.168.0.253}, " +
           "edgeClusterId=edgeClusterId}";
       assertThat(sampleNetworkConfiguration.toString(), is(expectedString));
     }

@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
 import com.vmware.photon.controller.api.model.DeploymentState;
+import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.StatsStoreType;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -320,7 +321,7 @@ public class DeploymentService extends StatefulService {
     /**
      * This value represents the global floating ip range.
      */
-    public String floatingIpRange;
+    public IpRange floatingIpRange;
 
     /**
      * This value represents the syslog endpoint for the deployment.

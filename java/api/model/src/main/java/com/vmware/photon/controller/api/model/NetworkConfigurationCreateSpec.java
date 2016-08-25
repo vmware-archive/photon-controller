@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Null;
 
@@ -85,10 +86,11 @@ public class NetworkConfigurationCreateSpec {
   private String ipRange;
 
   @JsonProperty
-  @ApiModelProperty(value = "The global floating IP range for allocating floating IP to VM")
+  @ApiModelProperty(value = "The external IP range (It could be used as floating IP, SNAT IP, gateway IP, etc.")
   @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
-  @Cidr
-  private String floatingIpRange;
+  @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
+  @Valid
+  private IpRange externalIpRange;
 
   public boolean getSdnEnabled() {
     return sdnEnabled;
@@ -153,12 +155,12 @@ public class NetworkConfigurationCreateSpec {
     this.ipRange = ipRange;
   }
 
-  public String getFloatingIpRange() {
-    return floatingIpRange;
+  public IpRange getExternalIpRange() {
+    return externalIpRange;
   }
 
-  public void setFloatingIpRange(String floatingIpRange) {
-    this.floatingIpRange = floatingIpRange;
+  public void setExternalIpRange(IpRange externalIpRange) {
+    this.externalIpRange = externalIpRange;
   }
 
   @Override
@@ -180,7 +182,7 @@ public class NetworkConfigurationCreateSpec {
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
         && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId())
         && Objects.equals(this.getIpRange(), other.getIpRange())
-        && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange());
+        && Objects.equals(this.getExternalIpRange(), other.getExternalIpRange());
   }
 
   @Override
@@ -195,7 +197,7 @@ public class NetworkConfigurationCreateSpec {
         this.getNetworkTopRouterId(),
         this.getEdgeClusterId(),
         this.getIpRange(),
-        this.getFloatingIpRange());
+        this.getExternalIpRange());
   }
 
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
@@ -208,7 +210,7 @@ public class NetworkConfigurationCreateSpec {
         .add("networkTopRouterId", this.getNetworkTopRouterId())
         .add("edgeClusterId", this.getEdgeClusterId())
         .add("ipRange", this.getIpRange())
-        .add("floatingIpRange", this.getFloatingIpRange());
+        .add("externalIpRange", this.getExternalIpRange());
   }
 
   @Override
