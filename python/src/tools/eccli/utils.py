@@ -13,9 +13,10 @@ import uuid
 
 from gen.flavors.ttypes import QuotaUnit, QuotaLineItem, Flavor
 from gen.resource.ttypes import Disk, DiskImage, CloneType, Vm, VmPowerState
+from gen.resource.ttypes import ResourceConstraint, ResourceConstraintType
 
 
-def createVmResource(image):
+def createVmResource(image, network):
     disk = Disk()
     disk.flavor = "some-disk-flavor"
     disk.id = str(uuid.uuid4())
@@ -39,6 +40,8 @@ def createVmResource(image):
         QuotaLineItem("vm.cpu", "1", QuotaUnit.COUNT),
         QuotaLineItem("vm.memory", "0.5", QuotaUnit.GB)]
     vm.disks = [disk]
+    if network:
+        vm.resource_constraints = [ResourceConstraint(ResourceConstraintType.NETWORK, [network])]
 
     return vm
 
