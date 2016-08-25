@@ -13,23 +13,22 @@
 
 package com.vmware.photon.controller.common.auth;
 
-import com.vmware.identity.openidconnect.client.ClientIDToken;
 import com.vmware.identity.openidconnect.client.GroupMembershipType;
+import com.vmware.identity.openidconnect.client.IDToken;
 import com.vmware.identity.openidconnect.client.OIDCClientException;
 import com.vmware.identity.openidconnect.client.OIDCTokens;
 import com.vmware.identity.openidconnect.client.TokenSpec;
-import com.vmware.identity.openidconnect.common.ClientAuthenticationMethod;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.ResponseMode;
 import com.vmware.identity.openidconnect.common.ResponseType;
 import com.vmware.identity.openidconnect.common.State;
+import com.vmware.identity.openidconnect.common.TokenType;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.idm.client.IdmClient;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.HttpException;
 
 import java.io.IOException;
@@ -97,7 +96,7 @@ public class AuthClientHandler {
       OIDCClientDTO oidcClientDTO = registerClient(loginRedirectURI, loginRedirectURI, logoutRedirectURI);
       ClientID clientID = new ClientID(oidcClientDTO.getClientId());
       URI loginURI = buildAuthenticationRequestURI(clientID, loginRedirectURI);
-      URI logoutURI = buildLogoutRequestURI(clientID, tokens.getClientIDToken(), logoutRedirectURI);
+      URI logoutURI = buildLogoutRequestURI(clientID, tokens.getIDToken(), logoutRedirectURI);
       return new ImplicitClient(oidcClientDTO.getClientId(), loginURI.toString(), logoutURI.toString());
     } catch (Exception e) {
       throw new AuthException(String.format("Failed to register implicit client with loginRedirectURI %s and " +
@@ -121,7 +120,7 @@ public class AuthClientHandler {
    */
   public URI buildAuthenticationRequestURI(ClientID clientID, URI redirectURI) throws AuthException {
     try {
-      TokenSpec tokenSpec = new TokenSpec.Builder()
+      TokenSpec tokenSpec = new TokenSpec.Builder(TokenType.BEARER)
           .refreshToken(false)
           .idTokenGroups(GroupMembershipType.NONE)
           .accessTokenGroups(GroupMembershipType.FULL)
@@ -143,7 +142,7 @@ public class AuthClientHandler {
   /**
    * Build logout request URI for the given client. The client is expected to have exactly one post-logout URI.
    */
-  private URI buildLogoutRequestURI(ClientID clientID, ClientIDToken idToken, URI postLogoutURI) throws AuthException,
+  private URI buildLogoutRequestURI(ClientID clientID, IDToken idToken, URI postLogoutURI) throws AuthException,
       URISyntaxException, UnsupportedEncodingException {
     try {
       return replaceIdTokenWithPlaceholder(oidcClient.getOidcClient(clientID)
@@ -166,7 +165,7 @@ public class AuthClientHandler {
           .withRedirectUris(Arrays.asList(redirectURI.toString()))
           .withPostLogoutRedirectUris(Arrays.asList(postLogoutURI.toString()))
           .withLogoutUri(logoutURI.toString())
-          .withTokenEndpointAuthMethod(ClientAuthenticationMethod.NONE.getValue())
+          .withTokenEndpointAuthMethod("none")
           .build();
       idmClient.oidcClient().register(tenant, oidcClientMetadataDTO);
 
@@ -196,8 +195,7 @@ public class AuthClientHandler {
    * @param logoutUri
    * @throws AuthException
    */
-  @VisibleForTesting
-  protected URI replaceIdTokenWithPlaceholder(URI logoutUri)
+  public static URI replaceIdTokenWithPlaceholder(URI logoutUri)
           throws IllegalArgumentException, URISyntaxException, UnsupportedEncodingException{
     String placeholderValue = "";
     String keyToMatch = URLDecoder.decode(LOGOUT_URL_ID_TOKEN_START, "UTF-8");
