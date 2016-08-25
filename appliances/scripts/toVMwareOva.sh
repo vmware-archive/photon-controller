@@ -1,11 +1,27 @@
 #!/bin/bash -xe
 
-packerVM=$1
-shift
-outputVM=$1
-shift
-customModScript=$1
-shift
+show_usage=0
+
+packerVM="$1"
+outputVM="$2"
+customModScript="$3"
+
+if [[ -z "${packerVM}" ]]; then
+  echo "Error: Missing input OVA argument"
+  show_usage=1
+fi
+
+if [[ -z "${outputVM}" ]]; then
+  echo "Error: Missing output OVA argument"
+  show_usage=1
+fi
+
+if [[ ${show_usage} -eq 1 ]]; then
+  echo "Usage: toVmwareOva.sh <inputOVA> <outputOVA> [customModScript]"
+  echo "Note: Just provide base names without extention (no .ova or .ovf)"
+  exit 1
+fi
+
 
 ovftool --lax -o ${packerVM}.ova ${outputVM}.ovf
 oldOvfSha=$(sha1sum ${outputVM}.ovf | awk '{ print $1 }')
@@ -18,7 +34,9 @@ sed -i.bak 's/<rasd:ElementName>sataController0/<rasd:ElementName>SCSIController
 sed -i.bak 's/<rasd:ResourceSubType>AHCI/<rasd:ResourceSubType>lsilogic/' ${outputVM}.ovf
 sed -i.bak 's/<rasd:ResourceType>20</<rasd:ResourceType>6</' ${outputVM}.ovf
 
-eval ${customModScript} ${packerVM} ${outputVM}
+if [[ ! -z ${customModScript} ]]; then
+  eval ${customModScript} ${packerVM} ${outputVM}
+fi
 
 newOvfSha=$(sha1sum ${outputVM}.ovf | awk '{ print $1 }')
 sed -i.bak "s/$oldOvfSha/$newOvfSha/" ${outputVM}.mf

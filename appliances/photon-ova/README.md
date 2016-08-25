@@ -15,3 +15,4 @@ The following tools must be installed and available on the ``$PATH``:
 - ``packer``
 - ``sha1sum``
 - ``virtualbox``
+- ``GNU tar``
