@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.api.frontend.auth;
 
+import com.vmware.identity.openidconnect.client.JWTBuilder;
 import com.vmware.identity.openidconnect.client.ResourceServerAccessToken;
 import com.vmware.identity.openidconnect.client.TokenValidationException;
-import com.vmware.identity.openidconnect.common.AccessToken;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.JWTID;
@@ -32,8 +32,8 @@ import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 
 
@@ -65,31 +65,53 @@ public class AuthTestHelper {
 
   public static ResourceServerAccessToken generateResourceServerAccessToken(Collection<String> group) throws
       TokenValidationException, JOSEException {
-    AccessToken accessToken = new AccessToken(
-        privateKey,
-        TokenType.BEARER,
-        new JWTID(),
-        new Issuer("iss"),
-        new Subject("sub"),
-        Arrays.asList("rs_esxcloud"),
-        issueTime,
-        expirationTime,
-        Scope.OPENID,
-        "tenant",
-        (ClientID) null,
-        (SessionID) null,
-        publicKey,
-        (Subject) null,
-        (Nonce) null,
-        group,
-        "Administrator");
+
+    String accessToken = JWTBuilder.accessTokenBuilder(privateKey).
+            tokenType(TokenType.BEARER).
+            jwtId(new JWTID()).
+            issuer(new Issuer("iss")).
+            subject(new Subject("sub")).
+            audience(Collections.<String>singletonList("rs_esxcloud")).
+            issueTime(issueTime).
+            expirationTime(expirationTime).
+            scope(Scope.OPENID).
+            tenant("tenant").
+            clientId((ClientID) null).
+            sessionId((SessionID) null).
+            holderOfKey(null).
+            actAs((Subject) null).
+            nonce((Nonce) null).
+            groups(group).build();
 
     return ResourceServerAccessToken.build(
-        accessToken.serialize(),
+        accessToken,
         publicKey,
+        new Issuer("iss"),
         "rs_esxcloud",
         0L
     );
+  }
+
+  public static String generateExpiredResourceServerAccessToken() throws
+          TokenValidationException, JOSEException {
+    String accessToken = JWTBuilder.accessTokenBuilder(privateKey).
+            tokenType(TokenType.BEARER).
+            jwtId(new JWTID()).
+            issuer(new Issuer("iss")).
+            subject(new Subject("sub")).
+            audience(Collections.<String>singletonList("rs_esxcloud")).
+            issueTime(new Date(issueTime.getTime() - (lifetimeSeconds * 1000L))).
+            expirationTime(issueTime).
+            scope(Scope.OPENID).
+            tenant("tenant").
+            clientId((ClientID) null).
+            sessionId((SessionID) null).
+            holderOfKey(null).
+            actAs((Subject) null).
+            nonce((Nonce) null).
+            groups(null).build();
+
+    return accessToken;
   }
 
 }
