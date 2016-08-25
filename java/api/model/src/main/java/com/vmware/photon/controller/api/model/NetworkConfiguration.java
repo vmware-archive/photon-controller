@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import java.util.Objects;
@@ -77,8 +78,11 @@ public class NetworkConfiguration {
   private String ipRange;
 
   @JsonProperty
-  @ApiModelProperty(value = "The global floating IP range for allocating floating IP to VM", required = false)
-  private String floatingIpRange;
+  @ApiModelProperty(value = "The global floating IP range (It could be used as floating IP, SNAT IP, gateway IP, etc.",
+      required = true)
+  @NotNull
+  @Valid
+  private IpRange floatingIpRange;
 
   public boolean getSdnEnabled() {
     return sdnEnabled;
@@ -132,11 +136,11 @@ public class NetworkConfiguration {
     this.ipRange = ipRange;
   }
 
-  public String getFloatingIpRange() {
+  public IpRange getFloatingIpRange() {
     return floatingIpRange;
   }
 
-  public void setFloatingIpRange(String floatingIpRange) {
+  public void setFloatingIpRange(IpRange floatingIpRange) {
     this.floatingIpRange = floatingIpRange;
   }
 
@@ -169,7 +173,9 @@ public class NetworkConfiguration {
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
         && Objects.equals(this.getNetworkZoneId(), other.getNetworkZoneId())
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
-        && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId());
+        && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId())
+        && Objects.equals(this.getIpRange(), other.getIpRange())
+        && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange());
   }
 
   @Override
@@ -182,7 +188,8 @@ public class NetworkConfiguration {
         this.getNetworkManagerPassword(),
         this.getNetworkZoneId(),
         this.getNetworkTopRouterId(),
-        this.getEdgeClusterId());
+        this.getEdgeClusterId(),
+        this.getFloatingIpRange());
   }
 
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {

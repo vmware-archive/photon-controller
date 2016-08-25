@@ -511,7 +511,9 @@ public class DeploymentXenonBackend implements DeploymentBackend {
       deployment.networkTopRouterId = spec.getNetworkConfiguration().getNetworkTopRouterId();
       deployment.edgeClusterId = spec.getNetworkConfiguration().getEdgeClusterId();
       deployment.ipRange = spec.getNetworkConfiguration().getIpRange();
-      deployment.floatingIpRange = spec.getNetworkConfiguration().getFloatingIpRange();
+
+      // Todo: Need to reverse the first IP for SNAT
+      deployment.floatingIpRange = spec.getNetworkConfiguration().getExternalIpRange();
     }
     deployment.loadBalancerEnabled = spec.getLoadBalancerEnabled();
 

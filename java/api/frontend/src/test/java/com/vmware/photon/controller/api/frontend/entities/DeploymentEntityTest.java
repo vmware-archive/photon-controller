@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.api.frontend.entities;
 
 import com.vmware.photon.controller.api.model.DeploymentState;
+import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.StatsStoreType;
 
 import org.testng.Assert;
@@ -68,7 +69,12 @@ public class DeploymentEntityTest {
       entity.setNetworkZoneId("networkZoneId");
       entity.setNetworkTopRouterId("networkTopRouterId");
       entity.setIpRange("10.0.0.1/24");
-      entity.setFloatingIpRange("192.168.0.1/28");
+
+      IpRange floatingIpRange = new IpRange();
+      floatingIpRange.setStart("192.168.0.2");
+      floatingIpRange.setEnd("192.168.0.253");
+      entity.setFloatingIpRange(floatingIpRange);
+
       entity.setNtpEndpoint("http://ntp");
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);
@@ -91,7 +97,7 @@ public class DeploymentEntityTest {
       assertThat(entity.getNetworkZoneId(), is("networkZoneId"));
       assertThat(entity.getNetworkTopRouterId(), is("networkTopRouterId"));
       assertThat(entity.getIpRange(), is("10.0.0.1/24"));
-      assertThat(entity.getFloatingIpRange(), is("192.168.0.1/28"));
+      assertThat(entity.getFloatingIpRange(), is(floatingIpRange));
       assertThat(entity.getNtpEndpoint(), is("http://ntp"));
       Assert.assertTrue(entity.getImageDatastores().contains("datastore1"));
       assertThat(entity.getUseImageDatastoreForVms(), is(true));
@@ -125,7 +131,12 @@ public class DeploymentEntityTest {
       entity.setNetworkZoneId("networkZoneId");
       entity.setNetworkTopRouterId("networkTopRouterId");
       entity.setIpRange("10.0.0.1/24");
-      entity.setFloatingIpRange("192.168.0.1/28");
+
+      IpRange floatingIpRange = new IpRange();
+      floatingIpRange.setStart("192.168.0.1");
+      floatingIpRange.setEnd("192.168.0.254");
+      entity.setFloatingIpRange(floatingIpRange);
+
       entity.setNtpEndpoint("http://ntp");
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);

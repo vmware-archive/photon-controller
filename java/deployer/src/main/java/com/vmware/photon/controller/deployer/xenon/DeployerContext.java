@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.xenon;
 
+import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService.DhcpVmConfiguration;
 import com.vmware.photon.controller.common.xenon.migration.DeploymentMigrationInformation;
 import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
@@ -163,7 +164,7 @@ public class DeployerContext {
   /**
    * This value represents the global floating ip range.
    */
-  private String floatingIpRange;
+  private IpRange floatingIpRange;
 
   /**
    * This value represents whether Stats collection is enabled for the deployment.
@@ -530,7 +531,7 @@ public class DeployerContext {
     return ipRange;
   }
 
-  public String getFloatingIpRange() {
+  public IpRange getFloatingIpRange() {
     return floatingIpRange;
   }
 

@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api.model.builders;
 
+import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.NetworkConfiguration;
 
 /**
@@ -66,7 +67,7 @@ public class NetworkConfigurationBuilder {
     return this;
   }
 
-  public NetworkConfigurationBuilder floatingIpRange(String floatingIpRange) {
+  public NetworkConfigurationBuilder floatingIpRange(IpRange floatingIpRange) {
     this.networkConfiguration.setFloatingIpRange(floatingIpRange);
     return this;
   }

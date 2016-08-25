@@ -65,6 +65,11 @@ public class DeploymentTest {
         .password("p")
         .securityGroups(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}))
         .build());
+
+    IpRange ipRange = new IpRange();
+    ipRange.setStart("192.168.0.1");
+    ipRange.setEnd("192.168.0.254");
+
     deployment.setNetworkConfiguration(new NetworkConfigurationBuilder()
         .sdnEnabled(true)
         .networkManagerAddress("1.2.3.4")
@@ -74,7 +79,7 @@ public class DeploymentTest {
         .networkTopRouterId("networkTopRouterId")
         .edgeClusterId("edgeClusterId")
         .ipRange("10.0.0.1/24")
-        .floatingIpRange("192.168.0.1/28")
+        .floatingIpRange(ipRange)
         .build());
     deployment.setLoadBalancerEnabled(true);
     deployment.setLoadBalancerAddress(loadBalancerAddress);
@@ -162,7 +167,8 @@ public class DeploymentTest {
               "tenant=t, securityGroups=adminGroup1,adminGroup2}, " +
               "networkConfiguration=NetworkConfiguration{sdnEnabled=true, networkManagerAddress=1.2.3.4, " +
               "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, ipRange=10.0.0.1/24, " +
-              "floatingIpRange=192.168.0.1/28, edgeClusterId=edgeClusterId}, loadBalancerEnabled=true, " +
+              "floatingIpRange=IpRange{start=192.168.0.1, end=192.168.0.254}, " +
+              "edgeClusterId=edgeClusterId}, loadBalancerEnabled=true, " +
               "loadBalancerAddress=0.0.0.4, migrationProgress=null, clusterConfigurations=null}";
       HashSet<String> imageDatastores = new HashSet<String>();
       imageDatastores.add("image-datastore1");

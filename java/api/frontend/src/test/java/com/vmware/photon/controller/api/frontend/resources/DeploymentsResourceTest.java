@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRo
 import com.vmware.photon.controller.api.model.ApiError;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.builders.AuthConfigurationSpecBuilder;
@@ -218,6 +219,10 @@ public class DeploymentsResourceTest extends ResourceTest {
 
   @Test
   public void testSuccessfulWithNetworkConfigEnabled() throws Exception {
+    IpRange externalIpRange = new IpRange();
+    externalIpRange.setStart("192.168.0.1");
+    externalIpRange.setEnd("192.168.0.254");
+
     spec.setNetworkConfiguration(new NetworkConfigurationCreateSpecBuilder()
         .sdnEnabled(true)
         .networkManagerAddress("10.1.1.1")
@@ -227,6 +232,7 @@ public class DeploymentsResourceTest extends ResourceTest {
         .networkZoneId("zid")
         .edgeClusterId("edgeId")
         .ipRange("192.168.1.1/24")
+        .externalIpRange(externalIpRange)
         .build());
 
     Task task = new Task();

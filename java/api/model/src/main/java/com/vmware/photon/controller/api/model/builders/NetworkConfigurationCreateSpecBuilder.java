@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api.model.builders;
 
+import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.NetworkConfigurationCreateSpec;
 
 /**
@@ -66,8 +67,8 @@ public class NetworkConfigurationCreateSpecBuilder {
     return this;
   }
 
-  public NetworkConfigurationCreateSpecBuilder floatingIpRange(String floatingIpRange) {
-    this.networkConfigurationCreateSpec.setFloatingIpRange(floatingIpRange);
+  public NetworkConfigurationCreateSpecBuilder externalIpRange(IpRange externalIpRange) {
+    this.networkConfigurationCreateSpec.setExternalIpRange(externalIpRange);
     return this;
   }
 
