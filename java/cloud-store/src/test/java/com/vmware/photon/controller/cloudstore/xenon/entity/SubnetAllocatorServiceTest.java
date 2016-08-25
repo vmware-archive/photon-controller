@@ -302,6 +302,13 @@ public class SubnetAllocatorServiceTest {
           .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
       host.sendRequestAndWait(patchOperation);
 
+      ServiceHostUtils.waitForServiceState(
+          ServiceDocumentQueryResult.class,
+          DhcpSubnetService.FACTORY_LINK,
+          (queryResult) -> queryResult.documentCount == 1,
+          host,
+          null);
+
       SubnetAllocatorService.ReleaseSubnet releaseSubnetPatch =
           new SubnetAllocatorService.ReleaseSubnet(subnetId);
       patchOperation = new Operation()
