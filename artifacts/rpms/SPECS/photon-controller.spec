@@ -40,13 +40,16 @@ install -vdm 755 %{buildroot}/etc/esxcloud-deployer
 # Add folder for photon-controller vibs.
 install -vdm 755 %{buildroot}/var/esxcloud/packages
 
+# Add folder for logs
+install -vdm 755 %{buildroot}/var/log/esxcloud/script_logs
+
 # Add folder for configuration of photon-controller-core.
 install -vdm 755 %{buildroot}%{install_dir}/configuration/photon-controller-core
 
 cp /usr/src/photon/SOURCES/photon-controller.service %{buildroot}/usr/lib/systemd/system/
 cp /usr/src/photon/SOURCES/*.vib %{buildroot}/var/esxcloud/packages
 cd configuration
-jq -s %{config_jq_filter} ./installer.json ./photon-controller-core_release.json > %{content_file}
+jq -s %{config_jq_filter} ./deployment.json ./photon-controller-core_release.json > %{content_file}
 content="`cat %{content_file}`"
 
 # Apply configuration using mustache.
@@ -77,3 +80,4 @@ ln -sf /usr/lib/systemd/system/photon-controller.service %{buildroot}/etc/system
 /usr/lib/systemd/system/photon-controller.service
 /etc/systemd/system/multi-user.target.wants/photon-controller.service
 %dir /etc/systemd/system/photon-controller.service.d/
+%dir /var/log/esxcloud/script_logs/
