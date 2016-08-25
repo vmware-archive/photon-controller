@@ -17,6 +17,9 @@ parser = default_parser(usage="eccli-provision [options]",
 parser.add_option("-d", "--datastores",
                   action="store", type="string", dest="datastores",
                   help="list of datastore names (e.g. ds1,ds2)")
+parser.add_option("-s", "--stats",
+                  action="store", type="string", dest="stats",
+                  help="stats server endpoint")
 (options, args) = parser.parse_args()
 
 if not options.datastores:
@@ -25,15 +28,17 @@ if not options.datastores:
     exit(1)
 
 client = get_client(options.host, "AgentControl")
-stats_plugin_config = StatsPluginConfig(
-            stats_store_endpoint="10.118.97.19", stats_store_port=2004, stats_enabled=True)
 
 request = ProvisionRequest()
 request.host_id = str(uuid.uuid4())
 request.address = ServerAddress(options.host, options.port)
 request.datastores = options.datastores.split(',')
 request.image_datastores = set([ImageDatastore(name=ds, used_for_vms=True) for ds in request.datastores])
-request.stats_plugin_config = stats_plugin_config
+
+if options.stats:
+    request.stats_plugin_config = StatsPluginConfig(
+        stats_store_endpoint=options.stats, stats_store_port=2004, stats_enabled=True)
+
 print_request(request)
 response = client.provision(request)
 print_response(response)

@@ -24,12 +24,15 @@ parser.add_option("-d", "--disks",
 parser.add_option("-i", "--image",
                   action="store", type="string", dest="image",
                   help="Image for vm boot disk")
+parser.add_option("-w", "--network",
+                  action="store", type="string", dest="network",
+                  help="Network for vm")
 (options, args) = parser.parse_args()
 
 # create resource
 resource = Resource()
 if options.vm and options.image:
-    resource.vm = createVmResource(options.image)
+    resource.vm = createVmResource(options.image, options.network)
 elif options.disks:
     resource.disks = createDisksResource()
 else:
