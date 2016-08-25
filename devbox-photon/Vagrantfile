@@ -118,9 +118,9 @@ Vagrant.configure("2") do |config|
   #
   config.vm.define "lightwave" do |lightwave|
     lightwave.vm.guest = :photon
-    lightwave.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-70"
+    lightwave.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-72"
     lightwave.vm.box_url = ENV['DEVBOX_URL'] ||
-        "https://s3.amazonaws.com/photon-platform/artifacts/devbox/70/photon-devbox.box"
+        "https://s3.amazonaws.com/photon-platform/artifacts/devbox/72/photon-devbox.box"
 
     #
     # Configure memory and nat dns
@@ -328,9 +328,9 @@ end
   #
   config.vm.define "photon", primary: true do |photon|
     photon.vm.guest = :photon
-    photon.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-70"
+    photon.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-72"
     photon.vm.box_url = ENV['DEVBOX_URL'] ||
-      "https://s3.amazonaws.com/photon-platform/artifacts/devbox/70/photon-devbox.box"
+      "https://s3.amazonaws.com/photon-platform/artifacts/devbox/72/photon-devbox.box"
 
     #
     # Configure memory and nat dns
