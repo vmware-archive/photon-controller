@@ -105,6 +105,8 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision :shell, :privileged => false, :inline => <<-EOS
     set -xe
+    sudo rm /etc/systemd/network/10-dhcp-en.network
+    sudo systemctl restart systemd-networkd
     sudo systemctl start docker.service
     sudo chmod a+x /usr/bin/mustache
     sudo chmod a+x /usr/bin/jsonlint
@@ -118,9 +120,9 @@ Vagrant.configure("2") do |config|
   #
   config.vm.define "lightwave" do |lightwave|
     lightwave.vm.guest = :photon
-    lightwave.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-70"
+    lightwave.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-73"
     lightwave.vm.box_url = ENV['DEVBOX_URL'] ||
-        "https://s3.amazonaws.com/photon-platform/artifacts/devbox/70/photon-devbox.box"
+        "https://s3.amazonaws.com/photon-platform/artifacts/devbox/73/photon-devbox.box"
 
     #
     # Configure memory and nat dns
@@ -328,9 +330,9 @@ end
   #
   config.vm.define "photon", primary: true do |photon|
     photon.vm.guest = :photon
-    photon.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-70"
+    photon.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-73"
     photon.vm.box_url = ENV['DEVBOX_URL'] ||
-      "https://s3.amazonaws.com/photon-platform/artifacts/devbox/70/photon-devbox.box"
+      "https://s3.amazonaws.com/photon-platform/artifacts/devbox/73/photon-devbox.box"
 
     #
     # Configure memory and nat dns

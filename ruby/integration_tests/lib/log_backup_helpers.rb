@@ -69,7 +69,7 @@ module EsxCloud
 
          sensitive_info_regex = /username|password/i
          white_list_regex = ["password must be null", "password may not be null", "getServiceProviderUsername",
-         "Password policy successfully set"]
+         "Password policy successfully set", "passwordEntry=1", "ssoPasswordEntry"]
          regex = /#{white_list_regex.map{ |w| Regexp.escape(w) }.join('|')}/i
 
          matches = Array.new
