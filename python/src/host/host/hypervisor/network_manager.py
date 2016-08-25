@@ -27,27 +27,13 @@ class NetworkManager(object):
         """ Return the list of VM Networks on this host. """
         return self.vim_client.get_networks()
 
-    def get_dvs(self):
-        """ Return the list of Distributed Virtual Switch on this host. """
-        return self.vim_client.get_dvs()
-
     def get_networks(self):
-        """ Return all networks (combining VM networks and DVS)
-            Translate into thrift representation.
-        """
+        """ Return all networks; translate into thrift representation. """
         networks = []
 
         # Add VM networks to network list
-        vm_networks = self.vim_client.get_networks()
-        for network_name in vm_networks:
-            network = Network(network_name, [NetworkType.VM])
+        for portgroup in self.vim_client.get_networks():
+            network = Network(portgroup.name, [NetworkType.VM])
             networks.append(network)
 
-        # Add DVS to network list
-        dvs = self.vim_client.get_dvs()
-        for network_name in dvs:
-            network = Network(network_name, [NetworkType.VM])
-            networks.append(network)
-
-        self.logger.debug("found %d vm_networks and %d dvs" % (len(vm_networks), len(dvs)))
         return networks

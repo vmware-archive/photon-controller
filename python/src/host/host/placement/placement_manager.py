@@ -292,8 +292,7 @@ class PlacementManager(object):
             # host available resources.
             host_available_resources = {
                 ResourceConstraintType.NETWORK:
-                set(self._hypervisor.network_manager.get_vm_networks() +
-                    self._hypervisor.network_manager.get_dvs())}
+                set([network.name for network in self._hypervisor.network_manager.get_vm_networks()])}
 
             constraints = self._extract_resource_constraints(
                 vm.resource_constraints, extract_resources_type)

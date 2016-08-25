@@ -353,16 +353,13 @@ class HostHandler(Host.Iface):
         # In case of virtual network, add nic after vm creation.
         placement_virtual_network = self._get_network_ids_by_type(vm.networks, NetworkInfoType.VIRTUAL_NETWORK)
         if not placement_virtual_network:
-            port_groups = self._hypervisor.network_manager.get_vm_networks()
-            dvs = self._hypervisor.network_manager.get_dvs()
-            networks = port_groups + dvs
-
+            networks = self._hypervisor.network_manager.get_vm_networks()
             if not networks:
                 self._logger.warning("Host does not have network, VM %s created without a NIC" % vm.id)
             else:
                 placement_networks = self._get_network_ids_by_type(vm.networks, NetworkInfoType.NETWORK)
                 if placement_networks:
-                    host_networks = set(networks)
+                    host_networks = set([network.name for network in networks])
                     if not placement_networks.issubset(host_networks):
                         intersected_networks = placement_networks & host_networks
                         missing_networks = placement_networks - intersected_networks
@@ -370,15 +367,17 @@ class HostHandler(Host.Iface):
                                                 "Unknown non provisioned networks: {0}".format(missing_networks))
                 else:
                     # Pick a default network.
-                    self._logger.debug("Using the default network: %s" % networks[0])
-                    placement_networks = [networks[0]]
+                    self._logger.debug("Using the default network: %s" % networks[0].name)
+                    placement_networks = [networks[0].name]
 
                 self._logger.debug("Using the placement networks: {0}".format(placement_networks))
                 for network_name in placement_networks:
-                    if network_name in dvs:
-                        spec.add_dvs(network_name)
-                    else:
-                        spec.add_nic(network_name)
+                    for network in networks:
+                        if network.name == network_name:
+                            if network.dvs:
+                                spec.add_dvportgroup(network.dvs, network_name)
+                            else:
+                                spec.add_nic(network_name)
 
             self._logger.debug("VM create, done creating nics, vm-id: %s" % vm.id)
 
