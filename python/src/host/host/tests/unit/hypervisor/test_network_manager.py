@@ -12,6 +12,7 @@
 
 import unittest
 
+from host.tests.unit.test_host_handler import MockPortgroup
 from mock import MagicMock
 from hamcrest import *  # noqa
 from pyVmomi import vim
@@ -37,7 +38,7 @@ class TestNetworkManager(unittest.TestCase):
         correctly.
         """
         vim_client = MagicMock()
-        vim_client.get_networks.return_value = ["VM Network", "VM Network 2"]
+        vim_client.get_networks.return_value = [MockPortgroup("VM Network"), MockPortgroup("VM Network 2")]
         network_manager = NetworkManager(vim_client)
         networks = network_manager.get_networks()
 
