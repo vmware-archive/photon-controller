@@ -139,7 +139,8 @@ public class AuthFilter implements ContainerRequestFilter {
    * @param request
    * @return
    */
-  private String extractJwtAccessToken(ContainerRequest request) throws ExternalException {
+  @VisibleForTesting
+  protected String extractJwtAccessToken(ContainerRequest request) throws ExternalException {
     // Read authorization.
     String bearerToken = request.getRequestHeaders().getFirst(AUTHORIZATION_HEADER);
     if (bearerToken == null) {

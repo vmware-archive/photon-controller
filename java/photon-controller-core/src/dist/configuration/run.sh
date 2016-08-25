@@ -124,7 +124,7 @@ security_opts="-Djavax.net.ssl.trustStore=/keystore.jks"
 
 export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC ${security_opts} $JAVA_DEBUG"
 
-if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH}" == "true" ]
+if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH,,}" == "true" ]
 then
   printf "window.swaggerConfig = {\n  enableAuth: true,\n  swaggerLoginUrl: '%s',\n  swaggerLogoutUrl: '%s',\n};\n" \
     $SWAGGER_LOGIN_URL $SWAGGER_LOGOUT_URL > $API_SWAGGER_JS
@@ -137,7 +137,8 @@ mkdir -p $CONFIG_PATH/assets
 cp $API_SWAGGER_JS $CONFIG_PATH/assets
 $JAVA_HOME/bin/jar uf ${API_LIB}/swagger-ui*.jar -C $CONFIG_PATH assets/$API_SWAGGER_JS_FILE
 
-if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH}" == "true" ]
+
+if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH,,}" == "true" ]
 then
   ic_join_params=""
   if [ -n "${LIGHTWAVE_DOMAIN_CONTROLLER}" ]
@@ -150,7 +151,7 @@ then
     ic_join_params="$ic_join_params --machine-account-name ${LIGHTWAVE_MACHINE_ACCOUNT}"
   fi
 
-  if [ -n "$LIGHTWAVE_DISABLE_VMAFD_LISTENER" -a "${LIGHTWAVE_DISABLE_VMAFD_LISTENER}" == "true" ]
+  if [ -n "$LIGHTWAVE_DISABLE_VMAFD_LISTENER" -a "${LIGHTWAVE_DISABLE_VMAFD_LISTENER,,}" == "true" ]
   then
     ic_join_params="$ic_join_params --disable-afd-listener"
   fi

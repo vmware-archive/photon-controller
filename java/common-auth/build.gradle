@@ -3,9 +3,9 @@ dependencies {
   compile 'org.bouncycastle:bcpkix-jdk15on:1.52'
   compile 'org.bouncycastle:bcprov-jdk15on:1.52'
 
-  compile(group: 'com.vmware.identity', name: 'openidconnect-client-lib', version: '6.5.0')
-  compile(group: 'com.vmware.identity.rest.idm', name: 'vmware-identity-rest-idm-client', version: '6.5.0')
-  compile(group: 'com.vmware.identity.rest.afd', name: 'vmware-identity-rest-afd-client', version: '6.5.0')
+  compile(group: 'com.vmware.identity', name: 'openidconnect-client-lib', version: '6.6.0')
+  compile(group: 'com.vmware.identity.rest.idm', name: 'vmware-identity-rest-idm-client', version: '6.6.0')
+  compile(group: 'com.vmware.identity.rest.afd', name: 'vmware-identity-rest-afd-client', version: '6.6.0')
 
   compile "com.google.guava:guava:${versions.guava}"
   compile "com.google.inject.extensions:guice-assistedinject:${versions.guice}"
