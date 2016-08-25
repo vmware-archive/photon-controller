@@ -299,6 +299,7 @@ module EsxCloud
     end
 
     def create_network
+      puts 'I am in create_network (integration_tests/spec/support/system_seeder.rb)'
       unless deployment.network_configuration.sdn_enabled then
         spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [get_vm_port_group])
         network = EsxCloud::Config.client.create_network(spec.to_hash)
@@ -306,7 +307,9 @@ module EsxCloud
         spec = EsxCloud::VirtualNetworkCreateSpec.new(random_name("network-"), "Seeder Virtual Network", "ROUTED", 128, 16)
         network = EsxCloud::VirtualNetwork.create(project!.id, spec)
       end
+      puts network.inspect
       EsxCloud::Config.client.set_default(network.id)
+      puts 'I am out of create_network (integration_tests/spec/support/system_seeder.rb)'
       network
     end
 
