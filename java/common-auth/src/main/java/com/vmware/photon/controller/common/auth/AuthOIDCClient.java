@@ -85,7 +85,7 @@ public class AuthOIDCClient {
    * Get token handler class instance.
    */
   public AuthTokenHandler getTokenHandler() {
-    return new AuthTokenHandler(getOidcClient(), getProviderPublicKey());
+    return new AuthTokenHandler(getOidcClient(), getProviderPublicKey(), getProviderMetadata().getIssuer());
   }
 
   /**
@@ -187,12 +187,12 @@ public class AuthOIDCClient {
       IdmClient idmClient =
           new IdmClient(domainControllerFQDN, domainControllerPort, new DefaultHostnameVerifier(), sslContext);
 
-      com.vmware.identity.openidconnect.common.AccessToken accessToken = getTokenHandler()
+      com.vmware.identity.openidconnect.client.AccessToken accessToken = getTokenHandler()
           .getAdminServerAccessToken(user, password)
           .getAccessToken();
 
       com.vmware.identity.rest.core.client.AccessToken restAccessToken =
-          new com.vmware.identity.rest.core.client.AccessToken(accessToken.serialize(),
+          new com.vmware.identity.rest.core.client.AccessToken(accessToken.getValue(),
               com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
       idmClient.setToken(restAccessToken);
       return idmClient;
