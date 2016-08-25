@@ -89,6 +89,12 @@ class AcquireCredentialsException(Exception):
     pass
 
 
+class Portgroup(object):
+    def __init__(self, name, dvs=None):
+        self.name = name
+        self.dvs = dvs
+
+
 def hostd_error_handler(func):
 
     def nested(self, *args, **kwargs):
@@ -521,12 +527,8 @@ class VimClient(HostClient):
 
     @hostd_error_handler
     def get_networks(self):
-        return [network.name for network in
-                self._find_by_inventory_path(NETWORK_FOLDER_NAME).childEntity]
-
-    @hostd_error_handler
-    def get_dvs(self):
-        return []
+        return [Portgroup(network.name) for network
+                in self._find_by_inventory_path(NETWORK_FOLDER_NAME).childEntity]
 
     @hostd_error_handler
     def create_disk(self, path, size):
