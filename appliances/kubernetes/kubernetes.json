@@ -1,0 +1,47 @@
+{
+  "variables": {
+    "source_ova": "{{env `SOURCE_OVA`}}"
+  },
+  "builders": [
+    {
+      "type": "virtualbox-ovf",
+      "format": "ova",
+      "source_path": "{{ user `source_ova` }}",
+      "ssh_username": "root",
+      "ssh_password": "changeme",
+      "shutdown_command": "echo 'packer' | shutdown -P now",
+      "headless": true,
+      "guest_additions_mode": "disable",
+      "output_directory": "build/",
+      "vm_name": "kubernetes-virtualbox",
+      "vboxmanage": [
+        [ "modifyvm", "{{.Name}}", "--memory", "2048" ],
+        [ "modifyvm", "{{.Name}}", "--cpus", "2" ]
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "kube-deploy/docker-multinode",
+      "destination": "/root/docker-multinode"
+    },
+    {
+      "type": "file",
+      "source": "build-scripts",
+      "destination": "/tmp/scripts"
+    },
+    {
+      "type": "shell",
+      "inline": "/tmp/scripts/setup-network.sh"
+    },
+    {
+      "type": "shell",
+      "inline": "/tmp/scripts/setup-docker.sh"
+    },
+    {
+      "type": "shell",
+      "inline": "/tmp/scripts/setup-root-user.sh"
+    }
+  ]
+}
