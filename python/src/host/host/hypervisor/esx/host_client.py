@@ -237,10 +237,6 @@ class HostClient(object):
     def get_networks(self):
         pass
 
-    @abc.abstractmethod
-    def get_dvs(self):
-        pass
-
     """ Nfc
     """
     @abc.abstractmethod
@@ -272,7 +268,7 @@ class VmConfigSpec(object):
         pass
 
     @abc.abstractmethod
-    def add_dvs(self, dvs):
+    def add_dvportgroup(self, dvs, dvportgroup):
         pass
 
     @abc.abstractmethod
