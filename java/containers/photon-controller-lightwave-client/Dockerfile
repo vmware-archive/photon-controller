@@ -32,6 +32,4 @@ RUN tdnf install -y procps-ng; \
 
 ENV PATH $PATH:/opt/vmware/bin:/opt/likewise/bin
 
-EXPOSE 22 53/udp 53 88/udp 88 389 636 2012 2014 2020
-
 ENTRYPOINT ["/usr/sbin/init"]
