@@ -24,7 +24,7 @@ RUN tdnf makecache; \
                     apache-tomcat \
                     boost-1.56.0; \
     tdnf install -y likewise-open-6.2.9; \
-    tdnf install -y vmware-lightwave-server; \
+    tdnf install -y vmware-lightwave-server-6.6.0; \
     rm -rf /usr/share/doc/*; \
     rm -rf /usr/share/man/*; \
     rm -rf /usr/include/*;
