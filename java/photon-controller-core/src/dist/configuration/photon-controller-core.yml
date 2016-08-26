@@ -45,14 +45,20 @@ deployer:
     vibUninstallOrder:
     - photon-controller-agent
     - envoy
+    memoryMb: {{{memoryMb}}}
+    installDirectory: {{{PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY}}}
+
 {{#ENABLE_AUTH}}
     keyStorePath: /keystore.jks
     keyStorePassword: {{{LIGHTWAVE_PASSWORD}}}
+    lightwave_domain: {{{LIGHTWAVE_DOMAIN}}}
+    lightwave_hostname: {{{LIGHTWAVE_HOSTNAME}}}
 {{/ENABLE_AUTH}}
 
 photon_controller_logging:
   file:
     enabled: true
+    logDirectory: {{{LOG_DIRECTORY}}}
     currentLogFilename: {{{LOG_DIRECTORY}}}/photon-controller.log
     archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/photon-controller-%d.log.gz
     logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
