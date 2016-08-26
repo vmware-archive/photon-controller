@@ -24,7 +24,6 @@ import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.Tag;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Vm;
-import com.vmware.photon.controller.api.model.VmFloatingIpSpec;
 import com.vmware.photon.controller.api.model.VmOperation;
 
 import org.hamcrest.Matchers;
@@ -77,14 +76,6 @@ public class VmResourceTest extends ResourceTest {
 
   private String vmResumeOperationsRoute =
       UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_RESUME_ACTION).build(vmId).toString();
-
-  private String vmAssignFloatingIpRoute =
-      UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_AQUIRE_FLOATING_IP_ACTION).build(vmId)
-          .toString();
-
-  private String vmReleaseFloatingIpRoute =
-      UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_RELEASE_FLOATING_IP_ACTION).build(vmId)
-      .toString();
 
   private String taskId = "task1";
 
@@ -198,50 +189,6 @@ public class VmResourceTest extends ResourceTest {
     when(vmFeClient.delete(vmId)).thenReturn(task);
 
     Response response = client().target(vmRoute).request().delete();
-
-    assertThat(response.getStatus(), is(Response.Status.CREATED.getStatusCode()));
-
-    Task responseTask = response.readEntity(Task.class);
-    assertThat(responseTask, Matchers.is(task));
-    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
-    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
-  }
-
-  @Test
-  public void testAquireFloatingIp() throws Exception {
-
-    Task task = new Task();
-    task.setId(taskId);
-    VmFloatingIpSpec spec = new VmFloatingIpSpec();
-    spec.setNetworkId("networkId");
-    when(vmFeClient.aquireFloatingIp(vmId, spec)).thenReturn(task);
-
-    Response response = client()
-        .target(vmAssignFloatingIpRoute)
-        .request()
-        .post(Entity.entity(spec, MediaType.APPLICATION_JSON_TYPE));
-
-    assertThat(response.getStatus(), is(Response.Status.CREATED.getStatusCode()));
-
-    Task responseTask = response.readEntity(Task.class);
-    assertThat(responseTask, Matchers.is(task));
-    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
-    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
-  }
-
-  @Test
-  public void testReleaseFloatingIp() throws Exception {
-
-    Task task = new Task();
-    task.setId(taskId);
-    VmFloatingIpSpec spec = new VmFloatingIpSpec();
-    spec.setNetworkId("networkId");
-    when(vmFeClient.releaseFloatingIp(vmId, spec)).thenReturn(task);
-
-    Response response = client()
-        .target(vmReleaseFloatingIpRoute)
-        .request()
-        .post(Entity.entity(spec, MediaType.APPLICATION_JSON_TYPE));
 
     assertThat(response.getStatus(), is(Response.Status.CREATED.getStatusCode()));
 
