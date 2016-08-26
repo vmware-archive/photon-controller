@@ -40,6 +40,7 @@ public class CloudStoreHelper {
     this.refererUri = OperationUtils.getLocalHostUri();
   }
 
+  @VisibleForTesting
   public CloudStoreHelper() {
     this.refererUri = OperationUtils.getLocalHostUri();
   }

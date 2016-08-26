@@ -56,7 +56,9 @@ public class HostUtils {
   }
 
   public static CloudStoreHelper getCloudStoreHelper(Service service) {
-    return getClusterManagerFactory(service).createCloudStoreHelper();
+    CloudStoreHelper cloudStoreHelper = getClusterManagerFactory(service).createCloudStoreHelper();
+    cloudStoreHelper.setRefererUri(service.getHost().getUri());
+    return cloudStoreHelper;
   }
 
   public static String getScriptsDirectory(Service service) {
