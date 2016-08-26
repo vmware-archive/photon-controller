@@ -189,6 +189,7 @@ public class Main {
             Constants.PHOTON_CONTROLLER_PORT));
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
 
+
     final CloseableHttpAsyncClient httpClient;
     try {
       SSLContext sslcontext = SSLContexts.custom()
@@ -211,6 +212,14 @@ public class Main {
             new PhotonControllerXenonHost(photonControllerConfig.getXenonConfig(),
                 hostClientFactory, agentControlClientFactory, nsxClientFactory, cloudStoreHelper);
     logger.info("Created PhotonController Xenon Host");
+
+    // Set referer Uri from the xenon host, because we do not want to rely on
+    // CloudStoreHelper's default mechanise to create referer based on local address,
+    // because CloudStoreHelper uses InetAddress.getLocalHost() which depends on
+    // /etc/hosts having a hostname entry, which is not always available.
+    // This change will allow people to run this service without need to
+    // update their /etc/hosts file.
+    cloudStoreHelper.setRefererUri(photonControllerXenonHost.getUri());
 
     final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper, photonControllerXenonHost);
 

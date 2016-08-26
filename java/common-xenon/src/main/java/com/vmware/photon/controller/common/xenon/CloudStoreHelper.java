@@ -32,22 +32,22 @@ import java.net.URISyntaxException;
 public class CloudStoreHelper {
 
   private ServerSet cloudStoreServerSet;
-  private URI localHostUri;
+  private URI refererUri;
 
   @Inject
   public CloudStoreHelper(@PhotonControllerServerSet ServerSet cloudStoreServerSet) {
     this.cloudStoreServerSet = checkNotNull(cloudStoreServerSet);
-    this.localHostUri = OperationUtils.getLocalHostUri();
+    this.refererUri = OperationUtils.getLocalHostUri();
   }
 
   public CloudStoreHelper() {
-    this.localHostUri = OperationUtils.getLocalHostUri();
+    this.refererUri = OperationUtils.getLocalHostUri();
   }
 
   @VisibleForTesting
   public void setServerSet(ServerSet cloudStoreServerSet) {
     this.cloudStoreServerSet = checkNotNull(cloudStoreServerSet);
-    this.localHostUri = OperationUtils.getLocalHostUri();
+    this.refererUri = OperationUtils.getLocalHostUri();
   }
 
   @VisibleForTesting
@@ -55,9 +55,13 @@ public class CloudStoreHelper {
     return this.cloudStoreServerSet;
   }
 
+  public void setRefererUri(URI referrer) {
+    this.refererUri = referrer;
+  }
+
   @VisibleForTesting
-  protected URI getLocalHostUri() {
-    return this.localHostUri;
+  protected URI getRefererUri() {
+    return this.refererUri;
   }
 
   public URI getCloudStoreURI(String path) {
@@ -72,7 +76,7 @@ public class CloudStoreHelper {
    * This selects the local Cloudstore, if it's currently in the server set.
    * If it's not, it selects a random Cloudstore host.
    *
-   * Note that this is different from getLocalHostUri(): that will always return
+   * Note that this is different from getRefererUri(): that will always return
    * a local URI, but it may not be available if the local Cloudstore isn't running.
    */
   public URI selectLocalCloudStoreIfAvailable(String path) {
@@ -87,55 +91,55 @@ public class CloudStoreHelper {
     return Operation
         .createDelete(getCloudStoreURI(path))
         .setBody(new ServiceDocument())
-        .setReferer(this.localHostUri);
+        .setReferer(this.refererUri);
   }
 
   public Operation createLocalDelete(String path) {
     return Operation
         .createDelete(selectLocalCloudStoreIfAvailable(path))
         .setBody(new ServiceDocument())
-        .setReferer(this.localHostUri);
+        .setReferer(this.refererUri);
   }
 
   public Operation createGet(String path) {
     return Operation
         .createGet(getCloudStoreURI(path))
-        .setReferer(this.localHostUri);
+        .setReferer(this.refererUri);
   }
 
   public Operation createLocalGet(String path) {
     return Operation
         .createGet(selectLocalCloudStoreIfAvailable(path))
-        .setReferer(this.localHostUri);
+        .setReferer(this.refererUri);
   }
 
   public Operation createPost(String path) {
     return Operation
         .createPost(getCloudStoreURI(path))
-        .setReferer(this.localHostUri);
+        .setReferer(this.refererUri);
   }
 
   public Operation createLocalPost(String path) {
     return Operation
         .createPost(selectLocalCloudStoreIfAvailable(path))
-        .setReferer(this.localHostUri);
+        .setReferer(this.refererUri);
   }
 
   public Operation createBroadcastPost(String path, String selectorPath) {
     return Operation
         .createPost(UriUtils.buildBroadcastRequestUri(getCloudStoreURI(path), selectorPath))
-        .setReferer(this.localHostUri);
+        .setReferer(this.refererUri);
   }
 
   public Operation createPatch(String path) {
     return Operation
         .createPatch(getCloudStoreURI(path))
-        .setReferer(this.localHostUri);
+        .setReferer(this.refererUri);
   }
 
   public Operation createLocalPatch(String path) {
     return Operation
         .createPatch(selectLocalCloudStoreIfAvailable(path))
-        .setReferer(this.localHostUri);
+        .setReferer(this.refererUri);
   }
 }
