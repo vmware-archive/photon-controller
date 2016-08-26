@@ -49,7 +49,7 @@ public class CloudStoreHelperTest {
     public void testConstructor() {
       CloudStoreHelper cloudStoreHelper = new CloudStoreHelper();
       assertThat(cloudStoreHelper.getCloudStoreServerSet(), nullValue());
-      assertThat(cloudStoreHelper.getLocalHostUri(), is(OperationUtils.getLocalHostUri()));
+      assertThat(cloudStoreHelper.getRefererUri(), is(OperationUtils.getLocalHostUri()));
     }
 
     @Test
@@ -58,7 +58,7 @@ public class CloudStoreHelperTest {
       StaticServerSet serverSet = new StaticServerSet(inetSocketAddress);
       CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(serverSet);
       assertThat(cloudStoreHelper.getCloudStoreServerSet(), is(serverSet));
-      assertThat(cloudStoreHelper.getLocalHostUri(), is(OperationUtils.getLocalHostUri()));
+      assertThat(cloudStoreHelper.getRefererUri(), is(OperationUtils.getLocalHostUri()));
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -83,6 +83,26 @@ public class CloudStoreHelperTest {
       URI expectedUri = new URI("http", null, hostString, port, TEST_URI_PATH, null, null);
 
       assertThat(cloudStoreHelper.getCloudStoreURI(TEST_URI_PATH), is(expectedUri));
+    }
+  }
+
+  /**
+   * This class implements tests for the setRefererUri method.
+   */
+  public class SetRefererURITest {
+
+    @Test
+    public void testSetRefererURI() throws Throwable {
+      InetSocketAddress inetSocketAddress = new InetSocketAddress(80);
+      StaticServerSet serverSet = new StaticServerSet(inetSocketAddress);
+      CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(serverSet);
+
+      String hostString = inetSocketAddress.getHostString();
+      int port = inetSocketAddress.getPort();
+      URI refererUri = new URI("http", null, hostString, port, TEST_URI_PATH, null, null);
+      cloudStoreHelper.setRefererUri(refererUri);
+
+      assertThat(cloudStoreHelper.getRefererUri(), is(refererUri));
     }
   }
 
