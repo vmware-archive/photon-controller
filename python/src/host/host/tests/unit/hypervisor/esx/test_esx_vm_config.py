@@ -19,15 +19,16 @@ from pyVmomi import vim
 
 from host.hypervisor.esx.host_client import DeviceNotFoundException
 from host.hypervisor.esx.host_client import DeviceBusyException
-from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.path_util import datastore_to_os_path
 from host.hypervisor.esx.path_util import vmdk_path
 from host.hypervisor.esx.path_util import is_ephemeral_disk
 from host.hypervisor.esx.path_util import is_image
 from host.hypervisor.esx.path_util import is_persistent_disk
 from host.hypervisor.esx.path_util import uuid_to_vmdk_uuid
-from host.hypervisor.esx.vm_config import DEFAULT_DISK_CONTROLLER_CLASS
-from host.hypervisor.esx.vm_config import EsxVmConfigSpec
+
+from host.tests.unit.hypervisor.esx.vim_client import VimClient
+from host.tests.unit.hypervisor.esx.vm_config import DEFAULT_DISK_CONTROLLER_CLASS
+from host.tests.unit.hypervisor.esx.vm_config import EsxVmConfigSpec
 
 
 def FakeConfigInfo(devices=None):

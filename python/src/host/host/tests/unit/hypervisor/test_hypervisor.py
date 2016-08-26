@@ -21,9 +21,9 @@ from common.file_util import mkdtemp
 from host.tests.unit.services_helper import ServicesHelper
 from host.hypervisor.esx.host_client import UpdateListener
 from host.hypervisor.hypervisor import Hypervisor
-from host.hypervisor.esx.vim_client import AcquireCredentialsException
-from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vim_cache import VimCache
+from host.tests.unit.hypervisor.esx.vim_client import AcquireCredentialsException
+from host.tests.unit.hypervisor.esx.vim_client import VimClient
+from host.tests.unit.hypervisor.esx.vim_cache import VimCache
 
 
 class TestUnitHypervisor(unittest.TestCase):
@@ -52,12 +52,14 @@ class TestUnitHypervisor(unittest.TestCase):
         content_mock = MagicMock(name="content")
         return content_mock
 
+    @patch.object(Hypervisor, "create_host_client")
     @patch("host.image.image_manager.ImageManager.monitor_for_cleanup")
     @patch.object(VimClient, "_acquire_local_credentials")
     @patch.object(VimCache, "poll_updates")
     @patch("pysdk.connect.Connect")
-    def test_config(self, connect_mock, update_mock, creds_mock, monitor_mock):
+    def test_config(self, connect_mock, update_mock, creds_mock, monitor_mock, create_host_client_mock):
 
+        create_host_client_mock.return_value = VimClient()
         si_mock = MagicMock(name="si_mock")
         si_mock.RetrieveContent = self._retrieve_content
         connect_mock.return_value = si_mock
@@ -77,11 +79,12 @@ class TestUnitHypervisor(unittest.TestCase):
 
         assert_that(update_mock.called, is_(True))
 
+    @patch.object(Hypervisor, "create_host_client")
     @patch("host.image.image_manager.ImageManager.monitor_for_cleanup")
     @patch.object(VimClient, "_acquire_local_credentials")
     @patch.object(VimCache, "poll_updates")
     @patch("pysdk.connect.Connect")
-    def test_listener(self, connect_mock, update_mock, creds_mock, monitor_mock):
+    def test_listener(self, connect_mock, update_mock, creds_mock, monitor_mock, create_host_client_mock):
         """Test update listeners"""
         class MyUpdateListener(UpdateListener):
             def __init__(self):
@@ -90,6 +93,7 @@ class TestUnitHypervisor(unittest.TestCase):
             def datastores_updated(self):
                 self.ds_updated = True
 
+        create_host_client_mock.return_value = VimClient()
         creds_mock.return_value = ["user", "pass"]
         si_mock = MagicMock(name="si_mock")
         si_mock.RetrieveContent = self._retrieve_content

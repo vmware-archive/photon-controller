@@ -33,8 +33,6 @@ from gen.host.ttypes import VmNetworkInfo
 from gen.host.ttypes import ConnectedStatus
 from gen.host.ttypes import Ipv4Address
 from gen.resource.ttypes import MksTicket
-from host.hypervisor.esx import logging_wrappers
-from host.hypervisor.esx.host_client import HostClient
 from host.hypervisor.esx.host_client import DeviceBusyException
 from host.hypervisor.esx.host_client import DatastoreNotFound
 from host.hypervisor.esx.host_client import HostdConnectionFailure
@@ -43,12 +41,6 @@ from host.hypervisor.esx.host_client import NfcLeaseInitiatizationError
 from host.hypervisor.esx.path_util import os_to_datastore_path
 from host.hypervisor.esx.path_util import datastore_to_os_path
 from host.hypervisor.esx.path_util import is_persistent_disk
-from host.hypervisor.esx.vim_cache import SyncVimCacheThread
-from host.hypervisor.esx.vim_cache import VimDatastore
-from host.hypervisor.esx.vim_cache import VimCache
-from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
-from host.hypervisor.esx.vm_config import EsxVmConfigSpec
-from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from host.hypervisor.exceptions import DiskAlreadyExistException
 from host.hypervisor.exceptions import DiskPathException
 from host.hypervisor.exceptions import DiskFileException
@@ -56,6 +48,12 @@ from host.hypervisor.exceptions import VmPowerStateException
 from host.hypervisor.exceptions import OperationNotAllowedException
 from host.hypervisor.exceptions import VmAlreadyExistException
 from host.hypervisor.exceptions import VmNotFoundException
+from host.tests.unit.hypervisor.esx.vim_cache import SyncVimCacheThread
+from host.tests.unit.hypervisor.esx.vim_cache import VimDatastore
+from host.tests.unit.hypervisor.esx.vim_cache import VimCache
+from host.tests.unit.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
+from host.tests.unit.hypervisor.esx.vm_config import EsxVmConfigSpec
+from host.tests.unit.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from pysdk import connect
 from pysdk import host
 from pysdk import invt
@@ -78,11 +76,6 @@ NFC_VERSION = "nfc.version.version2"
 HOSTD_PORT = 443
 NFC_PORT = 902
 DEFAULT_TASK_TIMEOUT = 60 * 60  # one hour timeout
-
-
-# monkey patch to enable request logging
-if connect.SoapStubAdapter.__name__ == "SoapStubAdapter":
-    connect.SoapStubAdapter = logging_wrappers.SoapStubAdapterWrapper
 
 
 class AcquireCredentialsException(Exception):
@@ -111,7 +104,7 @@ def hostd_error_handler(func):
     return nested
 
 
-class VimClient(HostClient):
+class VimClient():
     """Wrapper class around VIM API calls using Service Instance connection"""
 
     ALLOC_LARGE_PAGES = "Mem.AllocGuestLargePage"

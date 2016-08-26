@@ -33,7 +33,7 @@ from host.hypervisor.esx.path_util import TMP_IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import METADATA_FILE_EXT
 from host.image.image_manager import DirectoryNotFound
 from host.image.image_manager import ImageManager
-from host.hypervisor.esx.vim_client import VimClient
+from host.tests.unit.hypervisor.esx.vim_client import VimClient
 
 
 class TestImageManager(unittest.TestCase):

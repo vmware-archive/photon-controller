@@ -13,7 +13,7 @@ import unittest
 from host.hypervisor.disk_manager import DiskManager
 from host.hypervisor.exceptions import DiskFileException
 from host.hypervisor.exceptions import DiskPathException
-from host.hypervisor.esx.vim_client import VimClient
+from host.tests.unit.hypervisor.esx.vim_client import VimClient
 
 from mock import MagicMock
 

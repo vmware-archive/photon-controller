@@ -19,7 +19,6 @@ import os.path
 from common.log import log_duration
 from host.hypervisor.esx.host_client import DeviceNotFoundException
 from host.hypervisor.esx.host_client import DeviceBusyException
-from host.hypervisor.esx.host_client import VmConfigSpec
 from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import compond_path_join
 from host.hypervisor.esx.path_util import datastore_path
@@ -58,7 +57,7 @@ _FIRST_NIC_DEVICE = "ethernet0"
 _NSX_LOGICAL_SWITCH = "nsx.LogicalSwitch"
 
 
-class EsxVmConfigSpec(VmConfigSpec):
+class EsxVmConfigSpec():
 
     """ESX VM configuration spec.
     """
