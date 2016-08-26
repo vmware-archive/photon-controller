@@ -42,13 +42,13 @@ deployment_create_spec_json="{ \
 
    if [[ $ENABLE_AUTH == 'true' ]]; then
       # Security Groups is escaped twice to format the security group as
-      # "<Lightwave tenant>\\<Lightwave Group>". The slashes are escaped when
+      # "<Lightwave tenant>\<Lightwave Group>". The slashes are escaped when
       # writing to a file and escaped again when sending the curl to the
       # deployment.
       deployment_create_spec_json+=", \
       \"oAuthEnabled\" : true, \
       \"oAuthTenantName\" : \"${LW_DOMAIN_NAME}\", \
-      \"oAuthSecurityGroups\" : [\"${LW_DOMAIN_NAME}\\\\\\\\Administrators\"], \
+      \"oAuthSecurityGroups\" : [\"${LW_DOMAIN_NAME}\\\\Administrators\"], \
       \"oAuthUserName\" : \"ec-admin@${LW_DOMAIN_NAME}\", \
       \"oAuthPassword\" : \"${LW_PASSWORD}\", \
       \"oAuthServerPort\" : 443, \
