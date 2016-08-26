@@ -37,7 +37,6 @@ public class CloudStoreHelper {
   @Inject
   public CloudStoreHelper(@PhotonControllerServerSet ServerSet cloudStoreServerSet) {
     this.cloudStoreServerSet = checkNotNull(cloudStoreServerSet);
-    this.refererUri = OperationUtils.getLocalHostUri();
   }
 
   public CloudStoreHelper() {
