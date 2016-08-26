@@ -157,9 +157,6 @@ class AttacheClient(HostClient):
     def update_listeners(self):
         return self._update_listeners
 
-    def query_config(self):
-        pass
-
     """ Vm operations
     """
     @attache_error_handler
