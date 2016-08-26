@@ -102,7 +102,7 @@ if [ $attempts -eq $total_attempts ]; then
 fi
 
 # Join lightwave domain
-domainjoin join {{{LIGHTWAVE_DOMAIN}}} --password {{{LIGHTWAVE_PASSWORD}}}
+ic-join -domain-controller {{{LIGHTWAVE_DOMAIN}}} --machine-account {{{LIGHTWAVE_HOSTNAME}}}"-pc"
 
 # Fill in the hostname and ip address for generating a machine certificate
 sed -i s/IPAddress.*/"IPAddress = {{{REGISTRATION_ADDRESS}}}"/ /opt/vmware/share/config/certool.cfg
