@@ -211,9 +211,6 @@ public class SubnetAllocatorService extends StatefulService {
         currentState.freeList.add(highRange);
       }
 
-      setState(patch, currentState);
-      patch.complete();
-
       DhcpSubnetService.State subnet = new DhcpSubnetService.State();
       subnet.cidr = IpHelper.calculateCidrFromIpV4Range(createdIpv4Range.low, createdIpv4Range.high);
       subnet.lowIp = createdIpv4Range.low;
@@ -234,6 +231,9 @@ public class SubnetAllocatorService extends StatefulService {
       Operation postOperation = Operation.createPost(this, DhcpSubnetService.FACTORY_LINK)
           .setBody(subnet);
       ServiceUtils.doServiceOperation(this, postOperation);
+
+      setState(patch, currentState);
+      patch.complete();
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       patch.fail(t);

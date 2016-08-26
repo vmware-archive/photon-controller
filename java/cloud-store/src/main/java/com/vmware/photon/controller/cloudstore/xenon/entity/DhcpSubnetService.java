@@ -70,7 +70,18 @@ public class DhcpSubnetService extends StatefulService {
   }
 
   public static FactoryService createFactory() {
-    return FactoryService.create(DhcpSubnetService.class, DhcpSubnetService.State.class);
+    return FactoryService.create(
+        DhcpSubnetService.class,
+        DhcpSubnetService.State.class,
+        ServiceOption.IDEMPOTENT_POST);
+  }
+
+  public static String makeIpLeaseUrl(Boolean isFloatingIp, String subnetId, String ipAddress) {
+    if (isFloatingIp) {
+      return IpLeaseService.FACTORY_LINK + "/" + ipAddress.replace(".", ":");
+    } else {
+      return IpLeaseService.FACTORY_LINK + "/" + subnetId + ":" + ipAddress.replace(".", ":");
+    }
   }
 
   @Override
@@ -211,8 +222,18 @@ public class DhcpSubnetService extends StatefulService {
   @Override
   public void handleCreate(Operation createOperation) {
     ServiceUtils.logInfo(this, "Creating service %s", getSelfLink());
+    processPut(createOperation);
+  }
+
+  @Override
+  public void handlePut(Operation putOperation) {
+    ServiceUtils.logInfo(this, "Updating service %s", getSelfLink());
+    processPut(putOperation);
+  }
+
+  private void processPut(Operation putOperation) {
     try {
-      State startState = createOperation.getBody(State.class);
+      State startState = putOperation.getBody(State.class);
 
       InitializationUtils.initialize(startState);
       startState.size = startState.highIp - startState.lowIp + 1;
@@ -238,12 +259,13 @@ public class DhcpSubnetService extends StatefulService {
       Long dynamicRangeSize = startState.highIpDynamic - startState.lowIpDynamic + 1;
       startState.ipAllocations = new BitSet(IpHelper.safeLongToInt(dynamicRangeSize));
 
-      createOperation.complete();
+      setState(putOperation, startState);
+      putOperation.complete();
     } catch (IllegalStateException t) {
-      ServiceUtils.failOperationAsBadRequest(this, createOperation, t);
+      ServiceUtils.failOperationAsBadRequest(this, putOperation, t);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
-      createOperation.fail(t);
+      putOperation.fail(t);
     }
   }
 
@@ -462,14 +484,6 @@ public class DhcpSubnetService extends StatefulService {
           .add("versionPushed", versionPushed)
           .add("count of allocations", ipAllocations.length())
           .toString();
-    }
-  }
-
-  public static String makeIpLeaseUrl(Boolean isFloatingIp, String subnetId, String ipAddress) {
-    if (isFloatingIp) {
-      return IpLeaseService.FACTORY_LINK + "/" + ipAddress.replace(".", ":");
-    } else {
-      return IpLeaseService.FACTORY_LINK + "/" + subnetId + ":" + ipAddress.replace(".", ":");
     }
   }
 }

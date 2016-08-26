@@ -229,13 +229,6 @@ public class SubnetAllocatorServiceTest {
 
       assertThat(allocatorState.freeList.size(), is(1));
 
-      ServiceHostUtils.waitForServiceState(
-          ServiceDocumentQueryResult.class,
-          DhcpSubnetService.FACTORY_LINK,
-          (queryResult) -> queryResult.documentCount == 1,
-          host,
-          null);
-
       DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
           DhcpSubnetService.FACTORY_LINK + "/" + subnetId);
 
@@ -257,6 +250,64 @@ public class SubnetAllocatorServiceTest {
       assertThat(IpHelper.longToIpString(currentState.highIp), is("192.168.0.15"));
 
     }
+
+    @Test
+    public void testAllocateForExistingDhcpSubnetService() throws Throwable {
+      String subnetId = UUID.randomUUID().toString();
+
+      DhcpSubnetService.State dhcpSubnet = new DhcpSubnetService.State();
+      dhcpSubnet.lowIp = 0L;
+      dhcpSubnet.highIp = 1L;
+      dhcpSubnet.cidr = "dummy cidr";
+      dhcpSubnet.isFloatingIpSubnet = true;
+      dhcpSubnet.documentSelfLink = subnetId;
+
+      Operation postOperation = new Operation()
+          .setAction(Service.Action.POST)
+          .setBody(dhcpSubnet)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, DhcpSubnetService.FACTORY_LINK));
+      Operation completedOperation = host.sendRequestAndWait(postOperation);
+      assertThat(completedOperation.getStatusCode(), is(Operation.STATUS_CODE_OK));
+
+      SubnetAllocatorService.AllocateSubnet allocateSubnetPatch =
+          new SubnetAllocatorService.AllocateSubnet(
+              subnetId, 16L, 4L);
+      Operation patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(allocateSubnetPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      completedOperation = host.sendRequestAndWait(patchOperation);
+
+      assertThat(completedOperation.getStatusCode(), is(Operation.STATUS_CODE_OK));
+
+      SubnetAllocatorService.State allocatorState = host.getServiceState(SubnetAllocatorService.State.class,
+          startState.documentSelfLink);
+
+      assertThat(allocatorState.freeList.size(), is(1));
+
+      DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
+          DhcpSubnetService.FACTORY_LINK + "/" + subnetId);
+
+      assertThat(currentState.cidr, is("192.168.0.0/28"));
+      assertThat(currentState.size, is(16L));
+      assertThat(currentState.doGarbageCollection, is(false));
+      assertThat(currentState.isFloatingIpSubnet, is(false));
+      assertThat(currentState.ipAllocations, is(notNullValue()));
+      assertThat(currentState.ipAllocations.isEmpty(), is(true));
+      assertThat(IpHelper.longToIpString(currentState.lowIp), is("192.168.0.0"));
+      assertThat(currentState.reservedIpList.size(), is(SubnetAllocatorService.COUNT_OF_RESERVED_IPS));
+      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(0)), is("192.168.0.1"));
+      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(1)), is("192.168.0.2"));
+      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(2)), is("192.168.0.3"));
+      assertThat(IpHelper.longToIpString(currentState.lowIpStatic), is("192.168.0.4"));
+      assertThat(IpHelper.longToIpString(currentState.highIpStatic), is("192.168.0.7"));
+      assertThat(IpHelper.longToIpString(currentState.lowIpDynamic), is("192.168.0.8"));
+      assertThat(IpHelper.longToIpString(currentState.highIpDynamic), is("192.168.0.14"));
+      assertThat(IpHelper.longToIpString(currentState.highIp), is("192.168.0.15"));
+    }
+
 
     @Test
     public void testAllocateSubnetFailure() throws Throwable {
@@ -301,13 +352,6 @@ public class SubnetAllocatorServiceTest {
           .setReferer("test-host")
           .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
       host.sendRequestAndWait(patchOperation);
-
-      ServiceHostUtils.waitForServiceState(
-          ServiceDocumentQueryResult.class,
-          DhcpSubnetService.FACTORY_LINK,
-          (queryResult) -> queryResult.documentCount == 1,
-          host,
-          null);
 
       SubnetAllocatorService.ReleaseSubnet releaseSubnetPatch =
           new SubnetAllocatorService.ReleaseSubnet(subnetId);
