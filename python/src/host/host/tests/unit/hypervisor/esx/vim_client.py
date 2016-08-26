@@ -22,24 +22,17 @@ import sys
 import threading
 import time
 
-from calendar import timegm
 from common.lock import lock_with
-from common.log import log_duration
-from common.log import log_duration_with
-from datetime import datetime
 
 from gen.agent.ttypes import TaskState
 from gen.host.ttypes import VmNetworkInfo
 from gen.host.ttypes import ConnectedStatus
 from gen.host.ttypes import Ipv4Address
-from gen.resource.ttypes import MksTicket
 from host.hypervisor.esx.host_client import DeviceBusyException
-from host.hypervisor.esx.host_client import DatastoreNotFound
 from host.hypervisor.esx.host_client import HostdConnectionFailure
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationTimeout
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationError
 from host.hypervisor.esx.path_util import os_to_datastore_path
-from host.hypervisor.esx.path_util import datastore_to_os_path
 from host.hypervisor.esx.path_util import is_persistent_disk
 from host.hypervisor.exceptions import DiskAlreadyExistException
 from host.hypervisor.exceptions import DiskPathException
@@ -51,13 +44,11 @@ from host.hypervisor.exceptions import VmNotFoundException
 from host.tests.unit.hypervisor.esx.vim_cache import SyncVimCacheThread
 from host.tests.unit.hypervisor.esx.vim_cache import VimDatastore
 from host.tests.unit.hypervisor.esx.vim_cache import VimCache
-from host.tests.unit.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.tests.unit.hypervisor.esx.vm_config import EsxVmConfigSpec
 from host.tests.unit.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from pysdk import connect
 from pysdk import host
 from pysdk import invt
-from pysdk import task
 from pyVmomi import vim
 from pyVmomi import vmodl
 
@@ -82,69 +73,8 @@ class AcquireCredentialsException(Exception):
     pass
 
 
-class Portgroup(object):
-    def __init__(self, name, dvs=None):
-        self.name = name
-        self.dvs = dvs
-
-
-def hostd_error_handler(func):
-
-    def nested(self, *args, **kwargs):
-        try:
-            return func(self, *args, **kwargs)
-        except (vim.fault.NotAuthenticated, vim.fault.HostConnectFault,
-                vim.fault.InvalidLogin, AcquireCredentialsException):
-            self._logger.warning("Lost connection to hostd. Commit suicide.", exc_info=True)
-            if self._errback:
-                self._errback()
-            else:
-                raise
-
-    return nested
-
-
 class VimClient():
     """Wrapper class around VIM API calls using Service Instance connection"""
-
-    ALLOC_LARGE_PAGES = "Mem.AllocGuestLargePage"
-    metric_names = [
-        "cpu.totalmhz",
-        "cpu.usage",
-        "cpu.usagemhz",
-        "cpu.swapwait",
-        "mem.usage",
-        "mem.totalmb",
-        "mem.sysUsage",
-        "mem.swapout",
-        "mem.swapin",
-        "mem.swapused",
-        "mem.heapfree",
-        "net.usage",
-        "net.packetsRx",
-        "net.packetsTx",
-        "net.droppedRx",
-        "net.droppedTx",
-        "net.errorsRx",
-        "net.errorsTx",
-        "net.bytesRx",
-        "net.bytesTx",
-        "net.transmitted",
-        "disk.usage",
-        "disk.maxTotalLatency",
-        "disk.numberRead",
-        "disk.numberWrite",
-        "disk.commandsAborted",
-        "disk.busResets",
-        "disk.kernelReadLatency",
-        "disk.kernelWriteLatency",
-        "datastore.numberReadAveraged",
-        "datastore.numberWriteAveraged",
-        "storageAdapter.numberReadAveraged",
-        "storageAdapter.numberWriteAveraged"
-    ]
-    host_cpu_usage_metric_name = "cpu.cpuUsagePercentage"
-    host_mem_usage_metric_name = "mem.memoryUsagePercentage"
 
     def __init__(self, auto_sync=True, errback=None, wait_timeout=10, min_interval=1):
         self._logger = logging.getLogger(__name__)
@@ -229,14 +159,6 @@ class VimClient():
             self._sync_thread.stop()
             self._sync_thread.join()
 
-    def _get_timestamps(self, sample_info_csv):
-        # extract timestamps from sampleInfoCSV
-        # format is '20,2015-12-03T18:39:20Z,20,2015-12-03T18:39:40Z...'
-        # Note: timegm() returns seconds since epoch without adjusting for
-        # local timezone, which is how we want timestamp interpreted.
-        timestamps = sample_info_csv.split(',')[1::2]
-        return [timegm(datetime.strptime(dt, '%Y-%m-%dT%H:%M:%SZ').timetuple()) for dt in timestamps]
-
     @lock_with("_lock")
     def add_update_listener(self, listener):
         # Notify the listener immediately since there might have already been some updates.
@@ -256,146 +178,25 @@ class VimClient():
         env_browser = invt.GetEnv(si=self._si)
         return env_browser.QueryConfigOption("vmx-10", None)
 
-    @hostd_error_handler
-    def query_stats(self, start_time, end_time=None):
-        """ Returns the host statistics by querying the perf manager on the
-            host for the passed-in metric_names.
-        """
-        metric_id_objs = []
-        counter_to_metric_map = {}
-        host = self.host_system()
-
-        for c in self._perf_manager.perfCounter:
-            metric_name = "%s.%s" % (c.groupInfo.key, c.nameInfo.key)
-            if metric_name in self.metric_names:
-                counter_to_metric_map[c.key] = metric_name
-                metric_id_objs.append(
-                    vim.PerformanceManager.MetricId(
-                        counterId=c.key,
-                        instance="*"
-                    ))
-
-        # Stats are sampled by the performance manager every 20
-        # seconds. Hostd keeps 180 samples at the rate of 1 sample
-        # per 20 seconds, which results in samples that span an hour.
-        query_spec = [vim.PerformanceManager.QuerySpec(
-            entity=host,
-            intervalId=20,
-            format='csv',
-            metricId=metric_id_objs,
-            startTime=start_time,
-            endTime=end_time)]
-
-        results = {}
-        stats = self._perf_manager.QueryPerf(query_spec)
-        if stats:
-            for stat in stats:
-                timestamps = self._get_timestamps(stat.sampleInfoCSV)
-                values = stat.value
-                for value in values:
-                    id = value.id.counterId
-                    counter_values = [float(i) for i in value.value.split(',')]
-                    if id in counter_to_metric_map:
-                        metric_name = counter_to_metric_map[id]
-                        results[metric_name] = zip(timestamps, counter_values)
-        else:
-            self._logger.debug("No metrics collected")
-
-        # Get remaining Host Stats for CPU and Memory Usage.
-        timestamp = int(time.mktime(datetime.now().timetuple()))
-        results[self.host_cpu_usage_metric_name] = [(timestamp, self._host_cpu_usage(host))]
-        results[self.host_mem_usage_metric_name] = [(timestamp, self._host_mem_usage(host))]
-        return results
-
-    def _host_cpu_usage(self, host):
-        overall_cpu_usage = host.summary.quickStats.overallCpuUsage
-        total_cpu = host.summary.hardware.cpuMhz * host.summary.hardware.numCpuCores
-        if total_cpu > 0:
-            return (overall_cpu_usage * 100) / float(total_cpu)
-        return 0.0
-
-    def _host_mem_usage(self, host):
-        overall_memory_usage = host.summary.quickStats.overallMemoryUsage
-        total_memory = host.summary.hardware.memorySize / 1024 / 1024
-        if total_memory > 0:
-            return (overall_memory_usage * 100) / float(total_memory)
-        return 0.0
-
     @property
-    @hostd_error_handler
-    def _perf_manager(self):
-        return self._content.perfManager
-
-    @property
-    @hostd_error_handler
     def _property_collector(self):
         return self._content.propertyCollector
 
-    @hostd_error_handler
     def _root_resource_pool(self):
         """Get the root resource pool for this host.
         :rtype: vim.ResourcePool
         """
         return host.GetRootResourcePool(self._si)
 
-    @hostd_error_handler
     def _vm_folder(self):
         """Get the default vm folder for this host.
         :rtype: vim.Folder
         """
         return invt.GetVmFolder(si=self._si)
 
-    @hostd_error_handler
     def host_system(self):
         return host.GetHostSystem(self._si)
 
-    @property
-    @hostd_error_handler
-    def host_version(self):
-        return self.host_system().config.product.version
-
-    @property
-    @hostd_error_handler
-    def memory_usage_mb(self):
-        return self._vim_cache.get_memory_usage()
-
-    @property
-    @hostd_error_handler
-    def total_vmusable_memory_mb(self):
-        return self.host_system().summary.hardware.memorySize >> 20
-
-    @property
-    @hostd_error_handler
-    def num_physical_cpus(self):
-        """
-        Returns the number of pCPUs on the host. 1 pCPU is one hyper
-        thread, if HT is enabled.
-        :rtype: number of pCPUs
-        """
-        return self.host_system().summary.hardware.numCpuThreads
-
-    @hostd_error_handler
-    def get_nfc_ticket_by_ds_name(self, datastore):
-        """
-        :param datastore: str, datastore name
-        :rtype: vim.HostServiceTicket
-        """
-        ds = self._find_by_inventory_path(DATASTORE_FOLDER_NAME, datastore)
-        if not ds:
-            raise DatastoreNotFound('Datastore %s not found' % datastore)
-        nfc_service = vim.NfcService('ha-nfc-service', self._si._stub)
-        return nfc_service.FileManagement(ds)
-
-    @hostd_error_handler
-    def get_vim_ticket(self):
-        """
-        acquire a clone ticket of current session, that can be used to login as
-        current user.
-        :return: str, ticket
-        """
-        return self._content.sessionManager.AcquireCloneTicket()
-
-    @hostd_error_handler
     def _find_by_inventory_path(self, *path):
         """
         Finds a managed entity based on its location in the inventory.
@@ -409,7 +210,6 @@ class VimClient():
         p = "/".join(p.replace("/", "%2f") for p in dc + path if p)
         return self._content.searchIndex.FindByInventoryPath(p)
 
-    @hostd_error_handler
     def get_vm(self, vm_id):
         """Get the vm reference on a host.
         :param vm_id: The name of the vm.
@@ -421,17 +221,6 @@ class VimClient():
 
         return vm
 
-    @hostd_error_handler
-    def get_datastore_in_cache(self, name):
-        """Get a datastore network for this host.
-        :param name: datastore name
-        :type name: str
-        :rtype: vim.Datastore
-        """
-        ds = self._find_by_inventory_path(DATASTORE_FOLDER_NAME, name)
-        return VimDatastore(ds)
-
-    @hostd_error_handler
     def get_all_datastores(self):
         """Get all datastores for this host.
         :rtype: list of vim.Datastore
@@ -441,7 +230,6 @@ class VimClient():
             datastores.append(VimDatastore(ds))
         return datastores
 
-    @hostd_error_handler
     def _get_vms(self):
         """ Get VirtualMachine from hostd. Use get_vms_in_cache to have a
         better performance unless you want Vim Object.
@@ -475,17 +263,11 @@ class VimClient():
         """
         return self._vim_cache.get_vm_in_cache(vm_id)
 
-    @hostd_error_handler
-    def get_vm_resource_ids(self):
-        return self._vim_cache.get_vm_ids_in_cache()
-
     def create_vm_spec(self, vm_id, datastore, memoryMB, cpus, metadata, env):
         spec = EsxVmConfigSpec(self.query_config())
         spec.init_for_create(vm_id, datastore, memoryMB, cpus, metadata, env)
         return spec
 
-    @log_duration
-    @hostd_error_handler
     def create_vm(self, vm_id, create_spec):
         """Create a new Virtual Maching given a VM create spec.
 
@@ -518,12 +300,10 @@ class VimClient():
         self.wait_for_task(task)
         self.wait_for_vm_create(vm_id)
 
-    @hostd_error_handler
     def get_networks(self):
-        return [Portgroup(network.name) for network
+        return [network.name for network
                 in self._find_by_inventory_path(NETWORK_FOLDER_NAME).childEntity]
 
-    @hostd_error_handler
     def create_disk(self, path, size):
         spec = vim.VirtualDiskManager.FileBackedVirtualDiskSpec()
         spec.capacityKb = size * (1024 ** 2)
@@ -541,7 +321,6 @@ class VimClient():
         except vim.fault.InvalidDatastore, e:
             raise DiskPathException(e.msg)
 
-    @hostd_error_handler
     def copy_disk(self, src, dst):
         vd_spec = vim.VirtualDiskManager.VirtualDiskSpec()
         vd_spec.diskType = str(vim.VirtualDiskManager.VirtualDiskType.thin)
@@ -561,7 +340,6 @@ class VimClient():
         except vim.fault.InvalidDatastore, e:
             raise DiskPathException(e.msg)
 
-    @hostd_error_handler
     def move_disk(self, src, dst):
         try:
             disk_mgr = self._content.virtualDiskManager
@@ -575,7 +353,6 @@ class VimClient():
         except vim.fault.InvalidDatastore, e:
             raise DiskPathException(e.msg)
 
-    @hostd_error_handler
     def delete_disk(self, path):
         try:
             disk_mgr = self._content.virtualDiskManager
@@ -586,27 +363,6 @@ class VimClient():
         except vim.fault.InvalidDatastore, e:
             raise DiskPathException(e.msg)
 
-    @hostd_error_handler
-    def set_disk_uuid(self, path, uuid):
-        try:
-            disk_mgr = self._content.virtualDiskManager
-            disk_mgr.SetVirtualDiskUuid(name=os_to_datastore_path(path), uuid=uuid_to_vmdk_uuid(uuid))
-        except vim.fault.FileFault, e:
-            raise DiskFileException(e.msg)
-        except vim.fault.InvalidDatastore, e:
-            raise DiskPathException(e.msg)
-
-    @hostd_error_handler
-    def query_disk_uuid(self, path):
-        try:
-            disk_mgr = self._content.virtualDiskManager
-            return disk_mgr.QueryVirtualDiskUuid(name=os_to_datastore_path(path))
-        except vim.fault.FileFault, e:
-            raise DiskFileException(e.msg)
-        except vim.fault.InvalidDatastore, e:
-            raise DiskPathException(e.msg)
-
-    @hostd_error_handler
     def make_directory(self, path):
         """Make directory using vim.fileManager.MakeDirectory
         """
@@ -616,7 +372,6 @@ class VimClient():
         except vim.fault.FileAlreadyExists:
             self._logger.debug("Parent directory %s exists" % path)
 
-    @hostd_error_handler
     def delete_file(self, path):
         """Delete directory or file using vim.fileManager.DeleteFile
         """
@@ -627,7 +382,6 @@ class VimClient():
         except vim.fault.FileNotFound:
             pass
 
-    @hostd_error_handler
     def move_file(self, src, dest):
         """Move directory or file using vim.fileManager.MoveFile
         """
@@ -639,82 +393,21 @@ class VimClient():
         vm = self.get_vm(vm_id)
         self._invoke_vm(vm, op)
 
-    @hostd_error_handler
     def power_on_vm(self, vm_id):
         self._power_vm(vm_id, "PowerOn")
 
-    @hostd_error_handler
     def power_off_vm(self, vm_id):
         self._power_vm(vm_id, "PowerOff")
 
-    @hostd_error_handler
     def reset_vm(self, vm_id):
         self._power_vm(vm_id, "Reset")
 
-    @hostd_error_handler
     def suspend_vm(self, vm_id):
         self._power_vm(vm_id, "Suspend")
 
     def _reconfigure_vm(self, vm, spec):
         self._invoke_vm(vm, "ReconfigVM_Task", spec)
 
-    @hostd_error_handler
-    def attach_disk(self, vm_id, vmdk_file):
-        cfg_spec = EsxVmConfigSpec(self.query_config())
-        cfg_spec.init_for_update()
-        vm = self.get_vm(vm_id)
-        cfg_spec.attach_disk(vm.config, vmdk_file)
-        self._reconfigure_vm(vm, cfg_spec.get_spec())
-
-    @hostd_error_handler
-    def detach_disk(self, vm_id, disk_id):
-        cfg_spec = EsxVmConfigSpec(self.query_config())
-        cfg_spec.init_for_update()
-        vm = self.get_vm(vm_id)
-        cfg_spec.detach_disk(vm.config, disk_id)
-        self._reconfigure_vm(vm, cfg_spec.get_spec())
-
-    @hostd_error_handler
-    def attach_iso(self, vm_id, iso_file):
-        cfg_spec = EsxVmConfigSpec(self.query_config())
-        cfg_spec.init_for_update()
-        vm = self.get_vm(vm_id)
-        cfg_spec.attach_iso(vm.config, iso_file)
-        self._reconfigure_vm(vm, cfg_spec.get_spec())
-
-    @hostd_error_handler
-    def detach_iso(self, vm_id):
-        cfg_spec = EsxVmConfigSpec(self.query_config())
-        cfg_spec.init_for_update()
-        vm = self.get_vm(vm_id)
-        iso_path = cfg_spec.detach_iso(vm.config)
-        self._reconfigure_vm(vm, cfg_spec.get_spec())
-        return iso_path
-
-    @hostd_error_handler
-    def attach_virtual_network(self, vm_id, network_id):
-        cfg_spec = EsxVmConfigSpec(self.query_config())
-        cfg_spec.init_for_update()
-        vm = self.get_vm(vm_id)
-        cfg_spec.add_virtual_nic(vm.config, network_id)
-        self._reconfigure_vm(vm, cfg_spec.get_spec())
-
-    @hostd_error_handler
-    def get_mks_ticket(self, vm_id):
-        vm = self.get_vm(vm_id)
-        if vm.runtime.powerState != 'poweredOn':
-            raise VmPowerStateException('Not allowed on vm that is not powered on.')
-        mks = vm.AcquireMksTicket()
-        return MksTicket(mks.host, mks.port, mks.cfgFile, mks.ticket, mks.sslThumbprint)
-
-    @hostd_error_handler
-    def unregister_vm(self, vm_id):
-        vm = self.get_vm(vm_id)
-        vm_dir = os.path.dirname(datastore_to_os_path(vm.config.files.vmPathName))
-        vm.Unregister()
-        return vm_dir
-
-    @hostd_error_handler
     def delete_vm(self, vm_id, force):
         vm = self.get_vm(vm_id)
         if vm.runtime.powerState != 'poweredOff':
@@ -752,8 +445,6 @@ class VimClient():
             self._logger.debug("Fail to initialize nfc lease: %s" % str(lease.error))
             raise NfcLeaseInitiatizationError()
 
-    @hostd_error_handler
-    @log_duration_with(log_level="debug")
     def wait_for_task(self, vim_task, timeout=DEFAULT_TASK_TIMEOUT):
         if not self._auto_sync:
             raise Exception("wait_for_task only works when auto_sync=True")
@@ -788,7 +479,6 @@ class VimClient():
     def _task_counter_read(self):
         return self._task_counter
 
-    @log_duration_with(log_level="debug")
     def wait_for_vm_create(self, vm_id):
         """Wait for vm to be created in cache
         :raise TimeoutError when timeout
@@ -896,40 +586,3 @@ class VimClient():
         mask = (1L << 32) - (1L << 32 >> prefix_len)
 
         return socket.inet_ntoa(struct.pack('>L', mask))
-
-    def nfc_copy(self, src_file_path, dst_host, dst_file_path, ssl_thumbprint, ticket):
-        from pyVmomi import nfc
-
-        (local_user, local_pwd) = VimClient()._acquire_local_credentials()
-        si = connect.Connect(host="localhost", user=local_user, pwd=local_pwd, version=NFC_VERSION)
-        nfc_manager = nfc.NfcManager('ha-nfc-manager', si._stub)
-
-        copy_spec = nfc.CopySpec()
-        copy_spec.source = nfc.CopySpec.Location()
-        copy_spec.source.filePath = src_file_path
-
-        copy_spec.destination = nfc.CopySpec.Location()
-        copy_spec.destination.filePath = dst_file_path
-        copy_spec.destination.cnxSpec = nfc.CopySpec.CnxSpec()
-        copy_spec.destination.cnxSpec.useSSL = False
-        copy_spec.destination.cnxSpec.host = dst_host
-        copy_spec.destination.cnxSpec.port = NFC_PORT
-        copy_spec.destination.cnxSpec.authData = nfc.CopySpec.TicketAuthData()
-        copy_spec.destination.cnxSpec.authData.ticket = ticket
-        copy_spec.destination.cnxSpec.authData.sslThumbprint = ssl_thumbprint
-
-        copy_spec.opType = "copy"
-        copy_spec.fileSpec = nfc.VmfsFlatDiskSpec()
-        copy_spec.fileSpec.adapterType = "lsiLogic"
-        copy_spec.fileSpec.preserveIdentity = True
-        copy_spec.fileSpec.allocateType = "thick"
-        copy_spec.option = nfc.CopySpec.CopyOptions()
-        copy_spec.option.failOnError = True
-        copy_spec.option.overwriteDestination = True
-        copy_spec.option.useRawModeForChildDisk = False
-
-        self._logger.info("transfer_image: copy_spec %s", str(copy_spec))
-        nfc_task = nfc_manager.Copy([copy_spec, ])
-        task.WaitForTask(nfc_task, raiseOnError=True, si=si,
-                         pc=None,  # use default si prop collector
-                         onProgressUpdate=None)
