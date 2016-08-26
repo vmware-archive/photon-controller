@@ -83,10 +83,6 @@ class HostClient(object):
     def remove_update_listener(self, listener):
         pass
 
-    @abc.abstractmethod
-    def query_config(self):
-        pass
-
     """ Vm operations
     """
     @abc.abstractmethod
