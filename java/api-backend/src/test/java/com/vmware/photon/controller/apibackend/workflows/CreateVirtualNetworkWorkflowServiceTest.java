@@ -740,6 +740,13 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           SubnetAllocatorService.State.class,
           (state) -> true);
 
+      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+      querySpecification.query = new QueryTask.Query()
+          .setTermPropertyName(ProjectService.State.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(ProjectService.State.class));
+      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
+      testEnvironment.waitForQuery(queryTask, qt -> qt.results.documentLinks.size() > 0);
+
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateVirtualNetworkWorkflowService.FACTORY_LINK,
@@ -770,9 +777,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
           .setTermMatchValue(Utils.buildKind(VirtualNetworkService.State.class));
 
-      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+      querySpecification = new QueryTask.QuerySpecification();
       querySpecification.query.addBooleanClause(kindClause);
-      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
+      queryTask = QueryTask.create(querySpecification).setDirect(true);
       NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
       assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), is(1));
 
