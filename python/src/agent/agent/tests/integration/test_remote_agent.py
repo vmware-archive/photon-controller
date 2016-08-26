@@ -69,7 +69,7 @@ from hamcrest import has_length
 from hamcrest import is_
 from hamcrest import is_in
 from hamcrest import not_none
-from host.hypervisor.esx.vim_client import VimClient
+from host.tests.unit.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import datastore_path
 from host.hypervisor.esx.path_util import vmdk_path

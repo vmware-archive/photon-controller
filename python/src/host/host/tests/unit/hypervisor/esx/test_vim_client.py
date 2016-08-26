@@ -18,7 +18,6 @@ import unittest
 from datetime import datetime
 from datetime import timedelta
 
-from host.hypervisor.esx.vim_cache import VimCache
 from mock import patch
 from mock import MagicMock
 from mock import PropertyMock
@@ -29,10 +28,11 @@ from pyVmomi import vim
 from pyVmomi import vmodl
 
 from gen.resource.ttypes import VmPowerState
-from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.host_client import DatastoreNotFound
 from host.hypervisor.esx.host_client import HostdConnectionFailure
-from host.hypervisor.esx.vim_client import AcquireCredentialsException
+from host.tests.unit.hypervisor.esx.vim_client import VimClient
+from host.tests.unit.hypervisor.esx.vim_cache import VimCache
+from host.tests.unit.hypervisor.esx.vim_client import AcquireCredentialsException
 
 
 class FakeCounter:
@@ -317,7 +317,7 @@ class TestVimClient(unittest.TestCase):
         vim_client = VimClient(auto_sync=False)
         self.assertRaises(AcquireCredentialsException, vim_client._acquire_local_credentials)
 
-    @patch('host.hypervisor.esx.vim_client.VimClient._property_collector', new_callable=PropertyMock)
+    @patch('host.tests.unit.hypervisor.esx.vim_client.VimClient._property_collector', new_callable=PropertyMock)
     @patch.object(VimCache, "poll_updates")
     @patch.object(VimCache, "_vm_filter_spec")
     @patch("pysdk.connect.Connect")

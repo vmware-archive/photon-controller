@@ -21,8 +21,8 @@ from nose.plugins.skip import SkipTest
 from testconfig import config
 
 from gen.resource.ttypes import VmPowerState
-from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_config import EsxVmConfigSpec
+from host.tests.unit.hypervisor.esx.vim_client import VimClient
+from host.tests.unit.hypervisor.esx.vm_config import EsxVmConfigSpec
 from host.hypervisor.vm_manager import VmNotFoundException
 
 from pyVmomi import vim

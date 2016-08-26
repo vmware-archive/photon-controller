@@ -14,7 +14,6 @@ import unittest
 import os
 import uuid
 
-from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from mock import MagicMock
 from mock import call
 from mock import patch
@@ -35,8 +34,9 @@ from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.exceptions import VmAlreadyExistException
 from host.hypervisor.exceptions import VmNotFoundException
 from host.hypervisor.exceptions import VmPowerStateException
-from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.vm_manager import VmManager
+from host.tests.unit.hypervisor.esx.vim_client import VimClient
+from host.tests.unit.hypervisor.esx.vm_config import EsxVmConfigSpec
 
 
 def FakeConfigInfo():

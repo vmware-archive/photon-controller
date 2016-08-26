@@ -21,7 +21,7 @@ from nose.plugins.skip import SkipTest
 from testconfig import config
 
 from common.kind import Unit, QuotaLineItem, Flavor
-from host.hypervisor.esx.vim_client import VimClient
+from host.tests.unit.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.vm_manager import VmManager
 
 

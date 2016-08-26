@@ -73,7 +73,7 @@ class VimCache:
         traversal_spec = PC.TraversalSpec(name="folderTraversalSpec", type=vim.Folder, path="childEntity", skip=False)
         property_spec = PC.PropertySpec(type=vim.Datastore,
                                         pathSet=["name", "summary.capacity", "summary.freeSpace", "summary.type"])
-        from host.hypervisor.esx.vim_client import DATASTORE_FOLDER_NAME
+        from host.tests.unit.hypervisor.esx.vim_client import DATASTORE_FOLDER_NAME
         object_spec = PC.ObjectSpec(obj=vim_client._find_by_inventory_path(DATASTORE_FOLDER_NAME),
                                     selectSet=[traversal_spec])
         return PC.FilterSpec(propSet=[property_spec], objectSet=[object_spec])

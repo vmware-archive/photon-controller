@@ -62,13 +62,9 @@ class Hypervisor(object):
 
     @staticmethod
     def create_host_client(auto_sync=True, errback=None):
-        try:
-            # check whether attache is installed. If not, find_module will throw ImportError.
-            from host.hypervisor.esx.attache_client import AttacheClient
-            return AttacheClient(auto_sync, errback)
-        except ImportError:
-            from host.hypervisor.esx.vim_client import VimClient
-            return VimClient(auto_sync, errback)
+        # check whether attache is installed. If not, find_module will throw ImportError.
+        from host.hypervisor.esx.attache_client import AttacheClient
+        return AttacheClient(auto_sync, errback)
 
     def check_image(self, image_id, datastore_id):
         return self.image_manager.check_image(

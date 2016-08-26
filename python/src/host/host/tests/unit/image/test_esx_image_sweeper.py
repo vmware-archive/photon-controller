@@ -20,8 +20,8 @@ import tempfile
 import unittest
 
 from hamcrest import *  # noqa
-from host.hypervisor.esx import vm_config
-from host.hypervisor.esx.vim_client import VimClient
+from host.tests.unit.hypervisor.esx import vm_config
+from host.tests.unit.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.vm_manager import VmManager
 from mock import MagicMock
 from mock import patch

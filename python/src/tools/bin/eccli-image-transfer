@@ -7,9 +7,8 @@ from eccli.format import print_response
 from eccli.optparser import default_parser
 from eccli.thrift import get_client
 from gen.common.ttypes import ServerAddress
-from gen.host.ttypes import TransferImageRequest, ServiceTicketRequest, ServiceType, FinalizeImageResultCode, \
-    TransferImageResultCode
-from host.hypervisor.esx.vim_client import VimClient
+from gen.host.ttypes import TransferImageRequest, ServiceTicketRequest, ServiceType, TransferImageResultCode
+from host.tests.unit.hypervisor.esx.vim_client import VimClient
 
 parser = default_parser(usage="eccli-image-transfer [options]",
                         add_help=True)
