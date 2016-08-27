@@ -45,14 +45,23 @@ deployer:
     vibUninstallOrder:
     - photon-controller-agent
     - envoy
+    memoryMb: {{{memoryMb}}}
+    installDirectory: "/usr/lib/esxcloud/photon-controller-core"
+    logDirectory: {{{LOG_DIRECTORY}}}
 {{#ENABLE_AUTH}}
     keyStorePath: /keystore.jks
     keyStorePassword: {{{LIGHTWAVE_PASSWORD}}}
+    lightwaveDomain: {{{LIGHTWAVE_DOMAIN}}}
+    lightwaveHostname: {{{LIGHTWAVE_HOSTNAME}}}
+    lightwaveDomainController: {{{LIGHTWAVE_DOMAIN_CONTROLLER}}}
+    lightwaveMachineAccount: {{{LIGHTWAVE_MACHINE_ACCOUNT}}}
+    lightwaveDisableVmafdListener: {{{LIGHTWAVE_DISABLE_VMAFD_LISTENER}}}
 {{/ENABLE_AUTH}}
 
 photon_controller_logging:
   file:
     enabled: true
+    logDirectory: {{{LOG_DIRECTORY}}}
     currentLogFilename: {{{LOG_DIRECTORY}}}/photon-controller.log
     archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/photon-controller-%d.log.gz
     logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
