@@ -80,7 +80,9 @@ module EsxCloud
       # @param [String] name
       # @return [VmList]
       def find_vms_by_name(project_id, name)
-        @api_client.find_vms_by_name(project_id, name)
+        project = find_project_by_id(project_id)
+        result = run_cli("vm list -p '#{project.name}' -n '#{name}'")
+        get_vm_list_from_response(result)
       end
 
       # @param [String] id

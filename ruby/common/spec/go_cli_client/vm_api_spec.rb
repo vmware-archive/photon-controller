@@ -245,4 +245,17 @@ describe EsxCloud::GoCliClient do
     expect(client).to receive(:get_task_list_from_response).with(result).and_return(tasks)
     client.get_vm_tasks(vm_id, "COMPLETED").should == tasks
   end
+
+  it "finds VMs by name" do
+    project = double(EsxCloud::Project, id: "id", name: "p1")
+
+    result ="vmId1 vm1 STARTED"
+    vms = double(EsxCloud::VmList)
+
+    expect(client).to receive(:find_project_by_id).with(project.id).and_return(project)
+    expect(client).to receive(:run_cli).with("vm list -p 'p1' -n 'vm1'").and_return(result)
+    expect(client).to receive(:get_vm_list_from_response).with(result).and_return(vms)
+
+    expect(client.find_vms_by_name(project.id, "vm1")).to eq vms
+  end
 end
