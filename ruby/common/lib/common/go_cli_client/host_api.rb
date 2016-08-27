@@ -112,25 +112,29 @@ module EsxCloud
       # @param [String] id
       # @return [Host]
       def host_enter_maintenance_mode(id)
-        @api_client.host_enter_maintenance_mode(id)
+        host_id = run_cli("host enter-maintenance '#{id}'")
+        mgmt_find_host_by_id(host_id)
       end
 
       # @param [String] id
       # @return [Host]
       def host_enter_suspended_mode(id)
-        @api_client.host_enter_suspended_mode(id)
+        host_id = run_cli("host suspend '#{id}'")
+        mgmt_find_host_by_id(host_id)
       end
 
       # @param [String] id
       # @return [Host]
       def host_exit_maintenance_mode(id)
-        @api_client.host_exit_maintenance_mode(id)
+        host_id = run_cli("host exit-maintenance '#{id}'")
+        mgmt_find_host_by_id(host_id)
       end
 
       # @param [String] id
       # @return [Host]
       def host_resume(id)
-        @api_client.host_resume(id)
+        host_id = run_cli("host resume '#{id}'")
+        mgmt_find_host_by_id(host_id)
       end
 
       # @param [String] host_id

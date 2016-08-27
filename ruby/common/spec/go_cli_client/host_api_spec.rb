@@ -92,6 +92,45 @@ describe EsxCloud::GoCliClient do
                       .and_return(host_id)
     expect(client).to receive(:mgmt_find_host_by_id).with(host_id).and_return(host)
     client.host_set_availability_zone(host_id, payload).should == host
+  end
 
+  it "host enters maintenance mode" do
+    host_id = double("h1")
+    host = double(EsxCloud::Host, id: host_id)
+
+    expect(client).to receive(:run_cli).with("host enter-maintenance '#{host_id}'").and_return(host_id)
+    expect(client).to receive(:mgmt_find_host_by_id).with(host_id).and_return(host)
+
+    expect(client.host_enter_maintenance_mode(host_id)).to eq(host)
+  end
+
+  it "host enters suspended mode" do
+    host_id = double("h1")
+    host = double(EsxCloud::Host, id: host_id)
+
+    expect(client).to receive(:run_cli).with("host suspend '#{host_id}'").and_return(host_id)
+    expect(client).to receive(:mgmt_find_host_by_id).with(host_id).and_return(host)
+
+    expect(client.host_enter_suspended_mode(host_id)).to eq(host)
+  end
+
+  it "host exits maintenance mode" do
+    host_id = double("h1")
+    host = double(EsxCloud::Host, id: host_id)
+
+    expect(client).to receive(:run_cli).with("host exit-maintenance '#{host_id}'").and_return(host_id)
+    expect(client).to receive(:mgmt_find_host_by_id).with(host_id).and_return(host)
+
+    expect(client.host_exit_maintenance_mode(host_id)).to eq(host)
+  end
+
+  it "host resumes to normal mode" do
+    host_id = double("h1")
+    host = double(EsxCloud::Host, id: host_id)
+
+    expect(client).to receive(:run_cli).with("host resume '#{host_id}'").and_return(host_id)
+    expect(client).to receive(:mgmt_find_host_by_id).with(host_id).and_return(host)
+
+    expect(client.host_resume(host_id)).to eq(host)
   end
 end
