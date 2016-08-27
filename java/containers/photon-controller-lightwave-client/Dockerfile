@@ -32,4 +32,6 @@ RUN tdnf install -y procps-ng; \
 
 ENV PATH $PATH:/opt/vmware/bin:/opt/likewise/bin
 
+EXPOSE 9000 19000
+
 ENTRYPOINT ["/usr/sbin/init"]

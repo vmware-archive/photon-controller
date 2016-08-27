@@ -38,6 +38,7 @@
     "MAX_VM_COUNT": 20,
     "DEPLOYER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/deployer",
     "VIB_DIRECTORY": "/var/esxcloud/packages",
-    "ENABLE_SYSLOG": false
+    "ENABLE_SYSLOG": false,
+    "memoryMb": 2048
   }
 }
