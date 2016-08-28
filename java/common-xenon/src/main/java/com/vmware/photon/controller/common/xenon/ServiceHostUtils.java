@@ -44,6 +44,10 @@ import java.net.URI;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -60,6 +64,9 @@ import java.util.function.Supplier;
  */
 public class ServiceHostUtils {
 
+  public static final int FAST_MAINT_INTERVAL_MILLIS = 100;
+
+  private static int timeoutSeconds = 300;
   /**
    * Maximum numbers of times to check for node group convergence.
    */
@@ -77,11 +84,6 @@ public class ServiceHostUtils {
    */
   private static final String REFERRER_PATH = "/service-host-utils";
 
-  /**
-   * Number of checks status needs to stay stable before it is considered converged.
-   */
-  private static final int REQUIRED_STABLE_STATE_COUNT = 5;
-
   private static final long WAIT_ITERATION_SLEEP_MILLIS = 500;
 
   private static final long WAIT_ITERATION_COUNT = 30000 / WAIT_ITERATION_SLEEP_MILLIS; // 30 seconds.
@@ -98,17 +100,18 @@ public class ServiceHostUtils {
     checkArgument(!Strings.isNullOrEmpty(nodeGroupPath), "nodeGroupPath cannot be null or empty");
     checkArgument(maxRetries > 0, "maxRetries must be > 0");
 
-    List<Pair<String, Integer>> remoteHostIpAndPortPairs = new ArrayList<>();
+    Collection<URI> nodeGroupUris = new HashSet<>();
     for (ServiceHost host : hosts) {
-      remoteHostIpAndPortPairs.add(Pair.of(host.getState().bindAddress, host.getPort()));
+      nodeGroupUris.add(new URI("http", null, host.getState().bindAddress, host.getPort(), nodeGroupPath, null, null));
     }
 
     waitForNodeGroupConvergence(
         hosts[0],
-        remoteHostIpAndPortPairs,
-        nodeGroupPath,
-        maxRetries,
-        retryInterval);
+        nodeGroupUris,
+        nodeGroupUris.size(),
+        nodeGroupUris.size(),
+        true,
+        maxRetries);
   }
 
   public static void waitForNodeGroupConvergence(
@@ -124,65 +127,192 @@ public class ServiceHostUtils {
     checkArgument(maxRetries > 0, "maxRetries must be > 0");
 
     List<Pair<String, Integer>> remoteHostIpAndPortPairs = new ArrayList<>();
+    Collection<URI> nodeGroupUris = new HashSet<>();
     for (String peer : peerNodes) {
       URI uri = new URI(peer);
       remoteHostIpAndPortPairs.add(Pair.of(uri.getHost(), uri.getPort()));
+      nodeGroupUris.add(new URI("http", null, uri.getHost(), uri.getPort(), nodeGroupPath, null, null));
     }
 
     waitForNodeGroupConvergence(
         localHost,
-        remoteHostIpAndPortPairs,
-        nodeGroupPath,
-        maxRetries,
-        retryInterval);
+        nodeGroupUris,
+        nodeGroupUris.size(),
+        nodeGroupUris.size(),
+        true,
+        maxRetries);
   }
 
   public static void waitForNodeGroupConvergence(
       ServiceHost localHost,
-      Collection<Pair<String, Integer>> remoteHostIpAndPortPairs,
-      String nodeGroupPath,
-      int maxRetries,
-      int retryInterval) throws Throwable {
+      Collection<URI> nodeGroupUris,
+      int healthyMemberCount,
+      Integer totalMemberCount,
+      boolean waitForTimeSync,
+      int maxRetries) throws Throwable {
     checkArgument(localHost != null, "localHost cannot be null");
-    checkArgument(remoteHostIpAndPortPairs != null, "remoteHostIpAndPortPairs cannot be null");
-    checkArgument(!Strings.isNullOrEmpty(nodeGroupPath), "nodeGroupPath cannot be null or empty");
+    checkArgument(nodeGroupUris != null, "nodeGroupUris cannot be null");
+    checkArgument(!nodeGroupUris.isEmpty(), "nodeGroupUris cannot be null");
     checkArgument(maxRetries > 0, "maxRetries must be > 0");
 
-    for (Pair<String, Integer> remoteHostIpAndPortPair : remoteHostIpAndPortPairs) {
-
-      int checkRetries = maxRetries;
-      int checksToConvergence = REQUIRED_STABLE_STATE_COUNT;
-      while (checkRetries > 0 && checksToConvergence > 0) {
-        // update retry count and sleep
-        checkRetries--;
-        Thread.sleep(retryInterval * checksToConvergence);
-
-        // check the host response
-        NodeGroupService.NodeGroupState response = getNodeGroupState(
-            localHost,
-            remoteHostIpAndPortPair.getKey(),
-            remoteHostIpAndPortPair.getValue(),
-            nodeGroupPath);
-        if (response.nodes.size() < remoteHostIpAndPortPairs.size()) {
-          continue;
-        }
-
-        // check host status
-        checksToConvergence--;
-        for (NodeState nodeState : response.nodes.values()) {
-          if (nodeState.status != NodeState.NodeStatus.AVAILABLE) {
-            checksToConvergence = REQUIRED_STABLE_STATE_COUNT;
-            break;
-            // Note that we are not breaking from the above while loop where checksToConvergence is done
-            // This is because the nodes might switch between AVAILABLE and SYNCHRONIZING as the other nodes join
-          }
+    Map<URI, EnumSet<NodeState.NodeOption>> expectedOptionsPerNodeGroupUri = new HashMap<>();
+    final int sleepTimeMillis = FAST_MAINT_INTERVAL_MILLIS * 2;
+    Date now = null;
+    Date expiration = new Date(new Date().getTime() + TimeUnit.SECONDS.toMillis(timeoutSeconds));
+    Map<URI, NodeGroupService.NodeGroupState> nodesPerHost = new HashMap<>();
+    Set<Long> updateTime = new HashSet<>();
+    do {
+      nodesPerHost.clear();
+      updateTime.clear();
+      TestContext ctx = TestContext.create(nodeGroupUris.size(), TimeUnit.SECONDS.toMicros(timeoutSeconds));
+      for (URI nodeGroup : nodeGroupUris) {
+        getNodeState(localHost, nodeGroup, nodesPerHost, ctx);
+        EnumSet<NodeState.NodeOption> expectedOptions = expectedOptionsPerNodeGroupUri.get(nodeGroup);
+        if (expectedOptions == null) {
+          expectedOptionsPerNodeGroupUri.put(nodeGroup, NodeState.DEFAULT_OPTIONS);
         }
       }
+      ctx.await();
 
-      if (checkRetries == 0) {
-        throw new TimeoutException("nodes did not converge");
+      boolean isConverged = true;
+      for (Map.Entry<URI, NodeGroupService.NodeGroupState> entry : nodesPerHost
+          .entrySet()) {
+
+        NodeGroupService.NodeGroupState nodeGroupState = entry.getValue();
+        updateTime.add(nodeGroupState.membershipUpdateTimeMicros);
+        int healthyNodeCount = calculateHealthyNodeCount(nodeGroupState);
+
+        if (totalMemberCount != null
+            && nodeGroupState.nodes.size() != totalMemberCount.intValue()) {
+          logger.info(String.format("Host %s is reporting %d healthy members %d total, expected %d total",
+              entry.getKey(), healthyNodeCount, nodesPerHost.size(),
+              healthyMemberCount, totalMemberCount));
+          isConverged = false;
+          break;
+        }
+
+        if (healthyNodeCount != healthyMemberCount) {
+          logger.info(String.format("Host %s is reporting %d healthy members, expected %d",
+              entry.getKey(), healthyNodeCount, healthyMemberCount));
+          isConverged = false;
+          break;
+        }
+
+        validateNodes(entry.getValue(), healthyMemberCount, expectedOptionsPerNodeGroupUri);
+      }
+
+      now = new Date();
+
+      if (waitForTimeSync && updateTime.size() != 1) {
+        logger.info(String.format("Update times did not converge: %s", updateTime.toString()));
+        isConverged = false;
+      }
+
+      if (isConverged) {
+        break;
+      }
+
+      Thread.sleep(sleepTimeMillis);
+    } while (now.before(expiration));
+
+    boolean log = true;
+    updateTime.clear();
+    for (Map.Entry<URI, NodeGroupService.NodeGroupState> entry : nodesPerHost
+        .entrySet()) {
+      updateTime.add(entry.getValue().membershipUpdateTimeMicros);
+      for (NodeState n : entry.getValue().nodes.values()) {
+        if (log) {
+          logger.info(String.format("%s:%s %s, (time) %d, (version) %d", n.groupReference, n.id, n.status,
+              n.documentUpdateTimeMicros, n.documentVersion));
+          log = false;
+        }
       }
     }
+
+    try {
+      if (waitForTimeSync && updateTime.size() != 1) {
+        throw new IllegalStateException("Update time did not converge");
+      }
+
+      if (now.after(expiration)) {
+        throw new TimeoutException();
+      }
+    } catch (Throwable e) {
+      for (Map.Entry<URI, NodeGroupService.NodeGroupState> entry : nodesPerHost
+          .entrySet()) {
+        logger.info(String.format("%s reports %s", entry.getKey(), Utils.toJsonHtml(entry.getValue())));
+      }
+      throw e;
+    }
+
+    logger.info("Node group converged successfully.");
+  }
+
+  public static void getNodeState(
+      ServiceHost localHost,
+      URI nodeGroup,
+      Map<URI, NodeGroupService.NodeGroupState> nodesPerHost,
+      TestContext ctx) {
+    URI u = UriUtils.buildExpandLinksQueryUri(nodeGroup);
+    Operation get = Operation.createGet(u).setReferer(UriUtils.buildUri(localHost, REFERRER_PATH))
+        .setCompletion((o, e) -> {
+      NodeGroupService.NodeGroupState ngs = null;
+      if (e != null) {
+        // failure is OK, since we might have just stopped a host
+        logger.info(String.format("Host %s failed GET with %s", nodeGroup, e.getMessage()));
+        ngs = new NodeGroupService.NodeGroupState();
+      } else {
+        ngs = o.getBody(NodeGroupService.NodeGroupState.class);
+      }
+      synchronized (nodesPerHost) {
+        nodesPerHost.put(nodeGroup, ngs);
+      }
+      ctx.completeIteration();
+    });
+    localHost.sendRequest(get);
+  }
+
+  public static int calculateHealthyNodeCount(NodeGroupService.NodeGroupState r) {
+    int healthyNodeCount = 0;
+    for (NodeState ns : r.nodes.values()) {
+      if (ns.status == NodeState.NodeStatus.AVAILABLE) {
+        healthyNodeCount++;
+      }
+    }
+    return healthyNodeCount;
+  }
+
+  public static void validateNodes(NodeGroupService.NodeGroupState r, int expectedNodesPerGroup,
+                                   Map<URI, EnumSet<NodeState.NodeOption>> expectedOptionsPerNode) {
+
+    int healthyNodes = 0;
+    NodeState localNode = null;
+    for (NodeState ns : r.nodes.values()) {
+      if (ns.status == NodeState.NodeStatus.AVAILABLE) {
+        healthyNodes++;
+      }
+      assert(ns.documentKind.equals(Utils.buildKind(NodeState.class)));
+      if (ns.documentSelfLink.endsWith(r.documentOwner)) {
+        localNode = ns;
+      }
+
+      assert(ns.options != null);
+      EnumSet<NodeState.NodeOption> expectedOptions = expectedOptionsPerNode.get(ns.groupReference);
+      if (expectedOptions == null) {
+        expectedOptions = NodeState.DEFAULT_OPTIONS;
+      }
+
+      for (NodeState.NodeOption eo : expectedOptions) {
+        assert(ns.options.contains(eo));
+      }
+
+      assert(ns.id != null);
+      assert(ns.groupReference != null);
+      assert(ns.documentSelfLink.startsWith(ns.groupReference.getPath()));
+    }
+
+    assert(healthyNodes >= expectedNodesPerGroup);
+    assert(localNode != null);
   }
 
   public static void setQuorumSize(ServiceHost serviceHost, int quorumSize, String referrer) throws Throwable {
