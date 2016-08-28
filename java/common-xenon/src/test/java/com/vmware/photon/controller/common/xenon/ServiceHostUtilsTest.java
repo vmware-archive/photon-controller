@@ -215,9 +215,9 @@ public class ServiceHostUtilsTest {
 
       try {
         ServiceHostUtils.waitForNodeGroupConvergence(hosts, ServiceUriPaths.DEFAULT_NODE_GROUP, 10, 20);
-        fail("did not throw exception when wait timed-out");
-      } catch (TimeoutException ex) {
-        assertThat(ex.getMessage(), is("nodes did not converge"));
+        fail("did not throw exception when waited for convergence");
+      } catch (IllegalStateException ex) {
+        assertThat(ex.getMessage(), is("Update time did not converge"));
       }
     }
 
