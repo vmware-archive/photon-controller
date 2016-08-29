@@ -61,7 +61,7 @@ function print_warning_if_value_mssing ()
 CONFIG_PATH_PARAM=$1
 INSTALLATION_PATH_PARAM=$2
 CONFIG_PATH=${CONFIG_PATH_PARAM:-"/etc/esxcloud"}
-PHOTON_CONTROLLER_CORE_CONFIG="/etc/photon/photon-controller-core.yml"
+PHOTON_CONTROLLER_CORE_CONFIG="${CONFIG_PATH}/photon-controller-core.yml"
 
 memoryMb=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG memoryMb:`
 ENABLE_AUTH=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG enableAuth:`
@@ -116,8 +116,6 @@ then
 fi
 
 # jvm heap size will be set to by default is 1024m
-jvm_mem=1024
-
 jvm_mem=$(($memoryMb/2))
 
 
@@ -126,7 +124,7 @@ security_opts="-Djavax.net.ssl.trustStore=/keystore.jks"
 
 export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC ${security_opts} $JAVA_DEBUG"
 
-if [ -n "$ENABLE_AUTH" -a "$ENABLE_AUTH" == "True" ]
+if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH,,}" == "true" ]
 then
   printf "window.swaggerConfig = {\n  enableAuth: true,\n  swaggerLoginUrl: '%s',\n  swaggerLogoutUrl: '%s',\n};\n" \
     $SWAGGER_LOGIN_URL $SWAGGER_LOGOUT_URL > $API_SWAGGER_JS
@@ -139,7 +137,7 @@ mkdir -p $CONFIG_PATH/assets
 cp $API_SWAGGER_JS $CONFIG_PATH/assets
 $JAVA_HOME/bin/jar uf ${API_LIB}/swagger-ui*.jar -C $CONFIG_PATH assets/$API_SWAGGER_JS_FILE
 
-if [ -n "$ENABLE_AUTH" -a "$ENABLE_AUTH" == "True" ]
+if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH,,}" == "true" ]
 then
   ic_join_params=""
   if [ -n "${LIGHTWAVE_DOMAIN_CONTROLLER}" ]
@@ -152,7 +150,7 @@ then
     ic_join_params="$ic_join_params --machine-account-name ${LIGHTWAVE_MACHINE_ACCOUNT}"
   fi
 
-  if [ "${LIGHTWAVE_DISABLE_VMAFD_LISTENER}" == "True" ]
+  if [ "${LIGHTWAVE_DISABLE_VMAFD_LISTENER,,}" == "true" ]
   then
     ic_join_params="$ic_join_params --disable-afd-listener"
   fi
