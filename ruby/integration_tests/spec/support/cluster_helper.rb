@@ -13,9 +13,9 @@ module EsxCloud
   class ClusterHelper
     class << self
       def upload_kubernetes_image(client)
-        fail("KUBERNETES_IMAGE is not defined") unless ENV["KUBERNETES_IMAGE"]
+        fail("KUBERNETES_IMAGE is not defined") unless ENV["KUBERNETES_IMAGE_NEW"]
         Config.logger.info "Starting to Upload Kubernetes Image"
-        client.create_image(ENV["KUBERNETES_IMAGE"], "photon-kubernetes-vm-disk1.vmdk", "EAGER")
+        client.create_image(ENV["KUBERNETES_IMAGE_NEW"], "photon-kubernetes-vm-disk1.vmdk", "EAGER")
       end
 
       def upload_mesos_image(client)

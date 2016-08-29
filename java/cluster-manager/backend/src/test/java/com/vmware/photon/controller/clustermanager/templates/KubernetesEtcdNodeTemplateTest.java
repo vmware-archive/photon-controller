@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 VMware, Inc. All Rights Reserved.
+ * Copyright 2016 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -27,11 +27,11 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Implements tests for {@link EtcdNodeTemplate}.
+ * Implements tests for {@link KubernetesEtcdNodeTemplate}.
  */
-public class EtcdNodeTemplateTest {
+public class KubernetesEtcdNodeTemplateTest {
 
-  private EtcdNodeTemplate template = new EtcdNodeTemplate();
+  private KubernetesEtcdNodeTemplate template = new KubernetesEtcdNodeTemplate();
 
   private static final String DNS = "10.10.10.10";
   private static final String GATEWAY = "11.11.11.11";
@@ -41,7 +41,7 @@ public class EtcdNodeTemplateTest {
 
   private Map<String, String> createCloudConfigProperties(int nodeIndex) {
     List<String> addresses = createEtcdAddresses();
-    Map<String, String> nodeProperties = EtcdNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, addresses);
+    Map<String, String> nodeProperties = KubernetesEtcdNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, addresses);
     nodeProperties.put(NodeTemplateUtils.NODE_INDEX_PROPERTY, Integer.toString(nodeIndex));
     return nodeProperties;
   }
@@ -56,7 +56,7 @@ public class EtcdNodeTemplateTest {
     return addresses;
   }
 
-  @Test(enabled = false)
+  @Test
   private void dummy() {
   }
 
@@ -161,22 +161,22 @@ public class EtcdNodeTemplateTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullDns() {
-      EtcdNodeTemplate.createProperties(null, GATEWAY, NETMASK, createEtcdAddresses());
+      KubernetesEtcdNodeTemplate.createProperties(null, GATEWAY, NETMASK, createEtcdAddresses());
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullGateway() {
-      EtcdNodeTemplate.createProperties(DNS, null, NETMASK, createEtcdAddresses());
+      KubernetesEtcdNodeTemplate.createProperties(DNS, null, NETMASK, createEtcdAddresses());
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullNetmask() {
-      EtcdNodeTemplate.createProperties(DNS, GATEWAY, null, createEtcdAddresses());
+      KubernetesEtcdNodeTemplate.createProperties(DNS, GATEWAY, null, createEtcdAddresses());
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullEtcdAddresses() {
-      EtcdNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, null);
+      KubernetesEtcdNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, null);
     }
   }
 }
