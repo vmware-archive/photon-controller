@@ -53,6 +53,7 @@ public class NetworkConfigurationTest {
       .ipRange("10.0.0.1/24")
       .floatingIpRange(sampleIpRange)
       .dhcpServers(new ArrayList<>(Arrays.asList("192.10.0.1", "192.20.0.1")))
+      .snatIp("192.168.0.1")
       .build();
 
   @Test(enabled = false)
@@ -84,6 +85,7 @@ public class NetworkConfigurationTest {
           .networkManagerPassword(null)
           .ipRange("invalidIpRange")
           .floatingIpRange(ipRange)
+          .snatIp("invalidIp")
           .build();
 
       String[] errorMsgs = new String[] {
@@ -94,7 +96,8 @@ public class NetworkConfigurationTest {
           "networkTopRouterId may not be null (was null)",
           "edgeClusterId may not be null (was null)",
           "ipRange invalidIpRange is invalid CIDR (was invalidIpRange)",
-          "floatingIpRange.start s is invalid IPv4 Address (was s)"
+          "floatingIpRange.start s is invalid IPv4 Address (was s)",
+          "snatIp invalidIp is invalid IPv4 Address (was invalidIp)"
       };
 
       ImmutableList<String> violations = validator.validate(networkConfiguration);
@@ -114,7 +117,7 @@ public class NetworkConfigurationTest {
           "NetworkConfiguration{sdnEnabled=true, networkManagerAddress=1.2.3.4, " +
           "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, " +
           "ipRange=10.0.0.1/24, floatingIpRange=IpRange{start=192.168.0.2, end=192.168.0.253}, " +
-          "edgeClusterId=edgeClusterId, dhcpServers=192.10.0.1,192.20.0.1}";
+          "snatIp=192.168.0.1, edgeClusterId=edgeClusterId, dhcpServers=192.10.0.1,192.20.0.1}";
       assertThat(sampleNetworkConfiguration.toString(), is(expectedString));
     }
   }

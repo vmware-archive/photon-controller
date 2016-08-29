@@ -67,7 +67,7 @@ public class DeploymentTest {
         .build());
 
     IpRange ipRange = new IpRange();
-    ipRange.setStart("192.168.0.1");
+    ipRange.setStart("192.168.0.2");
     ipRange.setEnd("192.168.0.254");
 
     deployment.setNetworkConfiguration(new NetworkConfigurationBuilder()
@@ -81,6 +81,7 @@ public class DeploymentTest {
         .ipRange("10.0.0.1/24")
         .floatingIpRange(ipRange)
         .dhcpServers(Arrays.asList("192.10.0.1", "192.20.0.1"))
+        .snatIp("192.168.0.1")
         .build());
     deployment.setLoadBalancerEnabled(true);
     deployment.setLoadBalancerAddress(loadBalancerAddress);
@@ -168,7 +169,7 @@ public class DeploymentTest {
               "tenant=t, securityGroups=adminGroup1,adminGroup2}, " +
               "networkConfiguration=NetworkConfiguration{sdnEnabled=true, networkManagerAddress=1.2.3.4, " +
               "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, ipRange=10.0.0.1/24, " +
-              "floatingIpRange=IpRange{start=192.168.0.1, end=192.168.0.254}, " +
+              "floatingIpRange=IpRange{start=192.168.0.2, end=192.168.0.254}, snatIp=192.168.0.1, " +
               "edgeClusterId=edgeClusterId, dhcpServers=192.10.0.1,192.20.0.1}, " +
               "loadBalancerEnabled=true, loadBalancerAddress=0.0.0.4, migrationProgress=null, " +
               "clusterConfigurations=null}";
