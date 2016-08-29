@@ -147,6 +147,12 @@ public class VirtualNetworkService extends StatefulService {
     public Integer size;
 
     /**
+     * This value indicates whether the network size quota was consumed successfully in the resource ticket.
+     */
+    @WriteOnce
+    public Boolean isSizeQuotaConsumed;
+
+    /**
      * Indicates whether this network is the default one, confined in the level of its parentId.
      */
     public Boolean isDefault;
