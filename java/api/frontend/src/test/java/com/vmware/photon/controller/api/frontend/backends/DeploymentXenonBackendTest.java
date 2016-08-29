@@ -55,6 +55,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfiguration
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
+import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
@@ -167,6 +168,7 @@ public class DeploymentXenonBackendTest {
     externalIpRange.setStart("192.168.0.1");
     externalIpRange.setEnd("192.168.0.254");
     deploymentCreateSpec.setNetworkConfiguration(new NetworkConfigurationCreateSpecBuilder()
+        .sdnEnabled(true)
         .networkManagerAddress("1.2.3.4")
         .networkManagerUsername("networkManagerUsername")
         .networkManagerPassword("networkManagerPassword")
@@ -260,10 +262,16 @@ public class DeploymentXenonBackendTest {
       assertThat(deployment.getNetworkTopRouterId(), is("networkTopRouterId"));
       assertThat(deployment.getEdgeClusterId(), is("edgeClusterId"));
       assertThat(deployment.getIpRange(), is("10.0.0.1/24"));
-      assertThat(deployment.getFloatingIpRange(),
-          is(deploymentCreateSpec.getNetworkConfiguration().getExternalIpRange()));
       assertThat(ListUtils.isEqualList(deployment.getOauthSecurityGroups(),
           Arrays.asList(new String[]{"securityGroup1", "securityGroup2"})), is(true));
+
+      IpRange externalIpRange = deploymentCreateSpec.getNetworkConfiguration().getExternalIpRange();
+      assertThat(deployment.getSnatIp(), is(externalIpRange.getStart()));
+
+      IpRange floatingIpRange = new IpRange();
+      floatingIpRange.setStart(IpHelper.longToIpString(IpHelper.ipStringToLong(externalIpRange.getStart()) + 1));
+      floatingIpRange.setEnd(externalIpRange.getEnd());
+      assertThat(deployment.getFloatingIpRange(), is(floatingIpRange));
     }
 
     @Test
@@ -758,6 +766,7 @@ public class DeploymentXenonBackendTest {
       assertThat(networkConfiguration.getEdgeClusterId(), is(entity.getEdgeClusterId()));
       assertThat(networkConfiguration.getIpRange(), is(entity.getIpRange()));
       assertThat(networkConfiguration.getFloatingIpRange(), is(entity.getFloatingIpRange()));
+      assertThat(networkConfiguration.getSnatIp(), is(entity.getSnatIp()));
     }
 
     @Test(expectedExceptions = DeploymentNotFoundException.class)
@@ -1144,7 +1153,14 @@ public class DeploymentXenonBackendTest {
       deployment2.networkTopRouterId = deploymentCreateSpec.getNetworkConfiguration().getNetworkTopRouterId();
       deployment2.edgeClusterId = deploymentCreateSpec.getNetworkConfiguration().getEdgeClusterId();
       deployment2.ipRange = deploymentCreateSpec.getNetworkConfiguration().getIpRange();
-      deployment2.floatingIpRange = deploymentCreateSpec.getNetworkConfiguration().getExternalIpRange();
+
+      IpRange externalIpRange = deploymentCreateSpec.getNetworkConfiguration().getExternalIpRange();
+      deployment2.snatIp = externalIpRange.getStart();
+
+      IpRange floatingIpRange = new IpRange();
+      floatingIpRange.setStart(IpHelper.longToIpString(IpHelper.ipStringToLong(externalIpRange.getStart()) + 1));
+      floatingIpRange.setEnd(externalIpRange.getEnd());
+      deployment2.floatingIpRange = floatingIpRange;
 
       xenonClient2.post(DeploymentServiceFactory.SELF_LINK, deployment2);
     }
