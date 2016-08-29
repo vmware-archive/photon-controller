@@ -54,103 +54,10 @@ write_files:
     permissions: 0644
     path: /lib/systemd/system/docker-bootstrap.service
   - content: |
-        {
-          "apiVersion": "v1",
-          "kind": "Pod",
-          "metadata": {"name":"k8s-master"},
-          "spec":{
-            "hostNetwork": true,
-            "containers":[
-              {
-                "name": "controller-manager",
-                "image": "gcr.io/google_containers/hyperkube:v1.0.1",
-                "command": [
-                  "/hyperkube",
-                  "controller-manager",
-                  "--master=127.0.0.1:8080",
-                  "--v=2"
-                ]
-              },
-              {
-                "name": "apiserver",
-                "image": "gcr.io/google_containers/hyperkube:v1.0.1",
-                "command": [
-                  "/hyperkube",
-                  "apiserver",
-                  "--portal-net=10.0.0.1/24",
-                  "--address=0.0.0.0",
-                  "--etcd_servers=http://$ETCD_QUORUM",
-                  "--cluster_name=kubernetes",
-                  "--v=2"
-                ]
-              },
-              {
-                "name": "scheduler",
-                "image": "gcr.io/google_containers/hyperkube:v1.0.1",
-                "command": [
-                  "/hyperkube",
-                  "scheduler",
-                  "--master=127.0.0.1:8080",
-                  "--v=2"
-                ]
-              }
-            ]
-          }
-        }
-    owner: root:root
-    permissions: 0644
-    path: /etc/kubernetes/esxcloud/master.json
-  - content: |
-        eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
-        etcdImage=kubernetes/etcd:2.0.5.1
-        flannelImage=quay.io/coreos/flannel:0.5.2
-        kubernetesImage=gcr.io/google_containers/hyperkube:v1.0.1
-        ipAddress=`ifconfig ${eno_name} | sed -n '/addr:/{;s/.*addr://;s/ .*//;p;}'`
-
-        sleep 5
-
-        docker -H unix:///var/run/docker-bootstrap.sock run --net=host ${etcdImage} etcdctl --peers $ETCD_QUORUM set /coreos.com/network/config '{"Network": "$CONTAINER_NETWORK" }'
-        sleep 5
-
-        echo "Starting flannel"
-        docker -H unix:///var/run/docker-bootstrap.sock run -d --net=host --restart=always --privileged -v /dev/net:/dev/net ${flannelImage} /opt/bin/flanneld --etcd-endpoints=http://$ETCD_QUORUM
-        sleep 5
-
-        echo "Wait for flannel"
-        while :
-        do
-          containerId=`docker -H unix:///var/run/docker-bootstrap.sock ps | grep ${flannelImage} | head -1 | cut -d " " -f1`
-          echo "containerId:"${containerId}
-          if [ -n "${containerId}" ]; then
-            flannelSubnet=`docker -H unix:///var/run/docker-bootstrap.sock exec ${containerId} sh -c 'cat /run/flannel/subnet.env | grep FLANNEL_SUBNET | cut -d"=" -f2'`
-            flannelMtu=`docker -H unix:///var/run/docker-bootstrap.sock exec ${containerId} sh -c 'cat /run/flannel/subnet.env | grep FLANNEL_MTU | cut -d"=" -f2'`
-            echo "subnet:"${flannelSubnet} "mtu:"${flannelMtu}
-            if [[ -n "${flannelSubnet}" && -n "${flannelMtu}" ]]; then
-              echo "Flannel started successfully"
-              break
-            fi
-          fi
-          sleep 1
-        done
-
-        systemctl stop docker
-        unitFile=`systemctl cat docker | grep "#" | cut -d" " -f2`
-        sed -i "s:^ExecStart.*:ExecStart=/bin/docker -d -s overlay -H tcp\://0.0.0.0\:2375 -H unix\:///var/run/docker.sock --bip=${flannelSubnet} --mtu=${flannelMtu}:g" ${unitFile}
-        sed -i "/\[Unit\]/ a\\
-        After=docker-bootstrap.service\\
-        Requires=docker-bootstrap.service" ${unitFile}
-
-        echo "Restart docker0"
-        ifconfig docker0 down
-        docker -H unix:///var/run/docker-bootstrap.sock run --privileged --net=host ${etcdImage} brctl delbr docker0
-        systemctl daemon-reload
-        systemctl start docker
-        source /tmp/check-docker.sh
-
-        echo "${ipAddress}         $LOCAL_HOSTNAME" >> /etc/hosts
-        docker run -d --net=host --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v /etc/kubernetes/esxcloud:/etc/kubernetes/esxcloud ${kubernetesImage} \
-          /hyperkube kubelet --api_servers=http://localhost:$KUBERNETES_PORT --v=2 --enable_server --config=/etc/kubernetes/esxcloud
-        docker run -d --net=host --restart=always --privileged ${kubernetesImage} /hyperkube proxy --master=http://${ipAddress}:$KUBERNETES_PORT --v=2
+        echo "Starting Kubernetes master"
+        export ETCD_IPS=$ETCD_QUORUM
+        export FLANNEL_NETWORK=$CONTAINER_NETWORK
+        /root/docker-multinode/master.sh
         echo "done"
     owner: root:root
     permissions: 0644
@@ -181,4 +88,5 @@ runcmd:
   - systemctl enable /lib/systemd/system/docker-bootstrap.service
   - systemctl start docker-bootstrap
   - sh /tmp/init-network.sh
-  - sh /etc/esxcloud/setup-kubernetes-master.sh
+  - sh /tmp/check-docker.sh
+  - sh /etc/esxcloud/setup-kubernetes-master.sh > /var/log/kubernetes-master.log

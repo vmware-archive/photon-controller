@@ -25,8 +25,8 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManag
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.servicedocuments.SwarmClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.SwarmClusterCreateTask.TaskState;
-import com.vmware.photon.controller.clustermanager.templates.EtcdNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
+import com.vmware.photon.controller.clustermanager.templates.SwarmEtcdNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.SwarmMasterNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.SwarmWorkerNodeTemplate;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;
@@ -161,7 +161,7 @@ public class SwarmClusterCreateTaskService extends StatefulService {
           rolloutInput.nodeCount = NodeTemplateUtils.deserializeAddressList(
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS)).size();
           rolloutInput.nodeType = NodeType.SwarmEtcd;
-          rolloutInput.nodeProperties = EtcdNodeTemplate.createProperties(
+          rolloutInput.nodeProperties = SwarmEtcdNodeTemplate.createProperties(
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_DNS),
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY),
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK),
