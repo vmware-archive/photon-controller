@@ -79,6 +79,11 @@ public class NetworkConfigurationBuilder {
     return this;
   }
 
+  public NetworkConfigurationBuilder snatIp(String snatIp) {
+    this.networkConfiguration.setSnatIp(snatIp);
+    return this;
+  }
+
   public NetworkConfiguration build() {
     return networkConfiguration;
   }
