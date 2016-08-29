@@ -105,4 +105,39 @@ public class KubernetesClientTest {
       assertThat(latch.await(LATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
     }
   }
+
+  /**
+   * Implements tests for the getVersionAsync method.
+   */
+  public class GetVersionAsyncTest {
+    private static final String CONNECTION_STRING = "http://10.146.22.40:8080";
+    private static final int LATCH_AWAIT_TIMEOUT = 10;
+    private String testFileVersion = "v1.3.5";
+
+    @Test
+    public void testGetAddressesSuccess() throws IOException, InterruptedException {
+      String clusterJson = Resources.toString(
+          KubernetesClientTest.class.getResource("/kubernetes_version.json"), Charsets.UTF_8);
+
+      asyncHttpClient = HttpClientTestUtil.setupMocks(clusterJson, HttpStatus.SC_OK);
+      KubernetesClient client = new KubernetesClient(asyncHttpClient);
+
+      final CountDownLatch latch = new CountDownLatch(1);
+      client.getVersionAsync(CONNECTION_STRING, new FutureCallback<String>() {
+        @Override
+        public void onSuccess(@Nullable String version) {
+            assertTrue(version.equals(testFileVersion));
+            latch.countDown();
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+          fail(t.toString());
+          latch.countDown();
+        }
+      });
+
+      assertThat(latch.await(LATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+  }
 }

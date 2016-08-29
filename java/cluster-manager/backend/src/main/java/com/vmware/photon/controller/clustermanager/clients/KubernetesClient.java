@@ -34,6 +34,7 @@ import java.util.Set;
  */
 public class KubernetesClient {
   private static final String GET_NODES_PATH = "/api/v1/nodes";
+  private static final String GET_VERSION_PATH = "/version";
 
   private CloseableHttpAsyncClient httpClient;
   private ObjectMapper objectMapper;
@@ -46,6 +47,62 @@ public class KubernetesClient {
 
     // Ignore unknown properties
     this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  }
+
+  /**
+   * This method calls into the Kubernetes API endpoint to retrieve the information about version.
+   *
+   * @param connectionString          connectionString of the master Node in the Cluster
+   * @param callback                  callback that is invoked on completion of the operation.
+   * @throws IOException
+   */
+  public void getVersionAsync(
+      final String connectionString,
+      final FutureCallback<String> callback) throws IOException {
+
+    final RestClient restClient = new RestClient(connectionString, this.httpClient);
+
+    org.apache.http.concurrent.FutureCallback futureCallback =
+        new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
+          @Override
+          public void completed(HttpResponse result) {
+
+            Version response = null;
+            try {
+              restClient.checkResponse(result, HttpStatus.SC_OK);
+              response = objectMapper.readValue(result.getEntity().getContent(), new TypeReference<Version>() {
+              });
+            } catch (Throwable e) {
+              callback.onFailure(e);
+              return;
+            }
+
+            if (response != null && response.getGitVersion() != null) {
+              callback.onSuccess(response.getGitVersion());
+            } else {
+              Exception myexp;
+              if (response == null) {
+                myexp = new NullPointerException("response is null");
+              } else {
+                myexp = new NullPointerException("gitVersion field is null");
+              }
+              failed (myexp);
+            }
+          }
+
+          @Override
+          public void failed(Exception ex) {
+            callback.onFailure(ex);
+          }
+
+          @Override
+          public void cancelled() {
+            callback.onFailure(
+                new RuntimeException("getVersionAsync was cancelled"));
+          }
+        };
+    restClient.performAsync(RestClient.Method.GET, GET_VERSION_PATH, null, futureCallback);
+
   }
 
   /**
@@ -246,6 +303,22 @@ public class KubernetesClient {
     }
     public void setType(String type) {
       this.type = type;
+    }
+  }
+
+  /**
+   * Represents the contract object used to represent the version.
+   */
+  public static class Version {
+    // Note: There are other fields, but we are ignoring them
+    private String gitVersion;
+
+    public String getGitVersion() {
+      return this.gitVersion;
+    }
+
+    public void setGitVersion(String gitVersion) {
+      this.gitVersion = gitVersion;
     }
   }
 }
