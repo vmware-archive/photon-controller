@@ -75,6 +75,7 @@ public class DeploymentEntityTest {
       floatingIpRange.setEnd("192.168.0.253");
       entity.setFloatingIpRange(floatingIpRange);
 
+      entity.setSnatIp("192.168.0.1");
       entity.setNtpEndpoint("http://ntp");
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);
@@ -133,10 +134,11 @@ public class DeploymentEntityTest {
       entity.setIpRange("10.0.0.1/24");
 
       IpRange floatingIpRange = new IpRange();
-      floatingIpRange.setStart("192.168.0.1");
+      floatingIpRange.setStart("192.168.0.2");
       floatingIpRange.setEnd("192.168.0.254");
       entity.setFloatingIpRange(floatingIpRange);
 
+      entity.setSnatIp("192.168.0.1");
       entity.setNtpEndpoint("http://ntp");
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);
