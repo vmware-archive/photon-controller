@@ -22,46 +22,21 @@ write_files:
         ip addr flush label "${eno_name}"
         systemctl restart systemd-networkd
         ip=`grep Address= /etc/systemd/network/10-dhcp-${eno_name}.network | sed 's/.*=\.*//' | sed 's/\/.*//'`
-        echo ${ip}
+        echo $ip
         c_ip=`ifconfig ${eno_name} | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
-        while [ "${ip}" != "${c_ip}" ]
+        while [ "$ip" != "$c_ip" ]
         do
           ip addr flush label "${eno_name}"
           systemctl restart systemd-networkd
           c_ip=`ifconfig ${eno_name} | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
-          echo ${c_ip}
+          echo $c_ip
           sleep 1
         done
         ping -q -c 4 $GATEWAY
     owner: root:root
     permissions: 0644
     path: /tmp/init-network.sh
-  - content: |
-        [Unit]
-        Description=Bootstrap Docker Daemon
-        After=cloud-init.service
-        Requires=cloud-init.service
 
-        [Service]
-        ExecStart=/bin/docker -d -H unix:///var/run/docker-bootstrap.sock -p /var/run/docker-bootstrap.pid --iptables=false --ip-masq=false --bridge=none --graph=/var/lib/docker-bootstrap
-        ExecReload=/bin/kill -HUP $MAINPID
-        KillMode=process
-        Restart=always
-
-        [Install]
-        WantedBy=multi-user.target
-    owner: root:root
-    permissions: 0644
-    path: /lib/systemd/system/docker-bootstrap.service
-  - content: |
-        echo "Starting Kubernetes master"
-        export ETCD_IPS=$ETCD_QUORUM
-        export FLANNEL_NETWORK=$CONTAINER_NETWORK
-        /root/docker-multinode/master.sh
-        echo "done"
-    owner: root:root
-    permissions: 0644
-    path: /etc/esxcloud/setup-kubernetes-master.sh
   - content: |
         retry_max="60"
         retry="0"
@@ -85,8 +60,6 @@ write_files:
     path: /tmp/check-docker.sh
 
 runcmd:
-  - systemctl enable /lib/systemd/system/docker-bootstrap.service
-  - systemctl start docker-bootstrap
   - sh /tmp/init-network.sh
   - sh /tmp/check-docker.sh
-  - sh /etc/esxcloud/setup-kubernetes-master.sh > /var/log/kubernetes-master.log
+  - /root/docker-multinode/etcd.sh > /var/log/etcd.log

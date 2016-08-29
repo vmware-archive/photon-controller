@@ -36,8 +36,8 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.servicedocuments.SwarmClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
 import com.vmware.photon.controller.clustermanager.statuschecks.SwarmStatusChecker;
-import com.vmware.photon.controller.clustermanager.templates.EtcdNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
+import com.vmware.photon.controller.clustermanager.templates.SwarmEtcdNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.SwarmMasterNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.SwarmWorkerNodeTemplate;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -534,7 +534,7 @@ public class SwarmClusterCreateTaskServiceTest {
       scriptLogDirectory.mkdirs();
 
       Path etcdUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), EtcdNodeTemplate.ETCD_USER_DATA_TEMPLATE);
+          Paths.get(scriptDirectory.getAbsolutePath(), SwarmEtcdNodeTemplate.ETCD_USER_DATA_TEMPLATE);
       Path masterUserDataTemplate =
           Paths.get(scriptDirectory.getAbsolutePath(), SwarmMasterNodeTemplate.MASTER_USER_DATA_TEMPLATE);
       Path workerUserDataTemplate =

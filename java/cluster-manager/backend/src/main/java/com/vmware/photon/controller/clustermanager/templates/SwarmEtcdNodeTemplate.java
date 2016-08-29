@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 VMware, Inc. All Rights Reserved.
+ * Copyright 2016 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -10,7 +10,6 @@
  * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-
 package com.vmware.photon.controller.clustermanager.templates;
 
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
@@ -25,11 +24,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Defines the template for Etcd Nodes.
+ * Defines the template for Swarm Etcd Nodes.
  */
-public class EtcdNodeTemplate implements NodeTemplate {
+public class SwarmEtcdNodeTemplate implements NodeTemplate {
 
-  public static final String ETCD_USER_DATA_TEMPLATE = "etcd-user-data.template";
+  public static final String ETCD_USER_DATA_TEMPLATE = "swarm-etcd-user-data.template";
   public static final String DNS_PROPERTY = "dns";
   public static final String GATEWAY_PROPERTY = "gateway";
   public static final String NETMASK_PROPERTY = "netmask";

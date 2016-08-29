@@ -24,7 +24,7 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManag
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask.TaskState;
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
-import com.vmware.photon.controller.clustermanager.templates.EtcdNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.KubernetesEtcdNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.KubernetesMasterNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.KubernetesWorkerNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
@@ -160,7 +160,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
           rolloutInput.nodeCount = NodeTemplateUtils.deserializeAddressList(
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS)).size();
           rolloutInput.nodeType = NodeType.KubernetesEtcd;
-          rolloutInput.nodeProperties = EtcdNodeTemplate.createProperties(
+          rolloutInput.nodeProperties = KubernetesEtcdNodeTemplate.createProperties(
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_DNS),
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY),
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK),

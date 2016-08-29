@@ -45,7 +45,7 @@ public class SwarmWorkerNodeTemplate implements NodeTemplate {
     List<String> etcdIps = NodeTemplateUtils.deserializeAddressList(properties.get(ETCD_IPS_PROPERTY));
 
     Map<String, String> parameters = new HashMap();
-    parameters.put("$ETCD_QUORUM", NodeTemplateUtils.createEtcdQuorumString(etcdIps));
+    parameters.put("$ETCD_QUORUM", NodeTemplateUtils.createEtcdQuorumWithPortsString(etcdIps));
 
     FileTemplate template = new FileTemplate();
     template.filePath = Paths.get(scriptDirectory, WORKER_USER_DATA_TEMPLATE).toString();

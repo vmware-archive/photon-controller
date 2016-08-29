@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 VMware, Inc. All Rights Reserved.
+ * Copyright 2016 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -10,10 +10,8 @@
  * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-
 package com.vmware.photon.controller.clustermanager.templates;
 
-import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.FileTemplate;
 
 import org.testng.annotations.Test;
@@ -28,19 +26,22 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Implementes tests for {@link KubernetesWorkerNodeTemplate}.
+ * Implements tests for {@link SwarmEtcdNodeTemplate}.
  */
-public class KubernetesWorkerNodeTemplateTest {
+public class SwarmEtcdNodeTemplateTest {
+  private SwarmEtcdNodeTemplate template = new SwarmEtcdNodeTemplate();
 
-  private KubernetesWorkerNodeTemplate template = new KubernetesWorkerNodeTemplate();
+  private static final String DNS = "10.10.10.10";
+  private static final String GATEWAY = "11.11.11.11";
+  private static final String NETMASK = "255.255.255.0";
+  private static final String ETCD_PARAMETERS =
+      "etcd0=http://10.0.0.1:2380,etcd1=http://10.0.0.2:2380,etcd2=http://10.0.0.3:2380,etcd3=http://10.0.0.4:2380";
 
-  private static final String CONTAINER_NETWORK = "1.1.1.1/16";
-  private static final String MASTER_IP = "2.2.2.2";
-  private static final String ETCD_QUORUM_STRING =
-      "10.0.0.1,10.0.0.2,10.0.0.3,10.0.0.4";
-
-  private Map<String, String> createCloudConfigProperties() {
-    return KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, MASTER_IP);
+  private Map<String, String> createCloudConfigProperties(int nodeIndex) {
+    List<String> addresses = createEtcdAddresses();
+    Map<String, String> nodeProperties = SwarmEtcdNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, addresses);
+    nodeProperties.put(NodeTemplateUtils.NODE_INDEX_PROPERTY, Integer.toString(nodeIndex));
+    return nodeProperties;
   }
 
   private List<String> createEtcdAddresses() {
@@ -53,7 +54,7 @@ public class KubernetesWorkerNodeTemplateTest {
     return addresses;
   }
 
-  @Test(enabled = false)
+  @Test
   private void dummy() {
   }
 
@@ -69,7 +70,7 @@ public class KubernetesWorkerNodeTemplateTest {
       nodeProperties.put(NodeTemplateUtils.HOST_ID_PROPERTY, hostId);
 
       String name = template.getVmName(nodeProperties);
-      assertEquals(name, "worker-" + hostId);
+      assertEquals(name, "etcd-" + hostId);
     }
   }
 
@@ -80,28 +81,38 @@ public class KubernetesWorkerNodeTemplateTest {
 
     @Test
     public void testSuccess() {
-      FileTemplate userData = template.createUserDataTemplate("temp", createCloudConfigProperties());
+      Map<String, String> properties = createCloudConfigProperties(1);
+      FileTemplate userData = template.createUserDataTemplate("temp", properties);
 
       assertNotNull(userData);
       assertNotNull(userData.filePath);
       assertNotNull(userData.parameters);
 
-      String etcdQuorum = userData.parameters.get("$ETCD_QUORUM");
-      assertEquals(etcdQuorum, ETCD_QUORUM_STRING);
+      String dns = userData.parameters.get("$DNS");
+      assertEquals(dns, "DNS=" + DNS);
 
-      String containerNetwork = userData.parameters.get("$CONTAINER_NETWORK");
-      assertEquals(containerNetwork, CONTAINER_NETWORK);
+      String gateway = userData.parameters.get("$GATEWAY");
+      assertEquals(gateway, GATEWAY);
 
-      String kubernetesPort = userData.parameters.get("$KUBERNETES_PORT");
-      assertEquals(kubernetesPort, Integer.toString(ClusterManagerConstants.Kubernetes.API_PORT));
+      String serverId = userData.parameters.get("$ETCD_ID");
+      assertEquals(serverId, "1");
 
-      String masterIp = userData.parameters.get("$MASTER_ADDRESS");
-      assertEquals(masterIp, MASTER_IP);
+      String address = userData.parameters.get("$ADDRESS");
+      assertEquals(address, "10.0.0.2/24");
+
+      String etcdPort = userData.parameters.get("$ETCD_PORT");
+      assertEquals(etcdPort, "2379");
+
+      String etcdPeerPort = userData.parameters.get("$ETCD_PEER_PORT");
+      assertEquals(etcdPeerPort, "2380");
+
+      String etcdParameters = userData.parameters.get("$ETCD_PARAMETERS");
+      assertEquals(etcdParameters, ETCD_PARAMETERS);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullScriptDirectory() {
-      template.createUserDataTemplate(null, createCloudConfigProperties());
+      template.createUserDataTemplate(null, createCloudConfigProperties(2));
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -117,7 +128,7 @@ public class KubernetesWorkerNodeTemplateTest {
 
     @Test
     public void testSuccess() {
-      FileTemplate metaData = template.createMetaDataTemplate("temp", createCloudConfigProperties());
+      FileTemplate metaData = template.createMetaDataTemplate("temp", createCloudConfigProperties(1));
 
       assertNotNull(metaData);
       assertNotNull(metaData.filePath);
@@ -132,7 +143,7 @@ public class KubernetesWorkerNodeTemplateTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullScriptDirectory() {
-      template.createMetaDataTemplate(null, createCloudConfigProperties());
+      template.createMetaDataTemplate(null, createCloudConfigProperties(1));
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -146,19 +157,24 @@ public class KubernetesWorkerNodeTemplateTest {
    */
   public class CreatePropertiesTest {
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testEmpltyEtcdAddresses() {
-      KubernetesWorkerNodeTemplate.createProperties(new ArrayList<>(), CONTAINER_NETWORK, MASTER_IP);
+    @Test(expectedExceptions = NullPointerException.class)
+    public void testNullDns() {
+      SwarmEtcdNodeTemplate.createProperties(null, GATEWAY, NETMASK, createEtcdAddresses());
     }
 
     @Test(expectedExceptions = NullPointerException.class)
-    public void testNullContainerNetwork() {
-      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), null, MASTER_IP);
+    public void testNullGateway() {
+      SwarmEtcdNodeTemplate.createProperties(DNS, null, NETMASK, createEtcdAddresses());
     }
 
     @Test(expectedExceptions = NullPointerException.class)
-    public void testNullMasterIp() {
-      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, null);
+    public void testNullNetmask() {
+      SwarmEtcdNodeTemplate.createProperties(DNS, GATEWAY, null, createEtcdAddresses());
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void testNullEtcdAddresses() {
+      SwarmEtcdNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, null);
     }
   }
 }

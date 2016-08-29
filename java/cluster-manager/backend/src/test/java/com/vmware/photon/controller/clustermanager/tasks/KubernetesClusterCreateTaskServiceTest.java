@@ -36,7 +36,7 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesCl
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.statuschecks.KubernetesStatusChecker;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
-import com.vmware.photon.controller.clustermanager.templates.EtcdNodeTemplate;
+import com.vmware.photon.controller.clustermanager.templates.KubernetesEtcdNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.KubernetesMasterNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.KubernetesWorkerNodeTemplate;
 import com.vmware.photon.controller.clustermanager.templates.NodeTemplateUtils;
@@ -534,7 +534,7 @@ public class KubernetesClusterCreateTaskServiceTest {
       scriptLogDirectory.mkdirs();
 
       Path etcdUserDataTemplate =
-          Paths.get(scriptDirectory.getAbsolutePath(), EtcdNodeTemplate.ETCD_USER_DATA_TEMPLATE);
+          Paths.get(scriptDirectory.getAbsolutePath(), KubernetesEtcdNodeTemplate.ETCD_USER_DATA_TEMPLATE);
       Path masterUserDataTemplate =
           Paths.get(scriptDirectory.getAbsolutePath(), KubernetesMasterNodeTemplate.MASTER_USER_DATA_TEMPLATE);
       Path workerUserDataTemplate =
