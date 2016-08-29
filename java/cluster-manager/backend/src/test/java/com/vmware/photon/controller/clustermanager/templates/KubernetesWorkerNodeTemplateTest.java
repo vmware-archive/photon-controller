@@ -37,7 +37,7 @@ public class KubernetesWorkerNodeTemplateTest {
   private static final String CONTAINER_NETWORK = "1.1.1.1/16";
   private static final String MASTER_IP = "2.2.2.2";
   private static final String ETCD_QUORUM_STRING =
-      "10.0.0.1:2379,10.0.0.2:2379,10.0.0.3:2379,10.0.0.4:2379";
+      "10.0.0.1,10.0.0.2,10.0.0.3,10.0.0.4";
 
   private Map<String, String> createCloudConfigProperties() {
     return KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, MASTER_IP);

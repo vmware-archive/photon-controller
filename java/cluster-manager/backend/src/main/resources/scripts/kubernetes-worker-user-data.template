@@ -19,80 +19,14 @@ write_files:
     permissions: 0644
     path: /tmp/init-network.sh
   - content: |
-        [Unit]
-        Description=Bootstrap Docker Daemon
-        After=cloud-init.service
-        Requires=cloud-init.service
-
-        [Service]
-        ExecStart=/bin/docker -d -H unix:///var/run/docker-bootstrap.sock -p /var/run/docker-bootstrap.pid --iptables=false --ip-masq=false --bridge=none --graph=/var/lib/docker-bootstrap
-        ExecReload=/bin/kill -HUP $MAINPID
-        KillMode=process
-        Restart=always
-
-        [Install]
-        WantedBy=multi-user.target
-    owner: root:root
-    permissions: 0644
-    path: /lib/systemd/system/docker-bootstrap.service
-  - content: |
-        masterIp=$MASTER_ADDRESS
+        echo "Starting Kubernetes worker"
+        export ETCD_IPS=$ETCD_QUORUM
+        export MASTER_IP=$MASTER_ADDRESS
+        export FLANNEL_NETWORK=$CONTAINER_NETWORK
         etcdImage=kubernetes/etcd:2.0.5.1
         flannelImage=quay.io/coreos/flannel:0.5.2
         kubernetesImage=gcr.io/google_containers/hyperkube:v1.0.1
-
-        while :
-        do
-          eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
-          ipAddress=`ifconfig ${eno_name} | sed -n '/addr:/{;s/.*addr://;s/ .*//;p;}'`
-          echo ${ipAddress}
-          if [ -n "${ipAddress}" ]; then
-            echo "Successfully acquired DHCP IP address"
-            break
-          fi
-          sleep 1
-        done
-
-        sleep 5
-
-        echo "Starting flannel"
-        docker -H unix:///var/run/docker-bootstrap.sock run -d --net=host --restart=always --privileged -v /dev/net:/dev/net ${flannelImage} /opt/bin/flanneld --etcd-endpoints=http://$ETCD_QUORUM
-        sleep 5
-
-        echo "Wait for flannel"
-        while :
-        do
-          containerId=`docker -H unix:///var/run/docker-bootstrap.sock ps | grep ${flannelImage} | head -1 | cut -d " " -f1`
-          echo "containerId:"${containerId}
-          if [ -n "${containerId}" ]; then
-            flannelSubnet=`docker -H unix:///var/run/docker-bootstrap.sock exec ${containerId} sh -c 'cat /run/flannel/subnet.env | grep FLANNEL_SUBNET | cut -d"=" -f2'`
-            flannelMtu=`docker -H unix:///var/run/docker-bootstrap.sock exec ${containerId} sh -c 'cat /run/flannel/subnet.env | grep FLANNEL_MTU | cut -d"=" -f2'`
-            echo "subnet:"${flannelSubnet} "mtu:"${flannelMtu}
-            if [[ -n "${flannelSubnet}" && -n "${flannelMtu}" ]]; then
-              echo "Flannel started successfully"
-              break
-            fi
-          fi
-          sleep 1
-        done
-
-        systemctl stop docker
-        unitFile=`systemctl cat docker | grep "#" | cut -d" " -f2`
-        sed -i "s:^ExecStart.*:ExecStart=/bin/docker -d -s overlay -H tcp\://0.0.0.0\:2375 -H unix\:///var/run/docker.sock --bip=${flannelSubnet} --mtu=${flannelMtu}:g" ${unitFile}
-        sed -i "/\[Unit\]/ a\\
-        After=docker-bootstrap.service\\
-        Requires=docker-bootstrap.service" ${unitFile}
-
-        echo "Restart docker0"
-        ifconfig docker0 down
-        docker -H unix:///var/run/docker-bootstrap.sock run --privileged --net=host ${etcdImage} brctl delbr docker0
-        systemctl daemon-reload
-        systemctl start docker
-        source /tmp/check-docker.sh
-
-        echo "${ipAddress}         $LOCAL_HOSTNAME" >> /etc/hosts
-        docker run -d --net=host -v /var/run/docker.sock:/var/run/docker.sock ${kubernetesImage} /hyperkube kubelet --api_servers=http://${masterIp}:$KUBERNETES_PORT --v=2 --address=0.0.0.0 --enable_server
-        docker run -d --net=host --privileged ${kubernetesImage} /hyperkube proxy --master=http://${masterIp}:$KUBERNETES_PORT --v=2
+        /root/docker-multinode/worker.sh
         echo "done"
     owner: root:root
     permissions: 0644
@@ -121,6 +55,5 @@ write_files:
 
 runcmd:
   - sh /tmp/init-network.sh
-  - systemctl enable /lib/systemd/system/docker-bootstrap.service
-  - systemctl start docker-bootstrap
-  - sh /etc/esxcloud/setup-kubernetes-worker.sh
+  - sh /tmp/check-docker.sh
+  - sh /etc/esxcloud/setup-kubernetes-worker.sh > /var/log/kubernetes-worker.log

@@ -98,6 +98,20 @@ public class NodeTemplateUtils {
   public static String createEtcdQuorumString(List<String> etcdIps) {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < etcdIps.size(); i++) {
+      sb.append(etcdIps.get(i));
+      if (i != etcdIps.size() - 1) {
+        sb.append(",");
+      }
+    }
+    return sb.toString();
+  }
+
+  /**
+   * Creates the Etcd node quorum string with a port for each Etcd node.
+   */
+  public static String createEtcdQuorumWithPortsString(List<String> etcdIps) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < etcdIps.size(); i++) {
       sb.append(etcdIps.get(i) + ":" + ClusterManagerConstants.Swarm.ETCD_PORT);
       if (i != etcdIps.size() - 1) {
         sb.append(",");

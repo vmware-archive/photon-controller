@@ -22,7 +22,7 @@ write_files:
         ip addr flush label "${eno_name}"
         systemctl restart systemd-networkd
         ip=`grep Address= /etc/systemd/network/10-dhcp-${eno_name}.network | sed 's/.*=\.*//' | sed 's/\/.*//'`
-        echo ip
+        echo $ip
         c_ip=`ifconfig ${eno_name} | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
         while [ "$ip" != "$c_ip" ]
         do
@@ -38,23 +38,8 @@ write_files:
     path: /tmp/init-network.sh
 
   - content: |
-        eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
-        ipAddress=`ifconfig ${eno_name} | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
-        etcdImage=quay.io/coreos/etcd:v2.0.8
-
         echo "Starting etcd"
-        docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
-         -p $ETCD_PEER_PORT:$ETCD_PEER_PORT -p $ETCD_PORT:$ETCD_PORT \
-         --restart=always \
-         --name etcd ${etcdImage} \
-         -name etcd$ETCD_ID \
-         -advertise-client-urls http://${ipAddress}:$ETCD_PORT,http://${ipAddress}:4001 \
-         -listen-client-urls http://0.0.0.0:$ETCD_PORT,http://0.0.0.0:4001 \
-         -initial-advertise-peer-urls http://${ipAddress}:$ETCD_PEER_PORT \
-         -listen-peer-urls http://0.0.0.0:$ETCD_PEER_PORT \
-         -initial-cluster $ETCD_PARAMETERS \
-         -initial-cluster-state new
-
+        /root/docker-multinode/etcd.sh
         echo "done"
     owner: root:root
     permissions: 0644
@@ -84,7 +69,5 @@ write_files:
 
 runcmd:
   - sh /tmp/init-network.sh
-  - systemctl enable docker
-  - systemctl start docker
   - sh /tmp/check-docker.sh
   - sh /tmp/start-etcd.sh > /var/log/etcd.log
