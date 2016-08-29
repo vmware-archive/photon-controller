@@ -815,6 +815,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
       // Verifies that logical port IDs are cached in the service document, and persisted in the
       // virtual network entity.
+      assertThat(expectedVirtualNetworkServiceState.isSizeQuotaConsumed, is(true));
       assertThat(expectedVirtualNetworkServiceState.logicalSwitchUplinkPortId, is(LOGICAL_SWITCH_UPLINK_PORT_ID));
       assertThat(expectedVirtualNetworkServiceState.logicalRouterDownlinkPortId, is(LOGICAL_ROUTER_DONWLINK_PORT_ID));
       assertThat(expectedVirtualNetworkServiceState.logicalRouterUplinkPortId, is(LOGICAL_ROUTER_UPLINK_PORT_ID));
@@ -944,6 +945,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
       // Verifies that logical port IDs are cached in the service document, and persisted in the
       // virtual network entity.
+      assertThat(expectedVirtualNetworkServiceState.isSizeQuotaConsumed, is(true));
       assertThat(expectedVirtualNetworkServiceState.logicalSwitchUplinkPortId, is(LOGICAL_SWITCH_UPLINK_PORT_ID));
       assertThat(expectedVirtualNetworkServiceState.logicalRouterDownlinkPortId, is(LOGICAL_ROUTER_DONWLINK_PORT_ID));
       assertThat(expectedVirtualNetworkServiceState.logicalRouterUplinkPortId, nullValue());
