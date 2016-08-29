@@ -253,6 +253,8 @@ do
     mustache - $file <<< "$combined_params" > "$config_build_dir/$file"
   fi
 done
+echo "Adding VirtualBox dns to forwarding list"
+echo "LOTUS_DNS_FORWARDERS=10.0.2.3" > /devbox_data/java/containers/lightwave/build/config/lightwave-server.cfg
 EOM
 cat >> $out <<-EOM
   $(gen-docker-stop #{lightwave_config_file}) &> /dev/null || true
