@@ -268,29 +268,29 @@ describe "vm", management: true, image: true do
           end
         end
 
-        # it "should create a vm with multiple nics on different networks", disable_for_cli_test: true, single_vm_port_group: true  do
-        #   begin
-        #     network1 = EsxCloud::SystemSeeder.instance.network!
-        #
-        #     pg2 = EsxCloud::TestHelpers.get_vm_port_group2
-        #     spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "VM Network2", [pg2])
-        #     network2 = EsxCloud::Config.client.create_network(spec.to_hash)
-        #
-        #     vm_name = random_name("vm-")
-        #     create_vm(@project, name: vm_name, networks: [network1.id, network2.id])
-        #
-        #     vms = client.find_vms_by_name(@project.id, vm_name).items
-        #     expect(vms.size).to eq 1
-        #     vm = vms[0]
-        #
-        #     networks = client.get_vm_networks(vm.id).network_connections
-        #     network_ids = networks.map { |n| n.network }
-        #     network_ids.should =~ [network1.id, network2.id]
-        #   ensure
-        #     ignoring_all_errors { vm.delete if vm }
-        #     ignoring_all_errors { network2.delete if network2 }
-        #   end
-        # end
+        it "should create a vm with multiple nics on different networks", disable_for_cli_test: true, single_vm_port_group: true  do
+          begin
+            network1 = EsxCloud::SystemSeeder.instance.network!
+
+            pg2 = EsxCloud::TestHelpers.get_vm_port_group2
+            spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "VM Network2", [pg2])
+            network2 = EsxCloud::Config.client.create_network(spec.to_hash)
+
+            vm_name = random_name("vm-")
+            create_vm(@project, name: vm_name, networks: [network1.id, network2.id])
+
+            vms = client.find_vms_by_name(@project.id, vm_name).items
+            expect(vms.size).to eq 1
+            vm = vms[0]
+
+            networks = client.get_vm_networks(vm.id).network_connections
+            network_ids = networks.map { |n| n.network }
+            network_ids.should =~ [network1.id, network2.id]
+          ensure
+            ignoring_all_errors { vm.delete if vm }
+            ignoring_all_errors { network2.delete if network2 }
+          end
+        end
 
         it "can pass one disk affinity" do
           persistent_disks1 = @seeder.persistent_disk!
