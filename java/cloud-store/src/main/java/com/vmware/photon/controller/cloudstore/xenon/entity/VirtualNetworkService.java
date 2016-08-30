@@ -149,7 +149,6 @@ public class VirtualNetworkService extends StatefulService {
     /**
      * This value indicates whether the network size quota was consumed successfully in the resource ticket.
      */
-    @WriteOnce
     public Boolean isSizeQuotaConsumed;
 
     /**
