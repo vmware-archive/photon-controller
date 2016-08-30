@@ -152,6 +152,8 @@ public class StepCommandFactoryTest {
         {Operation.PROVISION_CLUSTER_MANAGER, DeploymentStatusStepCmd.class},
         {Operation.CREATE_SUBNET_ALLOCATOR, DeploymentStatusStepCmd.class},
         {Operation.CREATE_DHCP_SUBNET, DeploymentStatusStepCmd.class},
+        {Operation.CONFIGURE_DHCP_RELAY_PROFILE, DeploymentStatusStepCmd.class},
+        {Operation.CONFIGURE_DHCP_RELAY_SERVICE, DeploymentStatusStepCmd.class},
         {Operation.MIGRATE_DEPLOYMENT_DATA, DeploymentStatusStepCmd.class},
         {Operation.SCHEDULE_DELETE_DEPLOYMENT, DeploymentDeleteStepCmd.class},
         {Operation.PERFORM_DELETE_DEPLOYMENT, DeploymentDeleteStatusStepCmd.class},
