@@ -139,9 +139,7 @@ public class XenonRestClientTest {
 
       ServiceHostUtils.waitForNodeGroupConvergence(
           hosts,
-          com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_NODE_GROUP,
-          ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
-          ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_SLEEP);
+          com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_NODE_GROUP);
     }
 
     StaticServerSet serverSet = new StaticServerSet(servers);

@@ -97,10 +97,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
       // wait for hosts to reach AVAILABLE state
       ServiceHostUtils.waitForNodeGroupConvergence(
           hosts,
-          ServiceUriPaths.DEFAULT_NODE_GROUP,
-          ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
-          // Since the default sleep time is 200 we will use a shorter time for tests
-          MultiHostEnvironment.TEST_NODE_GROUP_CONVERGENCE_SLEEP);
+          ServiceUriPaths.DEFAULT_NODE_GROUP);
 
       /**
        * waitForHostReady() waits for all factories to be available. We need to do it again

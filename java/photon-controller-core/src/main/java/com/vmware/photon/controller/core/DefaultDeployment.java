@@ -82,9 +82,7 @@ public class DefaultDeployment {
     ServiceHostUtils.waitForNodeGroupConvergence(
         xenonHost,
         peerNodes,
-        ServiceUriPaths.DEFAULT_NODE_GROUP,
-        ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
-        ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_SLEEP);
+        ServiceUriPaths.DEFAULT_NODE_GROUP);
 
     DeploymentService.State startState = buildServiceStartState(deployerConfig);
 
