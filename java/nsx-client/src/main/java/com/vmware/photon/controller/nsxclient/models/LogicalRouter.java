@@ -46,6 +46,9 @@ public class LogicalRouter {
   @JsonProperty(value = "description", required = false)
   private String description;
 
+  @JsonProperty(value = "edge_cluster_id", required = false)
+  private String edgeClusterId;
+
   @JsonProperty(value = "tags")
   private List<Tag> tags;
 
@@ -97,6 +100,14 @@ public class LogicalRouter {
     this.logicalRouterConfig = logicalRouterConfig;
   }
 
+  public String getEdgeClusterId() {
+    return edgeClusterId;
+  }
+
+  public void setEdgeClusterId(String edgeClusterId) {
+    this.edgeClusterId = edgeClusterId;
+  }
+
   public List<Tag> getTags() {
     return tags;
   }
@@ -122,6 +133,7 @@ public class LogicalRouter {
         && Objects.equals(getRouterType(), other.getRouterType())
         && Objects.equals(getDisplayName(), other.getDisplayName())
         && Objects.equals(getDescription(), other.getDescription())
+        && Objects.equals(getEdgeClusterId(), other.getEdgeClusterId())
         && Objects.deepEquals(this.tags, other.tags);
   }
 
@@ -134,6 +146,7 @@ public class LogicalRouter {
         getRouterType(),
         getDisplayName(),
         getDescription(),
+        getEdgeClusterId(),
         getTags());
   }
 

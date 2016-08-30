@@ -139,7 +139,7 @@ public class DeploymentWorkflowServiceTest {
   /**
    * This class implements tests for the constructor.
    */
-  public class InitializationTest {
+  public static class InitializationTest {
 
     private DeploymentWorkflowService deploymentWorkflowService;
 
@@ -162,7 +162,7 @@ public class DeploymentWorkflowServiceTest {
   /**
    * This class implements tests for the handleStart method.
    */
-  public class HandleStartTest {
+  public static class HandleStartTest {
 
     private DeploymentWorkflowService deploymentWorkflowService;
     private boolean serviceCreated = false;
@@ -307,7 +307,7 @@ public class DeploymentWorkflowServiceTest {
   /**
    * This class implements tests for the handlePatch method.
    */
-  public class HandlePatchTest {
+  public static class HandlePatchTest {
 
     private DeploymentWorkflowService deploymentWorkflowService;
     private TestHost testHost;
@@ -398,10 +398,17 @@ public class DeploymentWorkflowServiceTest {
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_SUBNET_ALLOCATOR},
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.GET_EDGE_CLUSTER_ID},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.GET_EDGE_CLUSTER_ID,
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_SUBNET_ALLOCATOR},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.GET_EDGE_CLUSTER_ID,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.GET_EDGE_CLUSTER_ID,
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_SUBNET_ALLOCATOR,
@@ -579,7 +586,7 @@ public class DeploymentWorkflowServiceTest {
   /**
    * This class implements end-to-end tests for the deployment workflow.
    */
-  public class EndToEndTest {
+  public static class EndToEndTest {
 
     private static final String configFilePath = "/config.yml";
 
