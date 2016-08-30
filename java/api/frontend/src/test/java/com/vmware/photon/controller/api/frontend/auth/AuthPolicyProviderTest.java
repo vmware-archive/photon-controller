@@ -152,7 +152,7 @@ public class AuthPolicyProviderTest {
     public void testGroupsInCommon(Set<String> fetcherSGs, List<String> tokenSGs) throws Throwable {
       doReturn(fetcherSGs).when(fetcher).fetchSecurityGroups(authorizationObject);
 
-      token = AuthTestHelper.generateResourceServerAccessToken(fetcherSGs);
+      token = AuthTestHelper.generateResourceServerAccessToken(tokenSGs);
       policyProvider.checkAccessPermissions(request, token);
     }
 
@@ -170,6 +170,7 @@ public class AuthPolicyProviderTest {
     public void testNoGroupsInCommon(Set<String> fetcherSGs, List<String> tokenSGs) throws Throwable {
       doReturn(fetcherSGs).when(fetcher).fetchSecurityGroups(authorizationObject);
 
+      token = AuthTestHelper.generateResourceServerAccessToken(tokenSGs);
       policyProvider.checkAccessPermissions(request, token);
     }
 
@@ -181,6 +182,14 @@ public class AuthPolicyProviderTest {
           {ImmutableSet.of(), ImmutableList.of("SG2")},
           {ImmutableSet.of("SG1"), ImmutableList.of("SG2")},
       };
+    }
+
+    @Test
+    public void testMatchUsername() throws Throwable {
+      String username = token.getSubject().getValue().replaceAll("^\"|\"$", "");
+      doReturn(ImmutableSet.of(username)).when(fetcher).fetchSecurityGroups(authorizationObject);
+
+      policyProvider.checkAccessPermissions(request, token);
     }
   }
 }

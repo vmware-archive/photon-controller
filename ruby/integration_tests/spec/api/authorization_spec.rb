@@ -187,6 +187,43 @@ describe "authorization", authorization: true, devbox: true do
         end
       end
     end
+
+    context "when username is added to project security group", auth_project_user: true do
+      let(:token) { @token }
+
+      before(:all) {
+        @token = ApiClientHelper.access_token "PROJECT_USER"
+
+        @seeder = EsxCloud::SystemSeeder.new([create_limit("vm", 100.0, "COUNT")])
+        @cleaner = EsxCloud::SystemCleaner.new(client)
+
+        username = ENV["PHOTON_USERNAME_PROJECT_USER"].split("@")[0]
+        domain = ENV["PHOTON_USERNAME_PROJECT_USER"].split("@")[1]
+        client.set_project_security_groups(@seeder.project!.id,
+                                     :items => ["#{domain}\\#{username}"])
+      }
+      after(:all) {
+        @cleaner.delete_tenant(@seeder.tenant) if @seeder.tenant
+        @cleaner.delete_flavor(@seeder.vm_flavor) if @seeder.vm_flavor
+        @cleaner.delete_flavor(@seeder.ephemeral_disk_flavor) if @seeder.ephemeral_disk_flavor
+        @cleaner.delete_flavor(@seeder.persistent_disk_flavor) if @seeder.persistent_disk_flavor
+      }
+
+      it "verifes the return codes from APIs" do
+        errors = []
+        EsxCloud::ApiRoutesHelper.all_routes_using_seeder(@seeder).each do |route|
+          collect_error(errors) do
+            p "returns #{route.rc_project_user} from '#{route.action}' #{route.uri}"
+            response = http_client_send route.action, route.uri
+
+            error_message = "#{route.action} #{route.uri}: expected(#{route.rc_project_user}) actual(#{response.code})"
+            expect(response.code).to eq(route.rc_project_user), error_message
+          end
+        end
+
+        expect(errors).to eq []
+      end
+    end
   end
 
   def http_client_send(action, uri)
