@@ -23,11 +23,13 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
 import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 import java.util.ArrayList;
@@ -73,7 +75,15 @@ public class DefaultDeploymentTest {
     ArrayList<String> peers = new ArrayList<>();
     for (ServiceHost host : testEnvironment.getHosts()) {
       peers.add(host.getUri().toString());
+
     }
+
+    ServiceHostUtils.waitForNodeGroupConvergence(
+        testEnvironment.getHosts(),
+        ServiceUriPaths.DEFAULT_NODE_GROUP,
+        ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
+        // Since the default sleep time is 200 we will use a shorter time for tests
+        MultiHostEnvironment.TEST_NODE_GROUP_CONVERGENCE_SLEEP);
 
     DefaultDeployment.createDefaultDeployment(
         peers.toArray(new String[peers.size()]),
@@ -90,6 +100,14 @@ public class DefaultDeploymentTest {
         peers.toArray(new String[peers.size()]),
         photonControllereConfig.getDeployerConfig(),
         testEnvironment.getHosts()[2]);
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(DeploymentService.State.class)
+            .build())
+        .build();
+    QueryTask result = testEnvironment.sendQueryAndWait(queryTask);
+    assertThat(result.results.documentCount, is(1L));
 
     ServiceHostUtils.waitForNodeGroupConvergence(
         testEnvironment.getHosts(),
