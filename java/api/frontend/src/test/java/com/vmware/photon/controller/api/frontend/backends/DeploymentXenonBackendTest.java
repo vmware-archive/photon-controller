@@ -349,7 +349,9 @@ public class DeploymentXenonBackendTest {
       Assert.assertEquals(taskEntity.getSteps().get(4).getOperation(), Operation.PROVISION_CLUSTER_MANAGER);
       Assert.assertEquals(taskEntity.getSteps().get(5).getOperation(), Operation.CREATE_SUBNET_ALLOCATOR);
       Assert.assertEquals(taskEntity.getSteps().get(6).getOperation(), Operation.CREATE_DHCP_SUBNET);
-      Assert.assertEquals(taskEntity.getSteps().get(7).getOperation(), Operation.MIGRATE_DEPLOYMENT_DATA);
+      Assert.assertEquals(taskEntity.getSteps().get(7).getOperation(), Operation.CONFIGURE_DHCP_RELAY_PROFILE);
+      Assert.assertEquals(taskEntity.getSteps().get(8).getOperation(), Operation.CONFIGURE_DHCP_RELAY_SERVICE);
+      Assert.assertEquals(taskEntity.getSteps().get(9).getOperation(), Operation.MIGRATE_DEPLOYMENT_DATA);
     }
 
     @Test
