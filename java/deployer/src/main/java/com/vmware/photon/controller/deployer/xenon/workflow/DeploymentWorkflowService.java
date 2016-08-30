@@ -47,11 +47,14 @@ import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskFactoryServ
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
+import com.vmware.photon.controller.nsxclient.NsxClient;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouter;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
@@ -59,11 +62,13 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -100,6 +105,7 @@ public class DeploymentWorkflowService extends StatefulService {
       CREATE_MANAGEMENT_PLANE,
       PROVISION_ALL_HOSTS,
       ALLOCATE_CM_RESOURCES,
+      GET_EDGE_CLUSTER_ID,
       CREATE_SUBNET_ALLOCATOR,
       CREATE_DHCP_SUBNET,
       MIGRATE_DEPLOYMENT_DATA,
@@ -282,6 +288,7 @@ public class DeploymentWorkflowService extends StatefulService {
         case CREATE_MANAGEMENT_PLANE:
         case PROVISION_ALL_HOSTS:
         case ALLOCATE_CM_RESOURCES:
+        case GET_EDGE_CLUSTER_ID:
         case CREATE_SUBNET_ALLOCATOR:
         case CREATE_DHCP_SUBNET:
         case MIGRATE_DEPLOYMENT_DATA:
@@ -402,6 +409,9 @@ public class DeploymentWorkflowService extends StatefulService {
         break;
       case ALLOCATE_CM_RESOURCES:
         allocateClusterManagerResources(currentState);
+        break;
+      case GET_EDGE_CLUSTER_ID:
+        getEdgeClusterId(currentState);
         break;
       case CREATE_SUBNET_ALLOCATOR:
         createSubnetAllocator(currentState);
@@ -576,7 +586,7 @@ public class DeploymentWorkflowService extends StatefulService {
               case FINISHED:
                 TaskUtils.sendSelfPatch(service, buildPatch(
                     TaskState.TaskStage.STARTED,
-                    TaskState.SubStage.CREATE_SUBNET_ALLOCATOR,
+                    TaskState.SubStage.GET_EDGE_CLUSTER_ID,
                     null));
                 break;
               case FAILED:
@@ -610,6 +620,82 @@ public class DeploymentWorkflowService extends StatefulService {
         AllocateClusterManagerResourcesTaskService.State.class,
         currentState.taskPollDelay,
         callback);
+  }
+
+  private void getEdgeClusterId(State currentState) {
+    ServiceUtils.logInfo(this, "Getting the edge cluster ID if sdn is enabled");
+
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.deploymentServiceLink)
+            .setCompletion(
+                (operation, throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
+
+                  DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+                  try {
+                    getEdgeClusterId(currentState, deploymentState);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            )
+    );
+  }
+
+  private void getEdgeClusterId(State currentState, DeploymentService.State deploymentState) throws IOException {
+    if (!deploymentState.sdnEnabled || StringUtils.isBlank(deploymentState.networkTopRouterId)) {
+      TaskUtils.sendSelfPatch(this, buildPatch(
+          TaskState.TaskStage.STARTED,
+          TaskState.SubStage.CREATE_SUBNET_ALLOCATOR,
+          null));
+      return;
+    }
+
+    NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+        deploymentState.networkManagerAddress,
+        deploymentState.networkManagerUsername,
+        deploymentState.networkManagerPassword);
+
+    nsxClient.getLogicalRouterApi().getLogicalRouter(
+        deploymentState.networkTopRouterId,
+        new FutureCallback<LogicalRouter>() {
+          @Override
+          public void onSuccess(LogicalRouter logicalRouter) {
+            saveEdgeClusterId(currentState, logicalRouter.getEdgeClusterId());
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        }
+    );
+  }
+
+  private void saveEdgeClusterId(State currentState, String edgeClusterId) {
+    DeploymentService.State deploymentState = new DeploymentService.State();
+    deploymentState.edgeClusterId = edgeClusterId;
+
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createPatch(currentState.deploymentServiceLink)
+        .addRequestHeader(Operation.REPLICATION_QUORUM_HEADER, Operation.REPLICATION_QUORUM_HEADER_VALUE_ALL)
+        .setBody(deploymentState)
+        .setCompletion(
+            (completedOp, failure) -> {
+              if (null != failure) {
+                failTask(failure);
+              } else {
+                TaskUtils.sendSelfPatch(this, buildPatch(
+                    TaskState.TaskStage.STARTED,
+                    TaskState.SubStage.CREATE_SUBNET_ALLOCATOR,
+                    null));
+              }
+            }
+        ));
   }
 
   private void createSubnetAllocator(State currentState) {
