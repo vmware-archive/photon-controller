@@ -360,8 +360,8 @@ public class ConfigureDhcpWorkflowServiceTest {
                       == state.taskState.subStage);
 
 
-      if (currentStage != ConfigureDhcpWorkflowDocument.TaskState.TaskStage.STARTED &&
-          currentSubStage != ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE) {
+      if (!(currentStage == ConfigureDhcpWorkflowDocument.TaskState.TaskStage.STARTED &&
+          currentSubStage == ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE)) {
         testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
             buildPatchState(currentStage, currentSubStage));
       }
@@ -399,8 +399,8 @@ public class ConfigureDhcpWorkflowServiceTest {
                   ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE
                       == state.taskState.subStage);
 
-      if (currentStage != ConfigureDhcpWorkflowDocument.TaskState.TaskStage.STARTED &&
-          currentSubStage != ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE) {
+      if (!(currentStage == ConfigureDhcpWorkflowDocument.TaskState.TaskStage.STARTED &&
+          currentSubStage == ConfigureDhcpWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE)) {
         testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
             buildPatchState(currentStage, currentSubStage));
       }

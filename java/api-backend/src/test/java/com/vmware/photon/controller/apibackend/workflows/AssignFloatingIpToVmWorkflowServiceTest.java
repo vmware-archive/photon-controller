@@ -311,8 +311,8 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
                   AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP_AND_MAC
                       == state.taskState.subStage);
 
-      if (currentStage != AssignFloatingIpToVmWorkflowDocument.TaskState.TaskStage.STARTED &&
-          currentSubStage != AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP_AND_MAC) {
+      if (!(currentStage == AssignFloatingIpToVmWorkflowDocument.TaskState.TaskStage.STARTED &&
+          currentSubStage == AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP_AND_MAC)) {
         testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
             buildPatchState(currentStage, currentSubStage));
       }
@@ -350,8 +350,8 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
                   AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP_AND_MAC
                       == state.taskState.subStage);
 
-      if (currentStage != AssignFloatingIpToVmWorkflowDocument.TaskState.TaskStage.STARTED &&
-          currentSubStage != AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP_AND_MAC) {
+      if (!(currentStage == AssignFloatingIpToVmWorkflowDocument.TaskState.TaskStage.STARTED &&
+          currentSubStage == AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP_AND_MAC)) {
         testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
             buildPatchState(currentStage, currentSubStage));
       }
