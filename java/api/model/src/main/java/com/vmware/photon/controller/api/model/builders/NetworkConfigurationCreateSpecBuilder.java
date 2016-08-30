@@ -59,11 +59,6 @@ public class NetworkConfigurationCreateSpecBuilder {
     return this;
   }
 
-  public NetworkConfigurationCreateSpecBuilder edgeClusterId(String edgeClusterId) {
-    this.networkConfigurationCreateSpec.setEdgeClusterId(edgeClusterId);
-    return this;
-  }
-
   public NetworkConfigurationCreateSpecBuilder ipRange(String ipRange) {
     this.networkConfigurationCreateSpec.setIpRange(ipRange);
     return this;

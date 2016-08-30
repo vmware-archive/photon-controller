@@ -172,7 +172,6 @@ public class DeploymentXenonBackendTest {
         .networkManagerPassword("networkManagerPassword")
         .networkZoneId("networkZoneId")
         .networkTopRouterId("networkTopRouterId")
-        .edgeClusterId("edgeClusterId")
         .ipRange("10.0.0.1/24")
         .externalIpRange(externalIpRange)
         .build());
@@ -258,7 +257,7 @@ public class DeploymentXenonBackendTest {
       assertThat(deployment.getNetworkManagerPassword(), is("networkManagerPassword"));
       assertThat(deployment.getNetworkZoneId(), is("networkZoneId"));
       assertThat(deployment.getNetworkTopRouterId(), is("networkTopRouterId"));
-      assertThat(deployment.getEdgeClusterId(), is("edgeClusterId"));
+      assertThat(deployment.getEdgeClusterId(), nullValue());
       assertThat(deployment.getIpRange(), is("10.0.0.1/24"));
       assertThat(deployment.getFloatingIpRange(),
           is(deploymentCreateSpec.getNetworkConfiguration().getExternalIpRange()));
@@ -1142,7 +1141,6 @@ public class DeploymentXenonBackendTest {
       deployment2.networkManagerPassword = deploymentCreateSpec.getNetworkConfiguration().getNetworkManagerPassword();
       deployment2.networkZoneId = deploymentCreateSpec.getNetworkConfiguration().getNetworkZoneId();
       deployment2.networkTopRouterId = deploymentCreateSpec.getNetworkConfiguration().getNetworkTopRouterId();
-      deployment2.edgeClusterId = deploymentCreateSpec.getNetworkConfiguration().getEdgeClusterId();
       deployment2.ipRange = deploymentCreateSpec.getNetworkConfiguration().getIpRange();
       deployment2.floatingIpRange = deploymentCreateSpec.getNetworkConfiguration().getExternalIpRange();
 

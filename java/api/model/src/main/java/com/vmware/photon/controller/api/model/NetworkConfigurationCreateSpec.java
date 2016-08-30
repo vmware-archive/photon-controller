@@ -76,12 +76,6 @@ public class NetworkConfigurationCreateSpec {
   private String networkTopRouterId;
 
   @JsonProperty
-  @ApiModelProperty(value = "The ID of the edge cluster that connects virtual network to physical network")
-  @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
-  @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
-  private String edgeClusterId;
-
-  @JsonProperty
   @ApiModelProperty(value = "The global IP range for allocating private IP range to virtual network")
   @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
   @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
@@ -150,14 +144,6 @@ public class NetworkConfigurationCreateSpec {
     this.networkTopRouterId = networkTopRouterId;
   }
 
-  public String getEdgeClusterId() {
-    return edgeClusterId;
-  }
-
-  public void setEdgeClusterId(String edgeClusterId) {
-    this.edgeClusterId = edgeClusterId;
-  }
-
   public String getIpRange() {
     return ipRange;
   }
@@ -198,7 +184,6 @@ public class NetworkConfigurationCreateSpec {
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
         && Objects.equals(this.getNetworkZoneId(), other.getNetworkZoneId())
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
-        && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId())
         && Objects.equals(this.getIpRange(), other.getIpRange())
         && Objects.equals(this.getExternalIpRange(), other.getExternalIpRange())
         && Objects.deepEquals(this.getDhcpServers(), other.getDhcpServers());
@@ -214,7 +199,6 @@ public class NetworkConfigurationCreateSpec {
         this.getNetworkManagerPassword(),
         this.getNetworkZoneId(),
         this.getNetworkTopRouterId(),
-        this.getEdgeClusterId(),
         this.getIpRange(),
         this.getExternalIpRange(),
         this.getDhcpServers());
@@ -228,7 +212,6 @@ public class NetworkConfigurationCreateSpec {
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkZoneId", this.getNetworkZoneId())
         .add("networkTopRouterId", this.getNetworkTopRouterId())
-        .add("edgeClusterId", this.getEdgeClusterId())
         .add("ipRange", this.getIpRange())
         .add("externalIpRange", this.getExternalIpRange())
         .add("dhcpServers", StringUtils.join(this.getDhcpServers(), ','));

@@ -510,7 +510,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
       deployment.networkManagerPassword = spec.getNetworkConfiguration().getNetworkManagerPassword();
       deployment.networkZoneId = spec.getNetworkConfiguration().getNetworkZoneId();
       deployment.networkTopRouterId = spec.getNetworkConfiguration().getNetworkTopRouterId();
-      deployment.edgeClusterId = spec.getNetworkConfiguration().getEdgeClusterId();
       deployment.ipRange = spec.getNetworkConfiguration().getIpRange();
 
       // Todo: Need to reverse the first IP for SNAT
