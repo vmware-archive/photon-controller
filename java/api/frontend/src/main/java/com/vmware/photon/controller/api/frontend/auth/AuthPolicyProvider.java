@@ -105,6 +105,7 @@ public class AuthPolicyProvider implements PolicyProvider {
     List<String> tokenGroups = token.getGroups().stream()
         .map(g -> g.replaceAll("^\"|\"$", ""))
         .collect(Collectors.toList());
+    tokenGroups.add(token.getSubject().getValue().replaceAll("^\"|\"$", ""));
 
     // Make a group copy, the collection is going to be changed.
     Set<String> intersectionGroup = new HashSet<>(groups);
