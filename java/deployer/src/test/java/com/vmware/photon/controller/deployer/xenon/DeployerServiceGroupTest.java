@@ -20,7 +20,6 @@ import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
-import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
@@ -526,9 +525,7 @@ public class DeployerServiceGroupTest {
 
       ServiceHostUtils.waitForNodeGroupConvergence(
           new PhotonControllerXenonHost[]{host, host2},
-          ServiceUriPaths.DEFAULT_NODE_GROUP,
-          ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
-          MultiHostEnvironment.TEST_NODE_GROUP_CONVERGENCE_SLEEP);
+          ServiceUriPaths.DEFAULT_NODE_GROUP);
     }
   }
 }
