@@ -177,6 +177,8 @@ public enum Operation {
   SET_UP_LOGICAL_ROUTER("SetupLogicalRouter"),
   CREATE_SUBNET_ALLOCATOR("CreateSubnetAllocator"),
   CREATE_DHCP_SUBNET("CreateDhcpSubnet"),
+  CONFIGURE_DHCP_RELAY_PROFILE("ConfigureDhcpRelayProfile"),
+  CONFIGURE_DHCP_RELAY_SERVICE("ConfigureDhcpRelayService"),
 
   WAIT_FOR_TASKS("WaitForTasks"),
 
