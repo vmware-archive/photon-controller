@@ -102,7 +102,7 @@ public class ServiceHostUtilsTest {
         String expectedError
     ) throws Throwable {
       try {
-        ServiceHostUtils.waitForNodeGroupConvergence(hosts, "", 1, 20);
+        ServiceHostUtils.waitForNodeGroupConvergence(hosts, "");
         fail("did not validate that hosts param is not null");
       } catch (IllegalArgumentException ex) {
         assertThat(ex.getMessage(), is(expectedError));
@@ -129,7 +129,7 @@ public class ServiceHostUtilsTest {
         String expectedError
     ) throws Throwable {
       try {
-        ServiceHostUtils.waitForNodeGroupConvergence(new ServiceHost[1], nodeGroupPath, 1, 20);
+        ServiceHostUtils.waitForNodeGroupConvergence(new ServiceHost[1], nodeGroupPath);
         fail("did not validate that nodeGroupPath param is not null");
       } catch (IllegalArgumentException ex) {
         assertThat(ex.getMessage(), is(expectedError));
@@ -145,33 +145,6 @@ public class ServiceHostUtilsTest {
     }
 
     /**
-     * Test that exception is raised when maxRetries param is invalid.
-     *
-     * @param maxRetries
-     * @param expectedError
-     */
-    @Test(dataProvider = "InvalidMaxRetriesParam")
-    public void testInvalidMaxRetriesParam(
-        Integer maxRetries,
-        String expectedError
-    ) throws Throwable {
-      try {
-        ServiceHostUtils.waitForNodeGroupConvergence(new ServiceHost[1], "/tmp", maxRetries, 20);
-        fail("did not validate that maxRetries param is not null");
-      } catch (IllegalArgumentException ex) {
-        assertThat(ex.getMessage(), is(expectedError));
-      }
-    }
-
-    @DataProvider(name = "InvalidMaxRetriesParam")
-    public Object[][] getInvalidMaxRetriesParamData() {
-      return new Object[][]{
-          {-10, "maxRetries must be > 0"},
-          {0, "maxRetries must be > 0"}
-      };
-    }
-
-    /**
      * Tests that method waits for convergence.
      *
      * @param hostCount
@@ -181,7 +154,7 @@ public class ServiceHostUtilsTest {
         int hostCount
     ) throws Throwable {
       hosts = buildHosts(hostCount, ServiceUriPaths.DEFAULT_NODE_GROUP, true);
-      ServiceHostUtils.waitForNodeGroupConvergence(hosts, ServiceUriPaths.DEFAULT_NODE_GROUP, 500, 20);
+      ServiceHostUtils.waitForNodeGroupConvergence(hosts, ServiceUriPaths.DEFAULT_NODE_GROUP);
 
       // check the final state
       for (ServiceHost host : hosts) {
@@ -214,7 +187,7 @@ public class ServiceHostUtilsTest {
       hosts = buildHosts(3, ServiceUriPaths.DEFAULT_NODE_GROUP, false);
 
       try {
-        ServiceHostUtils.waitForNodeGroupConvergence(hosts, ServiceUriPaths.DEFAULT_NODE_GROUP, 10, 20);
+        ServiceHostUtils.waitForNodeGroupConvergence(hosts, ServiceUriPaths.DEFAULT_NODE_GROUP);
         fail("did not throw exception when waited for convergence");
       } catch (IllegalStateException ex) {
         assertThat(ex.getMessage(), is("Update time did not converge"));
