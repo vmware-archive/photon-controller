@@ -312,8 +312,8 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
                   RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.GET_VM_MAC
                       == state.taskState.subStage);
 
-      if (currentStage != RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED &&
-          currentSubStage != RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.GET_VM_MAC) {
+      if (!(currentStage == RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED &&
+          currentSubStage == RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.GET_VM_MAC)) {
         testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
             buildPatchState(currentStage, currentSubStage));
       }
@@ -351,8 +351,8 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
                   RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.GET_VM_MAC
                       == state.taskState.subStage);
 
-      if (currentStage != RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED &&
-          currentSubStage != RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.GET_VM_MAC) {
+      if (!(currentStage == RemoveFloatingIpFromVmWorkflowDocument.TaskState.TaskStage.STARTED &&
+          currentSubStage == RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.GET_VM_MAC)) {
         testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
             buildPatchState(currentStage, currentSubStage));
       }

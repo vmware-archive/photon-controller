@@ -167,19 +167,10 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   private void validateTaskSubStageProgression(DeleteVirtualNetworkWorkflowDocument.TaskState startState,
                                                DeleteVirtualNetworkWorkflowDocument.TaskState patchState) {
 
-    if (patchState.stage.ordinal() > TaskState.TaskStage.FINISHED.ordinal()) {
-      return;
-    }
-
     if (patchState.stage == TaskState.TaskStage.FINISHED) {
       Preconditions.checkState(startState.stage == TaskState.TaskStage.STARTED &&
           (startState.subStage == DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY
               || startState.subStage == DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE));
-    }
-
-    if (patchState.stage == TaskState.TaskStage.STARTED) {
-      Preconditions.checkState(patchState.subStage.ordinal() == startState.subStage.ordinal() + 1
-          || patchState.subStage == startState.subStage);
     }
   }
 
@@ -206,6 +197,9 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           break;
         case RELEASE_IP_ADDRESS_SPACE:
           releaseIpAddressSpace(state);
+          break;
+        case RELEASE_QUOTA:
+          releaseQuota(state);
           break;
         case DELETE_NETWORK_ENTITY:
           deleteVirtualNetwork(state);
@@ -437,7 +431,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           }
 
           try {
-            progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY);
+            progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_QUOTA);
           } catch (Throwable t) {
             fail(state, t);
           }
@@ -446,28 +440,15 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   }
 
   /**
-   * Deletes a {@link com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService.State} entity
-   * from cloud-store.
+   * Releases resource ticket quota for the virtual network.
    */
-  private void deleteVirtualNetwork(DeleteVirtualNetworkWorkflowDocument state) {
+  private void releaseQuota(DeleteVirtualNetworkWorkflowDocument state) {
+    if (!state.taskServiceEntity.isSizeQuotaConsumed) {
+      ServiceUtils.logInfo(this, "The quota was not consumed. Skip releasing quota.");
+      progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY);
+      return;
+    }
 
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createDelete(state.taskServiceEntity.documentSelfLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            fail(state, ex);
-            return;
-          }
-
-          retrieveResourceTicket(state);
-        })
-        .sendWith(this);
-  }
-
-  /**
-   * Retrieve the resource ticket from parent id.
-   */
-  private void retrieveResourceTicket(DeleteVirtualNetworkWorkflowDocument state) {
     checkArgument(state.taskServiceEntity.parentId != null, "parentId should not be null.");
 
     switch (state.taskServiceEntity.parentKind) {
@@ -515,6 +496,34 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
             return;
           }
 
+          try {
+            DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.STARTED,
+                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY);
+            patchState.taskServiceEntity = state.taskServiceEntity;
+            patchState.taskServiceEntity.isSizeQuotaConsumed = false;
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  /**
+   * Deletes a {@link com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService.State} entity
+   * from cloud-store.
+   */
+  private void deleteVirtualNetwork(DeleteVirtualNetworkWorkflowDocument state) {
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createDelete(state.taskServiceEntity.documentSelfLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
           createTombstoneTask(state);
         })
         .sendWith(this);
@@ -539,7 +548,9 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           }
 
           try {
-            DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+            DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.FINISHED,
+                null);
             patchState.taskServiceEntity = state.taskServiceEntity;
             patchState.taskServiceEntity.state = SubnetState.DELETED;
             finish(state, patchState);

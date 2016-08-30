@@ -297,7 +297,7 @@ public class VmXenonBackendTest {
     host.sendRequestAndWait(post);
   }
 
-  private static List<String> createVirtualNetworksInCloudStore() throws Throwable {
+  private static List<String> createVirtualNetworksInCloudStore(boolean isSizeQuotaConsumed) throws Throwable {
     List<String> networkIds = new ArrayList<>();
 
     VirtualNetworkService.State startState = new VirtualNetworkService.State();
@@ -310,6 +310,7 @@ public class VmXenonBackendTest {
     startState.logicalRouterId = "logical_tier1_router_id";
     startState.logicalSwitchId = "logical_switch_id";
     startState.size = 16;
+    startState.isSizeQuotaConsumed = isSizeQuotaConsumed;
 
     Operation operation = Operation.createPost(UriUtils.buildUri(host, VirtualNetworkService.FACTORY_LINK))
         .setBody(startState);
@@ -791,7 +792,7 @@ public class VmXenonBackendTest {
           flavorXenonBackend,
           flavorLoader);
 
-      commonVmAndImageSetup(vmXenonBackend, createVirtualNetworksInCloudStore());
+      commonVmAndImageSetup(vmXenonBackend, createVirtualNetworksInCloudStore(false));
     }
 
     @AfterMethod
@@ -994,7 +995,7 @@ public class VmXenonBackendTest {
           flavorXenonBackend,
           flavorLoader);
 
-      commonVmAndImageSetup(vmXenonBackend, createVirtualNetworksInCloudStore());
+      commonVmAndImageSetup(vmXenonBackend, createVirtualNetworksInCloudStore(true));
 
       vmId = createdVmTaskEntity.getEntityId();
       entityLockXenonBackend.clearTaskLocks(createdVmTaskEntity);
@@ -1541,7 +1542,7 @@ public class VmXenonBackendTest {
     public void setUp() throws Throwable {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient, photonControllerXenonRestClient);
 
-      List<String> virtualNetworks = createVirtualNetworksInCloudStore();
+      List<String> virtualNetworks = createVirtualNetworksInCloudStore(false);
       createDeploymentInCloudStore();
       createSubnetAllocatorInCloudStore();
       createDhcpSubnetsInCloudStore(virtualNetworks);
