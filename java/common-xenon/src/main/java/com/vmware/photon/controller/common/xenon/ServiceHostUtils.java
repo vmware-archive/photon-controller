@@ -31,7 +31,6 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -67,14 +66,6 @@ public class ServiceHostUtils {
   public static final int FAST_MAINT_INTERVAL_MILLIS = 100;
 
   private static int timeoutSeconds = 300;
-  /**
-   * Maximum numbers of times to check for node group convergence.
-   */
-  public static final int DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES = 200;
-  /**
-   * Number of milliseconds to sleep between node group convergence checks.
-   */
-  public static final int DEFAULT_NODE_GROUP_CONVERGENCE_SLEEP = 200;
 
   public static final long DEFAULT_DELETE_ALL_DOCUMENTS_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(10);
 
@@ -90,15 +81,12 @@ public class ServiceHostUtils {
 
   public static void waitForNodeGroupConvergence(
       ServiceHost[] hosts,
-      String nodeGroupPath,
-      int maxRetries,
-      int retryInterval
+      String nodeGroupPath
   ) throws Throwable {
 
     checkArgument(hosts != null, "hosts cannot be null");
     checkArgument(hosts.length > 0, "hosts cannot be empty");
     checkArgument(!Strings.isNullOrEmpty(nodeGroupPath), "nodeGroupPath cannot be null or empty");
-    checkArgument(maxRetries > 0, "maxRetries must be > 0");
 
     Collection<URI> nodeGroupUris = new HashSet<>();
     for (ServiceHost host : hosts) {
@@ -110,27 +98,21 @@ public class ServiceHostUtils {
         nodeGroupUris,
         nodeGroupUris.size(),
         nodeGroupUris.size(),
-        true,
-        maxRetries);
+        true);
   }
 
   public static void waitForNodeGroupConvergence(
       ServiceHost localHost,
       String[] peerNodes,
-      String nodeGroupPath,
-      int maxRetries,
-      int retryInterval
+      String nodeGroupPath
   ) throws Throwable {
 
     checkArgument(localHost != null, "hosts cannot be null");
     checkArgument(!Strings.isNullOrEmpty(nodeGroupPath), "nodeGroupPath cannot be null or empty");
-    checkArgument(maxRetries > 0, "maxRetries must be > 0");
 
-    List<Pair<String, Integer>> remoteHostIpAndPortPairs = new ArrayList<>();
     Collection<URI> nodeGroupUris = new HashSet<>();
     for (String peer : peerNodes) {
       URI uri = new URI(peer);
-      remoteHostIpAndPortPairs.add(Pair.of(uri.getHost(), uri.getPort()));
       nodeGroupUris.add(new URI("http", null, uri.getHost(), uri.getPort(), nodeGroupPath, null, null));
     }
 
@@ -139,8 +121,7 @@ public class ServiceHostUtils {
         nodeGroupUris,
         nodeGroupUris.size(),
         nodeGroupUris.size(),
-        true,
-        maxRetries);
+        true);
   }
 
   public static void waitForNodeGroupConvergence(
@@ -148,12 +129,10 @@ public class ServiceHostUtils {
       Collection<URI> nodeGroupUris,
       int healthyMemberCount,
       Integer totalMemberCount,
-      boolean waitForTimeSync,
-      int maxRetries) throws Throwable {
+      boolean waitForTimeSync) throws Throwable {
     checkArgument(localHost != null, "localHost cannot be null");
     checkArgument(nodeGroupUris != null, "nodeGroupUris cannot be null");
     checkArgument(!nodeGroupUris.isEmpty(), "nodeGroupUris cannot be null");
-    checkArgument(maxRetries > 0, "maxRetries must be > 0");
 
     Map<URI, EnumSet<NodeState.NodeOption>> expectedOptionsPerNodeGroupUri = new HashMap<>();
     final int sleepTimeMillis = FAST_MAINT_INTERVAL_MILLIS * 2;
@@ -201,8 +180,6 @@ public class ServiceHostUtils {
         validateNodes(entry.getValue(), healthyMemberCount, expectedOptionsPerNodeGroupUri);
       }
 
-      now = new Date();
-
       if (waitForTimeSync && updateTime.size() != 1) {
         logger.info(String.format("Update times did not converge: %s", updateTime.toString()));
         isConverged = false;
@@ -213,6 +190,7 @@ public class ServiceHostUtils {
       }
 
       Thread.sleep(sleepTimeMillis);
+      now = new Date();
     } while (now.before(expiration));
 
     boolean log = true;

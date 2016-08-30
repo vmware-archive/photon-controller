@@ -18,7 +18,6 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
@@ -93,10 +92,7 @@ public class DefaultDeploymentTest {
 
     ServiceHostUtils.waitForNodeGroupConvergence(
         testEnvironment.getHosts(),
-        ServiceUriPaths.DEFAULT_NODE_GROUP,
-        ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
-        // Since the default sleep time is 200 we will use a shorter time for tests
-        MultiHostEnvironment.TEST_NODE_GROUP_CONVERGENCE_SLEEP);
+        ServiceUriPaths.DEFAULT_NODE_GROUP);
 
     String selfLink = DeploymentServiceFactory.SELF_LINK + "/" + DeployerDefaults.DEFAULT_DEPLOYMENT_ID;
     DeploymentService.State savedState = testEnvironment.getServiceState(selfLink, DeploymentService.State.class);
