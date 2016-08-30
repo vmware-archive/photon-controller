@@ -106,6 +106,13 @@ public class AuthPolicyProvider implements PolicyProvider {
         .map(g -> g.replaceAll("^\"|\"$", ""))
         .collect(Collectors.toList());
 
+    String username = token.getSubject().getValue().replaceAll("^\"|\"$", "");
+    String[] parts = username.split("@");
+    if (parts.length == 2) {
+      username = parts[1] + "\\" + parts[0];
+    }
+    tokenGroups.add(username);
+
     // Make a group copy, the collection is going to be changed.
     Set<String> intersectionGroup = new HashSet<>(groups);
     intersectionGroup.add(this.defaultAdminGroup);
