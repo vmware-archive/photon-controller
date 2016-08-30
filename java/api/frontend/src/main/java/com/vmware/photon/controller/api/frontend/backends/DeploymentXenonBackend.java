@@ -596,6 +596,10 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.CREATE_DHCP_SUBNET);
     this.taskBackend.getStepBackend().createQueuedStep(
+        taskEntity, deploymentEntity, Operation.CONFIGURE_DHCP_RELAY_PROFILE);
+    this.taskBackend.getStepBackend().createQueuedStep(
+        taskEntity, deploymentEntity, Operation.CONFIGURE_DHCP_RELAY_SERVICE);
+    this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.MIGRATE_DEPLOYMENT_DATA);
 
     taskEntity.getToBeLockedEntities().add(deploymentEntity);

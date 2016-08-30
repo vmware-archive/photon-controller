@@ -47,6 +47,14 @@ import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskFactoryServ
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
+import com.vmware.photon.controller.nsxclient.NsxClient;
+import com.vmware.photon.controller.nsxclient.datatypes.LogicalServiceResourceType;
+import com.vmware.photon.controller.nsxclient.datatypes.ServiceProfileResourceType;
+import com.vmware.photon.controller.nsxclient.models.DhcpRelayProfile;
+import com.vmware.photon.controller.nsxclient.models.DhcpRelayProfileCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.DhcpRelayService;
+import com.vmware.photon.controller.nsxclient.models.DhcpRelayServiceCreateSpec;
+import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
@@ -102,6 +110,8 @@ public class DeploymentWorkflowService extends StatefulService {
       ALLOCATE_CM_RESOURCES,
       CREATE_SUBNET_ALLOCATOR,
       CREATE_DHCP_SUBNET,
+      CREATE_DHCP_RELAY_PROFILE,
+      CREATE_DHCP_RELAY_SERVICE,
       MIGRATE_DEPLOYMENT_DATA,
       SET_DEPLOYMENT_STATE
     }
@@ -167,6 +177,11 @@ public class DeploymentWorkflowService extends StatefulService {
      * This value represents the desired state of the deployed management plane.
      */
     public DeploymentState desiredState;
+
+    /**
+     * This value represents dhcp relay profile.
+     */
+    public String dhcpRelayProfileId;
   }
 
   public DeploymentWorkflowService() {
@@ -284,6 +299,8 @@ public class DeploymentWorkflowService extends StatefulService {
         case ALLOCATE_CM_RESOURCES:
         case CREATE_SUBNET_ALLOCATOR:
         case CREATE_DHCP_SUBNET:
+        case CREATE_DHCP_RELAY_PROFILE:
+        case CREATE_DHCP_RELAY_SERVICE:
         case MIGRATE_DEPLOYMENT_DATA:
         case SET_DEPLOYMENT_STATE:
           break;
@@ -408,6 +425,12 @@ public class DeploymentWorkflowService extends StatefulService {
         break;
       case CREATE_DHCP_SUBNET:
         createDhcpSubnet(currentState);
+        break;
+      case CREATE_DHCP_RELAY_PROFILE:
+        createDhcpRelayProfile(currentState);
+        break;
+      case CREATE_DHCP_RELAY_SERVICE:
+        createDhcpRelayService(currentState);
         break;
       case MIGRATE_DEPLOYMENT_DATA:
         migrateData(currentState);
@@ -689,10 +712,9 @@ public class DeploymentWorkflowService extends StatefulService {
 
   private void createDhcpSubnet(DeploymentService.State deploymentState) {
     if (!deploymentState.sdnEnabled || deploymentState.floatingIpRange == null) {
-      TaskUtils.sendSelfPatch(this, buildPatch(
-          TaskState.TaskStage.STARTED,
-          TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
-          null));
+      TaskUtils.sendSelfPatch(
+          this,
+          buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE, null));
       return;
     }
 
@@ -707,11 +729,185 @@ public class DeploymentWorkflowService extends StatefulService {
               } else {
                 TaskUtils.sendSelfPatch(this, buildPatch(
                     TaskState.TaskStage.STARTED,
-                    TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
+                    TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE,
                     null));
               }
             }
         ));
+  }
+
+  private void createDhcpRelayProfile(State currentState) {
+    ServiceUtils.logInfo(this, "Creating Dhcp Relay Profile if sdn is enabled");
+    sendRequest(
+      HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion(
+          (operation, throwable) -> {
+            if (null != throwable) {
+              failTask(throwable);
+              return;
+            }
+
+            DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+            try {
+              createDhcpRelayProfile(deploymentState);
+            } catch (Throwable t) {
+              failTask(t);
+            }
+          }
+        )
+    );
+  }
+
+  private void createDhcpRelayProfile(DeploymentService.State deploymentState) {
+    if (!deploymentState.sdnEnabled || deploymentState.dhcpServers == null || deploymentState.dhcpServers.isEmpty()) {
+      TaskUtils.sendSelfPatch(this, buildPatch(
+          TaskState.TaskStage.STARTED,
+          TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE,
+          null));
+      return;
+    }
+
+    final Service service = this;
+
+    DhcpRelayProfileCreateSpec request = new DhcpRelayProfileCreateSpec();
+    request.setResourceType(ServiceProfileResourceType.DHCP_RELAY_PROFILE);
+    request.setServerAddresses(deploymentState.dhcpServers);
+    request.setDisplayName(NameUtils.getDhcpRelayProfileName(
+        ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink)));
+    request.setDescription(NameUtils.getDhcpRelayProfileDescription(
+        ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink)));
+
+    try {
+      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+        deploymentState.networkManagerAddress,
+        deploymentState.networkManagerUsername,
+        deploymentState.networkManagerPassword);
+
+      nsxClient.getDhcpServiceApi()
+        .createDhcpRelayProfile(request,
+          new FutureCallback<DhcpRelayProfile>() {
+            @Override
+            public void onSuccess(DhcpRelayProfile result) {
+              try {
+                DeploymentWorkflowService.State patchState = buildPatch(
+                  TaskState.TaskStage.STARTED,
+                  TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE,
+                  null);
+                patchState.dhcpRelayProfileId = result.getId();
+                TaskUtils.sendSelfPatch(service, patchState);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              failTask(t);
+            }
+          });
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
+  private void createDhcpRelayService(State currentState) {
+    ServiceUtils.logInfo(this, "Creating Dhcp Relay Service if sdn is enabled");
+    sendRequest(
+      HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion(
+            (operation, throwable) -> {
+              if (null != throwable) {
+                failTask(throwable);
+                return;
+              }
+
+              DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+              try {
+                createDhcpRelayService(currentState, deploymentState);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }
+        )
+    );
+  }
+
+  private void createDhcpRelayService(State currentState, DeploymentService.State deploymentState) {
+    if (!deploymentState.sdnEnabled ||
+        currentState.dhcpRelayProfileId == null ||
+        currentState.dhcpRelayProfileId.isEmpty()) {
+      TaskUtils.sendSelfPatch(this, buildPatch(
+          TaskState.TaskStage.STARTED,
+          TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
+          null));
+      return;
+    }
+
+    DhcpRelayServiceCreateSpec request = new DhcpRelayServiceCreateSpec();
+    request.setResourceType(LogicalServiceResourceType.DHCP_RELAY_SERVICE);
+    request.setProfileId(currentState.dhcpRelayProfileId);
+    request.setDisplayName(NameUtils.getDhcpRelayServiceName(
+        ServiceUtils.getIDFromDocumentSelfLink(currentState.deploymentServiceLink)));
+    request.setDescription(NameUtils.getDhcpRelayServiceDescription(
+        ServiceUtils.getIDFromDocumentSelfLink(currentState.deploymentServiceLink)));
+
+    try {
+      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+        deploymentState.networkManagerAddress,
+        deploymentState.networkManagerUsername,
+        deploymentState.networkManagerPassword);
+
+      nsxClient.getDhcpServiceApi()
+        .createDhcpRelayService(request,
+          new FutureCallback<DhcpRelayService>() {
+            @Override
+            public void onSuccess(DhcpRelayService result) {
+              try {
+                updateDeploymentServiceStateDhcpRelay(currentState, result.getId());
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              failTask(t);
+            }
+          }
+        );
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
+  private void updateDeploymentServiceStateDhcpRelay(State currentState, String dhcpRelayServiceId) {
+    ServiceUtils.logInfo(this, "Setting DeploymentServiceState's Dhcp Relay Profile/Service if sdn is enabled");
+
+    DeploymentService.State deploymentServiceState = new DeploymentService.State();
+    deploymentServiceState.dhcpRelayProfileId = currentState.dhcpRelayProfileId;
+    deploymentServiceState.dhcpRelayServiceId = dhcpRelayServiceId;
+
+    try {
+      sendRequest(Operation
+        .createPatch(UriUtils.buildUri(getHost(), currentState.deploymentServiceLink))
+        .setBody(deploymentServiceState)
+        .setCompletion(
+          (completedOp, failure) -> {
+            if (null != failure) {
+              failTask(failure);
+            } else {
+              TaskUtils.sendSelfPatch(
+                this,
+                buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA, null));
+            }
+          }
+        )
+      );
+    } catch (Throwable t) {
+      failTask(t);
+    }
   }
 
   private static DhcpSubnetService.State createDhcpSubnetServiceState(IpRange ipRange) {

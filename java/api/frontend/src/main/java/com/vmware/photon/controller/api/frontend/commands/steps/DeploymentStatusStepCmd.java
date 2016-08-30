@@ -68,6 +68,10 @@ public class DeploymentStatusStepCmd extends XenonTaskStatusStepCmd {
               DeploymentWorkflowService.TaskState.SubStage.CREATE_SUBNET_ALLOCATOR.ordinal())
           .put(Operation.CREATE_DHCP_SUBNET,
               DeploymentWorkflowService.TaskState.SubStage.CREATE_DHCP_SUBNET.ordinal())
+          .put(Operation.CONFIGURE_DHCP_RELAY_PROFILE,
+              DeploymentWorkflowService.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE.ordinal())
+          .put(Operation.CONFIGURE_DHCP_RELAY_SERVICE,
+              DeploymentWorkflowService.TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE.ordinal())
           .put(Operation.MIGRATE_DEPLOYMENT_DATA,
               DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA.ordinal())
           .build();
