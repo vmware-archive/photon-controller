@@ -78,6 +78,11 @@ public class ServiceHostUtils {
 
   public static final long DEFAULT_DELETE_ALL_DOCUMENTS_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(10);
 
+  /**
+   * Maximum time to wait for all factories to become available.
+   */
+  public static final long SERVICES_STARTUP_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
+
   private static final Logger logger = LoggerFactory.getLogger(ServiceHostUtils.class);
   /**
    * Value to use for the referrer in Xenon operations.
