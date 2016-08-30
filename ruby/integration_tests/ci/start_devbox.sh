@@ -3,6 +3,8 @@
 export WORKSPACE=${WORKSPACE:=$(git rev-parse --show-toplevel)}
 export DEVBOX=${DEVBOX:="$WORKSPACE/devbox-photon"}
 export TESTS=${TESTS:="$WORKSPACE/ruby/integration_tests"}
+export ENVOY_VIB_URL=${ENVOY_VIB_URL:="https://s3.amazonaws.com/photon-platform/artifacts/vibs/envoy/develop/latest/vmware-envoy-latest.vib"}
+
 if [ ! -d "$DEVBOX" ]; then fail "$DEVBOX is not accessible"; fi
 
 # Only continue if all these environment variables are defined
