@@ -87,6 +87,9 @@ public class DefaultDeployment {
         ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
         ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_SLEEP);
 
+    ServiceHostUtils.waitForServiceAvailability(
+        xenonHost, ServiceHostUtils.SERVICES_STARTUP_TIMEOUT, DeploymentServiceFactory.SELF_LINK);
+
     DeploymentService.State startState = buildServiceStartState(deployerConfig);
 
     // Deployment service supports Idempotent POST, with that option we make sure that
