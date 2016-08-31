@@ -223,6 +223,7 @@ public class StepCommandFactory {
         return new KubernetesClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
       case CREATE_KUBERNETES_CLUSTER_SETUP_ETCD:
       case CREATE_KUBERNETES_CLUSTER_SETUP_MASTER:
+      case CREATE_KUBERNETES_CLUSTER_UPDATE_EXTENDED_PROPERTIES:
       case CREATE_KUBERNETES_CLUSTER_SETUP_WORKERS:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new KubernetesClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));

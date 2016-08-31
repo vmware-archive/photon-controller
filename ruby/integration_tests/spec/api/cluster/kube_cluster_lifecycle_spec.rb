@@ -73,6 +73,8 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
       expect(cluster.type).to eq("KUBERNETES")
       expect(cluster.worker_count).to eq 1
       expect(cluster.state).to eq "READY"
+      expect(cluster.extended_properties["cluster_version"]).to eq ("v1.3.5")
+      expect(cluster.extended_properties.length).to be > 12
 
       N_WORKERS = (ENV["N_SLAVES"] || 2).to_i
 

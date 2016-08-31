@@ -37,6 +37,8 @@ public class KubernetesClusterCreateTaskStatusPoller implements XenonTaskStatusS
       ImmutableMap.<Operation, Integer>builder()
           .put(Operation.CREATE_KUBERNETES_CLUSTER_SETUP_ETCD, SubStage.SETUP_ETCD.ordinal())
           .put(Operation.CREATE_KUBERNETES_CLUSTER_SETUP_MASTER, SubStage.SETUP_MASTER.ordinal())
+          .put(Operation.CREATE_KUBERNETES_CLUSTER_UPDATE_EXTENDED_PROPERTIES,
+              SubStage.UPDATE_EXTENDED_PROPERTIES.ordinal())
           .put(Operation.CREATE_KUBERNETES_CLUSTER_SETUP_WORKERS, SubStage.SETUP_WORKERS.ordinal())
           .build();
 
