@@ -24,13 +24,26 @@ public class ClusterManagerConstants {
   public static final String OTHER_VM_FLAVOR = "cluster-other-vm";
   public static final String VM_DISK_FLAVOR = "cluster-vm-disk";
 
-  public static final String EXTENDED_PROPERTY_DNS               = "dns";
-  public static final String EXTENDED_PROPERTY_GATEWAY           = "gateway";
-  public static final String EXTENDED_PROPERTY_NETMASK           = "netmask";
-  public static final String EXTENDED_PROPERTY_MASTER_IP         = "master_ip";
-  public static final String EXTENDED_PROPERTY_CONTAINER_NETWORK = "container_network";
-  public static final String EXTENDED_PROPERTY_ZOOKEEPER_IPS     = "zookeeper_ips";
-  public static final String EXTENDED_PROPERTY_ETCD_IPS          = "etcd_ips";
+  public static final String EXTENDED_PROPERTY_DNS                      = "dns";
+  public static final String EXTENDED_PROPERTY_GATEWAY                  = "gateway";
+  public static final String EXTENDED_PROPERTY_NETMASK                  = "netmask";
+  public static final String EXTENDED_PROPERTY_MASTER_IP                = "master_ip";
+  public static final String EXTENDED_PROPERTY_CONTAINER_NETWORK        = "container_network";
+  public static final String EXTENDED_PROPERTY_ZOOKEEPER_IPS            = "zookeeper_ips";
+  public static final String EXTENDED_PROPERTY_ETCD_IPS                 = "etcd_ips";
+  public static final String EXTENDED_PROPERTY_CLUSTER_VERSION          = "cluster_version";
+  public static final String EXTENDED_PROPERTY_CLUSTER_UI_URL           = "cluster_ui_url";
+  public static final String EXTENDED_PROPERTY_CLIENT_LINUX_AMD64_URL   = "client_linux_amd64_url";
+  public static final String EXTENDED_PROPERTY_CLIENT_LINUX_386_URL     = "client_linux_386_url";
+  public static final String EXTENDED_PROPERTY_CLIENT_DARWIN_AMD64_URL  = "client_darwin_amd64_url";
+  public static final String EXTENDED_PROPERTY_CLIENT_WINDOWS_AMD64_URL = "client_windows_amd64_url";
+  public static final String EXTENDED_PROPERTY_CLIENT_WINDOWS_386_URL   = "client_windows_386_url";
+
+  public static final String HTTP_SCHEME = "http://";
+  public static final String HTTPS_SCHEME = "https://";
+  public static final String KUBECTL_BASE_URI = "storage.googleapis.com/kubernetes-release/release/";
+  public static final String BIN = "bin";
+  public static final String KUBECTL = "kubectl";
 
   public static final long DEFAULT_MAINTENANCE_INTERVAL = TimeUnit.HOURS.toMicros(1);
   public static final int DEFAULT_MAINTENANCE_RETRY_COUNT = 5;

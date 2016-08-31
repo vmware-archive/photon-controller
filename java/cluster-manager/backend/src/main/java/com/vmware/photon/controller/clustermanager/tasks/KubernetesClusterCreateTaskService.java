@@ -15,6 +15,7 @@ package com.vmware.photon.controller.clustermanager.tasks;
 import com.vmware.photon.controller.api.model.ClusterState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
+import com.vmware.photon.controller.clustermanager.clients.KubernetesClient;
 import com.vmware.photon.controller.clustermanager.rolloutplans.BasicNodeRollout;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRollout;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRolloutInput;
@@ -46,6 +47,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This class implements a Xenon service representing a task to create a Kubernetes cluster.
@@ -113,7 +118,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
     }
   }
 
-  private void processStateMachine(KubernetesClusterCreateTask currentState) {
+  private void processStateMachine(KubernetesClusterCreateTask currentState) throws IOException {
     switch (currentState.taskState.subStage) {
       case SETUP_ETCD:
         setupEtcds(currentState);
@@ -121,6 +126,10 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
 
       case SETUP_MASTER:
         setupMaster(currentState);
+        break;
+
+      case UPDATE_EXTENDED_PROPERTIES:
+        updateExtendedProperties(currentState);
         break;
 
       case SETUP_WORKERS:
@@ -227,7 +236,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
             public void onSuccess(@Nullable NodeRolloutResult result) {
               TaskUtils.sendSelfPatch(
                   KubernetesClusterCreateTaskService.this,
-                  buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.SETUP_WORKERS));
+                  buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPDATE_EXTENDED_PROPERTIES));
             }
 
             @Override
@@ -323,6 +332,111 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
     sendRequest(postOperation);
   }
 
+  /**
+   * This method patches new extended properties. Version, UI and addresses to download kubectl.
+   *
+   * @param currentState
+   */
+  private void updateExtendedProperties(final KubernetesClusterCreateTask currentState) throws IOException {
+
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createGet(UriUtils.buildUriPath(ClusterServiceFactory.SELF_LINK, currentState.clusterId))
+        .setReferer(getUri())
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
+          ClusterService.State cluster = operation.getBody(ClusterService.State.class);
+          // Retrieving the masterIP from cluster Service document
+          String masterIP = cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
+          KubernetesClient kubeClient = HostUtils.getKubernetesClient(this);
+          // Create the connectionstring used by the Kubernetes Client
+          String connectionString = createKubernetesURL(masterIP, null);
+          try {
+            getVersionAndUpdate(kubeClient, connectionString, masterIP, currentState);
+          } catch (IOException e) {
+            failTask(e);
+          }
+        }));
+  }
+
+  // This is a helper method which takes in a kubernetes Client, get the version of the current kubernetes
+  // and construct a map which contains all the extra extended properties we want to add.
+  private void getVersionAndUpdate(KubernetesClient kubeClient, String connectionString, String masterIP,
+                                   final KubernetesClusterCreateTask currentState) throws IOException{
+    kubeClient.getVersionAsync(connectionString, new FutureCallback<String>() {
+      @Override
+      public void onSuccess(@Nullable String version) {
+        Map<String, String> extraInfo = new HashMap<String, String>();
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PROPERTY_CLUSTER_VERSION, version);
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PROPERTY_CLUSTER_UI_URL, createKubernetesURL(masterIP, "ui"));
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PROPERTY_CLIENT_LINUX_AMD64_URL,
+            generateKubectlDownloadAddress(version, "linux", "amd64"));
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PROPERTY_CLIENT_LINUX_386_URL,
+            generateKubectlDownloadAddress(version, "linux", "386"));
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PROPERTY_CLIENT_DARWIN_AMD64_URL,
+            generateKubectlDownloadAddress(version, "darwin", "amd64"));
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PROPERTY_CLIENT_WINDOWS_AMD64_URL,
+            generateKubectlDownloadAddress(version, "windows", "amd64"));
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PROPERTY_CLIENT_WINDOWS_386_URL,
+            generateKubectlDownloadAddress(version, "windows", "386"));
+
+        updateExtendedMap(extraInfo, currentState);
+      }
+
+      @Override
+      public void onFailure(Throwable t) {
+        failTask(t);
+      }
+    });
+  }
+
+  // Taking the map that contains all the extra extended property we want to add. Add them and send a self patch
+  // Indicating that there are no future substage as well as patching to the cluster Service,
+  private void updateExtendedMap(Map<String, String> extendedPatchMap, final KubernetesClusterCreateTask currentState) {
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createGet(UriUtils.buildUriPath(ClusterServiceFactory.SELF_LINK, currentState.clusterId))
+        .setReferer(getUri())
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
+          // Get the cluster
+          ClusterService.State cluster = operation.getBody(ClusterService.State.class);
+          // Adding all the existing extendedProperties in to my map
+          for (String key : cluster.extendedProperties.keySet()) {
+            extendedPatchMap.put(key, cluster.extendedProperties.get(key));
+          }
+          // Create a new cluster containing the patch(only has the map)
+          ClusterService.State clusterPatch = new ClusterService.State();
+          clusterPatch.extendedProperties = extendedPatchMap;
+          // Go to setup worker in the State machine
+          KubernetesClusterCreateTask patchState = buildPatch(TaskState.TaskStage.STARTED,
+              TaskState.SubStage.SETUP_WORKERS);
+          updateStates(currentState, patchState, clusterPatch);
+        }));
+  }
+
+  // Generate the URL for the Kubernetes API. if you pass other to be null, by default, this method will generate
+  // the kubernetes path with a formate of http://serverAddress:8080
+  // You can append any specific path in other. For example, if you pass ui in other, then the output would be
+  // http://serverAddress:8080/other
+  private static String createKubernetesURL(String serverAddress, String other) {
+    return (other == null) ?
+        UriUtils.buildUriPath(ClusterManagerConstants.HTTP_SCHEME, serverAddress, ":",
+            Integer.toString(ClusterManagerConstants.Kubernetes.API_PORT)) :
+        UriUtils.buildUriPath(ClusterManagerConstants.HTTP_SCHEME, serverAddress, ":",
+            Integer.toString(ClusterManagerConstants.Kubernetes.API_PORT), other);
+  }
+
+  // Generate the URL for downloading kubectl
+  private static String generateKubectlDownloadAddress(String version, String oS, String model) {
+    return UriUtils.buildUriPath(ClusterManagerConstants.HTTPS_SCHEME, ClusterManagerConstants.KUBECTL_BASE_URI,
+        version, ClusterManagerConstants.BIN, oS, model, ClusterManagerConstants.KUBECTL);
+  }
+
   private void startMaintenance(final KubernetesClusterCreateTask currentState) {
     ClusterMaintenanceTaskService.State patchState = new ClusterMaintenanceTaskService.State();
     patchState.taskState = new TaskState();
@@ -351,6 +465,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
       switch (startState.taskState.subStage) {
         case SETUP_ETCD:
         case SETUP_MASTER:
+        case UPDATE_EXTENDED_PROPERTIES:
         case SETUP_WORKERS:
           break;
         default:

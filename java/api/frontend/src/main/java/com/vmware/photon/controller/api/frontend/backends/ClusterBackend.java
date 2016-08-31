@@ -178,6 +178,8 @@ public class ClusterBackend {
     // Dummy steps that are mapped to KubernetesClusterCreateTask's subStages
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_KUBERNETES_CLUSTER_SETUP_ETCD);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_KUBERNETES_CLUSTER_SETUP_MASTER);
+    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation
+        .CREATE_KUBERNETES_CLUSTER_UPDATE_EXTENDED_PROPERTIES);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_KUBERNETES_CLUSTER_SETUP_WORKERS);
 
     return taskEntity;
