@@ -35,6 +35,7 @@ import com.vmware.photon.controller.nsxclient.builders.LogicalRouterLinkPortOnTi
 import com.vmware.photon.controller.nsxclient.builders.LogicalRouterLinkPortOnTier1CreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.builders.RoutingAdvertisementUpdateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.datatypes.LogicalServiceResourceType;
+import com.vmware.photon.controller.nsxclient.datatypes.NatActionType;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.models.IPSubnet;
 import com.vmware.photon.controller.nsxclient.models.LogicalPort;
@@ -45,6 +46,8 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0CreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1CreateSpec;
+import com.vmware.photon.controller.nsxclient.models.NatRule;
+import com.vmware.photon.controller.nsxclient.models.NatRuleCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.ResourceReference;
 import com.vmware.photon.controller.nsxclient.models.RoutingAdvertisement;
 import com.vmware.photon.controller.nsxclient.models.RoutingAdvertisementUpdateSpec;
@@ -169,6 +172,10 @@ public class ConfigureRoutingTaskService extends StatefulService {
 
         case CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER:
           connectTier1RouterToTier0Router(currentState);
+          break;
+
+        case ADD_SNAT_RULES:
+          addSnatRules(currentState);
           break;
 
         case ENABLE_ROUTING_ADVERTISEMENT:
@@ -333,7 +340,7 @@ public class ConfigureRoutingTaskService extends StatefulService {
           @Override
           public void onSuccess(@Nullable LogicalRouterLinkPortOnTier1 result) {
             ConfigureRoutingTask patch = buildPatch(TaskState.TaskStage.STARTED,
-                TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT, null);
+                TaskState.SubStage.ADD_SNAT_RULES, null);
             patch.logicalLinkPortOnTier1Router = result.getId();
 
             TaskUtils.sendSelfPatch(ConfigureRoutingTaskService.this, patch);
@@ -345,6 +352,34 @@ public class ConfigureRoutingTaskService extends StatefulService {
           }
         }
     );
+  }
+
+  private void addSnatRules(ConfigureRoutingTask currentState) throws Throwable {
+    ServiceUtils.logInfo(this, "Adding SNAT rules to tier-1 router %s", currentState.logicalTier1RouterId);
+
+    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxAddress,
+        currentState.nsxUsername, currentState.nsxPassword).getLogicalRouterApi();
+
+    NatRuleCreateSpec spec = new NatRuleCreateSpec();
+    spec.setNatAction(NatActionType.SNAT);
+    spec.setTranslatedNetwork(currentState.snatIp);
+    spec.setEnabled(true);
+
+    logicalRouterApi.createNatRule(currentState.logicalTier1RouterId, spec,
+        new FutureCallback<NatRule>() {
+          @Override
+          public void onSuccess(@Nullable NatRule natRule) {
+            ConfigureRoutingTask patch = buildPatch(TaskState.TaskStage.STARTED,
+                TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT, null);
+
+            TaskUtils.sendSelfPatch(ConfigureRoutingTaskService.this, patch);
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        });
   }
 
   private void getRoutingAdvertisement(ConfigureRoutingTask currentState, List<Integer> retryCount) {

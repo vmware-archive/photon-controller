@@ -632,6 +632,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     private static final String LOGICAL_ROUTER_UPLINK_PORT_ID = "logicalRouterUplinkPortId";
     private static final String TIER0_ROUTER_DOWNLINK_PORT_ID = "tier0RouterDownlinkPortId";
     private static final String DHCP_RELAY_SERVICE_ID = "dhcpRelayServiceId";
+    private static final String SNAT_IP = "192.168.1.1";
+    private static final String SNAT_RULE_ID = "snatRuleId";
 
     private CreateVirtualNetworkWorkflowDocument startState;
     private DeploymentService.State deploymentStartState;
@@ -660,6 +662,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       deploymentStartState.networkTopRouterId = NETWORK_TOP_ROUTER_ID;
       deploymentStartState.edgeClusterId = NETWORK_EDGE_CLUSTER_ID;
       deploymentStartState.dhcpRelayServiceId = DHCP_RELAY_SERVICE_ID;
+      deploymentStartState.snatIp = SNAT_IP;
 
       subnetAllocatorServiceState = new SubnetAllocatorService.State();
       subnetAllocatorServiceState.rootCidr = "192.168.1.1/24";
@@ -709,6 +712,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           .createLogicalLinkPortOnTier1Router(true, LOGICAL_ROUTER_UPLINK_PORT_ID)
           .getRoutingAdvertisement(true)
           .configureRoutingAdvertisement(true)
+          .createNatRule(true, SNAT_RULE_ID)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
