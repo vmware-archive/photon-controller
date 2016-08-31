@@ -24,13 +24,21 @@ public class ClusterManagerConstants {
   public static final String OTHER_VM_FLAVOR = "cluster-other-vm";
   public static final String VM_DISK_FLAVOR = "cluster-vm-disk";
 
-  public static final String EXTENDED_PROPERTY_DNS               = "dns";
-  public static final String EXTENDED_PROPERTY_GATEWAY           = "gateway";
-  public static final String EXTENDED_PROPERTY_NETMASK           = "netmask";
-  public static final String EXTENDED_PROPERTY_MASTER_IP         = "master_ip";
-  public static final String EXTENDED_PROPERTY_CONTAINER_NETWORK = "container_network";
-  public static final String EXTENDED_PROPERTY_ZOOKEEPER_IPS     = "zookeeper_ips";
-  public static final String EXTENDED_PROPERTY_ETCD_IPS          = "etcd_ips";
+  public static final String EXTENDED_PROPERTY_DNS                   = "dns";
+  public static final String EXTENDED_PROPERTY_GATEWAY               = "gateway";
+  public static final String EXTENDED_PROPERTY_NETMASK               = "netmask";
+  public static final String EXTENDED_PROPERTY_MASTER_IP             = "master_ip";
+  public static final String EXTENDED_PROPERTY_CONTAINER_NETWORK     = "container_network";
+  public static final String EXTENDED_PROPERTY_ZOOKEEPER_IPS         = "zookeeper_ips";
+  public static final String EXTENDED_PROPERTY_ETCD_IPS              = "etcd_ips";
+  public static final String EXTENDED_PROPERTY_VERSION               = "version";
+  public static final String EXTENDED_PROPERTY_UI_ADDRESS            = "uiAddress";
+  public static final String EXTENDED_PROPERTY_LINUX_AMD64_ADDRESS   = "linuxAMD64Address";
+  public static final String EXTENDED_PROPERTY_LINUX_386_ADDRESS     = "linux386Address";
+  public static final String EXTENDED_PROPERTY_DARWIN_AMD64_ADDRESS  = "darwinAMD64Address";
+  public static final String EXTENDED_PEOPERTY_WINDOWS_AMD64_ADDRESS = "windowsADM64Address";
+  public static final String EXTENDED_PEROPERTY_WINDOWS_386_ADDRESS  = "windows386Address";
+
 
   public static final long DEFAULT_MAINTENANCE_INTERVAL = TimeUnit.HOURS.toMicros(1);
   public static final int DEFAULT_MAINTENANCE_RETRY_COUNT = 5;
