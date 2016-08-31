@@ -128,6 +128,13 @@ public class SubnetAllocatorService extends StatefulService {
         throw new IllegalArgumentException("numberOfStaticIpAddresses cannot be null");
       }
 
+      final long minSize = COUNT_OF_RESERVED_IPS + numberOfStaticIpAddresses + 2;
+      if (numberOfAllIpAddresses < minSize) {
+        throw new IllegalArgumentException(
+            "numberOfAllIpAddresses should be greater than (COUNT_OF_RESERVED_IPS + numberOfStaticIpAddresses + 2) = " +
+                +minSize);
+      }
+
       this.kind = KIND;
       this.subnetId = subnetId;
       this.numberOfAllIpAddresses = numberOfAllIpAddresses;
@@ -222,8 +229,11 @@ public class SubnetAllocatorService extends StatefulService {
       if (allocateSubnetPatch.numberOfStaticIpAddresses > 0) {
         subnet.lowIpStatic = subnet.lowIp + 1 + COUNT_OF_RESERVED_IPS;
         subnet.highIpStatic = subnet.lowIpStatic + allocateSubnetPatch.numberOfStaticIpAddresses - 1;
+        subnet.lowIpDynamic = subnet.highIpStatic + 1;
+      } else {
+        subnet.lowIpDynamic = subnet.lowIp + 1 + COUNT_OF_RESERVED_IPS;
       }
-      subnet.lowIpDynamic = subnet.highIpStatic + 1;
+
       subnet.highIpDynamic = subnet.highIp - 1;
       subnet.subnetId = allocateSubnetPatch.subnetId;
       subnet.documentSelfLink = allocateSubnetPatch.subnetId;
