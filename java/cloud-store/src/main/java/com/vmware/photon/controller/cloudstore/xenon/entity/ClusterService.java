@@ -159,7 +159,6 @@ public class ClusterService extends StatefulService {
      * This property specifies extended properties of the cluster.
      */
     @NotBlank
-    @Immutable
     public Map<String, String> extendedProperties;
   }
 }
