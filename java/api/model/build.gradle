@@ -19,7 +19,9 @@ dependencies {
   compile("org.apache.curator:curator-recipes:${versions.curator}") {
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     exclude group: 'log4j', module: 'log4j'
+    exclude group: 'io.netty', module: 'netty'
   }
+  compile 'io.netty:netty-all:4.1.0.Final'
 
   thrift files('../../../thrift/tracing.thrift',
                '../../../thrift/status.thrift')
@@ -27,6 +29,7 @@ dependencies {
   testCompile("org.apache.curator:curator-test:${versions.curator}") {
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     exclude group: 'log4j', module: 'log4j'
+    exclude group: 'io.netty', module: 'netty'
   }
 
   testCompile "org.hibernate:hibernate-validator:${versions.hibernate_validator}"

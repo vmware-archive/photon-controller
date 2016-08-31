@@ -17,6 +17,7 @@ dependencies {
     testCompile("org.apache.curator:curator-test:${versions.curator}") {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
         exclude group: 'log4j', module: 'log4j'
+        compile 'io.netty:netty-all:4.1.0.Final'
     }
 
     testCompile 'org.hamcrest:hamcrest-all:1.3'
