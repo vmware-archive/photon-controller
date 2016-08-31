@@ -77,7 +77,10 @@ module EsxCloud
       # @param [String] name
       # @return [DiskList]
       def find_disks_by_name(project_id, name)
-        @api_client.find_disks_by_name(project_id, name)
+        project = find_project_by_id(project_id)
+        tenant = @project_to_tenant[project.id]
+        result = run_cli("disk list -t '#{tenant.name}' -p '#{project.name}' -n '#{name}'")
+        get_disk_list_from_response(result)
       end
 
       # @param [String] id
