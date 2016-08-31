@@ -151,6 +151,7 @@ public enum Operation {
   CREATE_KUBERNETES_CLUSTER_INITIATE("CreateKubernetesClusterInitiate"),
   CREATE_KUBERNETES_CLUSTER_SETUP_ETCD("CreateKubernetesClusterSetupEtcd"),
   CREATE_KUBERNETES_CLUSTER_SETUP_MASTER("CreateKubernetesClusterSetupMaster"),
+  CREATE_KUBERNETES_CLUSTER_UPDATE_EXTENDED_PROPERTIES("UpdateKubernetesExtendedProperties"),
   CREATE_KUBERNETES_CLUSTER_SETUP_WORKERS("CreateKubernetesClusterSetupWorkers"),
   CREATE_MESOS_CLUSTER_INITIATE("CreateMesosClusterInitiate"),
   CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS("CreateMesosClusterSetupZookeeper"),

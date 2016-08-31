@@ -163,6 +163,7 @@ public class StepCommandFactoryTest {
         {Operation.CREATE_KUBERNETES_CLUSTER_INITIATE, KubernetesClusterCreateStepCmd.class},
         {Operation.CREATE_KUBERNETES_CLUSTER_SETUP_ETCD, XenonTaskStatusStepCmd.class},
         {Operation.CREATE_KUBERNETES_CLUSTER_SETUP_MASTER, XenonTaskStatusStepCmd.class},
+        {Operation.CREATE_KUBERNETES_CLUSTER_UPDATE_EXTENDED_PROPERTIES, XenonTaskStatusStepCmd.class},
         {Operation.CREATE_KUBERNETES_CLUSTER_SETUP_WORKERS, XenonTaskStatusStepCmd.class},
 
         {Operation.CREATE_MESOS_CLUSTER_INITIATE, MesosClusterCreateStepCmd.class},

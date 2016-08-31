@@ -194,7 +194,7 @@ public class ClusterBackendTest {
       Assert.assertNotNull(taskEntity.getId());
 
       // verify transient resources are set correctly
-      assertEquals(taskEntity.getSteps().size(), 4);
+      assertEquals(taskEntity.getSteps().size(), 5);
       StepEntity initiateStepEntity = taskEntity.getSteps().get(0);
       assertEquals(initiateStepEntity.getOperation(), Operation.CREATE_KUBERNETES_CLUSTER_INITIATE);
       ClusterCreateSpec createSpecActual = (ClusterCreateSpec) initiateStepEntity
@@ -206,11 +206,13 @@ public class ClusterBackendTest {
       assertEquals(taskEntity.getState(), TaskEntity.State.QUEUED);
 
       // verify that task steps are created successfully
-      assertEquals(taskEntity.getSteps().size(), 4);
+      assertEquals(taskEntity.getSteps().size(), 5);
       assertEquals(taskEntity.getSteps().get(0).getOperation(), Operation.CREATE_KUBERNETES_CLUSTER_INITIATE);
       assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.CREATE_KUBERNETES_CLUSTER_SETUP_ETCD);
       assertEquals(taskEntity.getSteps().get(2).getOperation(), Operation.CREATE_KUBERNETES_CLUSTER_SETUP_MASTER);
-      assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.CREATE_KUBERNETES_CLUSTER_SETUP_WORKERS);
+      assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation
+          .CREATE_KUBERNETES_CLUSTER_UPDATE_EXTENDED_PROPERTIES);
+      assertEquals(taskEntity.getSteps().get(4).getOperation(), Operation.CREATE_KUBERNETES_CLUSTER_SETUP_WORKERS);
     }
 
     @Test
