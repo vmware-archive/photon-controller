@@ -58,7 +58,6 @@ import java.util.Map;
 public class KubernetesClusterCreateTaskService extends StatefulService {
 
   private static final int MINIMUM_INITIAL_WORKER_COUNT = 1;
-  private String masterIP;
 
   public KubernetesClusterCreateTaskService() {
     super(KubernetesClusterCreateTask.class);
@@ -233,9 +232,6 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
 
           NodeRollout rollout = new BasicNodeRollout();
 
-          // Store and memorize the Master IP to be used later when trying to connect to KubeClient
-          masterIP = ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP;
-
           rollout.run(this, rolloutInput, new FutureCallback<NodeRolloutResult>() {
             @Override
             public void onSuccess(@Nullable NodeRolloutResult result) {
@@ -334,6 +330,8 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
             // The handleStart method of the maintenance task does not push itself to STARTED automatically.
             // We need to patch the maintenance task manually to start the task immediately. Otherwise
             // the task will wait for one interval to start.
+
+
             startMaintenance(currentState);
           }
         });
@@ -341,25 +339,54 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
   }
 
   /**
-   * This method patches three new extended properties.
+   * This method patches new extended properties. Version, UI and addresses to download kubectl.
    *
    * @param currentState
    */
   private void updateExtendedProperties(final KubernetesClusterCreateTask currentState) throws IOException {
-    KubernetesClient kubeClient = HostUtils.getKubernetesClient(this);
-    String conntectionString = createKuberneteURL(masterIP, null);
-    kubeClient.getVersionAsync(conntectionString, new FutureCallback<String>() {
+
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createGet(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
+        .setReferer(getUri())
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
+          ClusterService.State cluster = operation.getBody(ClusterService.State.class);
+          // Retrieving the masterIP from cluster Service document
+          String masterIP = cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
+          KubernetesClient kubeClient = HostUtils.getKubernetesClient(this);
+          // Create the connectionstring used by Kubenete Client
+          String connectionString = createKuberneteURL(masterIP, null);
+          try {
+            getVersionAndUpdate(kubeClient, connectionString, masterIP, currentState);
+          } catch (IOException e) {
+            failTask(e);
+          }
+        }));
+  }
+
+  // This is a helper method which takes in a kubenete Client, get the version of the current kubenetes
+  // and construct a map which contains all the extra extended properties we want to add.
+  private void getVersionAndUpdate(KubernetesClient kubeClient, String connectionString, String masterIP,
+                                   final KubernetesClusterCreateTask currentState) throws IOException{
+    kubeClient.getVersionAsync(connectionString, new FutureCallback<String>() {
       @Override
       public void onSuccess(@Nullable String version) {
-
         Map<String, String> extraInfo = new HashMap<String, String>();
-        extraInfo.put("version", version);
-        extraInfo.put("uiAddress", createKuberneteURL(masterIP, "ui"));
-        extraInfo.put("linuxAMD64Address", generateKubectlDownloadAddress(version, "linux", "amd64"));
-        extraInfo.put("linux386Address", generateKubectlDownloadAddress(version, "linux", "386"));
-        extraInfo.put("darwinAMD64Address", generateKubectlDownloadAddress(version, "darwin", "amd64"));
-        extraInfo.put("windowsADM64Address", generateKubectlDownloadAddress(version, "windows", "amd64"));
-        extraInfo.put("windows386Address", generateKubectlDownloadAddress(version, "windows", "386"));
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PROPERTY_VERSION, version);
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PROPERTY_UI_ADDRESS, createKuberneteURL(masterIP, "ui"));
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PROPERTY_LINUX_AMD64_ADDRESS,
+            generateKubectlDownloadAddress(version, "linux", "amd64"));
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PROPERTY_LINUX_386_ADDRESS,
+            generateKubectlDownloadAddress(version, "linux", "386"));
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PROPERTY_DARWIN_AMD64_ADDRESS,
+            generateKubectlDownloadAddress(version, "darwin", "amd64"));
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PEOPERTY_WINDOWS_AMD64_ADDRESS,
+            generateKubectlDownloadAddress(version, "windows", "amd64"));
+        extraInfo.put(ClusterManagerConstants.EXTENDED_PEROPERTY_WINDOWS_386_ADDRESS,
+            generateKubectlDownloadAddress(version, "windows", "386"));
 
         updateExtendedMap(extraInfo, currentState);
       }
@@ -372,8 +399,8 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
   }
 
   // Taking the map that contains all the extra extended property we want to add. Add them and send a self patch
-  // Indicating that there are no future substage.
-  private void updateExtendedMap(Map<String, String> extraInfo, final KubernetesClusterCreateTask currentState) {
+  // Indicating that there are no future substage as well as patching to the cluster Service,
+  private void updateExtendedMap(Map<String, String> extendedPatchMap, final KubernetesClusterCreateTask currentState) {
     sendRequest(HostUtils.getCloudStoreHelper(this)
         .createGet(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
         .setReferer(getUri())
@@ -382,14 +409,18 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
             failTask(throwable);
             return;
           }
-
+          // Get the cluster
           ClusterService.State cluster = operation.getBody(ClusterService.State.class);
-          for (String key : extraInfo.keySet()) {
-            cluster.extendedProperties.put(key, extraInfo.get(key));
+          // Adding all the existing extendedProperties in to my map
+          for (String key : cluster.extendedProperties.keySet()) {
+            extendedPatchMap.put(key, cluster.extendedProperties.get(key));
           }
+          // Create a new cluster containing the patch(only has the map)
+          ClusterService.State clusterPatch = new ClusterService.State();
+          clusterPatch.extendedProperties = extendedPatchMap;
           // No stage after this, set to finished
           KubernetesClusterCreateTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-          updateStates(currentState, patchState, cluster);
+          updateStates(currentState, patchState, clusterPatch);
         }));
   }
 
@@ -402,6 +433,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
         "http://" + serverAddress + ":" + ClusterManagerConstants.Kubernetes.API_PORT + "/" + other;
   }
 
+  // Generate the URL for downloading kubectl
   private static String generateKubectlDownloadAddress(String version, String oS, String model) {
     return  "https://storage.googleapis.com/kubernetes-release/release/" + version + "/bin/" + oS + "/" + model +
         "/kubectl";
@@ -420,7 +452,9 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
         .setBody(patchState)
         .setCompletion((Operation operation, Throwable throwable) -> {
           // We ignore the failure here since maintenance task will kick in eventually.
-          TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null));
+          KubernetesClusterCreateTask nextState = buildPatch(TaskState.TaskStage.STARTED,
+              TaskState.SubStage.UPDATE_EXTENDED_PROPERTIES);
+          TaskUtils.sendSelfPatch(this, nextState);
         });
     sendRequest(patchOperation);
   }

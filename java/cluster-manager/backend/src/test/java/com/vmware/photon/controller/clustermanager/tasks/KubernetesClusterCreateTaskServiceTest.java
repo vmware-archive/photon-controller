@@ -621,6 +621,8 @@ public class KubernetesClusterCreateTaskServiceTest {
           ClusterService.State.class);
 
       assertThat(cluster.clusterState, is(expectedState));
+      assertThat(cluster.extendedProperties.size(), is(13));
+      assertThat(cluster.extendedProperties.get("version"), is("v1.5.3"));
     }
 
     @DataProvider(name = "clusterSizes")
@@ -777,6 +779,12 @@ public class KubernetesClusterCreateTaskServiceTest {
         ((FutureCallback<Set<String>>) invocation.getArguments()[1]).onSuccess(kubernetesNodeIps);
         return null;
       }).when(kubernetesClient).getNodeAddressesAsync(
+          any(String.class), any(FutureCallback.class));
+
+      doAnswer(invocation -> {
+        ((FutureCallback<String>) invocation.getArguments()[1]).onSuccess("v1.5.3");
+        return null;
+      }).when(kubernetesClient).getVersionAsync(
           any(String.class), any(FutureCallback.class));
     }
   }
