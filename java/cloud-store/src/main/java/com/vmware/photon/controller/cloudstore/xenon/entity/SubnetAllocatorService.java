@@ -32,6 +32,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationProcessingChain;
 import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.StatefulService;
 
 import org.apache.commons.net.util.SubnetUtils;
@@ -333,6 +334,7 @@ public class SubnetAllocatorService extends StatefulService {
   @MigrateDuringDeployment(
       factoryServicePath = FACTORY_LINK,
       serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
+  @ServiceDocument.IndexingParameters(versionRetention = 100)
   public static class State extends ServiceDocument {
 
     /**
@@ -344,6 +346,7 @@ public class SubnetAllocatorService extends StatefulService {
     /**
      * This is the list of free ranges available for subnet allocation.
      */
+    @ServiceDocument.PropertyOptions(indexing = ServiceDocumentDescription.PropertyIndexingOption.STORE_ONLY)
     public Collection<IpV4Range> freeList;
 
     @Override

@@ -551,6 +551,86 @@ public class SubnetAllocatorServiceTest {
     }
   }
 
+  /**
+   * Tests that verify large number of subnet allocations.
+   */
+  public static class AllocationLimitTest {
+    private static SubnetAllocatorService.State startState;
+
+    @BeforeClass
+    public void setupClass() throws Throwable {
+      commonHostAndClientSetup();
+      startState = new SubnetAllocatorService.State();
+      startState.rootCidr = "10.0.0.0/8";
+      Operation result = xenonClient.post(SubnetAllocatorService.FACTORY_LINK, startState);
+      assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
+      startState = result.getBody(SubnetAllocatorService.State.class);
+    }
+
+    @AfterClass
+    public void tearDownClass() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testLargeNumberOfSubnetAllocations()
+        throws Throwable {
+
+      final long maxFreeBlocks = 2000;
+      final long maxAllocations = maxFreeBlocks * 2;
+      for (Long i = 1L; i <= maxAllocations; i++) {
+        Operation patchOperation = new Operation()
+            .setAction(Service.Action.PATCH)
+            .setReferer("test-host")
+            .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+
+        SubnetAllocatorService.AllocateSubnet allocateSubnetPatch =
+            new SubnetAllocatorService.AllocateSubnet(
+                i.toString(), 8L, 2L);
+        patchOperation.setBody(allocateSubnetPatch);
+
+        Operation completedOperation = host.sendRequestAndWait(patchOperation);
+        assertThat(completedOperation.getStatusCode(), is(Operation.STATUS_CODE_OK));
+
+        SubnetAllocatorService.State allocatorState = host.getServiceState(SubnetAllocatorService.State.class,
+            startState.documentSelfLink);
+
+        logger.info("Allocation Count=" + i);
+        logger.info("freeList size=" + allocatorState.freeList.size());
+      }
+
+      ServiceHostUtils.waitForServiceState(
+          ServiceDocumentQueryResult.class,
+          DhcpSubnetService.FACTORY_LINK,
+          (queryResult) -> queryResult.documentCount == maxAllocations,
+          host,
+          null);
+
+      SubnetAllocatorService.State allocatorState = null;
+      for (Long i = 2L; i <= maxAllocations; i = i + 2) {
+        Operation patchOperation = new Operation()
+            .setAction(Service.Action.PATCH)
+            .setReferer("test-host")
+            .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+
+        SubnetAllocatorService.ReleaseSubnet releaseSubnetPatch =
+            new SubnetAllocatorService.ReleaseSubnet(i.toString());
+        patchOperation.setBody(releaseSubnetPatch);
+
+        Operation completedOperation = host.sendRequestAndWait(patchOperation);
+        assertThat(completedOperation.getStatusCode(), is(Operation.STATUS_CODE_OK));
+
+        allocatorState = host.getServiceState(SubnetAllocatorService.State.class,
+            startState.documentSelfLink);
+
+        logger.info("Released Subnet Id=" + i);
+        logger.info("freeList size=" + allocatorState.freeList.size());
+      }
+
+      assertThat(allocatorState.freeList.size(), is((int) maxFreeBlocks));
+    }
+  }
+
   private static SubnetAllocatorService.State createInitialState() {
     SubnetAllocatorService.State startState = new SubnetAllocatorService.State();
     startState.rootCidr = "192.168.0.0/16";
