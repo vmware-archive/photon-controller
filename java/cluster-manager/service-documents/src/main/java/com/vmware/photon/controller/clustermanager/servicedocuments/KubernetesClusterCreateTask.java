@@ -71,7 +71,8 @@ public class KubernetesClusterCreateTask extends ServiceDocument {
     public enum SubStage {
       SETUP_ETCD,
       SETUP_MASTER,
-      SETUP_WORKERS
+      SETUP_WORKERS,
+      UPDATE_EXTENDED_PROPERTIES
     }
   }
 }
