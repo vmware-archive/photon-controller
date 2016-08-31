@@ -33,7 +33,8 @@ module EsxCloud
       # @param [Hash] payload
       # @return [Image]
       def create_image_from_vm(id, payload)
-        @api_client.create_image_from_vm(id, payload)
+        image_id = run_cli("vm create-image '#{id}' -n '#{payload[:name]}' -i '#{payload[:replicationType]}'")
+        find_image_by_id(image_id)
       end
 
       # @param [String] id

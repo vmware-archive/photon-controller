@@ -91,4 +91,18 @@ describe EsxCloud::GoCliClient do
     expect(client).to receive(:get_task_list_from_response).with(result).and_return(tasks)
     client.get_image_tasks(image_id, "COMPLETED").should == tasks
   end
+
+  it "creates image from vm" do
+    vm_id = double("foo")
+    image_id = double("bar")
+    image = double(EsxCloud::Image, :id => image_id)
+    payload = {name: "image1", replicationType: "EAGER"}
+
+    expect(client).to receive(:run_cli)
+                  .with("vm create-image '#{vm_id}' -n '#{payload[:name]}' -i '#{payload[:replicationType]}'")
+                  .and_return(image_id)
+    expect(client).to receive(:find_image_by_id).with(image_id).and_return(image)
+
+    expect(client.create_image_from_vm(vm_id, payload)).to eq image
+  end
 end
