@@ -345,6 +345,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
             patchState.tier0RouterId = deploymentState.networkTopRouterId;
             patchState.edgeClusterId = deploymentState.edgeClusterId;
             patchState.dhcpRelayServiceId = deploymentState.dhcpRelayServiceId;
+            patchState.snatIp = deploymentState.snatIp;
             progress(state, patchState);
           } catch (Throwable t) {
             fail(state, t);
@@ -474,6 +475,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     configureRoutingTask.logicalTier1RouterDownLinkPortIp = DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP;
     configureRoutingTask.logicalTier1RouterDownLinkPortIpPrefixLen = DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP_PREFIX_LEN;
     configureRoutingTask.logicalTier0RouterId = state.tier0RouterId;
+    configureRoutingTask.snatIp = state.snatIp;
 
     TaskUtils.startTaskAsync(
         this,

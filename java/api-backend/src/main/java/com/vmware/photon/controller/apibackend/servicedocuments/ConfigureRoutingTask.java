@@ -43,6 +43,7 @@ public class ConfigureRoutingTask extends ServiceDocument {
       CONNECT_TIER1_ROUTER_TO_SWITCH,
       CREATE_TIER0_ROUTER_PORT,
       CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER,
+      ADD_SNAT_RULES,
       ENABLE_ROUTING_ADVERTISEMENT
     }
   }
@@ -145,6 +146,13 @@ public class ConfigureRoutingTask extends ServiceDocument {
   @NotBlank
   @Immutable
   public String logicalTier0RouterId;
+
+  /**
+   * IP address for SNAT rules.
+   */
+  @NotBlank
+  @Immutable
+  public String snatIp;
 
   ///
   /// Task Output

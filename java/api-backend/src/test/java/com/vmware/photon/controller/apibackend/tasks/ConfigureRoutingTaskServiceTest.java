@@ -175,6 +175,7 @@ public class ConfigureRoutingTaskServiceTest {
           {"logicalTier1RouterDownLinkPortIp", "logicalTier1RouterDownLinkPortIp cannot be null"},
           {"logicalTier1RouterDownLinkPortIpPrefixLen", "logicalTier1RouterDownLinkPortIpPrefixLen cannot be null"},
           {"logicalTier0RouterId", "logicalTier0RouterId cannot be null"},
+          {"snatIp", "snatIp cannot be null"}
       };
     }
   }
@@ -322,6 +323,8 @@ public class ConfigureRoutingTaskServiceTest {
           {TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_TIER0_ROUTER_PORT,
               TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER, RoutingType.ROUTED},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER,
+              TaskState.TaskStage.STARTED, TaskState.SubStage.ADD_SNAT_RULES, RoutingType.ROUTED},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.ADD_SNAT_RULES,
               TaskState.TaskStage.STARTED, TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT, RoutingType.ROUTED},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT,
               TaskState.TaskStage.FINISHED, null, RoutingType.ROUTED},
@@ -334,6 +337,8 @@ public class ConfigureRoutingTaskServiceTest {
               TaskState.TaskStage.FAILED, null, RoutingType.ROUTED},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER,
               TaskState.TaskStage.FAILED, null, RoutingType.ROUTED},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.ADD_SNAT_RULES,
+              TaskState.TaskStage.FAILED, null, RoutingType.ROUTED},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT,
               TaskState.TaskStage.FAILED, null, RoutingType.ROUTED},
 
@@ -349,6 +354,8 @@ public class ConfigureRoutingTaskServiceTest {
           {TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_TIER0_ROUTER_PORT,
               TaskState.TaskStage.CANCELLED, null, RoutingType.ROUTED},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER,
+              TaskState.TaskStage.CANCELLED, null, RoutingType.ROUTED},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.ADD_SNAT_RULES,
               TaskState.TaskStage.CANCELLED, null, RoutingType.ROUTED},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT,
               TaskState.TaskStage.CANCELLED, null, RoutingType.ROUTED},
@@ -372,6 +379,10 @@ public class ConfigureRoutingTaskServiceTest {
           {TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_SWITCH_PORT, TaskState.TaskStage.STARTED,
               TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER, RoutingType.ROUTED},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_SWITCH_PORT, TaskState.TaskStage.STARTED,
+              TaskState.SubStage.ADD_SNAT_RULES, RoutingType.ISOLATED},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_SWITCH_PORT, TaskState.TaskStage.STARTED,
+              TaskState.SubStage.ADD_SNAT_RULES, RoutingType.ROUTED},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_SWITCH_PORT, TaskState.TaskStage.STARTED,
               TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT, RoutingType.ISOLATED},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_SWITCH_PORT, TaskState.TaskStage.STARTED,
               TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT, RoutingType.ROUTED},
@@ -387,17 +398,26 @@ public class ConfigureRoutingTaskServiceTest {
               TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER,
               RoutingType.ROUTED},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_SWITCH,
+              TaskState.TaskStage.STARTED, TaskState.SubStage.ADD_SNAT_RULES, RoutingType.ROUTED},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_SWITCH,
               TaskState.TaskStage.STARTED, TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT,
               RoutingType.ROUTED},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_SWITCH,
               TaskState.TaskStage.FINISHED, null, RoutingType.ROUTED},
 
           {TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_TIER0_ROUTER_PORT,
+              TaskState.TaskStage.STARTED, TaskState.SubStage.ADD_SNAT_RULES, RoutingType.ROUTED},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_TIER0_ROUTER_PORT,
               TaskState.TaskStage.STARTED, TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT, RoutingType.ROUTED},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_TIER0_ROUTER_PORT,
               TaskState.TaskStage.FINISHED, null, RoutingType.ROUTED},
 
           {TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER,
+              TaskState.TaskStage.STARTED, TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT, RoutingType.ROUTED},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER,
+              TaskState.TaskStage.FINISHED, null, RoutingType.ROUTED},
+
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.ADD_SNAT_RULES,
               TaskState.TaskStage.FINISHED, null, RoutingType.ROUTED},
       };
     }
@@ -425,6 +445,7 @@ public class ConfigureRoutingTaskServiceTest {
           Pair.of(TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_SWITCH),
           Pair.of(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_TIER0_ROUTER_PORT),
           Pair.of(TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER),
+          Pair.of(TaskState.TaskStage.STARTED, TaskState.SubStage.ADD_SNAT_RULES),
           Pair.of(TaskState.TaskStage.STARTED, TaskState.SubStage.ENABLE_ROUTING_ADVERTISEMENT),
           Pair.of(TaskState.TaskStage.FINISHED, null)
       };
@@ -524,12 +545,28 @@ public class ConfigureRoutingTaskServiceTest {
     }
 
     @Test
+    public void testFailedToAddSnatRules() throws Throwable {
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalPort(true, "logicalPortId")
+          .createLogicalRouterDownLinkPort(true, "logicalRouterDownLinkPortId")
+          .createLogicalLinkPortOnTier0Router(true, "logicalLinkPortIdOnTier0Router")
+          .createLogicalLinkPortOnTier1Router(true, "logicalLinkPortIdOnTier0Router")
+          .createNatRule(false, "snatRuleId")
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+      ConfigureRoutingTask savedState = startService(RoutingType.ROUTED);
+      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
+    }
+
+    @Test
     public void testFailedToGetRoutingAdvertisement() throws Throwable {
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
           .createLogicalPort(true, "logicalPortId")
           .createLogicalRouterDownLinkPort(true, "logicalRouterDownLinkPortId")
           .createLogicalLinkPortOnTier0Router(true, "logicalLinkPortIdOnTier0Router")
           .createLogicalLinkPortOnTier1Router(true, "logicalLinkPortIdOnTier0Router")
+          .createNatRule(true, "snatRuleId")
           .getRoutingAdvertisement(false)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
@@ -545,6 +582,7 @@ public class ConfigureRoutingTaskServiceTest {
           .createLogicalRouterDownLinkPort(true, "logicalRouterDownLinkPortId")
           .createLogicalLinkPortOnTier0Router(true, "logicalLinkPortIdOnTier0Router")
           .createLogicalLinkPortOnTier1Router(true, "logicalLinkPortIdOnTier0Router")
+          .createNatRule(true, "snatRuleId")
           .getRoutingAdvertisement(true)
           .configureRoutingAdvertisement(false)
           .build();
@@ -583,6 +621,7 @@ public class ConfigureRoutingTaskServiceTest {
           .createLogicalRouterDownLinkPort(true, logicalRouterDownLinkPortId)
           .createLogicalLinkPortOnTier0Router(true, logicalRouterPortOnTier0Id)
           .createLogicalLinkPortOnTier1Router(true, logicalRouterPortOnTier1Id)
+          .createNatRule(true, "snatRuleId")
           .getRoutingAdvertisement(true)
           .configureRoutingAdvertisement(true)
           .build();
@@ -641,6 +680,7 @@ public class ConfigureRoutingTaskServiceTest {
     startState.logicalTier1RouterDownLinkPortIpPrefixLen = 24;
     startState.logicalTier0RouterId = UUID.randomUUID().toString();
     startState.logicalTier1RouterId = UUID.randomUUID().toString();
+    startState.snatIp = "192.168.2.1";
     startState.controlFlags = controlFlag;
 
     return startState;

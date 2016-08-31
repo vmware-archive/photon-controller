@@ -184,6 +184,12 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   public String dhcpRelayServiceId;
 
   /**
+   * IP address used for SNAT rules.
+   */
+  @WriteOnce
+  public String snatIp;
+
+  /**
    * The VirtualNetworkService.State object.
    */
   @TaskServiceEntityField
