@@ -59,7 +59,13 @@ write_files:
     permissions: 0644
     path: /tmp/check-docker.sh
 
+users:
+  - name: root
+    lock_passwd: false
+    ssh-authorized-keys:
+      - $SSH_KEY
+
 runcmd:
   - sh /tmp/init-network.sh
   - sh /tmp/check-docker.sh
-  - /root/docker-multinode/etcd.sh > /var/log/etcd.log
+  - /root/docker-multinode/etcd.sh > /var/log/start-etcd.log

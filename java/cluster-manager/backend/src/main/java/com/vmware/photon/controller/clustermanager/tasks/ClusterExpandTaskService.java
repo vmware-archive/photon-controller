@@ -276,9 +276,11 @@ public class ClusterExpandTaskService extends StatefulService {
               clusterDocument.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS));
           String cn = clusterDocument.extendedProperties.get(
               ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK);
+          String sshKey = clusterDocument.extendedProperties.get(
+              ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY);
 
           input.serverAddress = masterIp;
-          input.nodeProperties = KubernetesWorkerNodeTemplate.createProperties(etcdIps, cn, masterIp);
+          input.nodeProperties = KubernetesWorkerNodeTemplate.createProperties(etcdIps, cn, masterIp, sshKey);
           input.nodeType = NodeType.KubernetesWorker;
           break;
         }

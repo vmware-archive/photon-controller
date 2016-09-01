@@ -33,6 +33,7 @@ public class KubernetesWorkerNodeTemplate implements NodeTemplate {
   public static final String CONTAINER_NETWORK_PROPERTY = "containerNetwork";
   public static final String MASTER_IP_PROPERTY = "masterIp";
   public static final String VM_NAME_PREFIX = "worker";
+  public static final String SSH_KEY_PROPERTY = "sshKey";
 
   public String getVmName(Map<String, String> properties) {
     Preconditions.checkNotNull(properties, "properties cannot be null");
@@ -46,6 +47,7 @@ public class KubernetesWorkerNodeTemplate implements NodeTemplate {
     Preconditions.checkNotNull(properties, "properties cannot be null");
 
     List<String> etcdIps = NodeTemplateUtils.deserializeAddressList(properties.get(ETCD_IPS_PROPERTY));
+    String sshKey = properties.get(SSH_KEY_PROPERTY);
 
     Map<String, String> parameters = new HashMap<>();
     parameters.put("$ETCD_QUORUM", NodeTemplateUtils.createEtcdQuorumString(etcdIps));
@@ -53,6 +55,7 @@ public class KubernetesWorkerNodeTemplate implements NodeTemplate {
     parameters.put("$KUBERNETES_PORT", String.valueOf(ClusterManagerConstants.Kubernetes.API_PORT));
     parameters.put("$MASTER_ADDRESS", properties.get(MASTER_IP_PROPERTY));
     parameters.put("$LOCAL_HOSTNAME", getVmName(properties));
+    parameters.put("$SSH_KEY", sshKey);
 
     FileTemplate template = new FileTemplate();
     template.filePath = Paths.get(scriptDirectory, WORKER_USER_DATA_TEMPLATE).toString();
@@ -68,7 +71,7 @@ public class KubernetesWorkerNodeTemplate implements NodeTemplate {
   }
 
   public static Map<String, String> createProperties(List<String> etcdAddresses,
-                                                     String containerNetwork, String masterIp) {
+                                                     String containerNetwork, String masterIp, String sshKey) {
     Preconditions.checkNotNull(etcdAddresses, "etcdAddresses cannot be null");
     Preconditions.checkArgument(etcdAddresses.size() > 0, "etcdAddresses should contain at least one address");
     Preconditions.checkNotNull(containerNetwork, "containerNetwork cannot be null");
@@ -78,6 +81,8 @@ public class KubernetesWorkerNodeTemplate implements NodeTemplate {
     properties.put(ETCD_IPS_PROPERTY, NodeTemplateUtils.serializeAddressList(etcdAddresses));
     properties.put(CONTAINER_NETWORK_PROPERTY, containerNetwork);
     properties.put(MASTER_IP_PROPERTY, masterIp);
+    properties.put(SSH_KEY_PROPERTY, sshKey);
+
     return properties;
   }
 }
