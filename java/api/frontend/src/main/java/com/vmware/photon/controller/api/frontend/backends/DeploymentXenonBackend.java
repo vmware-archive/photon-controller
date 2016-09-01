@@ -497,6 +497,10 @@ public class DeploymentXenonBackend implements DeploymentBackend {
             && spec.getAuth().getSecurityGroups().size() > 0) {
           deployment.oAuthSecurityGroups = new ArrayList<>(spec.getAuth().getSecurityGroups());
         }
+        if (spec.getAuth().getEndpoint() != null) {
+          deployment.oAuthServerAddress = spec.getAuth().getEndpoint().getHost();
+          deployment.oAuthServerPort = spec.getAuth().getEndpoint().getPort();
+        }
       }
     }
 

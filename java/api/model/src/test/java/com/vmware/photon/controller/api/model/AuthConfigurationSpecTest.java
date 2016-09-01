@@ -48,6 +48,14 @@ public class AuthConfigurationSpecTest {
       .securityGroups(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}))
       .build();
 
+  private AuthConfigurationSpec sampleEnabledAuthConfigExternalLwEndpoint = new AuthConfigurationSpecBuilder()
+      .enabled(true)
+      .tenant("t")
+      .password("p")
+      .lightwaveEndpoint("http://mylightwave:4343")
+      .securityGroups(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}))
+      .build();
+
   private AuthConfigurationSpec sampleDisabledAuthConfig = new AuthConfigurationSpecBuilder()
       .enabled(false)
       .build();
@@ -64,6 +72,7 @@ public class AuthConfigurationSpecTest {
     private final String[] authEnabledErrorMsgs = new String[]{
         "password may not be null (was null)",
         "tenant may not be null (was null)",
+        "lightwaveEndpoint &%(&$%*^$*( is invalid URL Address (was &%(&$%*^$*()",
     };
     private final String[] authDisabledErrorMsgs = new String[]{
         "tenant must be null (was t)",
@@ -81,7 +90,8 @@ public class AuthConfigurationSpecTest {
     public Object[][] getValidAuthConfig() {
       return new Object[][]{
           {sampleEnabledAuthConfig},
-          {sampleDisabledAuthConfig}
+          {sampleEnabledAuthConfigExternalLwEndpoint},
+          {sampleDisabledAuthConfig},
       };
     }
 
@@ -102,10 +112,11 @@ public class AuthConfigurationSpecTest {
     public Object[][] getInvalidAuthConfig() {
       return new Object[][]{
           {new AuthConfigurationSpecBuilder()
-              .enabled(true)
-              .securityGroups(Arrays.asList(new String[]{"adminGroup1"}))
-              .build(),
-              authEnabledErrorMsgs},
+            .enabled(true)
+            .securityGroups(Arrays.asList(new String[]{"adminGroup1"}))
+            .lightwaveEndpoint("&%(&$%*^$*(")
+            .build(),
+            authEnabledErrorMsgs},
           {new AuthConfigurationSpecBuilder()
               .enabled(false)
               .tenant("t")
