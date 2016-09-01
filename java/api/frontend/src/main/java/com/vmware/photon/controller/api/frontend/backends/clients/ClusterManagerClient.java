@@ -369,12 +369,15 @@ public class ClusterManagerClient {
       }
     }
 
+    String sshKey = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY);
+
     // Assemble the cluster entity
     ClusterService.State cluster = assembleCommonClusterEntity(
         ClusterType.KUBERNETES, projectId, spec, clusterConfiguration);
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, containerNetwork);
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS, serializeIpAddresses(etcdIps));
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, masterIp);
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY, sshKey);
 
     // Create the cluster entity
     apiFeXenonClient.post(

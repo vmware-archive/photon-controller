@@ -21,12 +21,14 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
     @deployment = @seeder.deployment!
     @kubernetes_image = EsxCloud::ClusterHelper.upload_kubernetes_image(client)
     EsxCloud::ClusterHelper.enable_cluster_type(client, @deployment, @kubernetes_image, "KUBERNETES")
+    EsxCloud::ClusterHelper.generate_temporary_ssh_key()
   end
 
   after(:all) do
     puts "Staring to clean up Kubernetes Cluster lifecycle tests Env"
     EsxCloud::ClusterHelper.disable_cluster_type(client, @deployment, "KUBERNETES")
     @cleaner.delete_image(@kubernetes_image)
+    EsxCloud::ClusterHelper.remove_temporary_ssh_key()
   end
 
   it 'should create/resize/delete Kubernetes cluster successfully' do
@@ -45,7 +47,8 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
         "netmask" => ENV["MESOS_ZK_NETMASK"],
         "master_ip" => ENV["KUBERNETES_MASTER_IP"],
         "container_network" => "10.2.0.0/16",
-        "etcd_ip1" => ENV["KUBERNETES_ETCD_1_IP"]
+        "etcd_ip1" => ENV["KUBERNETES_ETCD_1_IP"],
+        "ssh_key" => "/tmp/test_rsa.pub"
       }
       expected_etcd_count = 1
       if ENV["KUBERNETES_ETCD_2_IP"] != ""
@@ -75,6 +78,16 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
       expect(cluster.state).to eq "READY"
       expect(cluster.extended_properties["cluster_version"]).to eq ("v1.3.5")
       expect(cluster.extended_properties.length).to be > 12
+
+      puts "Check that host can ssh successfully"
+      # Enabling BatchMode means that we won't be prompted for a password, so the ssh command won't hang, waiting for user input.
+      # Disabling StrictHostKeyChecking and setting to UserKnownHostsFile to null to not validate the host key as it
+      # will change with each lifecycle run.
+      ssh_opts = "-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oBatchMode=yes"
+      ssh_response = `ssh #{ssh_opts} -i /tmp/test_rsa root@#{ENV["KUBERNETES_MASTER_IP"]} /bin/ls 2>&1`
+
+      SUCCESSFUL_SSH_RESPONSE="WARNING: Your password has expired.\nPassword change required but no TTY available."
+      expect(ssh_response).to include(SUCCESSFUL_SSH_RESPONSE)
 
       N_WORKERS = (ENV["N_SLAVES"] || 2).to_i
 
