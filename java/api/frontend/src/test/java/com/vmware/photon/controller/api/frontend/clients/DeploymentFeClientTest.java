@@ -26,7 +26,6 @@ import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
-import com.vmware.photon.controller.api.frontend.entities.DeploymentEntity;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
@@ -37,7 +36,6 @@ import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentSize;
-import com.vmware.photon.controller.api.model.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.model.Project;
@@ -417,36 +415,6 @@ public class DeploymentFeClientTest {
       Task resp = feClient.configureCluster(deploymentId, new ClusterConfigurationSpec());
       assertThat(resp, is(task));
 
-    }
-  }
-
-  /**
-   * Tests the configure DHCP method.
-   */
-  public class ConfigureDhcpTest {
-    String deploymentId;
-
-    @BeforeMethod
-    public void setUp() throws Throwable {
-      setUpCommon();
-    }
-
-    @Test
-    public void testSuccess() throws Throwable {
-      deploymentId = "deployment-id";
-      DeploymentEntity deploymentEntity = new DeploymentEntity();
-      deploymentEntity.setNetworkManagerAddress("1.2.3.4");
-      deploymentEntity.setNetworkManagerUsername("username");
-      deploymentEntity.setNetworkManagerPassword("password");
-      doReturn(deploymentEntity).when(deploymentBackend).findById(deploymentId);
-      TaskEntity taskEntity = new TaskEntity();
-
-      doReturn(taskEntity).when(deploymentBackend).configureDhcp(any(DhcpConfigurationSpec.class));
-      Task task = new Task();
-      doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);
-
-      Task resp = feClient.configureDhcp(deploymentId, new DhcpConfigurationSpec());
-      assertThat(resp, is(task));
     }
   }
 

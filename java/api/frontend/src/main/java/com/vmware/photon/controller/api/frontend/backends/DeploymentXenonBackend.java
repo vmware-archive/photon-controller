@@ -15,7 +15,6 @@ package com.vmware.photon.controller.api.frontend.backends;
 
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient;
-import com.vmware.photon.controller.api.frontend.backends.utils.TaskUtils;
 import com.vmware.photon.controller.api.frontend.commands.steps.DeploymentCreateStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.DeploymentInitializeMigrationStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.SystemPauseBackgroundTasksStepCmd;
@@ -43,7 +42,6 @@ import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentState;
-import com.vmware.photon.controller.api.model.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
@@ -54,8 +52,6 @@ import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.StatsInfo;
 import com.vmware.photon.controller.api.model.UsageTag;
-import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureDhcpWorkflowDocument;
-import com.vmware.photon.controller.apibackend.workflows.ConfigureDhcpWorkflowService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
@@ -406,16 +402,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     }
 
     return clusterConfigurations;
-  }
-
-  @Override
-  public TaskEntity configureDhcp(DhcpConfigurationSpec spec) throws ExternalException {
-    ConfigureDhcpWorkflowDocument state = new ConfigureDhcpWorkflowDocument();
-    state.dhcpServerAddresses = spec.getServerAddresses();
-
-    ConfigureDhcpWorkflowDocument finalState = xenonClient.post(ConfigureDhcpWorkflowService.FACTORY_LINK, state)
-        .getBody(ConfigureDhcpWorkflowDocument.class);
-    return TaskUtils.convertBackEndToMiddleEnd(finalState.taskServiceState);
   }
 
   @Override

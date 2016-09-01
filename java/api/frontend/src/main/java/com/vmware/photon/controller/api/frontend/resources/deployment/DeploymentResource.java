@@ -24,7 +24,6 @@ import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentSize;
-import com.vmware.photon.controller.api.model.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.model.ResourceList;
@@ -269,23 +268,6 @@ public class DeploymentResource {
     return generateCustomResponse(
         Response.Status.OK,
         task,
-        (ContainerRequest) request,
-        TaskResourceRoutes.TASK_PATH);
-  }
-
-  @POST
-  @Path(DeploymentResourceRoutes.ENABLE_DHCP_ACTION)
-  @ApiOperation(value = "Configures DHCP service associated with the Deployment", response = Task.class)
-  @ApiResponses(value = {
-      @ApiResponse(code = 201, message = "Task created, DHCP configuration process can be fetched " +
-          "via the task")
-  })
-  public Response configureDhcp(@Context Request request,
-                                @PathParam("id") String id,
-                                DhcpConfigurationSpec spec) throws ExternalException {
-    return generateCustomResponse(
-        Response.Status.CREATED,
-        client.configureDhcp(id, spec),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
