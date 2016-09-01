@@ -269,6 +269,8 @@ public class ClusterExpandTaskService extends StatefulService {
       input.vmFlavorName = clusterDocument.otherVmFlavorName;
       input.vmNetworkId = clusterDocument.vmNetworkId;
       input.projectId = clusterDocument.projectId;
+      String sshKey = clusterDocument.extendedProperties.get(
+          ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY);
 
       switch (clusterDocument.clusterType) {
         case KUBERNETES: {
@@ -278,7 +280,7 @@ public class ClusterExpandTaskService extends StatefulService {
               ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK);
 
           input.serverAddress = masterIp;
-          input.nodeProperties = KubernetesWorkerNodeTemplate.createProperties(etcdIps, cn, masterIp);
+          input.nodeProperties = KubernetesWorkerNodeTemplate.createProperties(etcdIps, cn, masterIp, sshKey);
           input.nodeType = NodeType.KubernetesWorker;
           break;
         }
