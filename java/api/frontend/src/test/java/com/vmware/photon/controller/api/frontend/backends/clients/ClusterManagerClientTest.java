@@ -117,6 +117,7 @@ public class ClusterManagerClientTest {
       extendedProperty.put(ClusterManagerClient.EXTENDED_PROPERTY_ETCD_IP2, "10.1.0.4");
       extendedProperty.put(ClusterManagerClient.EXTENDED_PROPERTY_ETCD_IP3, "10.1.0.5");
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "10.1.0.6");
+      extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY, "test-key");
       if (hasContainerNetwork) {
         extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "10.1.0.0/16");
       }

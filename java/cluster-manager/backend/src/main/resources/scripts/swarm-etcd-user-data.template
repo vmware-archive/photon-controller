@@ -87,4 +87,4 @@ runcmd:
   - systemctl enable docker
   - systemctl start docker
   - sh /tmp/check-docker.sh
-  - sh /tmp/start-etcd.sh > /var/log/etcd.log
+  - sh /tmp/start-etcd.sh > /var/log/start-etcd.log

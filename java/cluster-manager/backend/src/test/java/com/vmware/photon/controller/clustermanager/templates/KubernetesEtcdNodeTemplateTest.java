@@ -38,10 +38,12 @@ public class KubernetesEtcdNodeTemplateTest {
   private static final String NETMASK = "255.255.255.0";
   private static final String ETCD_PARAMETERS =
       "etcd0=http://10.0.0.1:2380,etcd1=http://10.0.0.2:2380,etcd2=http://10.0.0.3:2380,etcd3=http://10.0.0.4:2380";
+  private static final String SSH_KEY = "test-key";
 
   private Map<String, String> createCloudConfigProperties(int nodeIndex) {
     List<String> addresses = createEtcdAddresses();
-    Map<String, String> nodeProperties = KubernetesEtcdNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, addresses);
+    Map<String, String> nodeProperties = KubernetesEtcdNodeTemplate.createProperties(DNS, GATEWAY, NETMASK,
+        addresses, SSH_KEY);
     nodeProperties.put(NodeTemplateUtils.NODE_INDEX_PROPERTY, Integer.toString(nodeIndex));
     return nodeProperties;
   }
@@ -110,6 +112,9 @@ public class KubernetesEtcdNodeTemplateTest {
 
       String etcdParameters = userData.parameters.get("$ETCD_PARAMETERS");
       assertEquals(etcdParameters, ETCD_PARAMETERS);
+
+      String sshKey = userData.parameters.get("$SSH_KEY");
+      assertEquals(sshKey, SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -161,22 +166,27 @@ public class KubernetesEtcdNodeTemplateTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullDns() {
-      KubernetesEtcdNodeTemplate.createProperties(null, GATEWAY, NETMASK, createEtcdAddresses());
+      KubernetesEtcdNodeTemplate.createProperties(null, GATEWAY, NETMASK, createEtcdAddresses(), SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullGateway() {
-      KubernetesEtcdNodeTemplate.createProperties(DNS, null, NETMASK, createEtcdAddresses());
+      KubernetesEtcdNodeTemplate.createProperties(DNS, null, NETMASK, createEtcdAddresses(), SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullNetmask() {
-      KubernetesEtcdNodeTemplate.createProperties(DNS, GATEWAY, null, createEtcdAddresses());
+      KubernetesEtcdNodeTemplate.createProperties(DNS, GATEWAY, null, createEtcdAddresses(), SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullEtcdAddresses() {
-      KubernetesEtcdNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, null);
+      KubernetesEtcdNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, null, SSH_KEY);
+    }
+
+    @Test
+    public void testNullSshKey() {
+      KubernetesEtcdNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, createEtcdAddresses(), null);
     }
   }
 }

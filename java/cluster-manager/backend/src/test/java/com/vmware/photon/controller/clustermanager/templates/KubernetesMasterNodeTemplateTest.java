@@ -41,10 +41,11 @@ public class KubernetesMasterNodeTemplateTest {
   private static final String CONTAINER_NETWORK = "1.1.1.1/16";
   private static final String ETCD_QUORUM_STRING =
       "10.0.0.1,10.0.0.2,10.0.0.3,10.0.0.4";
+  private static final String SSH_KEY = "test-key";
 
   private Map<String, String> createCloudConfigProperties() {
     return KubernetesMasterNodeTemplate.createProperties(createEtcdAddresses(),
-        DNS, GATEWAY, NETMASK, MASTERIP, CONTAINER_NETWORK);
+        DNS, GATEWAY, NETMASK, MASTERIP, CONTAINER_NETWORK, SSH_KEY);
   }
 
   private List<String> createEtcdAddresses() {
@@ -107,6 +108,9 @@ public class KubernetesMasterNodeTemplateTest {
 
       String kubernetesPort = userData.parameters.get("$KUBERNETES_PORT");
       assertEquals(kubernetesPort, Integer.toString(ClusterManagerConstants.Kubernetes.API_PORT));
+
+      String sshKey = userData.parameters.get("$SSH_KEY");
+      assertEquals(sshKey, SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -159,37 +163,43 @@ public class KubernetesMasterNodeTemplateTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testEmpltyEtcdAddresses() {
       KubernetesMasterNodeTemplate.createProperties(new ArrayList<>(),
-          null, GATEWAY, NETMASK, MASTERIP, CONTAINER_NETWORK);
+          null, GATEWAY, NETMASK, MASTERIP, CONTAINER_NETWORK, SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullDns() {
       KubernetesMasterNodeTemplate.createProperties(createEtcdAddresses(),
-          null, GATEWAY, NETMASK, MASTERIP, CONTAINER_NETWORK);
+          null, GATEWAY, NETMASK, MASTERIP, CONTAINER_NETWORK, SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullGateway() {
       KubernetesMasterNodeTemplate.createProperties(createEtcdAddresses(),
-          DNS, null, NETMASK, MASTERIP, CONTAINER_NETWORK);
+          DNS, null, NETMASK, MASTERIP, CONTAINER_NETWORK, SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullNetmask() {
       KubernetesMasterNodeTemplate.createProperties(createEtcdAddresses(),
-          DNS, GATEWAY, null, MASTERIP, CONTAINER_NETWORK);
+          DNS, GATEWAY, null, MASTERIP, CONTAINER_NETWORK, SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullMasterIp() {
       KubernetesMasterNodeTemplate.createProperties(createEtcdAddresses(),
-          DNS, GATEWAY, NETMASK, null, CONTAINER_NETWORK);
+          DNS, GATEWAY, NETMASK, null, CONTAINER_NETWORK, SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullContainerNetwork() {
       KubernetesMasterNodeTemplate.createProperties(createEtcdAddresses(),
-          DNS, GATEWAY, NETMASK, MASTERIP, null);
+          DNS, GATEWAY, NETMASK, MASTERIP, null, SSH_KEY);
+    }
+
+    @Test
+    public void testNullSshKey() {
+      KubernetesMasterNodeTemplate.createProperties(createEtcdAddresses(),
+          DNS, GATEWAY, NETMASK, MASTERIP, CONTAINER_NETWORK, null);
     }
   }
 }
