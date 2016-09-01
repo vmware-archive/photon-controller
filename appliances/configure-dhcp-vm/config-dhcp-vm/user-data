@@ -29,7 +29,7 @@ write_files:
     path: /tmp/init-network.sh
 
   - content: |
-        dhcp-range=192.168.0.1,192.168.0.1,24h
+        dhcp-range=192.168.0.0,static
     owner: root:root
     path: /etc/dnsmasq.conf
 
@@ -39,7 +39,7 @@ write_files:
         After=network.target
 
         [Service]
-        ExecStart=/usr/local/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/dnsmasq.conf
+        ExecStart=/usr/local/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/dnsmasq.conf --dhcp-hostsdir=/etc/dhcp-hosts --dhcp-optsdir=/etc/dhcp-options
         ExecReload=/bin/kill -HUP $MAINPID
         Restart=on-failure
         RestartSec=5
@@ -79,6 +79,8 @@ write_files:
 runcmd:
   - rm -f /etc/systemd/network/*.network
   - sh /tmp/init-network.sh
+  - mkdir /etc/dhcp-hosts
+  - mkdir /etc/dhcp-options
   - systemctl restart systemd-networkd
   - systemctl enable dnsmasq.service
   - systemctl start dnsmasq.service
