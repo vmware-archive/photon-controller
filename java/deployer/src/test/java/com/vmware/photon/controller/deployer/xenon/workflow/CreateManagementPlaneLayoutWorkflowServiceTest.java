@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.api.model.UsageTag;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
@@ -560,6 +561,9 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
     @Test(dataProvider = "hostCounts")
     public void testEndToEndSuccess(Integer hostCount) throws Throwable {
       startTestEnvironment(hostCount);
+      DeploymentService.State deploymentService = TestHelper.createDeploymentService(testEnvironment, true, false);
+      startState.deploymentServiceLink = deploymentService.documentSelfLink;
+
       createHostServices(Collections.singleton(UsageTag.MGMT.name()), 4);
       createHostServices(sharedUsageTags, 3);
       createHostServices(Collections.singleton(UsageTag.CLOUD.name()), 3);
@@ -580,6 +584,8 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
     public void testEndToEndFailureCreateContainerTemplates(Integer hostCount) throws Throwable {
       populateInvalidContainersConfig();
       startTestEnvironment(hostCount);
+      DeploymentService.State deploymentService = TestHelper.createDeploymentService(testEnvironment, true, false);
+      startState.deploymentServiceLink = deploymentService.documentSelfLink;
 
       CreateManagementPlaneLayoutWorkflowService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -597,6 +603,8 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
     public void testEndToEndFailureCreateVmSpecLayout(Integer hostCount) throws Throwable {
       startTestEnvironment(hostCount);
       createHostServices(Collections.singleton(UsageTag.CLOUD.name()), 10);
+      DeploymentService.State deploymentService = TestHelper.createDeploymentService(testEnvironment, true, false);
+      startState.deploymentServiceLink = deploymentService.documentSelfLink;
 
       CreateManagementPlaneLayoutWorkflowService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -673,6 +681,8 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
       startState.taskState.stage = taskStage;
       startState.taskState.subStage = substage;
     }
+
+    startState.deploymentServiceLink = "/photon/cloudstore/deployments/fake-deployment";
 
     return startState;
   }
