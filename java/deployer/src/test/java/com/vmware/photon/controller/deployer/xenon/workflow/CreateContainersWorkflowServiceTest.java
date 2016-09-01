@@ -14,11 +14,12 @@
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.api.model.UsageTag;
-import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
@@ -48,6 +49,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.anyBoolean;
@@ -56,7 +58,6 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.fail;
 
@@ -788,24 +789,20 @@ public class CreateContainersWorkflowServiceTest {
 
     private static final String configFilePath = "/config.yml";
     private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private ListeningExecutorService listeningExecutorService;
     private DockerProvisionerFactory dockerProvisionerFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
     private CreateContainersWorkflowService.State startState;
     private DeployerTestConfig deployerTestConfig;
-    private SystemConfig systemConfig;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath());
       TestHelper.setContainersConfig(deployerTestConfig);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
-      this.systemConfig = spy(SystemConfig.createInstance(cloudStoreMachine.getHosts()[0]));
     }
 
     @BeforeMethod
@@ -829,11 +826,6 @@ public class CreateContainersWorkflowServiceTest {
     @AfterClass
     public void tearDownClass() throws Throwable {
       listeningExecutorService.shutdown();
-
-      if (null != cloudStoreMachine) {
-        cloudStoreMachine.stop();
-        cloudStoreMachine = null;
-      }
     }
 
 
@@ -854,8 +846,8 @@ public class CreateContainersWorkflowServiceTest {
           anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
           Matchers.<String>anyVararg())).thenThrow(new DockerException("Start container " + "failed", 500));
 
-      createHostEntitiesAndAllocateVmsAndContainers(3, 7);
       createDeploymentServiceDocuments();
+      createHostEntitiesAndAllocateVmsAndContainers(3, 7, startState.deploymentServiceLink);
 
       CreateContainersWorkflowService.State finalState =
           machine.callServiceAndWaitForState(
@@ -894,8 +886,8 @@ public class CreateContainersWorkflowServiceTest {
 
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
 
-      createHostEntitiesAndAllocateVmsAndContainers(3, 7);
       createDeploymentServiceDocuments();
+      createHostEntitiesAndAllocateVmsAndContainers(3, 7, startState.deploymentServiceLink);
 
       CreateContainersWorkflowService.State finalState =
           machine.callServiceAndWaitForState(
@@ -921,14 +913,15 @@ public class CreateContainersWorkflowServiceTest {
      */
     private void createHostEntitiesAndAllocateVmsAndContainers(
         int mgmtCount,
-        int cloudCount) throws Throwable {
+        int cloudCount,
+        String deploymentServiceLink) throws Throwable {
 
       for (int i = 0; i < mgmtCount; i++) {
-        TestHelper.createHostService(cloudStoreMachine, Collections.singleton(UsageTag.MGMT.name()));
+        TestHelper.createHostService(machine, Collections.singleton(UsageTag.MGMT.name()));
       }
 
       for (int i = 0; i < cloudCount; i++) {
-        TestHelper.createHostService(cloudStoreMachine, Collections.singleton(UsageTag.CLOUD.name()));
+        TestHelper.createHostService(machine, Collections.singleton(UsageTag.CLOUD.name()));
       }
 
       CreateManagementPlaneLayoutWorkflowService.State workflowStartState =
@@ -936,6 +929,7 @@ public class CreateContainersWorkflowServiceTest {
 
       workflowStartState.taskPollDelay = 10;
       workflowStartState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
+      workflowStartState.deploymentServiceLink = deploymentServiceLink;
 
       CreateManagementPlaneLayoutWorkflowService.State finalState =
           machine.callServiceAndWaitForState(
@@ -945,11 +939,11 @@ public class CreateContainersWorkflowServiceTest {
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
-      TestHelper.createDeploymentService(cloudStoreMachine);
+      TestHelper.createDeploymentService(machine);
     }
 
     private void createDeploymentServiceDocuments() throws Throwable {
-      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine).documentSelfLink;
+      startState.deploymentServiceLink = TestHelper.createDeploymentService(machine).documentSelfLink;
       startState.isAuthEnabled = false;
     }
 
@@ -960,15 +954,20 @@ public class CreateContainersWorkflowServiceTest {
         HealthCheckHelperFactory healthCheckHelperFactory,
         int hostCount)
         throws Throwable {
-      return new TestEnvironment.Builder()
+      TestEnvironment env = new TestEnvironment.Builder()
           .containersConfig(deployerTestConfig.getContainersConfig())
           .deployerContext(deployerTestConfig.getDeployerContext())
           .dockerProvisionerFactory(dockerProvisionerFactory)
           .listeningExecutorService(listeningExecutorService)
           .healthCheckerFactory(healthCheckHelperFactory)
-          .cloudServerSet(cloudStoreMachine.getServerSet())
           .hostCount(hostCount)
           .build();
+
+      for (PhotonControllerXenonHost host : env.getHosts()) {
+        host.setCloudStoreHelper(new CloudStoreHelper(env.getServerSet()));
+      }
+
+      return env;
     }
   }
 
