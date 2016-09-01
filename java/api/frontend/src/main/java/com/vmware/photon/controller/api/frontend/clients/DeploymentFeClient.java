@@ -38,7 +38,6 @@ import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentSize;
-import com.vmware.photon.controller.api.model.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
@@ -281,12 +280,6 @@ public class DeploymentFeClient {
 
   public ResourceList<Vm> getVmsPage(String pageLink) throws ExternalException {
     return vmBackend.getVmsPage(pageLink);
-  }
-
-  public Task configureDhcp(String id, DhcpConfigurationSpec spec) throws ExternalException {
-    deploymentBackend.findById(id);
-    TaskEntity taskEntity = deploymentBackend.configureDhcp(spec);
-    return taskBackend.getApiRepresentation(taskEntity);
   }
 
   public DeploymentSize getDeploymentSize(String id) throws ExternalException {
