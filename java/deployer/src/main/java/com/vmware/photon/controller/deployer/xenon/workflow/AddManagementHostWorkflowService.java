@@ -383,6 +383,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     state.isLoadbalancerEnabled = deploymentService.loadBalancerEnabled;
     state.isAuthEnabled = deploymentService.oAuthEnabled;
     state.isNewDeployment = currentState.isNewDeployment;
+    state.deploymentServiceLink = currentState.deploymentServiceLink;
 
     if (currentState.isNewDeployment) {
       state.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());

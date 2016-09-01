@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -24,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
@@ -121,6 +123,10 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
      */
     @Immutable
     public QueryTask.QuerySpecification hostQuerySpecification;
+
+    @Immutable
+    @NotNull
+    public String deploymentServiceLink;
 
     @Immutable
     @DefaultBoolean(value = true)
@@ -268,12 +274,24 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
   }
 
   private void createContainerTemplates(State currentState) {
+    Operation.createGet(this, currentState.deploymentServiceLink)
+      .setCompletion((o, e) -> {
+        if (e != null) {
+          failTask(e);
+          return;
+        }
+        createContainerTemplates(currentState, o.getBody(DeploymentService.State.class));
+      })
+      .sendWith(this);
+  }
+
+  private void createContainerTemplates(State currentState, DeploymentService.State deploymentState) {
     if (currentState.isNewDeployment) {
       OperationJoin
           .create(HostUtils.getContainersConfig(this).getContainerSpecs().values().stream()
               .filter(spec -> currentState.isLoadbalancerEnabled
                   || !spec.getType().equals(ContainersConfig.ContainerType.LoadBalancer.name()))
-              .filter(spec -> currentState.isAuthEnabled
+              .filter(spec -> (currentState.isAuthEnabled && deploymentState.oAuthServerAddress != null)
                   || !spec.getType().equals(ContainersConfig.ContainerType.Lightwave.name()))
               .map(spec -> buildTemplateStartState(spec))
               .map(templateStartState -> Operation.createPost(this, ContainerTemplateFactoryService.SELF_LINK)

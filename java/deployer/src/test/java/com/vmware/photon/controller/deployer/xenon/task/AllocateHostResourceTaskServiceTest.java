@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.xenon.task;
 
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.UsageTag;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -488,9 +489,12 @@ public class AllocateHostResourceTaskServiceTest {
     @Test
     public void testTaskSuccess() throws Throwable {
       machine = createTestEnvironment(deployerTestConfig, listeningExecutorService, 1);
+      DeploymentService.State deploymentService = TestHelper.createDeploymentService(machine, true, false);
 
-      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(2, 3, 8, 8192, false);
+      HostService.State hostService
+        = createHostEntitiesAndAllocateVmsAndContainers(2, 3, 8, 8192, false, deploymentService.documentSelfLink);
       startState.hostServiceLink = hostService.documentSelfLink;
+
 
       AllocateHostResourceTaskService.State finalState =
           machine.callServiceAndWaitForState(
@@ -520,8 +524,10 @@ public class AllocateHostResourceTaskServiceTest {
     @Test
     public void testTaskSuccessWithMixedHostConfig() throws Throwable {
       machine = createTestEnvironment(deployerTestConfig, listeningExecutorService, 1);
+      DeploymentService.State deploymentService = TestHelper.createDeploymentService(machine, true, false);
 
-      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(2, 3, 8, 8192, true);
+      HostService.State hostService
+        = createHostEntitiesAndAllocateVmsAndContainers(2, 3, 8, 8192, true, deploymentService.documentSelfLink);
       startState.hostServiceLink = hostService.documentSelfLink;
 
       AllocateHostResourceTaskService.State finalState =
@@ -552,8 +558,10 @@ public class AllocateHostResourceTaskServiceTest {
     @Test(enabled = false)
     public void testTaskSuccessWithoutHostConfig() throws Throwable {
       machine = createTestEnvironment(deployerTestConfig, listeningExecutorService, 1);
+      DeploymentService.State deploymentService = TestHelper.createDeploymentService(machine, true, false);
 
-      HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(2, 3, null, null, false);
+      HostService.State hostService
+        = createHostEntitiesAndAllocateVmsAndContainers(2, 3, null, null, false, deploymentService.documentSelfLink);
       startState.hostServiceLink = hostService.documentSelfLink;
 
       AllocateHostResourceTaskService.State finalState =
@@ -631,7 +639,8 @@ public class AllocateHostResourceTaskServiceTest {
     }
 
     private HostService.State createHostEntitiesAndAllocateVmsAndContainers(
-        int mgmtCount, int cloudCount, Integer cpuCount, Integer memoryMb, boolean mixedHost) throws Throwable {
+        int mgmtCount, int cloudCount, Integer cpuCount, Integer memoryMb, boolean mixedHost,
+        String deploymentServiceLink) throws Throwable {
 
       HostService.State mgmtHostService = null;
 
@@ -664,6 +673,7 @@ public class AllocateHostResourceTaskServiceTest {
 
       workflowStartState.isAuthEnabled = true;
       workflowStartState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
+      workflowStartState.deploymentServiceLink = deploymentServiceLink;
 
       CreateManagementPlaneLayoutWorkflowService.State serviceState =
           machine.callServiceAndWaitForState(
