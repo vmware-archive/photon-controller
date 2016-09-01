@@ -35,6 +35,8 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.HttpHeaders;
 
+import java.security.MessageDigest;
+
 /**
  * Custom RequestFilter used for Authentication and Authorization.
  * Reads Auth 2.0 access token from the request header.
@@ -123,8 +125,7 @@ public class AuthFilter implements ContainerRequestFilter {
     }
 
     String jwtAccessToken = extractJwtAccessToken(request);
-
-    if (jwtAccessToken.equals(this.sharedSecret)) {
+    if (MessageDigest.isEqual(jwtAccessToken.getBytes(), this.sharedSecret.getBytes())) {
       // we don't need to authenticate a service
       return;
     }
