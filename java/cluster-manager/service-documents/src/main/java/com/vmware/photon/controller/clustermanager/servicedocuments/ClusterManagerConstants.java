@@ -31,6 +31,7 @@ public class ClusterManagerConstants {
   public static final String EXTENDED_PROPERTY_CONTAINER_NETWORK = "container_network";
   public static final String EXTENDED_PROPERTY_ZOOKEEPER_IPS     = "zookeeper_ips";
   public static final String EXTENDED_PROPERTY_ETCD_IPS          = "etcd_ips";
+  public static final String EXTENDED_PROPERTY_SSH_KEY           = "ssh_key";
 
   public static final long DEFAULT_MAINTENANCE_INTERVAL = TimeUnit.HOURS.toMicros(1);
   public static final int DEFAULT_MAINTENANCE_RETRY_COUNT = 5;

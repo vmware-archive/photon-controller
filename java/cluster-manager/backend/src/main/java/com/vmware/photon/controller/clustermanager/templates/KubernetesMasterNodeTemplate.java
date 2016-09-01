@@ -37,6 +37,7 @@ public class KubernetesMasterNodeTemplate implements NodeTemplate {
   public static final String NETMASK_PROPERTY = "netmask";
   public static final String CONTAINER_NETWORK_PROPERTY = "containerNetwork";
   public static final String VM_NAME_PREFIX = "master";
+  public static final String SSH_KEY_PROPERTY = "sshKey";
 
   public String getVmName(Map<String, String> properties) {
     Preconditions.checkNotNull(properties, "properties cannot be null");
@@ -53,6 +54,7 @@ public class KubernetesMasterNodeTemplate implements NodeTemplate {
     String ipAddress = properties.get(MASTER_IP_PROPERTY);
     String netmask = properties.get(NETMASK_PROPERTY);
     String cidrSignature = new SubnetUtils(ipAddress, netmask).getInfo().getCidrSignature();
+    String sshKey = properties.get(SSH_KEY_PROPERTY);
 
     Map<String, String> parameters = new HashMap<>();
     parameters.put("$ETCD_QUORUM", NodeTemplateUtils.createEtcdQuorumString(etcdIps));
@@ -62,6 +64,7 @@ public class KubernetesMasterNodeTemplate implements NodeTemplate {
     parameters.put("$CONTAINER_NETWORK", properties.get(CONTAINER_NETWORK_PROPERTY));
     parameters.put("$KUBERNETES_PORT", String.valueOf(ClusterManagerConstants.Kubernetes.API_PORT));
     parameters.put("$LOCAL_HOSTNAME", getVmName(properties));
+    parameters.put("$SSH_KEY", sshKey);
 
     FileTemplate template = new FileTemplate();
     template.filePath = Paths.get(scriptDirectory, MASTER_USER_DATA_TEMPLATE).toString();
@@ -78,7 +81,7 @@ public class KubernetesMasterNodeTemplate implements NodeTemplate {
 
   public static Map<String, String> createProperties(
       List<String> etcdAddresses, String dns, String gateway, String netmask,
-      String masterIp, String containerNetwork) {
+      String masterIp, String containerNetwork, String sshKey) {
     Preconditions.checkNotNull(etcdAddresses, "etcdAddresses cannot be null");
     Preconditions.checkArgument(etcdAddresses.size() > 0, "etcdAddresses should contain at least one address");
     Preconditions.checkNotNull(dns, "dns cannot be null");
@@ -94,6 +97,7 @@ public class KubernetesMasterNodeTemplate implements NodeTemplate {
     properties.put(MASTER_IP_PROPERTY, masterIp);
     properties.put(NETMASK_PROPERTY, netmask);
     properties.put(CONTAINER_NETWORK_PROPERTY, containerNetwork);
+    properties.put(SSH_KEY_PROPERTY, sshKey);
 
     return properties;
   }

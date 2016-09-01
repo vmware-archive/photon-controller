@@ -58,6 +58,17 @@ module EsxCloud
         end
       end
 
+      def generate_temporary_ssh_key()
+        puts "Generating ssh key"
+        `ssh-keygen -f /tmp/test_rsa -N ''`
+      end
+
+      def remove_temporary_ssh_key()
+        puts "Removing ssh key"
+        `rm -f /tmp/test_rsa`
+        `rm -f /tmp/test_rsa.pub`
+      end
+
       def wait_for_cluster_state(cluster_id, target_cluster_state, retry_interval, retry_count, client)
         cluster = client.find_cluster_by_id(cluster_id)
 

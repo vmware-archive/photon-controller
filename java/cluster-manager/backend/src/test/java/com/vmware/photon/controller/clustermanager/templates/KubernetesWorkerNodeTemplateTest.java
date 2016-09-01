@@ -38,9 +38,10 @@ public class KubernetesWorkerNodeTemplateTest {
   private static final String MASTER_IP = "2.2.2.2";
   private static final String ETCD_QUORUM_STRING =
       "10.0.0.1,10.0.0.2,10.0.0.3,10.0.0.4";
+  private static final String SSH_KEY = "test-key";
 
   private Map<String, String> createCloudConfigProperties() {
-    return KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, MASTER_IP);
+    return KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, MASTER_IP, SSH_KEY);
   }
 
   private List<String> createEtcdAddresses() {
@@ -97,6 +98,9 @@ public class KubernetesWorkerNodeTemplateTest {
 
       String masterIp = userData.parameters.get("$MASTER_ADDRESS");
       assertEquals(masterIp, MASTER_IP);
+
+      String sshKey = userData.parameters.get("$SSH_KEY");
+      assertEquals(sshKey, SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -148,17 +152,22 @@ public class KubernetesWorkerNodeTemplateTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testEmpltyEtcdAddresses() {
-      KubernetesWorkerNodeTemplate.createProperties(new ArrayList<>(), CONTAINER_NETWORK, MASTER_IP);
+      KubernetesWorkerNodeTemplate.createProperties(new ArrayList<>(), CONTAINER_NETWORK, MASTER_IP, SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullContainerNetwork() {
-      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), null, MASTER_IP);
+      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), null, MASTER_IP, SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullMasterIp() {
-      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, null);
+      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, null, SSH_KEY);
+    }
+
+    @Test
+    public void testNullSshKey() {
+      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, MASTER_IP, null);
     }
   }
 }
