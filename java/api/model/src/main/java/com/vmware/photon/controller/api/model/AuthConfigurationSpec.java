@@ -15,6 +15,7 @@ package com.vmware.photon.controller.api.model;
 
 import com.vmware.photon.controller.api.model.constraints.AuthDisabled;
 import com.vmware.photon.controller.api.model.constraints.AuthEnabled;
+import com.vmware.photon.controller.api.model.constraints.NullableUrl;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -27,6 +28,8 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Null;
 import javax.validation.constraints.Size;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 import java.util.Objects;
 
@@ -63,6 +66,12 @@ public class AuthConfigurationSpec {
   @Size(min = 1, groups = {AuthEnabled.class})
   private List<String> securityGroups;
 
+  @JsonProperty
+  @ApiModelProperty(value = "External Lightwave Instance URL, e.g. https://lightwave:443.")
+  @Null(groups = {AuthDisabled.class})
+  @NullableUrl(groups = {AuthEnabled.class})
+  private String endpoint;
+
   public boolean getEnabled() {
     return this.enabled;
   }
@@ -93,6 +102,23 @@ public class AuthConfigurationSpec {
 
   public void setSecurityGroups(List<String> securityGroups) {
     this.securityGroups = securityGroups;
+  }
+
+  public URL getEndpoint() {
+    if (this.endpoint == null) {
+      return null;
+    }
+    try {
+      return new URL(this.endpoint);
+    } catch (MalformedURLException e) {
+      // This should never happen since we are verifying that the endpoint is
+      // an actual url
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void setEndpoint(String endpoint) {
+    this.endpoint = endpoint;
   }
 
   @Override

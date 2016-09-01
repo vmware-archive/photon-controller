@@ -30,6 +30,8 @@ public class AuthConfigurationSpecBuilder {
 
   private List<String> securityGroups;
 
+  private String lightwaveEndpoint;
+
   public AuthConfigurationSpecBuilder() {
     this.enabled = false;
   }
@@ -54,12 +56,18 @@ public class AuthConfigurationSpecBuilder {
     return this;
   }
 
+  public AuthConfigurationSpecBuilder lightwaveEndpoint(String lightwaveEndpoint) {
+    this.lightwaveEndpoint = lightwaveEndpoint;
+    return this;
+  }
+
   public AuthConfigurationSpec build() {
     AuthConfigurationSpec authConfigSpec = new AuthConfigurationSpec();
     authConfigSpec.setEnabled(this.enabled);
     authConfigSpec.setTenant(this.tenant);
     authConfigSpec.setPassword(this.password);
     authConfigSpec.setSecurityGroups(this.securityGroups);
+    authConfigSpec.setEndpoint(lightwaveEndpoint);
     return authConfigSpec;
   }
 }

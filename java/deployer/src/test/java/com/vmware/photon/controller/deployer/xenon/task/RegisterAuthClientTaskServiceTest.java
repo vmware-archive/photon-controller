@@ -479,6 +479,8 @@ public class RegisterAuthClientTaskServiceTest {
       CreateManagementPlaneLayoutWorkflowService.State workflowStartState =
           new CreateManagementPlaneLayoutWorkflowService.State();
       workflowStartState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
+      workflowStartState.deploymentServiceLink
+        = TestHelper.createDeploymentService(testEnvironment, true, false).documentSelfLink;
 
       CreateManagementPlaneLayoutWorkflowService.State finalState =
           testEnvironment.callServiceAndWaitForState(
