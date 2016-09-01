@@ -35,6 +35,8 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.HttpHeaders;
 
+import java.security.MessageDigest;
+
 /**
  * Custom RequestFilter used for Authentication and Authorization.
  * Reads Auth 2.0 access token from the request header.
@@ -124,7 +126,15 @@ public class AuthFilter implements ContainerRequestFilter {
 
     String jwtAccessToken = extractJwtAccessToken(request);
 
-    if (jwtAccessToken.equals(this.sharedSecret)) {
+    //
+    // N.B. Because the access token is caller-specified, it is necessary to use a constant-time
+    // comparison algorithm when comparing against the admin-specified shared secret; otherwise, it
+    // is possible for attackers to use timing attacks to deduce the shared secret value.
+    //
+    // In other words -- don't use String.equals() here.
+    //
+
+    if (MessageDigest.isEqual(jwtAccessToken.getBytes(), this.sharedSecret.getBytes())) {
       // we don't need to authenticate a service
       return;
     }
