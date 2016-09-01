@@ -20,9 +20,11 @@ import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
@@ -321,7 +323,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
     private ListeningExecutorService listeningExecutorService;
     private BulkProvisionHostsWorkflowService.State startState;
     private TestEnvironment testEnvironment;
-    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private File vibSourceFile;
 
     @BeforeClass
@@ -342,7 +343,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       destinationDirectory.mkdirs();
       scriptDirectory.mkdirs();
       scriptLogDirectory.mkdirs();
@@ -362,9 +362,12 @@ public class BulkProvisionHostsWorkflowServiceTest {
           .nsxClientFactory(nsxClientFactory)
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
-          .cloudServerSet(cloudStoreMachine.getServerSet())
           .hostCount(hostCount)
           .build();
+
+      for (PhotonControllerXenonHost host : testEnvironment.getHosts()) {
+        host.setCloudStoreHelper(new CloudStoreHelper(testEnvironment.getServerSet()));
+      }
 
       AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
@@ -389,23 +392,25 @@ public class BulkProvisionHostsWorkflowServiceTest {
 
     }
 
-    private void createHostEntities(int mgmtCount, int cloudCount, int mixedCount) throws Throwable {
+    private void createHostEntities(int mgmtCount, int cloudCount, int mixedCount, String deploymentServiceLink)
+        throws Throwable {
 
       for (int i = 0; i < mgmtCount; i++) {
-        TestHelper.createHostService(cloudStoreMachine, Collections.singleton(UsageTag.MGMT.name()));
+        TestHelper.createHostService(testEnvironment, Collections.singleton(UsageTag.MGMT.name()));
       }
 
       for (int i = 0; i < cloudCount; i++) {
-        TestHelper.createHostService(cloudStoreMachine, Collections.singleton(UsageTag.CLOUD.name()));
+        TestHelper.createHostService(testEnvironment, Collections.singleton(UsageTag.CLOUD.name()));
       }
 
       for (int i = 0; i < mixedCount; i++) {
-        TestHelper.createHostService(cloudStoreMachine, ImmutableSet.of(UsageTag.CLOUD.name(), UsageTag.MGMT.name()));
+        TestHelper.createHostService(testEnvironment, ImmutableSet.of(UsageTag.CLOUD.name(), UsageTag.MGMT.name()));
       }
 
       CreateManagementPlaneLayoutWorkflowService.State workflowStartState =
           new CreateManagementPlaneLayoutWorkflowService.State();
       workflowStartState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
+      workflowStartState.deploymentServiceLink = deploymentServiceLink;
 
       CreateManagementPlaneLayoutWorkflowService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -424,11 +429,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
         testEnvironment = null;
       }
 
-      if (null != cloudStoreMachine) {
-        cloudStoreMachine.stop();
-        cloudStoreMachine = null;
-      }
-
       FileUtils.deleteDirectory(destinationDirectory);
       FileUtils.deleteDirectory(scriptDirectory);
       FileUtils.deleteDirectory(scriptLogDirectory);
@@ -437,6 +437,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
     @AfterClass
     public void tearDownClass() throws Throwable {
       listeningExecutorService.shutdown();
+      FileUtils.forceDelete(vibSourceFile);
       FileUtils.deleteDirectory(storageDirectory);
     }
 
@@ -467,9 +468,9 @@ public class BulkProvisionHostsWorkflowServiceTest {
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
 
       createTestEnvironment(hostCount);
-      createHostEntities(mgmtHostCount, cloudHostCout, mixedHostCount);
       startState.querySpecification = null;
-      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine).documentSelfLink;
+      startState.deploymentServiceLink = TestHelper.createDeploymentService(testEnvironment).documentSelfLink;
+      createHostEntities(mgmtHostCount, cloudHostCout, mixedHostCount, startState.deploymentServiceLink);
 
       for (String usageTage : Arrays.asList(UsageTag.MGMT.name(), UsageTag.CLOUD.name())) {
         startState.usageTag = usageTage;
@@ -497,10 +498,10 @@ public class BulkProvisionHostsWorkflowServiceTest {
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       createTestEnvironment(hostCount);
-      createHostEntities(mgmtHostCount, cloudHostCout, mixedHostCount);
       startState.querySpecification = null;
-      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine, false, true)
+      startState.deploymentServiceLink = TestHelper.createDeploymentService(testEnvironment, false, true)
           .documentSelfLink;
+      createHostEntities(mgmtHostCount, cloudHostCout, mixedHostCount, startState.deploymentServiceLink);
 
       for (String usageTage : Arrays.asList(UsageTag.MGMT.name(), UsageTag.CLOUD.name())) {
         startState.usageTag = usageTage;
@@ -525,9 +526,9 @@ public class BulkProvisionHostsWorkflowServiceTest {
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       MockHelper.mockProvisionAgent(agentControlClientFactory, hostClientFactory, true);
       createTestEnvironment(1);
-      createHostEntities(0, 2, 0);
-      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine, false, true)
+      startState.deploymentServiceLink = TestHelper.createDeploymentService(testEnvironment, false, true)
           .documentSelfLink;
+      createHostEntities(0, 2, 0, startState.deploymentServiceLink);
 
       BulkProvisionHostsWorkflowService.State finalState =
           testEnvironment.callServiceAndWaitForState(

@@ -27,6 +27,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Null;
 import javax.validation.constraints.Size;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 
@@ -63,6 +64,10 @@ public class AuthConfigurationSpec {
   @Size(min = 1, groups = {AuthEnabled.class})
   private List<String> securityGroups;
 
+  @JsonProperty
+  @ApiModelProperty(value = "External Lightwave Instance address.")
+  private URI lightwaveEndpoint;
+
   public boolean getEnabled() {
     return this.enabled;
   }
@@ -93,6 +98,14 @@ public class AuthConfigurationSpec {
 
   public void setSecurityGroups(List<String> securityGroups) {
     this.securityGroups = securityGroups;
+  }
+
+  public URI getLightwaveEndpoint() {
+    return this.lightwaveEndpoint;
+  }
+
+  public void setLightwaveEndpoint(URI lightwaveEndpoint) {
+    this.lightwaveEndpoint = lightwaveEndpoint;
   }
 
   @Override
