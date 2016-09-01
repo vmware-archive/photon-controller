@@ -61,7 +61,7 @@ write_files:
         echo "done"
     owner: root:root
     permissions: 0644
-    path: /etc/esxcloud/setup-kubernetes-master.sh
+    path: /root/setup-kubernetes-master.sh
   - content: |
         retry_max="60"
         retry="0"
@@ -84,9 +84,15 @@ write_files:
     permissions: 0644
     path: /tmp/check-docker.sh
 
+users:
+  - name: root
+    lock_passwd: false
+    ssh-authorized-keys:
+      - $SSH_KEY
+
 runcmd:
   - systemctl enable /lib/systemd/system/docker-bootstrap.service
   - systemctl start docker-bootstrap
   - sh /tmp/init-network.sh
   - sh /tmp/check-docker.sh
-  - sh /etc/esxcloud/setup-kubernetes-master.sh > /var/log/kubernetes-master.log
+  - sh /root/setup-kubernetes-master.sh > /var/log/kubernetes-master.log

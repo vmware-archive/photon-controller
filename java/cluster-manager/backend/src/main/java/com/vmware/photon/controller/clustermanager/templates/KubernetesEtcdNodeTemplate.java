@@ -35,6 +35,7 @@ public class KubernetesEtcdNodeTemplate implements NodeTemplate {
   public static final String NETMASK_PROPERTY = "netmask";
   public static final String ETCD_IPS_PROPERTY = "etcdIps";
   public static final String VM_NAME_PREFIX = "etcd";
+  public static final String SSH_KEY_PROPERTY = "sshKey";
 
   public String getVmName(Map<String, String> properties) {
     Preconditions.checkNotNull(properties, "properties cannot be null");
@@ -51,6 +52,7 @@ public class KubernetesEtcdNodeTemplate implements NodeTemplate {
     String gateway = properties.get(GATEWAY_PROPERTY);
     String netmask = properties.get(NETMASK_PROPERTY);
     String nodeIndexStr = properties.get(NodeTemplateUtils.NODE_INDEX_PROPERTY);
+    String sshKey = properties.get(SSH_KEY_PROPERTY);
 
     int nodeIndex = Integer.parseInt(nodeIndexStr);
     List<String> etcdIps = NodeTemplateUtils.deserializeAddressList(properties.get(ETCD_IPS_PROPERTY));
@@ -67,6 +69,7 @@ public class KubernetesEtcdNodeTemplate implements NodeTemplate {
     parameters.put("$ETCD_PARAMETERS", etcdParameters);
     parameters.put("$ETCD_PORT", Integer.toString(ClusterManagerConstants.Swarm.ETCD_PORT));
     parameters.put("$ETCD_PEER_PORT", Integer.toString(ClusterManagerConstants.Swarm.ETCD_PEER_PORT));
+    parameters.put("$SSH_KEY", sshKey);
 
     FileTemplate template = new FileTemplate();
     template.filePath = Paths.get(scriptDirectory, ETCD_USER_DATA_TEMPLATE).toString();
@@ -82,7 +85,7 @@ public class KubernetesEtcdNodeTemplate implements NodeTemplate {
   }
 
   public static Map<String, String> createProperties(
-      String dns, String gateway, String netmask, List<String> etcdAddresses) {
+      String dns, String gateway, String netmask, List<String> etcdAddresses, String sshKey) {
 
     Preconditions.checkNotNull(dns, "dns cannot be null");
     Preconditions.checkNotNull(gateway, "gateway cannot be null");
@@ -95,6 +98,7 @@ public class KubernetesEtcdNodeTemplate implements NodeTemplate {
     properties.put(GATEWAY_PROPERTY, gateway);
     properties.put(NETMASK_PROPERTY, netmask);
     properties.put(ETCD_IPS_PROPERTY, NodeTemplateUtils.serializeAddressList(etcdAddresses));
+    properties.put(SSH_KEY_PROPERTY, sshKey);
 
     return properties;
   }
