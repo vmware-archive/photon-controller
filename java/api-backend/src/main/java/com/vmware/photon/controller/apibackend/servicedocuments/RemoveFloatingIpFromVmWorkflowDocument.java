@@ -49,6 +49,7 @@ public class RemoveFloatingIpFromVmWorkflowDocument extends ServiceDocument {
       GET_NSX_CONFIGURATION,
       REMOVE_NAT_RULE,
       RELEASE_VM_FLOATING_IP,
+      RELEASE_QUOTA,
       UPDATE_VM,
       UPDATE_VIRTUAL_NETWORK
     }
