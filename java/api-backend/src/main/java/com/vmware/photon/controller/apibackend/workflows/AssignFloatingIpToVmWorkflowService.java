@@ -13,12 +13,18 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.apibackend.exceptions.AssignFloatingIpToVmException;
 import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIpToVmWorkflowDocument;
 import com.vmware.photon.controller.apibackend.utils.CloudStoreUtils;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
@@ -44,6 +50,8 @@ import java.util.HashMap;
  */
 public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<AssignFloatingIpToVmWorkflowDocument,
     AssignFloatingIpToVmWorkflowDocument.TaskState, AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage> {
+
+  public static final String SDN_FLOATING_IP_RESOURCE_TICKET_KEY = "sdn.floatingip.size";
 
   public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/assign-floating-ip";
 
@@ -154,6 +162,9 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
   private void processPatch(AssignFloatingIpToVmWorkflowDocument state) {
     try {
       switch (state.taskState.subStage) {
+        case ENFORCE_QUOTA:
+          enforceQuota(state);
+          break;
         case GET_VM_PRIVATE_IP_AND_MAC:
           getVmPrivateIpAndMac(state);
           break;
@@ -176,6 +187,83 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
     } catch (Throwable t) {
       fail(state, t);
     }
+  }
+
+  private void enforceQuota(AssignFloatingIpToVmWorkflowDocument state) {
+    CloudStoreUtils.getAndProcess(
+        this,
+        VmServiceFactory.SELF_LINK + "/" + state.vmId,
+        VmService.State.class,
+        vmState -> {
+          enforceQuota(state, vmState.projectId, vmState);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
+  }
+
+  private void enforceQuota(AssignFloatingIpToVmWorkflowDocument state,
+                            String projectId,
+                            VmService.State vmState) {
+    CloudStoreUtils.getAndProcess(
+        this,
+        ProjectServiceFactory.SELF_LINK + "/" + projectId,
+        ProjectService.State.class,
+        projectState -> {
+          consumeQuota(state, projectState.resourceTicketId, vmState);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
+  }
+
+  private void consumeQuota(AssignFloatingIpToVmWorkflowDocument state,
+                            String resourceTicketId,
+                            VmService.State vmState) {
+    ResourceTicketService.Patch patch = new ResourceTicketService.Patch();
+    patch.patchtype = ResourceTicketService.Patch.PatchType.USAGE_CONSUME;
+    patch.cost = new HashMap<>();
+
+    QuotaLineItem costItem = new QuotaLineItem();
+    costItem.setKey(SDN_FLOATING_IP_RESOURCE_TICKET_KEY);
+    costItem.setValue(1);
+    costItem.setUnit(QuotaUnit.COUNT);
+    patch.cost.put(costItem.getKey(), costItem);
+
+    CloudStoreUtils.patchAndProcess(
+        this,
+        ResourceTicketServiceFactory.SELF_LINK + "/" + resourceTicketId,
+        patch,
+        ResourceTicketService.Patch.class,
+        resourceTicketPatch -> {
+          updateVmWithQuotaConsumption(state, vmState);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
+  }
+
+  private void updateVmWithQuotaConsumption(AssignFloatingIpToVmWorkflowDocument state,
+                                            VmService.State vmState) {
+    VmService.State vmPatchState = new VmService.State();
+    vmPatchState.networkInfo = vmState.networkInfo;
+    vmPatchState.networkInfo.get(state.networkId).isFloatingIpQuotaConsumed = true;
+
+    CloudStoreUtils.patchAndProcess(
+        this,
+        VmServiceFactory.SELF_LINK + "/" + state.vmId,
+        vmPatchState,
+        VmService.State.class,
+        finalVmState -> {
+          progress(state, AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.GET_VM_PRIVATE_IP_AND_MAC);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
   }
 
   private void getVmPrivateIpAndMac(AssignFloatingIpToVmWorkflowDocument state) {

@@ -239,5 +239,10 @@ public class VmService extends StatefulService {
      * Floating IP address of the VM on this network.
      */
     public String floatingIpAddress;
+
+    /**
+     * Indicates whether the quota of the floating IP has been consumed.
+     */
+    public boolean isFloatingIpQuotaConsumed;
   }
 }

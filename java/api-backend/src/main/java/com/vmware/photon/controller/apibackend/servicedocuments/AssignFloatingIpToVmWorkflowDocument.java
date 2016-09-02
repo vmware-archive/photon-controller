@@ -45,6 +45,7 @@ public class AssignFloatingIpToVmWorkflowDocument extends ServiceDocument {
      * Definitions of substages.
      */
     public enum SubStage {
+      ENFORCE_QUOTA,
       GET_VM_PRIVATE_IP_AND_MAC,
       ALLOCATE_VM_FLOATING_IP,
       GET_NSX_CONFIGURATION,
