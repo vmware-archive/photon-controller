@@ -764,6 +764,10 @@ cat > $out <<-'EOM'
     sleep $SLEEP_BETWEEN_RETRIES_SEC
     ((i++))
   done
+  echo "Printing logs from photon-controller service in container."
+  docker exec -t photon-controller-core journalctl --no-pager -u photon-controller
+  echo "Printing logs from /vagrant/log/photon-controller.log"
+  cat /vagrant/log/photon-controller.log
   exit -1
 EOM
 chmod +x $out
