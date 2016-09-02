@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.apibackend.exceptions.AssignFloatingIpToVmException;
 import com.vmware.photon.controller.apibackend.exceptions.RemoveFloatingIpFromVmException;
 import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
@@ -20,6 +22,10 @@ import com.vmware.photon.controller.apibackend.utils.CloudStoreUtils;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
@@ -34,6 +40,8 @@ import com.vmware.xenon.common.TaskState;
 
 import com.google.common.util.concurrent.FutureCallback;
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.HashMap;
 
 /**
  * Implements an Xenon service that represents a workflow to remove the floating IP from a VM.
@@ -163,6 +171,9 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
         case RELEASE_VM_FLOATING_IP:
           releaseVmFloatingIp(state);
           break;
+        case RELEASE_QUOTA:
+          releaseQuota(state);
+          break;
         case UPDATE_VM:
           updateVm(state);
           break;
@@ -282,6 +293,70 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
         releaseIp,
         DhcpSubnetService.IpOperationPatch.class,
         releaseIpResult -> {
+          progress(state, RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.RELEASE_QUOTA);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
+  }
+
+  private void releaseQuota(RemoveFloatingIpFromVmWorkflowDocument state) {
+    CloudStoreUtils.getAndProcess(
+        this,
+        VmServiceFactory.SELF_LINK + "/" + state.vmId,
+        VmService.State.class,
+        vmState -> {
+          VmService.NetworkInfo vmNetworkInfo = vmState.networkInfo.get(state.networkId);
+          if (!vmNetworkInfo.isFloatingIpQuotaConsumed) {
+            ServiceUtils.logInfo(RemoveFloatingIpFromVmWorkflowService.this,
+                "The quota was not consumed. Skip releasing quota.");
+            progress(state, RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.UPDATE_VM);
+            return;
+          }
+
+          releaseQuota(state, vmState.projectId);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
+  }
+
+  private void releaseQuota(RemoveFloatingIpFromVmWorkflowDocument state, String projectId) {
+    CloudStoreUtils.getAndProcess(
+        this,
+        ProjectServiceFactory.SELF_LINK + "/" + projectId,
+        ProjectService.State.class,
+        projectState -> {
+          returnQuota(state, projectState.resourceTicketId);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
+  }
+
+  private void returnQuota(RemoveFloatingIpFromVmWorkflowDocument state, String resourceTicketId) {
+
+    ResourceTicketService.Patch patch = new ResourceTicketService.Patch();
+    patch.patchtype = ResourceTicketService.Patch.PatchType.USAGE_RETURN;
+    patch.cost = new HashMap<>();
+
+    QuotaLineItem costItem = new QuotaLineItem();
+    costItem.setKey(AssignFloatingIpToVmWorkflowService.SDN_FLOATING_IP_RESOURCE_TICKET_KEY);
+    costItem.setValue(1);
+    costItem.setUnit(QuotaUnit.COUNT);
+    patch.cost.put(costItem.getKey(), costItem);
+
+    CloudStoreUtils.patchAndProcess(
+        this,
+        ResourceTicketServiceFactory.SELF_LINK + "/" + resourceTicketId,
+        patch,
+        ResourceTicketService.Patch.class,
+        resourceTicketPatch -> {
+          // We don't need to update the VM immediately here as we do in AssignFloatingIp workflow,
+          // since the next step is updating VM.
           progress(state, RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.UPDATE_VM);
         },
         throwable -> {
@@ -298,6 +373,10 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
         vmState -> {
           VmService.NetworkInfo vmNetworkInfo = vmState.networkInfo.get(state.networkId);
           vmNetworkInfo.floatingIpAddress = null;
+          // We set the quota consumption flag to false no matter if the quota release
+          // was skipped or not - if we proceed to this step, it means the either IP has
+          // been returned or it was not assigned successfully earlier.
+          vmNetworkInfo.isFloatingIpQuotaConsumed = false;
           vmState.networkInfo.put(state.networkId, vmNetworkInfo);
 
           VmService.State vmPatchState = new VmService.State();

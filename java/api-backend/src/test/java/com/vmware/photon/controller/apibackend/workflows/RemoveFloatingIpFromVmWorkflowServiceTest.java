@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
@@ -23,6 +25,10 @@ import com.vmware.photon.controller.apibackend.utils.TaskStateHelper;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
@@ -433,14 +439,20 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
           VmService.State.class);
       assertThat(vm.networkInfo.size(), is(1));
       assertThat(vm.networkInfo.get(savedState.networkId).floatingIpAddress, nullValue());
+      assertThat(vm.networkInfo.get(savedState.networkId).isFloatingIpQuotaConsumed, is(false));
     }
 
     private RemoveFloatingIpFromVmWorkflowDocument startService() throws Throwable {
       createDeploymentInCloudStore(testEnvironment);
       createDhcpRootSubnetServiceInCloudStore(testEnvironment);
+      ResourceTicketService.State resourceTicketState = createResourceTicketInCloudStore(testEnvironment);
+      ProjectService.State projectState = createProjectInCloudStore(testEnvironment,
+          ServiceUtils.getIDFromDocumentSelfLink(resourceTicketState.documentSelfLink));
       VirtualNetworkService.State virtualNetworkState = createVirtualNetworkInCloudStore(testEnvironment);
       String networkId = ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkState.documentSelfLink);
-      VmService.State vmState = createVmInCloudStore(testEnvironment, networkId);
+      VmService.State vmState = createVmInCloudStore(testEnvironment,
+          networkId,
+          ServiceUtils.getIDFromDocumentSelfLink(projectState.documentSelfLink));
       String vmId = ServiceUtils.getIDFromDocumentSelfLink(vmState.documentSelfLink);
 
       Map<String, String> vmIdToNatRuleIdMap = new HashMap<>();
@@ -462,15 +474,19 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     }
   }
 
-  private static VmService.State createVmInCloudStore(TestEnvironment testEnvironment, String networkId)
+  private static VmService.State createVmInCloudStore(TestEnvironment testEnvironment,
+                                                      String networkId,
+                                                      String projectId)
       throws Throwable {
     VmService.State startState = ReflectionUtils.buildValidStartState(VmService.State.class);
+    startState.projectId = projectId;
 
     VmService.NetworkInfo networkInfo = new VmService.NetworkInfo();
     networkInfo.id = networkId;
     networkInfo.macAddress = "macAddress";
     networkInfo.privateIpAddress = "1.2.3.4";
     networkInfo.floatingIpAddress = "4.5.6.7";
+    networkInfo.isFloatingIpQuotaConsumed = true;
 
     startState.networkInfo = new HashMap<>();
     startState.networkInfo.put(networkId, networkInfo);
@@ -553,6 +569,49 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
 
     Operation result = testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, deployment);
     return result.getBody(DeploymentService.State.class);
+  }
+
+  private static ResourceTicketService.State createResourceTicketInCloudStore(TestEnvironment testEnvironment)
+      throws Throwable {
+    ResourceTicketService.State resourceTicketState = new ResourceTicketService.State();
+    resourceTicketState.name = "resource-ticket-name";
+    resourceTicketState.tenantId = "tenant-id";
+    resourceTicketState.parentId = "parent-id";
+    resourceTicketState.documentSelfLink = "resource-ticket-id";
+    resourceTicketState.limitMap = new HashMap<>();
+    QuotaLineItem costItem = new QuotaLineItem();
+    costItem.setKey(AssignFloatingIpToVmWorkflowService.SDN_FLOATING_IP_RESOURCE_TICKET_KEY);
+    costItem.setValue(20);
+    costItem.setUnit(QuotaUnit.COUNT);
+    resourceTicketState.limitMap.put(costItem.getKey(), costItem);
+
+    Operation result = testEnvironment.sendPostAndWait(ResourceTicketServiceFactory.SELF_LINK, resourceTicketState);
+    resourceTicketState = result.getBody(ResourceTicketService.State.class);
+
+    ResourceTicketService.Patch consumePatchState = new ResourceTicketService.Patch();
+    consumePatchState.patchtype = ResourceTicketService.Patch.PatchType.USAGE_CONSUME;
+    consumePatchState.cost = new HashMap<>();
+
+    QuotaLineItem consumeCostType = new QuotaLineItem();
+    consumeCostType.setKey(AssignFloatingIpToVmWorkflowService.SDN_FLOATING_IP_RESOURCE_TICKET_KEY);
+    consumeCostType.setValue(1);
+    consumeCostType.setUnit(QuotaUnit.COUNT);
+    consumePatchState.cost.put(consumeCostType.getKey(), consumeCostType);
+
+    testEnvironment.sendPatchAndWait(resourceTicketState.documentSelfLink, consumePatchState);
+
+    return resourceTicketState;
+  }
+
+  private static ProjectService.State createProjectInCloudStore(TestEnvironment testEnvironment,
+                                                                String resourceTicketId) throws Throwable {
+    ProjectService.State projectState = new ProjectService.State();
+    projectState.name = "projectName";
+    projectState.tenantId = "tenantId";
+    projectState.resourceTicketId = resourceTicketId;
+
+    Operation result = testEnvironment.sendPostAndWait(ProjectServiceFactory.SELF_LINK, projectState);
+    return result.getBody(ProjectService.State.class);
   }
 
   private static RemoveFloatingIpFromVmWorkflowDocument buildStartState(
