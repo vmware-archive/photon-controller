@@ -252,27 +252,6 @@ public class DeployerContextTest {
     }
 
     @Test
-    public void testMissingScriptDirectory() throws IOException {
-
-      String configFileContents = "" +
-          "enableSyslog: true\n" +
-          "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
-          "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
-          "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: \"/tmp/scriptRunnerTest/vibs\"\n";
-
-      File configFile = new File(storageDirectory, "config.yml");
-      createConfigFile(configFile, configFileContents);
-
-      try {
-        deployerContext = ConfigBuilder.build(DeployerContext.class, configFile.getAbsolutePath());
-        fail("Building deployer config object should fail with missing scriptDirectory field");
-      } catch (BadConfigException e) {
-        assertThat(e.getMessage(), containsString("scriptDirectory may not be empty (was null)"));
-      }
-    }
-
-    @Test
     public void testBlankScriptDirectory() throws IOException {
 
       String configFileContents = "" +
@@ -291,27 +270,6 @@ public class DeployerContextTest {
         fail("Building deployer config object should fail with missing scriptDirectory field");
       } catch (BadConfigException e) {
         assertThat(e.getMessage(), containsString("scriptDirectory may not be empty (was )"));
-      }
-    }
-
-    @Test
-    public void testMissingScriptLogDirectory() throws IOException {
-
-      String configFileContents = "" +
-          "enableSyslog: true\n" +
-          "scriptDirectory: \"/tmp/scriptRunnerTest/scripts\"\n" +
-          "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
-          "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: \"/tmp/scriptRunnerTest/vibs\"\n";
-
-      File configFile = new File(storageDirectory, "config.yml");
-      createConfigFile(configFile, configFileContents);
-
-      try {
-        deployerContext = ConfigBuilder.build(DeployerContext.class, configFile.getAbsolutePath());
-        fail("Building deployer config object should fail with missing scriptLogDirectory field");
-      } catch (BadConfigException e) {
-        assertThat(e.getMessage(), containsString("scriptLogDirectory may not be empty (was null)"));
       }
     }
 
@@ -338,28 +296,6 @@ public class DeployerContextTest {
     }
 
     @Test
-    public void testMissingConfigDirectory() throws IOException {
-
-      String configFileContents = "" +
-          "enableSyslog: true\n" +
-          "scriptDirectory: \"/tmp/scriptRunnerTest/scripts\"\n" +
-          "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
-          "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: \"/tmp/scriptRunnerTest/vibs\"\n";
-
-      File configFile = new File(storageDirectory, "config.yml");
-      createConfigFile(configFile, configFileContents);
-
-      try {
-        deployerContext = ConfigBuilder.build(DeployerContext.class, configFile
-            .getAbsolutePath());
-        fail("Building deployer config object should fail with missing configDirectory field");
-      } catch (BadConfigException e) {
-        assertThat(e.getMessage(), containsString("configDirectory may not be empty (was null)"));
-      }
-    }
-
-    @Test
     public void testBlankConfigDirectory() throws IOException {
 
       String configFileContents = "" +
@@ -378,27 +314,6 @@ public class DeployerContextTest {
         fail("Building deployer config object should fail with missing configDirectory field");
       } catch (BadConfigException e) {
         assertThat(e.getMessage(), containsString("configDirectory may not be empty (was )"));
-      }
-    }
-
-    @Test
-    public void testMissingVibDirectory() throws IOException {
-
-      String configFileContents = "" +
-          "enableSyslog: true\n" +
-          "scriptDirectory: \"/tmp/scriptRunnerTest/scripts\"\n" +
-          "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
-          "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
-          "syslogEndpoint: \"syslog endpoint\"\n";
-
-      File configFile = new File(storageDirectory, "config.yml");
-      createConfigFile(configFile, configFileContents);
-
-      try {
-        deployerContext = ConfigBuilder.build(DeployerContext.class, configFile.getAbsolutePath());
-        fail("Building deployer config object should fail with missing vibDirectory field");
-      } catch (BadConfigException e) {
-        assertThat(e.getMessage(), containsString("vibDirectory may not be empty (was null)"));
       }
     }
 
