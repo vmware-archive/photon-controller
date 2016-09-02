@@ -26,7 +26,7 @@ import org.hibernate.validator.constraints.Range;
 
 import javax.validation.constraints.NotNull;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -60,10 +60,10 @@ public class DeployerContext {
   private long keepAliveTime = DeployerDefaults.KEEP_ALIVE_TIME;
 
   @Range(min = 1)
-  private final int maxMemoryGb;
+  private int maxMemoryGb = DeployerDefaults.DEFAULT_MAX_MEMORY_GB;
 
   @Range(min = 1)
-  private final int maxVmCount;
+  private int maxVmCount = DeployerDefaults.DEFAULT_MAX_VM_COUNT;
 
   @Range(min = 1)
   private int maximumPoolSize = DeployerDefaults.MAXIMUM_POOL_SIZE;
@@ -78,10 +78,10 @@ public class DeployerContext {
   private final String resourceTicketName;
 
   @NotBlank
-  private final String scriptLogDirectory;
+  private String scriptLogDirectory = DeployerDefaults.SCRIPT_LOG_DIRECTORY;
 
   @NotBlank
-  private final String scriptDirectory;
+  private String scriptDirectory = DeployerDefaults.SCRIPT_DIRECTORY;
 
   @Range(min = 1)
   private int scriptTimeoutSec = DeployerDefaults.SCRIPT_TIMEOUT_IN_SECONDS;
@@ -100,7 +100,7 @@ public class DeployerContext {
   private final String tenantName;
 
   @NotBlank
-  private final String vibDirectory;
+  private String vibDirectory = DeployerDefaults.VIB_DIRECTORY;
 
   @Range(min = 1)
   private int waitForServiceMaxRetryCount = DeployerDefaults.DEFAULT_WAIT_FOR_SERVICE_MAX_RETRY_COUNT;
@@ -109,7 +109,7 @@ public class DeployerContext {
   private final String sharedSecret;
 
   @NotBlank
-  private final String configDirectory;
+  private String configDirectory = DeployerDefaults.CONFIG_DIRECTORY;
 
   @JsonProperty("enableAuth")
   private final boolean enableAuth;
@@ -118,9 +118,9 @@ public class DeployerContext {
    * This list defines the order in which to un-install vibs that may be on the system.
    * This may be important
    */
-  private final List<String> vibUninstallOrder = new ArrayList<String>();
+  private final List<String> vibUninstallOrder = Arrays.asList(DeployerDefaults.VIB_UNINSTALL_ORDER);
 
-  private final String keyStorePath;
+  private String keyStorePath = DeployerDefaults.KEY_STORE_PATH;
 
   private final String keyStorePassword;
 
@@ -138,18 +138,18 @@ public class DeployerContext {
     pollingIntervalMs = DeployerDefaults.DEFAULT_POLLING_INTERVAL_MILLISECOND;
     projectName = null;
     resourceTicketName = null;
-    scriptDirectory = null;
-    scriptLogDirectory = null;
+    scriptDirectory = DeployerDefaults.SCRIPT_DIRECTORY;
+    scriptLogDirectory = DeployerDefaults.SCRIPT_LOG_DIRECTORY;
     scriptTimeoutSec = DeployerDefaults.SCRIPT_TIMEOUT_IN_SECONDS;
     syslogEndpoint = null;
     taskPollDelay = DeployerDefaults.DEFAULT_TASK_POLL_DELAY;
     tenantName = null;
-    vibDirectory = null;
+    vibDirectory = DeployerDefaults.VIB_DIRECTORY;
     waitForServiceMaxRetryCount = DeployerDefaults.DEFAULT_WAIT_FOR_SERVICE_MAX_RETRY_COUNT;
     sharedSecret = UUID.randomUUID().toString();
-    configDirectory = null;
+    configDirectory = DeployerDefaults.CONFIG_DIRECTORY;
     enableAuth = false;
-    keyStorePath = null;
+    keyStorePath = DeployerDefaults.KEY_STORE_PATH;
     keyStorePassword = null;
   }
 

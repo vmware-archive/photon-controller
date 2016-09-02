@@ -134,4 +134,36 @@ public class DeployerDefaults {
    * tagged with both MGMT and CLOUD usage tags.
    */
   public static final float MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO = 0.25f;
+
+  /**
+   * Default script directory.
+   */
+  public static final String SCRIPT_DIRECTORY = "/usr/lib/esxcloud/photon-controller-core/scripts";
+
+  /**
+   * Default script log directory.
+   */
+  public static final String SCRIPT_LOG_DIRECTORY = "/var/log/photon-controller/script_logs";
+
+  /**
+   * Default vib directory.
+   */
+  public static final String VIB_DIRECTORY = "/var/esxcloud/packages";
+
+  /**
+   * Default key store path.
+   */
+  public static final String KEY_STORE_PATH = "/keystore.jks";
+
+  /**
+   * Default config directory.
+   */
+  public static final String CONFIG_DIRECTORY = "/etc/esxcloud-deployer/configurations/";
+
+
+  /**
+   * Default vib uninstall order.
+   */
+  public static final String[] VIB_UNINSTALL_ORDER = {"photon-controller-agent", "envoy"};
+
 }

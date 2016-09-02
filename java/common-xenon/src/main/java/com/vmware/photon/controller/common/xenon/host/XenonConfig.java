@@ -23,26 +23,26 @@ import org.hibernate.validator.constraints.Range;
 public class XenonConfig {
 
   @Range(min = 0, max = 65535)
-  private Integer port;
+  private Integer port = XenonDefaults.PORT;
 
   @Range(min = 0, max = 65535)
   private Integer securePort;
 
   @NotBlank
-  private String bindAddress;
+  private String bindAddress = XenonDefaults.BIND_ADDRESS;
 
   @NotBlank
   private String registrationAddress;
 
   @NotBlank
-  private String storagePath;
+  private String storagePath = XenonDefaults.STORAGE_PATH;
 
   @NotEmpty
   private String[] peerNodes;
 
-  private String keyFile;
+  private String keyFile = XenonDefaults.KEY_FILE;
 
-  private String certificateFile;
+  private String certificateFile = XenonDefaults.CERTIFICATE_FILE;
 
   public void setPort(int port) {
     this.port = port;
