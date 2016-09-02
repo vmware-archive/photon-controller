@@ -120,7 +120,9 @@ module EsxCloud
         DATASTORE_DIRS_TO_DELETE.each do |folder|
           if datastore.start_with?('vsan')
             rm_cmd = "for dir in `/usr/lib/vmware/osfs/bin/osfs-ls #{datastore_dir} | grep -i #{folder}`; do"\
-                     " for vmdk in `find $dir -name *.vmdk`; do vmkfstools -U #{datastore_dir}$vmdk || true; done"\
+                     " for vmdk in `find $dir/ -name *.vmdk`; do"\
+                     "  if [[ #{folder} == \"image\" ]]; then sed -i '/ddb.deletable = \"false\"/d' #{datastore_dir}$vmdk; fi"\
+                     " && vmkfstools -U #{datastore_dir}$vmdk || true; done"\
                      " && rm -rf #{datastore_dir}$dir/*"\
                      " && (rm -rf #{datastore_dir}$dir/.* || true)"\
                      " && /usr/lib/vmware/osfs/bin/osfs-rmdir #{datastore_dir}$dir;"\
@@ -138,7 +140,9 @@ module EsxCloud
           output = ssh.exec!("for ds in `df | awk '{print $6}' | grep -v Mounted`; do echo $(basename $ds); done")
           datastores = output.split("\n")
           datastores.each do |datastore|
-            clean_datastore ssh, datastore
+            if datastore.start_with?('vsan')
+              clean_datastore ssh, datastore
+            end
           end
           ssh.exec!("rm -rf /opt/vmware/photon/controller/")
           ssh.exec!("rm -rf /opt/vmware/esxcloud")
