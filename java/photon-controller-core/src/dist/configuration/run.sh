@@ -61,7 +61,17 @@ function print_warning_if_value_mssing ()
 CONFIG_PATH_PARAM=$1
 INSTALLATION_PATH_PARAM=$2
 CONFIG_PATH=${CONFIG_PATH_PARAM:-"/etc/esxcloud"}
-PHOTON_CONTROLLER_CORE_CONFIG="${CONFIG_PATH}/photon-controller-core.yml"
+
+# For manual container deployment, we expect yml file to at following location.
+# which user is going to supply by mounting /etc/vmware/photon/config directory.
+# if we do not find it then we fall back to old config path.
+PHOTON_CONTROLLER_CORE_CONFIG="/etc/photon-controller/photon-controller-core.yml"
+
+# if new config yml file is not present, then use the old default path of yml file.
+if [ ! -f ${PHOTON_CONTROLLER_CORE_CONFIG} ]
+then
+  PHOTON_CONTROLLER_CORE_CONFIG="${CONFIG_PATH}/photon-controller-core.yml"
+fi
 
 memoryMb=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG memoryMb:`
 ENABLE_AUTH=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG enableAuth:`
@@ -115,9 +125,7 @@ then
   echo "$container_ip     $myhostname" >> /etc/hosts
 fi
 
-# jvm heap size will be set to by default is 1024m
 jvm_mem=$(($memoryMb/2))
-
 
 # Use the JKS keystore which has our certificate as the default java keystore
 security_opts="-Djavax.net.ssl.trustStore=/keystore.jks"
@@ -191,44 +199,38 @@ then
   # Join lightwave domain
   ic-join ${ic_join_params}
 
-  # Fill in the hostname and ip address for generating a machine certificate
-  sed -i s/IPAddress.*/"IPAddress = ${REGISTRATION_ADDRESS}"/ /opt/vmware/share/config/certool.cfg
-  sed -i s/Hostname.*/"Hostname = $full_hostname"/ /opt/vmware/share/config/certool.cfg
-
   mkdir -p /etc/keys
 
-  # Generate keys if they don't exist
-  if [ ! -f /etc/keys/machine.privkey ] || [ ! -f /etc/keys/machine.pubkey ]; then
-    certool --genkey --privkey=/etc/keys/machine.privkey --pubkey=/etc/keys/machine.pubkey \
-      --srp-upn administrator@${LIGHTWAVE_DOMAIN} --srp-pwd ${LIGHTWAVE_PASSWORD} --server ${LIGHTWAVE_HOSTNAME}
-  fi
+  /opt/vmware/bin/vecs-cli entry getkey --store MACHINE_SSL_CERT \
+                                        --alias '__MACHINE_CERT' \
+                                        --output /etc/keys/machine.privkey
 
-  # Generate certificate if it doesn't exist
-  if [ ! -f /etc/keys/machine.crt ]; then
-    certool --gencert --privkey=/etc/keys/machine.privkey --cert=/etc/keys/machine.crt \
-      --srp-upn administrator@${LIGHTWAVE_DOMAIN} --srp-pwd ${LIGHTWAVE_PASSWORD} \
-      --server ${LIGHTWAVE_HOSTNAME} --config /opt/vmware/share/config/certool.cfg
-  fi
+  /opt/vmware/bin/vecs-cli entry getcert --store MACHINE_SSL_CERT \
+                                         --alias '__MACHINE_CERT' \
+                                         --output /etc/keys/machine.crt
 
   # Generate pkcs12 keystore
-  openssl pkcs12 -export -in /etc/keys/machine.crt -inkey /etc/keys/machine.privkey -out keystore.p12 -name MACHINE_CERT \
+  openssl pkcs12 -export -in /etc/keys/machine.crt -inkey /etc/keys/machine.privkey -out keystore.p12 -name __MACHINE_CERT \
     -password pass:${LIGHTWAVE_PASSWORD}
 
   # Convert it into JKS
   keytool -importkeystore -deststorepass ${LIGHTWAVE_PASSWORD} -destkeypass ${LIGHTWAVE_PASSWORD} \
     -destkeystore /keystore.jks -srckeystore keystore.p12 -srcstoretype PKCS12 -srcstorepass ${LIGHTWAVE_PASSWORD} \
-    -alias MACHINE_CERT
+    -alias __MACHINE_CERT
 
   # Get the trusted roots certificate
-  cert_alias=$(vecs-cli entry list --store TRUSTED_ROOTS | grep "Alias" | head -n1 | cut -d: -f2)
-  vecs-cli entry getcert --store TRUSTED_ROOTS --alias $cert_alias --output /etc/keys/cacert.crt
-  keytool -import -trustcacerts -alias TRUSTED_ROOTS -file /etc/keys/cacert.crt \
-  -keystore /keystore.jks -storepass ${LIGHTWAVE_PASSWORD} -noprompt
+  cert_alias=$(vecs-cli entry list --store TRUSTED_ROOTS | grep "Alias" | cut -d: -f2)
+
+  for cert in $cert_alias; do
+    echo "Processing cert $cert "
+    vecs-cli entry getcert --store TRUSTED_ROOTS --alias $cert --output /etc/keys/cacert.crt
+
+    keytool -import -trustcacerts -alias "$cert" -file /etc/keys/cacert.crt \
+       -keystore /keystore.jks -storepass ${LIGHTWAVE_PASSWORD} -noprompt
+  done
 
   # Restrict permission on the key files
   chmod 0400 /etc/keys/machine.privkey
-  chmod 0444 /etc/keys/machine.pubkey
-
 fi
 
 # Move vecs jar out of classpath
