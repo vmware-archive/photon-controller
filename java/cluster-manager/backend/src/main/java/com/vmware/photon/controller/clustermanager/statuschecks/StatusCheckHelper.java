@@ -57,6 +57,9 @@ public class StatusCheckHelper {
       case SwarmWorker:
         return new SwarmStatusChecker(HostUtils.getSwarmClient(service));
 
+      case Harbor:
+        return new HarborStatusChecker(HostUtils.getHarborClient(service));
+
       default:
         throw new RuntimeException("Unsupported nodeType: " + nodeType.toString());
     }

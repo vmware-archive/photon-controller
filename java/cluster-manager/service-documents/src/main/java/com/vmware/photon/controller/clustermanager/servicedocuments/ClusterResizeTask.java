@@ -58,7 +58,7 @@ public class ClusterResizeTask extends ServiceDocument {
   public Integer newWorkerCount;
 
   /**
-   * This class defines the state of a KubernetesClusterResizeTaskService task.
+   * This class defines the state of a ClusterResizeTaskService task.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
     /**

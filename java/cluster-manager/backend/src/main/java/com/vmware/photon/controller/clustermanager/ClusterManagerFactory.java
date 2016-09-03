@@ -15,6 +15,7 @@ package com.vmware.photon.controller.clustermanager;
 
 import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.clustermanager.clients.EtcdClient;
+import com.vmware.photon.controller.clustermanager.clients.HarborClient;
 import com.vmware.photon.controller.clustermanager.clients.KubernetesClient;
 import com.vmware.photon.controller.clustermanager.clients.MesosClient;
 import com.vmware.photon.controller.clustermanager.clients.SwarmClient;
@@ -27,6 +28,7 @@ import com.vmware.photon.controller.clustermanager.tasks.ClusterResizeTaskFactor
 import com.vmware.photon.controller.clustermanager.tasks.ClusterWaitTaskFactoryService;
 import com.vmware.photon.controller.clustermanager.tasks.GarbageCollectionTaskFactoryService;
 import com.vmware.photon.controller.clustermanager.tasks.GarbageInspectionTaskFactoryService;
+import com.vmware.photon.controller.clustermanager.tasks.HarborClusterCreateTaskFactoryService;
 import com.vmware.photon.controller.clustermanager.tasks.KubernetesClusterCreateTaskFactoryService;
 import com.vmware.photon.controller.clustermanager.tasks.MesosClusterCreateTaskFactoryService;
 import com.vmware.photon.controller.clustermanager.tasks.SwarmClusterCreateTaskFactoryService;
@@ -65,6 +67,7 @@ public class ClusterManagerFactory {
       ClusterWaitTaskFactoryService.class,
       GarbageCollectionTaskFactoryService.class,
       GarbageInspectionTaskFactoryService.class,
+      HarborClusterCreateTaskFactoryService.class,
       KubernetesClusterCreateTaskFactoryService.class,
       MesosClusterCreateTaskFactoryService.class,
       SwarmClusterCreateTaskFactoryService.class,
@@ -139,6 +142,13 @@ public class ClusterManagerFactory {
    */
   public SwarmClient createSwarmClient() {
     return new SwarmClient(this.httpAsyncClient);
+  }
+
+  /**
+   * Creates an instance of {@link HarborClient}.
+   */
+  public HarborClient createHarborClient() {
+    return new HarborClient(this.httpAsyncClient);
   }
 
   /**

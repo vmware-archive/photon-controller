@@ -71,4 +71,11 @@ public class ClusterManagerConstants {
     public static final int ETCD_PEER_PORT = 2380;
     public static final int SWARM_PORT = 8333;
   }
+
+  /**
+   * This class defines constant values for Harbor cluster.
+   */
+  public static class Harbor {
+    public static final int HARBOR_PORT = 80;
+  }
 }

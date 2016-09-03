@@ -16,6 +16,7 @@ package com.vmware.photon.controller.api.frontend.backends;
 import com.vmware.photon.controller.api.frontend.backends.clients.ClusterManagerClient;
 import com.vmware.photon.controller.api.frontend.commands.steps.ClusterDeleteStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.ClusterResizeStepCmd;
+import com.vmware.photon.controller.api.frontend.commands.steps.HarborClusterCreateStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.KubernetesClusterCreateStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.MesosClusterCreateStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.SwarmClusterCreateStepCmd;
@@ -77,6 +78,8 @@ public class ClusterBackend {
         return createMesosCluster(projectId, spec);
       case SWARM:
         return createSwarmCluster(projectId, spec);
+      case HARBOR:
+        return createHarborCluster(projectId, spec);
       default:
         throw new SpecInvalidException("Unsupported cluster type: " + spec.getType());
     }
@@ -219,6 +222,23 @@ public class ClusterBackend {
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_SWARM_CLUSTER_SETUP_ETCD);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_SWARM_CLUSTER_SETUP_MASTER);
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_SWARM_CLUSTER_SETUP_WORKERS);
+
+    return taskEntity;
+  }
+
+  private TaskEntity createHarborCluster(String projectId, ClusterCreateSpec spec)
+      throws SpecInvalidException, TaskNotFoundException {
+    // Create the steps
+    TaskEntity taskEntity = taskBackend.createQueuedTask(null, Operation.CREATE_CLUSTER);
+    StepEntity initiateStep = taskBackend.getStepBackend().createQueuedStep(
+        taskEntity, Operation.CREATE_HARBOR_CLUSTER_INITIATE);
+
+    // Pass projectId and createSpec to initiateStep as transient resources
+    initiateStep.createOrUpdateTransientResource(HarborClusterCreateStepCmd.PROJECT_ID_RESOURCE_KEY, projectId);
+    initiateStep.createOrUpdateTransientResource(HarborClusterCreateStepCmd.CREATE_SPEC_RESOURCE_KEY, spec);
+
+    // Dummy steps that are mapped to HarborClusterCreateTask's subStages
+    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_HARBOR_CLUSTER_SETUP_HARBOR);
 
     return taskEntity;
   }

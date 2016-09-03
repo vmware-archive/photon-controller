@@ -10,24 +10,24 @@
  * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-
 package com.vmware.photon.controller.clustermanager.servicedocuments;
 
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
+import com.vmware.photon.controller.common.xenon.validation.DefaultUuid;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
-import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.xenon.common.ServiceDocument;
 
 /**
  * This class defines the document state associated with a single
- * ClusterDeleteTaskService instance.
+ * HarborClusterCreateTaskService instance.
  */
 @NoMigrationDuringUpgrade
 @NoMigrationDuringDeployment
-public class ClusterDeleteTask extends ServiceDocument {
+public class HarborClusterCreateTask extends ServiceDocument {
+
   /**
    * The state of the current task.
    */
@@ -42,14 +42,14 @@ public class ClusterDeleteTask extends ServiceDocument {
   public Integer controlFlags;
 
   /**
-   * This value represents the identifier of the cluster.
+   * Identifier that will be used to create the Harbor cluster.
    */
-  @NotNull
+  @DefaultUuid
   @Immutable
   public String clusterId;
 
   /**
-   * This class defines the state of a ClusterDeleteTaskService instance.
+   * This class defines the state of a HarborClusterCreateTaskService task.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
     /**
@@ -61,9 +61,7 @@ public class ClusterDeleteTask extends ServiceDocument {
      * The sub-states for this this.
      */
     public enum SubStage {
-      UPDATE_CLUSTER_DOCUMENT,
-      DELETE_VMS,
-      DELETE_CLUSTER_DOCUMENT
+      SETUP_HARBOR
     }
   }
 }

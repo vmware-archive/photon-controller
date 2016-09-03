@@ -241,6 +241,11 @@ public class StepCommandFactory {
       case CREATE_SWARM_CLUSTER_SETUP_WORKERS:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new SwarmClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
+      case CREATE_HARBOR_CLUSTER_INITIATE:
+        return new HarborClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
+      case CREATE_HARBOR_CLUSTER_SETUP_HARBOR:
+        return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
+            new HarborClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
       case RESIZE_CLUSTER_INITIATE:
         return new ClusterResizeStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
       case RESIZE_CLUSTER_INITIALIZE_CLUSTER:

@@ -19,8 +19,9 @@ package com.vmware.photon.controller.api.model;
 public enum ClusterType {
   KUBERNETES,
   MESOS,
-  SWARM;
+  SWARM,
+  HARBOR;
 
   // String used in swagger documentation.
-  public static final String ALLOWABLE_VALUES = "KUBERNETES, MESOS, SWARM";
+  public static final String ALLOWABLE_VALUES = "KUBERNETES, MESOS, SWARM, HARBOR";
 }

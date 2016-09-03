@@ -110,7 +110,7 @@ public class ClusterService extends StatefulService {
     public ClusterType clusterType;
 
     /**
-     * Image Identifier used to create the Kubernetes Cluster.
+     * Image Identifier used to create the Cluster.
      */
     @NotNull
     @Immutable

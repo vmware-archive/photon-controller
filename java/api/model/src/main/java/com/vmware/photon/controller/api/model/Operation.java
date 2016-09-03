@@ -161,6 +161,8 @@ public enum Operation {
   CREATE_SWARM_CLUSTER_SETUP_ETCD("CreateSwarmClusterSetupEtcd"),
   CREATE_SWARM_CLUSTER_SETUP_MASTER("CreateSwarmClusterSetupMaster"),
   CREATE_SWARM_CLUSTER_SETUP_WORKERS("CreateSwarmClusterSetupWorkers"),
+  CREATE_HARBOR_CLUSTER_INITIATE("CreateHarborClusterInitiate"),
+  CREATE_HARBOR_CLUSTER_SETUP_HARBOR("CreateHarborClusterSetupHarbor"),
   RESIZE_CLUSTER("ResizeCluster"),
   RESIZE_CLUSTER_INITIATE("ResizeClusterInitiate"),
   RESIZE_CLUSTER_INITIALIZE_CLUSTER("ResizeClusterInitializeCluster"),

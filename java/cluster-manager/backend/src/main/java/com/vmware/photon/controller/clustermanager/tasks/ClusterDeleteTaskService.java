@@ -23,7 +23,6 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.TombstoneServiceFact
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterDeleteTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterDeleteTask.TaskState;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
-import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.utils.ExceptionUtils;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -50,7 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * This class implements a Xenon service representing a task to delete a Kubernetes cluster.
+ * This class implements a Xenon service representing a task to delete a cluster.
  */
 public class ClusterDeleteTaskService extends StatefulService {
 
@@ -328,7 +327,7 @@ public class ClusterDeleteTaskService extends StatefulService {
       checkState(patchState.taskState.subStage.ordinal() >= currentState.taskState.subStage.ordinal());
     }
 
-    if (patchState.taskState.stage == KubernetesClusterCreateTask.TaskState.TaskStage.STARTED) {
+    if (patchState.taskState.stage == TaskState.TaskStage.STARTED) {
       checkNotNull(patchState.taskState.subStage);
     }
   }

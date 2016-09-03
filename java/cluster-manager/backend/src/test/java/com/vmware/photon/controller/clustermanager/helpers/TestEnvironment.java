@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerTestServiceGroup;
 import com.vmware.photon.controller.clustermanager.clients.EtcdClient;
+import com.vmware.photon.controller.clustermanager.clients.HarborClient;
 import com.vmware.photon.controller.clustermanager.clients.KubernetesClient;
 import com.vmware.photon.controller.clustermanager.clients.MesosClient;
 import com.vmware.photon.controller.clustermanager.clients.SwarmClient;
@@ -106,6 +107,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
     private String scriptsDirectory;
     private StatusCheckHelper statusCheckHelper;
     private SwarmClient swarmClient;
+    private HarborClient harborClient;
     private int hostCount;
 
     public Builder apiClient(ApiClient apiClient) {
@@ -125,6 +127,11 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
 
     public Builder kubernetesClient(KubernetesClient kubernetesClient) {
       this.kubernetesClient = kubernetesClient;
+      return this;
+    }
+
+    public Builder harborClient(HarborClient harborClient) {
+      this.harborClient = harborClient;
       return this;
     }
 
@@ -175,6 +182,10 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
 
       if (this.swarmClient != null) {
         doReturn(this.swarmClient).when(clusterManagerFactory).createSwarmClient();
+      }
+
+      if (this.harborClient != null) {
+        doReturn(this.harborClient).when(clusterManagerFactory).createHarborClient();
       }
 
       if (this.cloudStoreHelper != null) {

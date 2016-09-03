@@ -483,9 +483,10 @@ public class ClusterExpandTaskServiceTest {
     }
 
     @Test(dataProvider = "successClusterExpandNodeCounts")
-    public void testEndToEndSuccess(int currentWorkerCount, int expectedWorkerCount) throws Throwable {
+    public void testEndToEndSuccess(ClusterType clusterType, int currentWorkerCount, int expectedWorkerCount)
+        throws Throwable {
 
-      mockCluster(expectedWorkerCount);
+      mockCluster(clusterType, expectedWorkerCount);
       mockGetClusterVms(currentWorkerCount, true);
       mockVmProvision(true);
 
@@ -501,17 +502,18 @@ public class ClusterExpandTaskServiceTest {
     @DataProvider(name = "successClusterExpandNodeCounts")
     public Object[][] getSuccessClusterExpandNodeCounts() {
       return new Object[][]{
-          {5, 5},
-          {5, 7},
-          {10, 50},
-          {10, 60}
+          {ClusterType.KUBERNETES, 5, 5},
+          {ClusterType.KUBERNETES, 5, 7},
+          {ClusterType.KUBERNETES, 10, 50},
+          {ClusterType.KUBERNETES, 10, 60},
+          {ClusterType.HARBOR, 0, 0}
       };
     }
 
     @Test
     public void testEndToEndFailureRolloutFails() throws Throwable {
 
-      mockCluster(5);
+      mockCluster(ClusterType.KUBERNETES, 5);
       mockGetClusterVms(7, true);
       mockVmProvision(false);
 
@@ -601,11 +603,11 @@ public class ClusterExpandTaskServiceTest {
       }
     }
 
-    private void mockCluster(int workerCount) throws Throwable {
+    private void mockCluster(ClusterType clusterType, int workerCount) throws Throwable {
       ClusterService.State clusterState = ReflectionUtils.buildValidStartState(ClusterService.State.class);
       clusterState.workerCount = workerCount;
       clusterState.clusterState = ClusterState.READY;
-      clusterState.clusterType = ClusterType.KUBERNETES;
+      clusterState.clusterType = clusterType;
       clusterState.extendedProperties = new HashMap<>();
       clusterState.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "10.2.0.0/16");
       clusterState.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "10.0.0.1");
