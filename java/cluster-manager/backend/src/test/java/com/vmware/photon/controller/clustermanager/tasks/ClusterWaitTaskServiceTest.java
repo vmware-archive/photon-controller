@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.clustermanager.tasks;
 
+import com.vmware.photon.controller.clustermanager.clients.EtcdClient;
+import com.vmware.photon.controller.clustermanager.clients.HarborClient;
 import com.vmware.photon.controller.clustermanager.clients.KubernetesClient;
 import com.vmware.photon.controller.clustermanager.helpers.ReflectionUtils;
 import com.vmware.photon.controller.clustermanager.helpers.TestEnvironment;
@@ -31,8 +33,6 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.util.concurrent.FutureCallback;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -53,7 +53,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Predicate;
 
 /**
  * This class implements tests for the {@link ClusterWaitTaskService} class.
@@ -70,6 +69,11 @@ public class ClusterWaitTaskServiceTest {
   }
 
   private ClusterWaitTaskService.State buildValidStartState(@Nullable TaskState.TaskStage startStage) {
+    return buildValidStartState(startStage, NodeType.KubernetesWorker);
+  }
+
+  private ClusterWaitTaskService.State buildValidStartState(@Nullable TaskState.TaskStage startStage,
+                                                            NodeType nodeType) {
     ClusterWaitTaskService.State startState = new ClusterWaitTaskService.State();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
 
@@ -79,7 +83,7 @@ public class ClusterWaitTaskServiceTest {
     startState.nodeAddresses.add("10.146.22.42");
 
     startState.serverAddress = SERVER_ADDRESS;
-    startState.nodeType = NodeType.KubernetesWorker;
+    startState.nodeType = nodeType;
 
     if (null != startStage) {
       startState.taskState = new TaskState();
@@ -353,24 +357,22 @@ public class ClusterWaitTaskServiceTest {
   public class EndToEndTest {
 
     private KubernetesClient kubernetesClient;
+    private HarborClient harborClient;
+    private EtcdClient etcdClient;
     private TestEnvironment testEnvironment;
     private ClusterWaitTaskService.State startState;
-
-    @BeforeClass
-    public void setUpClass() throws Throwable {
-      startState = buildValidStartState(null);
-      startState.controlFlags = 0x0;
-      startState.maxApiCallPollIterations = 3;
-      startState.apiCallPollDelay = 10;
-    }
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
 
       kubernetesClient = mock(KubernetesClient.class);
+      harborClient = mock(HarborClient.class);
+      etcdClient = mock(EtcdClient.class);
 
       testEnvironment = new TestEnvironment.Builder()
           .kubernetesClient(kubernetesClient)
+          .harborClient(harborClient)
+          .etcdClient(etcdClient)
           .statusCheckHelper(new StatusCheckHelper())
           .hostCount(1)
           .build();
@@ -381,21 +383,35 @@ public class ClusterWaitTaskServiceTest {
       testEnvironment.stop();
     }
 
-    @Test
-    public void testEndToEndSuccess() throws Throwable {
+    @Test(dataProvider = "nodeTypes")
+    public void testEndToEndSuccess(NodeType nodeType) throws Throwable {
+      startState = buildValidStartState(null, nodeType);
+      startState.controlFlags = 0x0;
+      startState.maxApiCallPollIterations = 3;
+      startState.apiCallPollDelay = 10;
 
       final Set<String> nodeAddresses = new HashSet();
       for (String address : startState.nodeAddresses) {
         nodeAddresses.add(address);
       }
+      nodeAddresses.add(startState.serverAddress);
 
-      doAnswer(new Answer() {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-          ((FutureCallback<Set<String>>) invocation.getArguments()[1]).onSuccess(nodeAddresses);
-          return null;
-        }
+      doAnswer(invocation -> {
+        ((FutureCallback<Set<String>>) invocation.getArguments()[1]).onSuccess(nodeAddresses);
+        return null;
       }).when(kubernetesClient).getNodeAddressesAsync(
+          anyString(), any(FutureCallback.class));
+
+      doAnswer(invocation -> {
+        ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(true);
+        return null;
+      }).when(harborClient).checkStatus(
+          anyString(), any(FutureCallback.class));
+
+      doAnswer(invocation -> {
+        ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(true);
+        return null;
+      }).when(etcdClient).checkStatus(
           anyString(), any(FutureCallback.class));
 
       ClusterWaitTaskService.State serviceState =
@@ -403,28 +419,46 @@ public class ClusterWaitTaskServiceTest {
               ClusterWaitTaskFactoryService.SELF_LINK,
               startState,
               ClusterWaitTaskService.State.class,
-              new Predicate<ClusterWaitTaskService.State>() {
-                @Override
-                public boolean test(ClusterWaitTaskService.State state) {
-                  return TaskUtils.finalTaskStages.contains(state.taskState.stage);
-                }
-              });
+              state -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(serviceState.taskState);
     }
 
-    @Test
-    public void testWaitFailure() throws Throwable {
+    @DataProvider(name = "nodeTypes")
+    public Object[][] getNodeTypes() {
+      return new Object[][]{
+          {NodeType.KubernetesMaster},
+          {NodeType.KubernetesWorker},
+          {NodeType.KubernetesEtcd},
+          {NodeType.Harbor}
+      };
+    }
+
+    @Test(dataProvider = "nodeTypes")
+    public void testWaitFailure(NodeType nodeType) throws Throwable {
+      startState = buildValidStartState(null, nodeType);
+      startState.controlFlags = 0x0;
+      startState.maxApiCallPollIterations = 3;
+      startState.apiCallPollDelay = 10;
 
       final Set<String> nodeAddresses = new HashSet();
 
-      doAnswer(new Answer() {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-          ((FutureCallback<Set<String>>) invocation.getArguments()[1]).onSuccess(nodeAddresses);
-          return null;
-        }
+      doAnswer(invocation -> {
+        ((FutureCallback<Set<String>>) invocation.getArguments()[1]).onSuccess(nodeAddresses);
+        return null;
       }).when(kubernetesClient).getNodeAddressesAsync(
+          anyString(), any(FutureCallback.class));
+
+      doAnswer(invocation -> {
+        ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(false);
+        return null;
+      }).when(harborClient).checkStatus(
+          anyString(), any(FutureCallback.class));
+
+      doAnswer(invocation -> {
+        ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(false);
+        return null;
+      }).when(etcdClient).checkStatus(
           anyString(), any(FutureCallback.class));
 
       ClusterWaitTaskService.State serviceState =
@@ -432,12 +466,7 @@ public class ClusterWaitTaskServiceTest {
               ClusterWaitTaskFactoryService.SELF_LINK,
               startState,
               ClusterWaitTaskService.State.class,
-              new Predicate<ClusterWaitTaskService.State>() {
-                @Override
-                public boolean test(ClusterWaitTaskService.State state) {
-                  return TaskUtils.finalTaskStages.contains(state.taskState.stage);
-                }
-              });
+              state -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.FAILED));
     }

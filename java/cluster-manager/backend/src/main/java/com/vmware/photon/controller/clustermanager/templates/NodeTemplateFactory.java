@@ -55,6 +55,9 @@ public class NodeTemplateFactory {
       case SwarmWorker:
         return new SwarmWorkerNodeTemplate();
 
+      case Harbor:
+        return new HarborNodeTemplate();
+
       default:
         throw new RuntimeException("Unsupported nodeType: " + nodeType.toString());
     }

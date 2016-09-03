@@ -179,6 +179,17 @@ public class TestRunner {
       extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, arguments.getGateway());
       extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, arguments.getNetmask());
       spec.setExtendedProperties(extendedProperties);
+    } else if (clusterType == ClusterType.HARBOR) {
+      spec.setName("HarborCluster");
+      spec.setType(clusterType);
+      spec.setSlaveCount(arguments.getSlaveCount());
+
+      Map<String, String> extendedProperties = new HashMap<>();
+      extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, arguments.getStaticIps()[0]);
+      extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, arguments.getDns());
+      extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, arguments.getGateway());
+      extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, arguments.getNetmask());
+      spec.setExtendedProperties(extendedProperties);
     }
 
     return spec;

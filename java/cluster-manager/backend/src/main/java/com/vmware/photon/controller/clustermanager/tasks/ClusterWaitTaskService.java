@@ -161,6 +161,7 @@ public class ClusterWaitTaskService extends StatefulService {
       case MesosMarathon:
       case SwarmEtcd:
       case SwarmMaster:
+      case Harbor:
         StatusChecker statusChecker = getStatusCheckHelper()
             .createStatusChecker(this, currentState.nodeType);
         statusChecker.checkNodeStatus(currentState.serverAddress, callback);

@@ -30,6 +30,12 @@ module EsxCloud
         client.create_image(ENV["SWARM_IMAGE"], "photon-swarm-vm-disk1.vmdk", "EAGER")
       end
 
+      def upload_harbor_image(client)
+        fail("HARBOR_IMAGE is not defined") unless ENV["HARBOR_IMAGE"]
+        Config.logger.info "Starting to Upload Harbor Image"
+        client.create_image(ENV["HARBOR_IMAGE"], "photon-harbor-vm-disk1.vmdk", "EAGER")
+      end
+
       def enable_cluster_type(client, deployment, image, cluster_type)
         spec = EsxCloud::ClusterConfigurationSpec.new(
             cluster_type,
