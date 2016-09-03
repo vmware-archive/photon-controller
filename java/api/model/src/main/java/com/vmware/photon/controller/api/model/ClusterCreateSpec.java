@@ -82,7 +82,7 @@ public class ClusterCreateSpec implements Named {
   @JsonProperty
   @ApiModelProperty(value = "This property specifies the desired number of worker VMs " +
       "in the cluster.", required = false)
-  @Min(1)
+  @Min(0)
   @Max(1000)
   private int workerCount;
 

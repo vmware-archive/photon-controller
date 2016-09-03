@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactoryProvider;
 import com.vmware.photon.controller.clustermanager.clients.EtcdClient;
+import com.vmware.photon.controller.clustermanager.clients.HarborClient;
 import com.vmware.photon.controller.clustermanager.clients.KubernetesClient;
 import com.vmware.photon.controller.clustermanager.clients.MesosClient;
 import com.vmware.photon.controller.clustermanager.clients.SwarmClient;
@@ -49,6 +50,10 @@ public class HostUtils {
 
   public static SwarmClient getSwarmClient(Service service) {
     return getClusterManagerFactory(service).createSwarmClient();
+  }
+
+  public static HarborClient getHarborClient(Service service) {
+    return getClusterManagerFactory(service).createHarborClient();
   }
 
   public static ListeningExecutorService getListeningExecutorService(Service service) {

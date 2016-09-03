@@ -31,6 +31,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactor
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterDeleteTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterResizeTask;
+import com.vmware.photon.controller.clustermanager.servicedocuments.HarborClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.MesosClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.SwarmClusterCreateTask;
@@ -146,6 +147,25 @@ public class ClusterManagerClient {
       throws DocumentNotFoundException {
     Operation operation = xenonClient.get(creationTaskLink);
     return operation.getBody(SwarmClusterCreateTask.class);
+  }
+
+  public HarborClusterCreateTask createHarborCluster(String projectId, ClusterCreateSpec spec)
+      throws SpecInvalidException {
+    ClusterConfigurationService.State clusterConfiguration = getClusterConfiguration(ClusterType.HARBOR);
+    String clusterId = createHarborClusterEntity(projectId, spec, clusterConfiguration);
+    HarborClusterCreateTask createTask = new HarborClusterCreateTask();
+    createTask.clusterId = clusterId;
+
+    // Post createTask to HarborClusterCreateTaskService
+    Operation operation = xenonClient.post(
+        ServiceUriPaths.HARBOR_CLUSTER_CREATE_TASK_SERVICE, createTask);
+    return operation.getBody(HarborClusterCreateTask.class);
+  }
+
+  public HarborClusterCreateTask getHarborClusterCreationStatus(String creationTaskLink)
+      throws DocumentNotFoundException {
+    Operation operation = xenonClient.get(creationTaskLink);
+    return operation.getBody(HarborClusterCreateTask.class);
   }
 
   public ClusterResizeTask resizeCluster(String clusterId, ClusterResizeOperation resizeOperation) {
@@ -453,6 +473,35 @@ public class ClusterManagerClient {
     ClusterService.State cluster = assembleCommonClusterEntity(
         ClusterType.SWARM, projectId, spec, clusterConfiguration);
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS, serializeIpAddresses(etcdIps));
+
+    // Create the cluster entity
+    apiFeXenonClient.post(
+        ClusterServiceFactory.SELF_LINK,
+        cluster);
+
+    return cluster.documentSelfLink;
+  }
+
+  private String createHarborClusterEntity(String projectId,
+                                           ClusterCreateSpec spec,
+                                           ClusterConfigurationService.State clusterConfiguration)
+      throws SpecInvalidException {
+
+    String masterIp = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
+
+    if (masterIp == null) {
+      throw new SpecInvalidException("Missing extended property: master ip");
+    } else if (!InetAddressValidator.getInstance().isValidInet4Address(masterIp)) {
+      throw new SpecInvalidException("Invalid extended property: master ip: " + masterIp);
+    }
+
+    // Assemble the cluster entity
+    ClusterService.State cluster = assembleCommonClusterEntity(
+        ClusterType.HARBOR, projectId, spec, clusterConfiguration);
+    // Even if a worker count was specified by the user, set it to 0.
+    // This is because we currently don't support a multinode Harbor deployment.
+    cluster.workerCount = 0;
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, masterIp);
 
     // Create the cluster entity
     apiFeXenonClient.post(

@@ -41,6 +41,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.StatefulService;
@@ -141,6 +142,7 @@ public class ClusterExpandTaskService extends StatefulService {
   private void initializeExpandCluster(final State currentState,
                                        final ClusterService.State clusterDocument) throws IOException {
 
+    Service service = this;
     HostUtils.getApiClient(this).getClusterApi().getVmsInClusterAsync(
         currentState.clusterId,
         new FutureCallback<ResourceList<Vm>>() {
@@ -162,6 +164,10 @@ public class ClusterExpandTaskService extends StatefulService {
                 masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmMaster);
                 workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmWorker);
                 break;
+              case HARBOR:
+                // Harbor does not have any workers. Skip cluster expansion and mark this task as finished.
+                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED));
+                return;
               default:
                 throw new UnsupportedOperationException(
                     "ClusterType is not supported. ClusterType: " + clusterDocument.clusterType);
