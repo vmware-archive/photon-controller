@@ -175,9 +175,9 @@ public class ClusterCreateSpecTest {
     @DataProvider(name = "invalidWorkerCounts")
     public Object[][] getInvalidWorkerCounts() {
       return new Object[][] {
-          {Integer.MIN_VALUE, "workerCount must be greater than or equal to 1 (was -2147483648)"},
-          {-100, "workerCount must be greater than or equal to 1 (was -100)"},
-          {0, "workerCount must be greater than or equal to 1 (was 0)"},
+          {Integer.MIN_VALUE, "workerCount must be greater than or equal to 0 (was -2147483648)"},
+          {-100, "workerCount must be greater than or equal to 0 (was -100)"},
+          {-1, "workerCount must be greater than or equal to 0 (was -1)"},
           {1001, "workerCount must be less than or equal to 1000 (was 1001)"},
           {1100, "workerCount must be less than or equal to 1000 (was 1100)"},
           {Integer.MAX_VALUE, "workerCount must be less than or equal to 1000 (was 2147483647)"}

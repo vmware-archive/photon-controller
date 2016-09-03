@@ -29,4 +29,6 @@ public enum NodeType {
   SwarmEtcd,
   SwarmMaster,
   SwarmWorker,
+
+  Harbor
 }
