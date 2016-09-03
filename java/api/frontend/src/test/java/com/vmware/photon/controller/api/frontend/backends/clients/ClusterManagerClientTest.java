@@ -25,6 +25,7 @@ import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
+import com.vmware.photon.controller.clustermanager.servicedocuments.HarborClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.MesosClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.SwarmClusterCreateTask;
@@ -353,6 +354,96 @@ public class ClusterManagerClientTest {
           {ClusterManagerClient.EXTENDED_PROPERTY_ETCD_IP1, "invalidEtcdIp1"},
           {ClusterManagerClient.EXTENDED_PROPERTY_ETCD_IP2, "invalidEtcdIp2"},
           {ClusterManagerClient.EXTENDED_PROPERTY_ETCD_IP3, "invalidEtcdIp3"}
+      };
+    }
+  }
+
+  /**
+   * Tests for the createHarborCluster method.
+   */
+  public static class CreateHarborClusterTest extends PowerMockTestCase {
+    @Mock
+    private PhotonControllerXenonRestClient photonControllerXenonRestClient;
+    @Mock
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+    private ClusterManagerClient clusterManagerClient;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      Operation operation = new Operation();
+      HarborClusterCreateTask task = new HarborClusterCreateTask();
+      operation.setBody(task);
+
+      when(photonControllerXenonRestClient.post(any(String.class), any(HarborClusterCreateTask.class)))
+          .thenReturn(operation);
+
+      when(apiFeXenonRestClient.post(any(String.class), any(ClusterService.State.class)))
+          .thenReturn(null);
+
+      List<ClusterConfigurationService.State> clusterConfigurations = new ArrayList<>();
+      ClusterConfigurationService.State clusterConfiguration = new ClusterConfigurationService.State();
+      clusterConfiguration.imageId = "imageId";
+      clusterConfigurations.add(clusterConfiguration);
+      when(apiFeXenonRestClient.queryDocuments(eq(ClusterConfigurationService.State.class), any(ImmutableMap.class)))
+          .thenReturn(clusterConfigurations);
+
+      clusterManagerClient = new ClusterManagerClient(photonControllerXenonRestClient, apiFeXenonRestClient);
+    }
+
+    private static ClusterCreateSpec buildCreateSpec(boolean setMasterIp) {
+      ClusterCreateSpec createSpec = new ClusterCreateSpec();
+      createSpec.setName("clusterName");
+      createSpec.setType(ClusterType.HARBOR);
+      createSpec.setVmFlavor("vmFlavor1");
+      createSpec.setDiskFlavor("diskFlavor1");
+      createSpec.setVmNetworkId("vmNetworkId1");
+      createSpec.setWorkerCount(0);
+      Map<String, String> extendedProperty = new HashMap<>();
+      extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "10.1.0.1");
+      extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "10.1.0.2");
+      extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "255.255.255.128");
+      if (setMasterIp) {
+        extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "10.1.2.3");
+      }
+      createSpec.setExtendedProperties(extendedProperty);
+      return createSpec;
+    }
+
+    @Test
+    public void testCreateHarborCluster() throws SpecInvalidException {
+      ClusterCreateSpec spec = buildCreateSpec(true);
+      HarborClusterCreateTask createTask = clusterManagerClient.createHarborCluster("projectId", spec);
+
+      assertEquals(createTask.clusterId, notNull());
+    }
+
+    @Test
+    public void testCreateHarborClusterMissingExtendedProperty() {
+      ClusterCreateSpec spec = buildCreateSpec(false);
+      try {
+        clusterManagerClient.createHarborCluster("projectId", spec);
+        Assert.fail("expect exception");
+      } catch (SpecInvalidException ex) {
+      }
+    }
+
+    @Test(dataProvider = "invalidExtendedProperty")
+    public void testCreateHarborClusterInvalidExtendedProperty(String propertyName, String propertyValue) {
+      ClusterCreateSpec spec = buildCreateSpec(true);
+      spec.getExtendedProperties().replace(propertyName, propertyValue);
+      try {
+        clusterManagerClient.createHarborCluster("projectId", spec);
+        Assert.fail("expect exception");
+      } catch (SpecInvalidException ex) {
+      }
+    }
+
+    @DataProvider(name = "invalidExtendedProperty")
+    public Object[][] getInvalidExtendedProperty() {
+      return new Object[][]{
+          {ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "invalidDns"},
+          {ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "invalidGateway"},
+          {ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "invalidNetmask"},
       };
     }
   }

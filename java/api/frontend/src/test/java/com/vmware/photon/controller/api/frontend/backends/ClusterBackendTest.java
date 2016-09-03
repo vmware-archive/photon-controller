@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.frontend.backends.clients.ClusterManager
 import com.vmware.photon.controller.api.frontend.commands.CommandTestModule;
 import com.vmware.photon.controller.api.frontend.commands.steps.ClusterDeleteStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.ClusterResizeStepCmd;
+import com.vmware.photon.controller.api.frontend.commands.steps.HarborClusterCreateStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.KubernetesClusterCreateStepCmd;
 import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
@@ -268,6 +269,31 @@ public class ClusterBackendTest {
       assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.CREATE_SWARM_CLUSTER_SETUP_ETCD);
       assertEquals(taskEntity.getSteps().get(2).getOperation(), Operation.CREATE_SWARM_CLUSTER_SETUP_MASTER);
       assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.CREATE_SWARM_CLUSTER_SETUP_WORKERS);
+    }
+
+    @Test
+    public void testHarborCluster() throws Throwable {
+      createSpec = buildCreateSpec(ClusterType.HARBOR);
+      TaskEntity taskEntity = clusterBackend.create("projectId", createSpec);
+      Assert.assertNotNull(taskEntity);
+      Assert.assertNotNull(taskEntity.getId());
+
+      // verify transient resources are set correctly
+      assertEquals(taskEntity.getSteps().size(), 2);
+      StepEntity initiateStepEntity = taskEntity.getSteps().get(0);
+      assertEquals(initiateStepEntity.getOperation(), Operation.CREATE_HARBOR_CLUSTER_INITIATE);
+      ClusterCreateSpec createSpecActual = (ClusterCreateSpec) initiateStepEntity
+          .getTransientResource(HarborClusterCreateStepCmd.CREATE_SPEC_RESOURCE_KEY);
+      Assert.assertNotNull(createSpecActual);
+      assertEquals(createSpecActual.getName(), createSpec.getName());
+      assertEquals(createSpecActual.getType(), createSpec.getType());
+
+      assertEquals(taskEntity.getState(), TaskEntity.State.QUEUED);
+
+      // verify that task steps are created successfully
+      assertEquals(taskEntity.getSteps().size(), 2);
+      assertEquals(taskEntity.getSteps().get(0).getOperation(), Operation.CREATE_HARBOR_CLUSTER_INITIATE);
+      assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.CREATE_HARBOR_CLUSTER_SETUP_HARBOR);
     }
   }
 

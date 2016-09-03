@@ -87,7 +87,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 
 /**
- * This class implements tests for the {@link ClusterResizeTaskService} class.
+ * This class implements tests for the {@link ClusterMaintenanceTaskService} class.
  */
 public class ClusterMaintenanceTaskServiceTest {
 

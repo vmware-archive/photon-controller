@@ -50,6 +50,9 @@ public class ServiceUriPaths extends com.vmware.xenon.services.common.ServiceUri
   public static final String SWARM_CLUSTER_CREATE_TASK_SERVICE =
       CLUSTERMANAGER_ROOT + "/swarm-cluster-create-tasks";
 
+  public static final String HARBOR_CLUSTER_CREATE_TASK_SERVICE =
+      CLUSTERMANAGER_ROOT + "/harbor-cluster-create-tasks";
+
   public static final String DEFAULT_CLOUD_STORE_NODE_SELECTOR =
       com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_3X_NODE_SELECTOR;
 

@@ -116,7 +116,7 @@ public class Arguments {
     parser.addArgument("--clusterType", "-t")
         .dest(CLUSTER_TYPE_ATTR_NAME)
         .required(true)
-        .help("Type of the cluster to create KUBERNETES, MESOS or SWARM");
+        .help("Type of the cluster to create KUBERNETES, MESOS, SWARM or Harbor");
 
     parser.addArgument("--clusterCount", "-c")
         .dest(CLUSTER_COUNT_ATTR_NAME)

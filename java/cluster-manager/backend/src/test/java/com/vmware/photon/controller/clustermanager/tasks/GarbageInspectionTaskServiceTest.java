@@ -373,6 +373,38 @@ public class GarbageInspectionTaskServiceTest {
       verifyInactiveVm(startState.clusterId);
     }
 
+    @Test
+    public void testEndToEndHarborSuccess() throws Throwable {
+      startState.clusterId = mockClusterService(ClusterType.HARBOR);
+      mockClusterApi(startState.clusterId);
+      mockVmApi(true);
+
+      GarbageInspectionTaskService.State serviceState =
+          machine.callServiceAndWaitForState(
+              GarbageInspectionTaskFactoryService.SELF_LINK,
+              startState,
+              GarbageInspectionTaskService.State.class,
+              state -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      TestHelper.assertTaskStateFinished(serviceState.taskState);
+    }
+
+    @Test
+    public void testEndToEndHarborFailure() throws Throwable {
+      startState.clusterId = mockClusterService(ClusterType.HARBOR);
+
+      doThrow(new IOException()).when(clusterApi).getVmsInClusterAsync(anyString(), any(FutureCallback.class));
+
+      GarbageInspectionTaskService.State serviceState =
+          machine.callServiceAndWaitForState(
+              GarbageInspectionTaskFactoryService.SELF_LINK,
+              startState,
+              GarbageInspectionTaskService.State.class,
+              state -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.FAILED));
+    }
+
     public void testClusterNotFound() throws Throwable {
       startState.clusterId = "invalid-cluster-id";
 
@@ -468,10 +500,14 @@ public class GarbageInspectionTaskServiceTest {
     }
 
     private String mockClusterService() throws Throwable {
+      return mockClusterService(ClusterType.KUBERNETES);
+    }
+
+    private String mockClusterService(ClusterType clusterType) throws Throwable {
       ClusterService.State clusterState = ReflectionUtils.buildValidStartState(ClusterService.State.class);
       clusterState.workerCount = 1;
       clusterState.clusterState = ClusterState.READY;
-      clusterState.clusterType = ClusterType.KUBERNETES;
+      clusterState.clusterType = clusterType;
       clusterState.extendedProperties = new HashMap<>();
       clusterState.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "10.2.0.0/16");
       clusterState.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "10.0.0.1");
