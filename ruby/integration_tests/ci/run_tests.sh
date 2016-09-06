@@ -4,7 +4,28 @@ if [ -n "$REAL_AGENT" ]; then
     trap 'cd $TESTS && bundle exec rake download_esx_logs || true' EXIT
 fi
 
+function download {
+    VAR="$1"
+    IMAGE_PATH="$2"
+    URL="$3"
+    export ${VAR}=$IMAGE_PATH
+
+    if [ ! -f "$IMAGE_PATH" ]; then
+        echo "Checking size of the file to download."
+        wget --no-proxy --spider "$URL"
+        echo "Downloading with no-verbose $URL..."
+        wget --no-proxy -O "$IMAGE_PATH" -nv "$URL"
+    fi
+}
+
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+# Create the folder where test data will download
+if [ -z "$TEST_DATA_DIR" ]; then
+  export TEST_DATA_DIR=$HOME/.test_data
+  echo Assume TEST_DATA_DIR at $TEST_DATA_DIR
+fi
+mkdir -p $TEST_DATA_DIR
 
 # Define any custom config process
 if [ -n "$CUSTOM_TEST_CONFIG" ]; then
@@ -77,6 +98,18 @@ if [ -z "$DISABLE_HOUSEKEEPER" ] && [ "$ENABLE_AUTH" == "false" ]; then
 fi
 
 if [ -z "$DISABLE_CLUSTER_INTEGRATION" ]; then
+  if [ -z "$KUBERNETES_IMAGE_LINK" ]; then
+    export KUBERNETES_IMAGE_LINK="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/userContent/cluster-images/photon/kubernetes-disk1.vmdk"
+  fi
+  if [ -z "$MESOS_IMAGE_LINK" ]; then
+    export MESOS_IMAGE_LINK="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/userContent/cluster-images/photon/photon-mesos-vm-disk1-0.26.vmdk"
+  fi
+  if [ -z "$SWARM_IMAGE_LINK" ]; then
+    export SWARM_IMAGE_LINK="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/userContent/cluster-images/photon/photon-swarm-vm-disk1.vmdk"
+  fi
+  download "KUBERNETES_IMAGE" "$TEST_DATA_DIR/`basename $KUBERNETES_IMAGE_LINK`" $KUBERNETES_IMAGE_LINK
+  download "MESOS_IMAGE" "$TEST_DATA_DIR/`basename $MESOS_IMAGE_LINK`" $MESOS_IMAGE_LINK
+  download "SWARM_IMAGE" "$TEST_DATA_DIR/`basename $SWARM_IMAGE_LINK`" $SWARM_IMAGE_LINK
   bundle exec rake cluster
 fi
 

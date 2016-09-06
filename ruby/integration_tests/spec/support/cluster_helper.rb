@@ -13,21 +13,21 @@ module EsxCloud
   class ClusterHelper
     class << self
       def upload_kubernetes_image(client)
-        fail("KUBERNETES_IMAGE is not defined") unless ENV["KUBERNETES_IMAGE_NEW"]
+        fail("KUBERNETES_IMAGE is not defined") unless ENV["KUBERNETES_IMAGE"]
         Config.logger.info "Starting to Upload Kubernetes Image"
-        client.create_image(ENV["KUBERNETES_IMAGE_NEW"], "photon-kubernetes-vm-disk1.vmdk", "EAGER")
+        client.create_image(ENV["KUBERNETES_IMAGE"], "`basename #{KUBERNETES_IMAGE}`", "EAGER")
       end
 
       def upload_mesos_image(client)
         fail("MESOS_IMAGE is not defined") unless ENV["MESOS_IMAGE"]
         Config.logger.info "Starting to Upload Mesos Image"
-        client.create_image(ENV["MESOS_IMAGE"], "photon-mesos-vm-disk1.vmdk", "EAGER")
+        client.create_image(ENV["MESOS_IMAGE"], "`basename #{MESOS_IMAGE}`", "EAGER")
       end
 
       def upload_swarm_image(client)
         fail("SWARM_IMAGE is not defined") unless ENV["SWARM_IMAGE"]
         Config.logger.info "Starting to Upload Swarm Image"
-        client.create_image(ENV["SWARM_IMAGE"], "photon-swarm-vm-disk1.vmdk", "EAGER")
+        client.create_image(ENV["SWARM_IMAGE"], "`basename #{SWARM_IMAGE}`", "EAGER")
       end
 
       def enable_cluster_type(client, deployment, image, cluster_type)
