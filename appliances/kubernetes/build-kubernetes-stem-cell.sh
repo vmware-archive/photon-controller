@@ -60,3 +60,6 @@ packer build -force kubernetes.json
 # Make OVA VMware compatible
 cd build
 ${SCRIPT_DIR}/../scripts/toVMwareOva.sh kubernetes-virtualbox kubernetes
+BRANCH=${GERRIT_BRANCH:-`git rev-parse --abbrev-ref HEAD`}
+COMMIT=`git rev-parse --short HEAD`
+mv kubernetes.ova kubernetes-1.3.5-pc-1.1-${BRANCH}-${COMMIT}.ova
