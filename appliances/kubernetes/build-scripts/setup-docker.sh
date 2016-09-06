@@ -20,15 +20,17 @@ mv $DS.new $DS
 systemctl daemon-reload
 systemctl enable docker
 systemctl start docker
-sleep 5 # Wait for docker to start
+sleep 15 # Wait for docker to start
 
 # Create the bootstrap docker so we can pull the etcd and flannel
 # images into it, instead of the regular docker
 cd /root/docker-multinode
 source common.sh
 kube::multinode::main
+set +e
 kube::bootstrap::bootstrap_daemon
-sleep 5 # Wait for docker to start
+set -e
+sleep 15 # Wait for docker to start
 docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/etcd-amd64:2.2.5
 docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/flannel-amd64:0.5.5
 
