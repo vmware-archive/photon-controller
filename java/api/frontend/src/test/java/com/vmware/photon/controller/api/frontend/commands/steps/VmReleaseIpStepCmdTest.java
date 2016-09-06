@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.frontend.backends.StepBackend;
 import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
+import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
@@ -29,6 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -47,12 +49,14 @@ public class VmReleaseIpStepCmdTest {
   private TaskCommand taskCommand;
   private StepEntity step;
   private PhotonControllerXenonRestClient photonControllerXenonRestClient;
+  private NetworkHelper networkHelper;
 
   @BeforeMethod
   public void setup() {
     taskCommand = mock(TaskCommand.class);
     photonControllerXenonRestClient = mock(PhotonControllerXenonRestClient.class);
     doReturn(photonControllerXenonRestClient).when(taskCommand).getPhotonControllerXenonRestClient();
+    networkHelper = mock(NetworkHelper.class);
   }
 
   @Test
@@ -68,7 +72,7 @@ public class VmReleaseIpStepCmdTest {
   }
 
   @Test
-  public void testSuccess() throws Throwable {
+  public void testSuccessWithSdnDisabled() throws Throwable {
     VmReleaseIpStepCmd command = getVmReleaseIpStepCmd();
     step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, "vm-id");
 
@@ -84,12 +88,44 @@ public class VmReleaseIpStepCmdTest {
 
     doReturn(state).when(operation).getBody(any());
     doReturn(operation).when(photonControllerXenonRestClient).get(anyString());
+    doReturn(false).when(networkHelper).isSdnEnabled();
 
     command.execute();
 
     verify(photonControllerXenonRestClient).get(eq(VmServiceFactory.SELF_LINK + "/vm-id"));
     verify(photonControllerXenonRestClient, times(2)).patch(anyString(),
         any(DhcpSubnetService.IpOperationPatch.class));
+    verify(networkHelper, times(2)).isSdnEnabled();
+  }
+
+  @Test
+  public void testSuccessWithSdnEnabled() throws Throwable {
+    VmReleaseIpStepCmd command = getVmReleaseIpStepCmd();
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, "vm-id");
+
+    Operation operation = mock(Operation.class);
+    VmService.State state = new VmService.State();
+    state.networkInfo = new HashMap<>();
+    VmService.NetworkInfo networkInfo = new VmService.NetworkInfo();
+    networkInfo.privateIpAddress = "ipAddress";
+    networkInfo.floatingIpAddress = "floatingIpAddress";
+    state.networkInfo.put("network-id", networkInfo);
+    networkInfo = new VmService.NetworkInfo();
+    networkInfo.privateIpAddress = "ipAddress2";
+    state.networkInfo.put("network-id2", networkInfo);
+
+    doReturn(state).when(operation).getBody(any());
+    doReturn(operation).when(photonControllerXenonRestClient).get(anyString());
+    doReturn(true).when(networkHelper).isSdnEnabled();
+    doNothing().when(networkHelper).releaseFloatingIp(anyString(), anyString());
+
+    command.execute();
+
+    verify(photonControllerXenonRestClient).get(eq(VmServiceFactory.SELF_LINK + "/vm-id"));
+    verify(photonControllerXenonRestClient, times(2)).patch(anyString(),
+        any(DhcpSubnetService.IpOperationPatch.class));
+    verify(networkHelper, times(2)).isSdnEnabled();
+    verify(networkHelper, times(1)).releaseFloatingIp(anyString(), anyString());
   }
 
   @Test
@@ -138,7 +174,7 @@ public class VmReleaseIpStepCmdTest {
 
     StepBackend stepBackend = mock(StepBackend.class);
 
-    VmReleaseIpStepCmd cmd = new VmReleaseIpStepCmd(taskCommand, stepBackend, step);
+    VmReleaseIpStepCmd cmd = new VmReleaseIpStepCmd(taskCommand, stepBackend, step, networkHelper);
 
     return spy(cmd);
   }

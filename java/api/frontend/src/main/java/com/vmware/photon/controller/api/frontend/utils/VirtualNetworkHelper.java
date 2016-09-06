@@ -21,7 +21,9 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotF
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.apibackend.workflows.RemoveFloatingIpFromVmWorkflowService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -100,6 +102,17 @@ public class VirtualNetworkHelper implements NetworkHelper {
       throw new InvalidNetworkStateException(
           String.format("Subnet %s is in %s state", subnetId, entity.state));
     }
+  }
+
+  @Override
+  public void releaseFloatingIp(String subnetId, String vmId) throws ExternalException {
+    RemoveFloatingIpFromVmWorkflowDocument state = new RemoveFloatingIpFromVmWorkflowDocument();
+    state.networkId = subnetId;
+    state.vmId = vmId;
+
+    photonControllerXenonRestClient.post(
+        RemoveFloatingIpFromVmWorkflowService.FACTORY_LINK,
+        state);
   }
 
   private VirtualNetworkService.State findSubnet(String subnetId) throws NetworkNotFoundException {

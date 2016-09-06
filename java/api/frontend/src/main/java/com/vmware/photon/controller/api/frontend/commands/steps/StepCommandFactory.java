@@ -126,7 +126,7 @@ public class StepCommandFactory {
       case GET_VM_IP:
         return new VmGetIpStepCmd(taskCommand, stepBackend, stepEntity);
       case RELEASE_VM_IP:
-        return new VmReleaseIpStepCmd(taskCommand, stepBackend, stepEntity);
+        return new VmReleaseIpStepCmd(taskCommand, stepBackend, stepEntity, networkHelper);
       case DELETE_VM:
         return new VmDeleteStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, diskBackend);
       case START_VM:
