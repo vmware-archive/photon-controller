@@ -27,7 +27,15 @@ sleep 5 # Wait for docker to start
 cd /root/docker-multinode
 source common.sh
 kube::multinode::main
+# In the bootstrap_daemon code. When it does a ps for the bootstrap daemon,
+# it supposed to wait in a while loop and ping every second till it responds.
+# However, Once it pings the first time, the code throws error because
+# daemon is not up yet. This code has the e option to fail on errors which
+# cause the code to exit instead of keep trying till ps responds.
+# Temporarily disable error here (assume the daemon started successfully)
+set +e
 kube::bootstrap::bootstrap_daemon
+set -e
 sleep 5 # Wait for docker to start
 docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/etcd-amd64:2.2.5
 docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/flannel-amd64:0.5.5
