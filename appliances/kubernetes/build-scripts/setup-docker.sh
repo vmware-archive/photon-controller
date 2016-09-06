@@ -33,13 +33,13 @@ docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/etcd-amd64:2.2.5
 docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/flannel-amd64:0.5.5
 
 # Pull the Kubernetes hyperkube container, which is how we'll deploy Kubernetes
-docker pull gcr.io/google_containers/hyperkube-amd64:v1.3.5
+docker pull gcr.io/google_containers/hyperkube-amd64:v1.3.6
 
 # Pull the containers that Kubernetes needs
 docker pull gcr.io/google_containers/pause-amd64:3.0
 
 # Pull the containers to provide the Kubernetes add-ons (DNS & UI)
-# We extratced the versions from a running version of Kubernetes 1.3.5
+# We extracted the versions from a running version of Kubernetes 1.3.6
 # with hyperkube (Look in /etc/kubernetes)
 docker pull gcr.io/google-containers/kube-addon-manager-amd64:v4
 docker pull gcr.io/google_containers/kubernetes-dashboard-amd64:v1.1.1
@@ -49,7 +49,7 @@ docker pull gcr.io/google_containers/exechealthz-amd64:1.1 # For DNS
 
 # Now we create the hyperkube container so we can copy its configuration
 # We'll edit the etcd configuration when we bring up Kubernetes at run-time
-docker run gcr.io/google_containers/hyperkube-amd64:v1.3.5 /bin/true
+docker run gcr.io/google_containers/hyperkube-amd64:v1.3.6 /bin/true
 ID=`docker ps -a -q`
 docker cp $ID:/etc/kubernetes /etc/kubernetes
 docker rm -f $ID
