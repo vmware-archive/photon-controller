@@ -47,4 +47,12 @@ public interface NetworkHelper {
    * @throws ExternalException
    */
   void checkSubnetState(String subnetId, SubnetState desiredState) throws ExternalException;
+
+  /**
+   * Releases the floating IP from VM.
+   * @param subnetId
+   * @param vmId
+   * @throws ExternalException
+   */
+  void releaseFloatingIp(String subnetId, String vmId) throws ExternalException;
 }

@@ -18,7 +18,9 @@ import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControll
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.ApiFeException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.VmNotFoundException;
+import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
@@ -41,8 +43,15 @@ public class VmReleaseIpStepCmd extends StepCommand {
 
   private static Logger logger = LoggerFactory.getLogger(VmReleaseIpStepCmd.class);
 
-  public VmReleaseIpStepCmd(TaskCommand taskCommand, StepBackend stepBackend, StepEntity step) {
+  private final NetworkHelper networkHelper;
+
+  public VmReleaseIpStepCmd(
+      TaskCommand taskCommand,
+      StepBackend stepBackend,
+      StepEntity step,
+      NetworkHelper networkHelper) {
     super(taskCommand, stepBackend, step);
+    this.networkHelper = networkHelper;
   }
 
   @Override
@@ -53,7 +62,11 @@ public class VmReleaseIpStepCmd extends StepCommand {
     Map<String, VmService.NetworkInfo> networkInfoMap = getNetworkInfo(vmId);
 
     for (VmService.NetworkInfo networkInfo : networkInfoMap.values()) {
-      patchIpRelease(networkInfo.id, vmId, networkInfo.privateIpAddress);
+      releasePrivateIp(networkInfo.id, vmId, networkInfo.privateIpAddress);
+
+      if (networkHelper.isSdnEnabled()) {
+        releaseFloatingIp(networkInfo.id, vmId, networkInfo.floatingIpAddress);
+      }
     }
 
     logger.info("Released IP for VM {}", vmId);
@@ -75,7 +88,7 @@ public class VmReleaseIpStepCmd extends StepCommand {
     }
   }
 
-  private void patchIpRelease(String subnetId, String ownerVmId, String ipAddress) {
+  private void releasePrivateIp(String subnetId, String ownerVmId, String ipAddress) {
     if (ipAddress == null || ipAddress.isEmpty()) {
       logger.info("Skip releasing one network info entry for vm , it is null or empty.");
       return;
@@ -87,5 +100,14 @@ public class VmReleaseIpStepCmd extends StepCommand {
 
     PhotonControllerXenonRestClient photonControllerXenonRestClient = taskCommand.getPhotonControllerXenonRestClient();
     photonControllerXenonRestClient.patch(DhcpSubnetService.FACTORY_LINK + "/" + subnetId, patch);
+  }
+
+  private void releaseFloatingIp(String subnetId, String ownerVmId, String ipAddress) throws ExternalException {
+    if (ipAddress == null || ipAddress.isEmpty()) {
+      logger.info("Skip releasing floating IP for vm, it is null or empty.");
+      return;
+    }
+    logger.info("Releasing floating IP for vm, ipAddress is {}", ipAddress);
+    networkHelper.releaseFloatingIp(subnetId, ownerVmId);
   }
 }

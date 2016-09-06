@@ -112,4 +112,10 @@ public class PhysicalNetworkHelper implements NetworkHelper {
           String.format("Subnet %s is in %s state", subnetId, entity.getState()));
     }
   }
+
+  @Override
+  public void releaseFloatingIp(String subnetId, String vmId) throws ExternalException {
+    // Since floating IP is only supported by virtual network, we throw exception here.
+    throw new NetworkNotFoundException(subnetId);
+  }
 }
