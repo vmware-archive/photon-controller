@@ -1,0 +1,13 @@
+[Unit]
+Description=Bootstrap Docker Daemon
+After=cloud-init.service
+Requires=cloud-init.service
+
+[Service]
+ExecStart=/bin/docker daemon -H unix:///var/run/docker-bootstrap.sock -p /var/run/docker-bootstrap.pid --iptables=false --ip-masq=false --bridge=none --graph=/var/lib/docker-bootstrap
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
