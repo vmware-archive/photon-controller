@@ -22,6 +22,7 @@ from calendar import timegm
 from common.lock import lock_with
 from datetime import datetime
 from gen.agent.ttypes import VmCache
+from gen.host.ttypes import ConnectedStatus
 from gen.host.ttypes import VmNetworkInfo
 from gen.host.ttypes import Ipv4Address
 from gen.resource.ttypes import MksTicket
@@ -257,7 +258,14 @@ class AttacheClient(HostClient):
     def get_vm_networks(self, vm_id):
         network_info = []
         for net in self._client.GetVmNetworks(self._session, vm_id):
-            info = VmNetworkInfo(mac_address=net.macAddress, is_connected=net.connected)
+            info = VmNetworkInfo(mac_address=net.macAddress)
+
+            # Fill in the connected status.
+            if net.connected:
+                info.is_connected = ConnectedStatus.CONNECTED
+            else:
+                info.is_connected = ConnectedStatus.DISCONNECTED
+
             if net.name:
                 # only set network if it is neither None nor empty string
                 info.network = net.name
