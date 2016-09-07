@@ -68,4 +68,4 @@ users:
 runcmd:
   - sh /tmp/init-network.sh
   - sh /tmp/check-docker.sh
-  - /root/docker-multinode/etcd.sh > /var/log/start-etcd.log
+  - /root/docker-multinode/etcd.sh >> /var/log/start-etcd.log 2>&1

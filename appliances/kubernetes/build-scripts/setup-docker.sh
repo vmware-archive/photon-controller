@@ -16,27 +16,26 @@
 DS=/usr/lib/systemd/system/docker.service
 awk '{if (sub(/\\$/,"")) printf "%s", $0; else print $0}' $DS > $DS.new
 mv $DS.new $DS
+# When a node restarts, we want the bootstrap docker to come back up first for
+# flannel to start before we bring up Kubernetes services in the normal docker
+# service. We resolve this by requiring the bootstrap docker service to start
+# before the docker service.
+sed -i s/Requires.*/"Requires=docker-containerd.service docker-bootstrap.service"/ $DS
 
 systemctl daemon-reload
+systemctl enable docker-bootstrap
+systemctl start docker-bootstrap
+sleep 5 # Wait for docker-bootstrap to start
+# We assume docker-bootstrap starts successfully.
+
 systemctl enable docker
 systemctl start docker
 sleep 5 # Wait for docker to start
 
-# Create the bootstrap docker so we can pull the etcd and flannel
-# images into it, instead of the regular docker
+# Pull the etcd and flannel images into bootstrap docker, instead of the regular docker
 cd /root/docker-multinode
 source common.sh
 kube::multinode::main
-# In the bootstrap_daemon code. When it does a ps for the bootstrap daemon,
-# it supposed to wait in a while loop and ping every second till it responds.
-# However, Once it pings the first time, the code throws error because
-# daemon is not up yet. This code has the e option to fail on errors which
-# cause the code to exit instead of keep trying till ps responds.
-# Temporarily disable error here (assume the daemon started successfully)
-set +e
-kube::bootstrap::bootstrap_daemon
-set -e
-sleep 5 # Wait for docker to start
 docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/etcd-amd64:2.2.5
 docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/flannel-amd64:0.5.5
 
