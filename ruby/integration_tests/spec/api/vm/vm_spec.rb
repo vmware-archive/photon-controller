@@ -471,12 +471,14 @@ describe "vm", management: true, image: true do
           sleep_time = 5
           puts("Starting vm and try up to #{retries} times with #{sleep_time} sleep seconds to get its ip address...")
 
-          ip_address, connection_network_id = nil, nil
+          connection_network_id, mac_address, ip_address, is_connected = nil, nil, nil, nil
           retries.times do
             network_connections = client.get_vm_networks(vm.id).network_connections
             network_connection = network_connections.first
-            ip_address = network_connection.ip_address
             connection_network_id = network_connection.network
+            mac_address = network_connection.mac_address
+            ip_address = network_connection.ip_address
+            is_connected = network_connection.is_connected
 
             break unless ip_address.nil? || ip_address.empty?
 
@@ -490,6 +492,8 @@ describe "vm", management: true, image: true do
           is_pingable?(ip_address).should be_true
           is_ssh_open?(ip_address).should be_true
           expect(connection_network_id).to eq network_id
+          expect(mac_address).not_to be_blank
+          expect(is_connected).should be_true
         end
       end
 
