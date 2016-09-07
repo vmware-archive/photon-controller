@@ -24,11 +24,9 @@ sleep 5 # Wait for docker to start
 
 # Create the bootstrap docker so we can pull the etcd and flannel
 # images into it, instead of the regular docker
-cd /root/docker-multinode
-source common.sh
-kube::multinode::main
-kube::bootstrap::bootstrap_daemon
-sleep 5 # Wait for docker to start
+systemctl enable docker-bootstrap
+systemctl start docker-bootstrap
+sleep 5 # Wait for docker-bootstrap to start
 docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/etcd-amd64:2.2.5
 docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/flannel-amd64:0.5.5
 

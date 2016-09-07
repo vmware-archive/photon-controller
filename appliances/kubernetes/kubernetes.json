@@ -36,6 +36,11 @@
       "inline": "/tmp/scripts/setup-network.sh"
     },
     {
+      "type": "file",
+      "source": "service/docker-bootstrap.service",
+      "destination": "/lib/systemd/system/docker-bootstrap.service"
+    },
+    {
       "type": "shell",
       "inline": "/tmp/scripts/setup-docker.sh"
     },

@@ -19,23 +19,6 @@ write_files:
     permissions: 0644
     path: /tmp/init-network.sh
   - content: |
-        [Unit]
-        Description=Bootstrap Docker Daemon
-        After=cloud-init.service
-        Requires=cloud-init.service
-
-        [Service]
-        ExecStart=/bin/docker -d -H unix:///var/run/docker-bootstrap.sock -p /var/run/docker-bootstrap.pid --iptables=false --ip-masq=false --bridge=none --graph=/var/lib/docker-bootstrap
-        ExecReload=/bin/kill -HUP $MAINPID
-        KillMode=process
-        Restart=always
-
-        [Install]
-        WantedBy=multi-user.target
-    owner: root:root
-    permissions: 0644
-    path: /lib/systemd/system/docker-bootstrap.service
-  - content: |
         echo "Starting Kubernetes worker"
         export ETCD_IPS=$ETCD_QUORUM
         export MASTER_IP=$MASTER_ADDRESS
@@ -74,8 +57,6 @@ users:
       - $SSH_KEY
 
 runcmd:
-  - systemctl enable /lib/systemd/system/docker-bootstrap.service
-  - systemctl start docker-bootstrap
   - sh /tmp/init-network.sh
   - sh /tmp/check-docker.sh
   - sh /root/setup-kubernetes-worker.sh > /var/log/kubernetes-worker.log
