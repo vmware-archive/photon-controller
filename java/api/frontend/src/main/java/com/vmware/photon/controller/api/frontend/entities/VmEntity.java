@@ -72,6 +72,8 @@ public class VmEntity extends InfrastructureEntity {
   //Transient
   private List<Throwable> warnings = new ArrayList<>();
 
+  private String floatingIp;
+
   @Override
   public String getKind() {
     return Vm.KIND;
@@ -249,6 +251,14 @@ public class VmEntity extends InfrastructureEntity {
 
   public void addWarning(Throwable warning) {
     this.warnings.add(warning);
+  }
+
+  public String getFloatingIp() {
+    return floatingIp;
+  }
+
+  public void setFloatingIp(String floatingIp) {
+    this.floatingIp = floatingIp;
   }
 
   @Override

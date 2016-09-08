@@ -74,5 +74,6 @@
             "kind": "iso",
             "size": 100
         }
-    ]
+    ],
+    "floatingIp": "1.2.3.4"
 }
