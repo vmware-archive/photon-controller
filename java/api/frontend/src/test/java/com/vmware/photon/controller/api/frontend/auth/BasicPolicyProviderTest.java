@@ -132,12 +132,15 @@ public class BasicPolicyProviderTest {
     @DataProvider(name = "TrueData")
     Object[][] getTrueData() {
       return new Object[][]{
-          {AuthRoutes.API.substring(1)},
-          {AuthRoutes.API.substring(1).toUpperCase()},
-          {"api"},
-          {"API"},
-          {"available"},
-          {"AVAILABLE"}
+          {AuthRoutes.API},
+          {AuthRoutes.API.toUpperCase()},
+          {"/api"},
+          {"/API"},
+          {"/available"},
+          {"/AVAILABLE"},
+          {DeploymentResourceRoutes.API + "/1" + DeploymentResourceRoutes.IS_SDN_ENABLED_PATH},
+          {DeploymentResourceRoutes.API.toUpperCase() + "/1"
+              + DeploymentResourceRoutes.IS_SDN_ENABLED_PATH.toUpperCase()}
       };
     }
 

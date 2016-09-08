@@ -282,6 +282,17 @@ public class DeploymentResource {
         client.getDeploymentSize(id));
   }
 
+  @GET
+  @Path(DeploymentResourceRoutes.IS_SDN_ENABLED_PATH)
+  @ApiOperation(value = "Checks if SDN is enabled", response = Boolean.class)
+  public Response isSdnEnabled(@Context Request request,
+                               @PathParam("id") String id) throws ExternalException {
+
+    return generateCustomResponse(
+        Response.Status.OK,
+        client.isSdnEnabled(id));
+  }
+
   private void validateDeploymentDeployOperation(DeploymentDeployOperation operation) throws ExternalException {
     try {
       switch (operation.getDesiredState()) {

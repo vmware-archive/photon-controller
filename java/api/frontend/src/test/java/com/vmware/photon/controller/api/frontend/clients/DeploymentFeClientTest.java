@@ -26,6 +26,7 @@ import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
+import com.vmware.photon.controller.api.frontend.entities.DeploymentEntity;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
@@ -61,6 +62,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
+import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -513,5 +515,42 @@ public class DeploymentFeClientTest {
       feClient.getDeploymentSize(deploymentId);
     }
 
+  }
+
+  /**
+   * Tests the isSdnEnabled method.
+   */
+  public class IsSdnEnabledTest {
+
+    @BeforeMethod
+    public void setup() {
+      setUpCommon();
+    }
+
+    @Test
+    public void testSuccess() throws Exception {
+      String deploymentId = "deployment-id";
+
+      DeploymentEntity deploymentEntity = new DeploymentEntity();
+      deploymentEntity.setId(deploymentId);
+      deploymentEntity.setSdnEnabled(true);
+
+      doReturn(deploymentEntity).when(deploymentBackend).findById(deploymentId);
+
+      assertThat(feClient.isSdnEnabled(deploymentId), is(true));
+    }
+
+    @Test
+    public void testFailure() throws Exception {
+      String deploymentId = "invalid-deployment-id";
+      doThrow(new DeploymentNotFoundException(deploymentId)).when(deploymentBackend).findById(deploymentId);
+
+      try {
+        feClient.isSdnEnabled(deploymentId);
+        fail("Should have failed due to invalid deployment id");
+      } catch (ExternalException e) {
+        assertThat(e.getMessage(), is("Deployment #invalid-deployment-id not found"));
+      }
+    }
   }
 }
