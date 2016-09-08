@@ -52,6 +52,7 @@ from gen.host.ttypes import TransferImageResultCode
 from gen.resource.constants import LOCAL_VMFS_TAG
 from gen.resource.constants import NFS_TAG
 from gen.resource.constants import SHARED_VMFS_TAG
+from gen.resource.constants import VSAN_TAG
 from gen.resource.ttypes import CloneType
 from gen.resource.ttypes import Datastore
 from gen.resource.ttypes import DatastoreType
@@ -986,6 +987,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
             DatastoreType.NFS_41: NFS_TAG,
             DatastoreType.SHARED_VMFS: SHARED_VMFS_TAG,
             DatastoreType.LOCAL_VMFS: LOCAL_VMFS_TAG,
+            DatastoreType.LOCAL_VMFS: VSAN_TAG,
         }
 
         if type in type_to_tag:
@@ -994,7 +996,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
             return None
 
     def _other_tags(self, tag):
-        tags = [NFS_TAG, SHARED_VMFS_TAG, LOCAL_VMFS_TAG]
+        tags = [NFS_TAG, SHARED_VMFS_TAG, LOCAL_VMFS_TAG, VSAN_TAG]
         tags.remove(tag)
         return tags
 
