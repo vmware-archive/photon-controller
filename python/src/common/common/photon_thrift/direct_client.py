@@ -11,10 +11,12 @@
 # under the License.
 
 import logging
+import ssl
+import os
 
 from thrift.protocol import TCompactProtocol
 from thrift.protocol import TMultiplexedProtocol
-from thrift.transport import TSocket
+from thrift.transport import TSSLSocket
 from thrift.transport import TTransport
 
 
@@ -30,7 +32,7 @@ class DirectClient(object):
         client_timeout: if specified, it is set as socket timeout.
     """
     def __init__(self, service_name, client_cls, host, port,
-                 client_timeout=None):
+                 client_timeout=None, cert_file=None, validate=True):
         self._logger = logging.getLogger(__name__)
         self._service_name = service_name
         self._client_cls = client_cls
@@ -40,10 +42,39 @@ class DirectClient(object):
         self._client = None
         self._client_timeout = client_timeout
         self._request_log_level = logging.INFO
+        self._cert_file = cert_file
+        self._validate = validate
 
     def connect(self):
         """Connect to the HostHandler."""
-        sock = TSocket.TSocket(self._host, self._port)
+        cert_file = "/etc/vmware/ssl/host.pem"
+        # this file should only be present in the non-auth scenario and init
+        # installation
+        cert_file_non_auth = "/etc/vmware/ssl/non-auth.pem"
+
+        if os.path.isfile(cert_file_non_auth) or not self._validate:
+            # disable thrift based cert validation, this exists mainly since python didn't do cert validation
+            # prior to 2.7.9
+            if self._cert_file is not None:
+                cert_file_non_auth = self._cert_file
+            sock = TSSLSocket(host=self._host, port=self._port, validate=False, certfile=cert_file_non_auth)
+            # disable cert validation on the python level if we are using python 2.7.9 or newer
+            # thanks to https://dnaeon.github.io/disable-python-ssl-verification/
+            try:
+                _create_unverified_https_context = ssl._create_unverified_context
+            except AttributeError:
+                # Legacy Python that doesn't verify HTTPS certificates by default
+                self._logger.info("Legacy Python that doesn't verify HTTPS certificates by default")
+                pass
+            else:
+                # Handle target environment that doesn't support HTTPS verification
+                self._logger.info("Handle target environment that doesn't support HTTPS verification")
+                ssl._create_default_https_context = _create_unverified_https_context
+        else:
+            if self._cert_file is not None:
+                cert_file = self._cert_file
+            sock = TSSLSocket(host=self._host, port=self._port, certfile=cert_file)
+
         if self._client_timeout:
             sock.setTimeout(self._client_timeout * 1000)
         self._transport = TTransport.TFramedTransport(sock)
