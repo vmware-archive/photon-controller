@@ -14,6 +14,10 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export SOURCE_OVA=${SCRIPT_DIR}/../photon-ova/build/photon-ova-virtualbox.ova
 export FORCE_REBUILD_PHOTON=0
 
+if [ ! -n "${HARBOR_VERSION}" ]; then
+  export HARBOR_VERSION=0.3.3
+fi
+
 while [ $# -gt 0 ]; do
   case "$1" in
     -r|--rebuild-photon)
@@ -51,3 +55,7 @@ packer build -force harbor.json
 # Make OVA VMware compatible
 cd build
 ${SCRIPT_DIR}/../scripts/toVMwareOva.sh harbor-virtualbox harbor
+
+BRANCH=${GERRIT_BRANCH:-`git rev-parse --abbrev-ref HEAD`}
+COMMIT=`git rev-parse --short HEAD`
+mv harbor.ova harbor-${HARBOR_VERSION}-pc-${BRANCH}-${COMMIT}.ova
