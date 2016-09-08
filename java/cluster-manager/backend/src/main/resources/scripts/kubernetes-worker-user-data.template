@@ -1,7 +1,4 @@
 #cloud-config
-bootcmd:
-  - rm -f /etc/systemd/network/*.network
-  - systemctl stop systemd-networkd
 
 write_files:
   - content: |
@@ -57,6 +54,8 @@ users:
       - $SSH_KEY
 
 runcmd:
+  - rm -f /etc/systemd/network/*.network
+  - systemctl stop systemd-networkd
   - sh /tmp/init-network.sh
   - sh /tmp/check-docker.sh
   - sh /root/setup-kubernetes-worker.sh >> /var/log/kubernetes-worker.log 2>&1
