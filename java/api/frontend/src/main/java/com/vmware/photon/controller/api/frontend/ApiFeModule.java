@@ -100,6 +100,7 @@ import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.name.Names;
 import com.google.inject.servlet.RequestScoped;
+import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,8 +120,10 @@ public class ApiFeModule extends AbstractModule {
   private static final Logger logger = LoggerFactory.getLogger(ApiFeModule.class);
   private ApiFeConfiguration configuration;
   private ServiceHost serviceHost;
+  private final TSSLTransportParameters params;
 
-  public ApiFeModule() {
+  public ApiFeModule(TSSLTransportParameters params) {
+    this.params = params;
   }
 
   public void setConfiguration(ApiFeConfiguration configuration) {
@@ -230,8 +233,8 @@ public class ApiFeModule extends AbstractModule {
         .implement(TaskCommand.class, TaskCommand.class)
         .build(TaskCommandFactory.class));
 
-    install(new ThriftModule());
-    install(new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {
+    install(new ThriftModule(this.params));
+    install(new ThriftServiceModule<>(new TypeLiteral<Host.AsyncSSLClient>() {
     }));
 
     install(new FactoryModuleBuilder()

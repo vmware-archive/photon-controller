@@ -33,8 +33,8 @@ public class MethodCallBuilder {
    * @param response
    * @return
    */
-  public static Host.AsyncClient.start_image_scan_call buildStartImageScanMethodCall(StartImageScanResponse response) {
-    Host.AsyncClient.start_image_scan_call call = mock(Host.AsyncClient.start_image_scan_call.class);
+  public static Host.AsyncSSLClient.start_image_scan_call buildStartImageScanMethodCall(StartImageScanResponse response) {
+    Host.AsyncSSLClient.start_image_scan_call call = mock(Host.AsyncSSLClient.start_image_scan_call.class);
 
     try {
       when(call.getResult()).thenReturn(response);
@@ -51,9 +51,9 @@ public class MethodCallBuilder {
    * @param response
    * @return
    */
-  public static Host.AsyncClient.get_inactive_images_call buildGetInactiveImagesMethodCall(
+  public static Host.AsyncSSLClient.get_inactive_images_call buildGetInactiveImagesMethodCall(
       GetInactiveImagesResponse response) {
-    Host.AsyncClient.get_inactive_images_call call = mock(Host.AsyncClient.get_inactive_images_call.class);
+    Host.AsyncSSLClient.get_inactive_images_call call = mock(Host.AsyncSSLClient.get_inactive_images_call.class);
 
     try {
       when(call.getResult()).thenReturn(response);
@@ -70,9 +70,9 @@ public class MethodCallBuilder {
    * @param response
    * @return
    */
-  public static Host.AsyncClient.start_image_sweep_call buildStartImageSweepMethodCall(
+  public static Host.AsyncSSLClient.start_image_sweep_call buildStartImageSweepMethodCall(
       StartImageSweepResponse response) {
-    Host.AsyncClient.start_image_sweep_call call = mock(Host.AsyncClient.start_image_sweep_call.class);
+    Host.AsyncSSLClient.start_image_sweep_call call = mock(Host.AsyncSSLClient.start_image_sweep_call.class);
 
     try {
       when(call.getResult()).thenReturn(response);
@@ -89,9 +89,9 @@ public class MethodCallBuilder {
    * @param response
    * @return
    */
-  public static Host.AsyncClient.get_deleted_images_call buildGetDeletedImagesMethodCall(
+  public static Host.AsyncSSLClient.get_deleted_images_call buildGetDeletedImagesMethodCall(
       GetDeletedImagesResponse response) {
-    Host.AsyncClient.get_deleted_images_call call = mock(Host.AsyncClient.get_deleted_images_call.class);
+    Host.AsyncSSLClient.get_deleted_images_call call = mock(Host.AsyncSSLClient.get_deleted_images_call.class);
 
     try {
       when(call.getResult()).thenReturn(response);
