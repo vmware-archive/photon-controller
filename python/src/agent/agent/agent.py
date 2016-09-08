@@ -31,11 +31,13 @@ import signal
 import threading
 import time
 import traceback
+import os.path
+import ssl
 
 from thrift import TMultiplexedProcessor
 from thrift.protocol import TCompactProtocol
 from thrift.server import TNonblockingServer
-from thrift.transport import TSocket
+from thrift.transport import TSSLSocket
 
 from .agent_config import AgentConfig
 import common
@@ -131,8 +133,31 @@ class Agent:
             handler = plugin.handler
             processor = plugin.service.Processor(handler)
             mux_processor.registerProcessor(plugin.name, processor)
+        cert_file = "/etc/vmware/ssl/host.pem"
+        # this file should only be present in the non-auth scenario and init
+        # installation
+        cert_file_non_auth = "/etc/vmware/ssl/non-auth.pem"
 
-        transport = TSocket.TServerSocket(port=self._config.host_port)
+        if os.path.isfile(cert_file_non_auth):
+            transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=cert_file_non_auth)
+            # disable thrift based cert validation, this exists mainly since python didn't do cert validation
+            # prior to 2.7.9
+            transport.validate = False
+            # disable cert validation on the python level if we are using python 2.7.9 or newer
+            # thanks to https://dnaeon.github.io/disable-python-ssl-verification/
+            try:
+                _create_unverified_https_context = ssl._create_unverified_context
+            except AttributeError:
+                # Legacy Python that doesn't verify HTTPS certificates by default
+                self._logger.info("Legacy Python that doesn't verify HTTPS certificates by default")
+                pass
+            else:
+                # Handle target environment that doesn't support HTTPS verification
+                self._logger.info("Handle target environment that doesn't support HTTPS verification")
+                ssl._create_default_https_context = _create_unverified_https_context
+        else:
+            transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=cert_file)
+
         protocol_factory = TCompactProtocol.TCompactProtocolFactory()
 
         server = TNonblockingServer.TNonblockingServer(

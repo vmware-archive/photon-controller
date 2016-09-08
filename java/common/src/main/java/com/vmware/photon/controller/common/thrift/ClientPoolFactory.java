@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.common.thrift;
 
 import com.google.inject.name.Named;
-import org.apache.thrift.async.TAsyncClient;
+import org.apache.thrift.async.TAsyncSSLClient;
 
 import java.net.InetSocketAddress;
 import java.util.Set;
@@ -24,7 +24,7 @@ import java.util.Set;
  *
  * @param <C> client type
  */
-public interface ClientPoolFactory<C extends TAsyncClient> {
+public interface ClientPoolFactory<C extends TAsyncSSLClient> {
   ClientPool<C> create(ServerSet serverSet, ClientPoolOptions options);
 
   @Named("Basic")

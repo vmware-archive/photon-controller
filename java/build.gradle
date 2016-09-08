@@ -133,7 +133,6 @@ subprojects {
 
   compileJava.dependsOn(checkJavaVersion);
   compileJava.dependsOn(createPom);
-
   test {
     useTestNG()
     testLogging.events "failed", "passed"
