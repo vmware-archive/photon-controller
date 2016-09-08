@@ -24,7 +24,7 @@ import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 
-import org.apache.thrift.async.TAsyncClient;
+import org.apache.thrift.async.TAsyncSSLClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +71,7 @@ public class ThriftClientFactory implements StatusProviderFactory {
     return createClient(proxy);
   }
 
-  private <C extends TAsyncClient> StatusProvider createClient(ClientProxy proxy) throws InternalException {
+  private <C extends TAsyncSSLClient> StatusProvider createClient(ClientProxy proxy) throws InternalException {
     try {
       Constructor constructor = this.clientClass.getConstructor(ClientProxy.class);
       return (StatusProvider) constructor.newInstance(proxy);
