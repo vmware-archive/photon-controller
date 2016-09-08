@@ -49,4 +49,6 @@ public class DeploymentResourceRoutes {
   public static final String SET_IMAGE_DATASTORES_ACTION = "/set_image_datastores";
 
   public static final String DEPLOYMENT_SIZE_PATH = "/size";
+
+  public static final String IS_SDN_ENABLED_PATH = "/is_sdn_enabled";
 }

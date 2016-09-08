@@ -296,4 +296,8 @@ public class DeploymentFeClient {
     return deploymentSize;
 
   }
+
+  public Boolean isSdnEnabled(String id) throws ExternalException {
+    return deploymentBackend.findById(id).getSdnEnabled();
+  }
 }

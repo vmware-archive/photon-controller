@@ -44,6 +44,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import javax.ws.rs.client.Entity;
@@ -459,6 +460,32 @@ public class DeploymentResourceTest extends ResourceTest {
 
     ApiError errors = response.readEntity(ApiError.class);
     assertThat(errors.getCode(), equalTo("DeploymentNotFound"));
+    assertThat(errors.getMessage(), containsString("Deployment #" + deploymentId + " not found"));
+  }
+
+  @Test
+  public void testCheckSdnEnabledByValidId() throws Exception {
+    doReturn(true).when(feClient).isSdnEnabled(deploymentId);
+
+    String uri = UriBuilder.fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes
+        .IS_SDN_ENABLED_PATH).build(deploymentId).toString();
+    Response response = client().target(uri).request().get();
+
+    assertThat(response.getStatus(), is(200));
+    assertThat(response.readEntity(Boolean.class), is(true));
+  }
+
+  @Test
+  public void testCheckSdnEnabledByInvalidId() throws Exception {
+    doThrow(new DeploymentNotFoundException(deploymentId)).when(feClient).isSdnEnabled(deploymentId);
+
+    String uri = UriBuilder.fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes
+        .IS_SDN_ENABLED_PATH).build(deploymentId).toString();
+    Response response = client().target(uri).request().get();
+
+    assertThat(response.getStatus(), is(404));
+    ApiError errors = response.readEntity(ApiError.class);
+    assertThat(errors.getCode(), is("DeploymentNotFound"));
     assertThat(errors.getMessage(), containsString("Deployment #" + deploymentId + " not found"));
   }
 

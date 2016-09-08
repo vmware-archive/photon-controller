@@ -53,10 +53,12 @@ public class BasicPolicyProvider implements PolicyProvider {
    * available is unauthenticated because it's intended for load balancers to detect if the system
    * is responding.
    */
-  private static final String[] OPEN_ACCESS_ROUTES = {
-      AuthRoutes.API.toLowerCase(),
-      AvailableRoutes.API.toLowerCase(),
-      "/api",
+  private static final Pattern[] OPEN_ACCESS_ROUTES = {
+      Pattern.compile(AuthRoutes.API, Pattern.CASE_INSENSITIVE),
+      Pattern.compile(AvailableRoutes.API, Pattern.CASE_INSENSITIVE),
+      Pattern.compile("/api", Pattern.CASE_INSENSITIVE),
+      Pattern.compile(DeploymentResourceRoutes.API + "/.*" + DeploymentResourceRoutes.IS_SDN_ENABLED_PATH,
+           Pattern.CASE_INSENSITIVE)
   };
 
   /**
@@ -74,10 +76,10 @@ public class BasicPolicyProvider implements PolicyProvider {
 
   @Override
   public boolean isOpenAccessRoute(ContainerRequest request) {
-    String path = getRequestPath(request);
+    String path = request.getPath(true);
 
-    for (String route : OPEN_ACCESS_ROUTES) {
-      if (path.startsWith(route)) {
+    for (Pattern route : OPEN_ACCESS_ROUTES) {
+      if (route.matcher(path).matches()) {
         return true;
       }
     }
