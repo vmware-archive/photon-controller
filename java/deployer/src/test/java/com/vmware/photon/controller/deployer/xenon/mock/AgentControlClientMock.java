@@ -74,7 +74,7 @@ public class AgentControlClientMock extends AgentControlClient {
       String ntpEndpoint,
       String hostId,
       String deploymentId,
-      AsyncMethodCallback<AgentControl.AsyncClient.provision_call> handler) {
+      AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call> handler) {
 
     logger.info("Host provision complete invocation");
 
@@ -82,7 +82,7 @@ public class AgentControlClientMock extends AgentControlClient {
       handler.onError(provisionFailure);
 
     } else if (null != provisionResultCode) {
-      AgentControl.AsyncClient.provision_call provisionCall = mock(AgentControl.AsyncClient.provision_call.class);
+      AgentControl.AsyncSSLClient.provision_call provisionCall = mock(AgentControl.AsyncSSLClient.provision_call.class);
       ProvisionResponse provisionResponse = new ProvisionResponse();
       provisionResponse.setResult(provisionResultCode);
 
@@ -100,7 +100,7 @@ public class AgentControlClientMock extends AgentControlClient {
   }
 
   @Override
-  public void upgrade(AsyncMethodCallback<AgentControl.AsyncClient.upgrade_call> handler) {
+  public void upgrade(AsyncMethodCallback<AgentControl.AsyncSSLClient.upgrade_call> handler) {
 
     logger.info("Host upgrade complete invocation");
 
@@ -108,7 +108,7 @@ public class AgentControlClientMock extends AgentControlClient {
       handler.onError(upgradeFailure);
 
     } else if (null != upgradeResultCode) {
-      AgentControl.AsyncClient.upgrade_call upgradeCall = mock(AgentControl.AsyncClient.upgrade_call.class);
+      AgentControl.AsyncSSLClient.upgrade_call upgradeCall = mock(AgentControl.AsyncSSLClient.upgrade_call.class);
       UpgradeResponse upgradeResponse = new UpgradeResponse();
       upgradeResponse.setResult(upgradeResultCode);
 
@@ -126,7 +126,7 @@ public class AgentControlClientMock extends AgentControlClient {
   }
 
   @Override
-  public void getAgentStatus(AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call> handler) {
+  public void getAgentStatus(AsyncMethodCallback<AgentControl.AsyncSSLClient.get_agent_status_call> handler) {
 
     logger.info("Agent get status complete invocation");
 
@@ -134,8 +134,8 @@ public class AgentControlClientMock extends AgentControlClient {
       handler.onError(getAgentStatusFailure);
 
     } else if (null != agentStatusCode) {
-      AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall =
-          mock(AgentControl.AsyncClient.get_agent_status_call.class);
+      AgentControl.AsyncSSLClient.get_agent_status_call getAgentStatusCall =
+          mock(AgentControl.AsyncSSLClient.get_agent_status_call.class);
       AgentStatusResponse agentStatusResponse = new AgentStatusResponse();
       agentStatusResponse.setStatus(agentStatusCode);
       agentStatusResponse.setStatusIsSet(true);

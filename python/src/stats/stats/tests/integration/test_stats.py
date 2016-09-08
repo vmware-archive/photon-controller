@@ -13,6 +13,7 @@
 import logging
 import time
 import unittest
+import os
 
 from hamcrest import *  # noqa
 from gen.stats.plugin import StatsService
@@ -51,8 +52,9 @@ class TestStats(unittest.TestCase):
         sleep_time = 0.1
         while sleep_time < max_sleep_time:
             try:
-                client = DirectClient(service, cls, server, 8835,
-                                      client_timeout=30)
+                cert_file = os.environ["WORKSPACE"] + "/python/non-auth.pem"
+                client = DirectClient(service_name=service, client_cls=cls, host=server,
+                                      port=8835, validate=False, cert_file=cert_file, client_timeout=30)
                 client.connect()
                 return client
             except TTransport.TTransportException:
