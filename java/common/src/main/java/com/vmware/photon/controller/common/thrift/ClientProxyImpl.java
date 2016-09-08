@@ -26,10 +26,10 @@ import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import org.apache.thrift.TBase;
 import org.apache.thrift.async.AsyncMethodCallback;
-import org.apache.thrift.async.TAsyncClient;
-import org.apache.thrift.async.TAsyncClientManager;
+import org.apache.thrift.async.TAsyncSSLClient;
+import org.apache.thrift.async.TAsyncSSLClientManager;
 import org.apache.thrift.protocol.TProtocolFactory;
-import org.apache.thrift.transport.TNonblockingTransport;
+import org.apache.thrift.transport.TNonblockingSSLTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -47,7 +47,7 @@ import java.util.concurrent.ExecutorService;
  *
  * @param <C> async thrift client type
  */
-public class ClientProxyImpl<C extends TAsyncClient> implements ClientProxy<C> {
+public class ClientProxyImpl<C extends TAsyncSSLClient> implements ClientProxy<C> {
 
   private static final Logger logger = LoggerFactory.getLogger(ClientProxyImpl.class);
 
@@ -91,7 +91,7 @@ public class ClientProxyImpl<C extends TAsyncClient> implements ClientProxy<C> {
   @SuppressWarnings("unchecked")
   public synchronized C get() {
     return (C) this.enhancer.create(
-        new Class[]{TProtocolFactory.class, TAsyncClientManager.class, TNonblockingTransport.class},
+        new Class[]{TProtocolFactory.class, TAsyncSSLClientManager.class, TNonblockingSSLTransport.class},
         new Object[]{null, null, null});
   }
 
