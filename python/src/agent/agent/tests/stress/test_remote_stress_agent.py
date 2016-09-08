@@ -78,7 +78,8 @@ class TestRemoteStressAgent(unittest.TestCase):
     def clear(self):
         """Remove all the VMs and disks"""
         for host in self.hosts:
-            client = DirectClient("Host", Host.Client, host, 8835)
+            cert_file = os.environ["WORKSPACE"]+"/python/non-auth.pem"
+            client = DirectClient(service_name=service, client_cls=cls, host=server, port=8835, validate=False, cert_file=cert_file)
             client.connect()
             request = GetResourcesRequest()
             response = rpc_call(client.get_resources, request)
@@ -92,7 +93,8 @@ class TestRemoteStressAgent(unittest.TestCase):
 
     @staticmethod
     def workload(num_vms, additional_places, server, port):
-        client = DirectClient("Host", Host.Client, server, port)
+        cert_file = os.environ["WORKSPACE"]+"/python/non-auth.pem"
+        client = DirectClient(service_name=service, client_cls=cls, host=server, port=8835, validate=False, cert_file=cert_file)
         client.connect()
         for _ in xrange(num_vms):
             vm = VmWrapper(client)

@@ -111,7 +111,8 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         sleep_time = 0.1
         while sleep_time < max_sleep_time:
             try:
-                client = DirectClient(service, cls, server, 8835)
+                cert_file = os.environ["WORKSPACE"]+"/python/non-auth.pem"
+                client = DirectClient(service_name=service, client_cls=cls, host=server, port=8835, validate=False, cert_file=cert_file)
                 client.connect()
                 return client
             except TTransport.TTransportException:
