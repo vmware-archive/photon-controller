@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.common.thrift;
 
+import com.vmware.photon.controller.common.ssl.KeyStoreUtils;
+
 import com.example.echo.Echoer;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
@@ -21,16 +23,24 @@ import com.google.inject.util.Modules;
 import org.testng.IModuleFactory;
 import org.testng.ITestContext;
 
+import javax.net.ssl.SSLContext;
+
+import java.util.UUID;
+
 /**
  * Guice module factory for testing.
  */
 public class ModuleFactory implements IModuleFactory {
+
+  public static final String KEY_PATH = "/tmp/" + UUID.randomUUID().toString();
+
   @Override
   public Module createModule(ITestContext context, Class<?> testClass) {
+    SSLContext sslContext = KeyStoreUtils.acceptAllCerts(KeyStoreUtils.THRIFT_PROTOCOL);
     return Modules.combine(
-        new ThriftModule(),
+        new ThriftModule(sslContext),
         new ThriftServiceModule<>(
-            new TypeLiteral<Echoer.AsyncClient>() {
+            new TypeLiteral<Echoer.AsyncSSLClient>() {
             }
         ),
         new TracingTestModule());
