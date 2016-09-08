@@ -30,6 +30,7 @@ import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.StaleGenerationException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
+import com.vmware.photon.controller.common.ssl.KeyStoreUtils;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
 import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.thrift.ModuleFactory;
@@ -109,9 +110,12 @@ import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
+import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -132,9 +136,13 @@ import static org.mockito.Mockito.verify;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -144,23 +152,44 @@ import java.util.concurrent.TimeUnit;
 public class HostClientTest {
 
   private HostClient hostClient;
-  private Host.AsyncClient clientProxy;
+  private Host.AsyncSSLClient clientProxy;
+  private TSSLTransportParameters params;
+
+  private final String keyPath = "/tmp/" + UUID.randomUUID().toString();
+
+  @BeforeClass
+  public void beforeClass() {
+    KeyStoreUtils.generateKeys(keyPath);
+  }
+
+  @AfterClass
+  public void afterClass() {
+    try {
+      Files.delete(Paths.get(keyPath));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
 
   private void setUp() {
     hostClient = spy(new HostClient(
         mock(ClientProxyFactory.class), mock(ClientPoolFactory.class)));
-    clientProxy = mock(Host.AsyncClient.class);
+    clientProxy = mock(Host.AsyncSSLClient.class);
   }
 
   private void setUpWithGuiceInjection() {
+    params = new TSSLTransportParameters();
+    params.setTrustStore(
+        keyPath + "/" + KeyStoreUtils.KEY_STORE_NAME,
+        KeyStoreUtils.KEY_PASS);
     Injector injector = Guice.createInjector(
-        new ThriftModule(),
+        new ThriftModule(params),
         new ThriftServiceModule<>(
-            new TypeLiteral<Echoer.AsyncClient>() {
+            new TypeLiteral<Echoer.AsyncSSLClient>() {
             }
         ),
         new ThriftServiceModule<>(
-            new TypeLiteral<Host.AsyncClient>() {
+            new TypeLiteral<Host.AsyncSSLClient>() {
             }
         ),
         new ModuleFactory.TracingTestModule());
@@ -268,7 +297,7 @@ public class HostClientTest {
       assertThat(hostClient.getHostIp(), is("127.0.0.1"));
       assertThat(hostClient.getPort(), is(2181));
 
-      hostClient.setClientProxy(mock(Host.AsyncClient.class));
+      hostClient.setClientProxy(mock(Host.AsyncSSLClient.class));
 
       hostClient.setIpAndPort("127.0.0.1", 2180);
       assertThat(hostClient.getHostIp(), is("127.0.0.1"));
@@ -344,12 +373,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.attach_disks_call attachDisksCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.attach_disks_call attachDisksCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.attach_disks_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.attach_disks_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(attachDisksCall);
           return null;
         }
@@ -360,7 +389,7 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       VmDisksOpResponse vmDisksOpResponse = new VmDisksOpResponse();
       vmDisksOpResponse.setResult(VmDiskOpResultCode.OK);
-      final Host.AsyncClient.attach_disks_call attachDisksCall = mock(Host.AsyncClient.attach_disks_call.class);
+      final Host.AsyncSSLClient.attach_disks_call attachDisksCall = mock(Host.AsyncSSLClient.attach_disks_call.class);
       doReturn(vmDisksOpResponse).when(attachDisksCall).getResult();
 
       doAnswer(getAnswer(attachDisksCall))
@@ -397,7 +426,7 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.attach_disks_call attachDisksCall = mock(Host.AsyncClient.attach_disks_call.class);
+      final Host.AsyncSSLClient.attach_disks_call attachDisksCall = mock(Host.AsyncSSLClient.attach_disks_call.class);
       doThrow(new TException("Thrift exception")).when(attachDisksCall).getResult();
       doAnswer(getAnswer(attachDisksCall))
           .when(clientProxy).attach_disks(any(VmDisksAttachRequest.class), any(AsyncMethodCallback.class));
@@ -419,7 +448,7 @@ public class HostClientTest {
       vmDisksOpResponse.setResult(resultCode);
       vmDisksOpResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.attach_disks_call attachDisksCall = mock(Host.AsyncClient.attach_disks_call.class);
+      final Host.AsyncSSLClient.attach_disks_call attachDisksCall = mock(Host.AsyncSSLClient.attach_disks_call.class);
       doReturn(vmDisksOpResponse).when(attachDisksCall).getResult();
 
 
@@ -469,12 +498,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.attach_iso_call attachIsoCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.attach_iso_call attachIsoCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.attach_iso_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.attach_iso_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(attachIsoCall);
           return null;
         }
@@ -485,7 +514,7 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       AttachISOResponse response = new AttachISOResponse();
       response.setResult(AttachISOResultCode.OK);
-      final Host.AsyncClient.attach_iso_call attachIsoCall = mock(Host.AsyncClient.attach_iso_call.class);
+      final Host.AsyncSSLClient.attach_iso_call attachIsoCall = mock(Host.AsyncSSLClient.attach_iso_call.class);
       doReturn(response).when(attachIsoCall).getResult();
       doAnswer(getAnswer(attachIsoCall))
           .when(clientProxy).attach_iso(any(AttachISORequest.class), any(AsyncMethodCallback.class));
@@ -521,7 +550,7 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.attach_iso_call attachIsoCall = mock(Host.AsyncClient.attach_iso_call.class);
+      final Host.AsyncSSLClient.attach_iso_call attachIsoCall = mock(Host.AsyncSSLClient.attach_iso_call.class);
       doThrow(new TException("Thrift exception")).when(attachIsoCall).getResult();
       doAnswer(getAnswer(attachIsoCall))
           .when(clientProxy).attach_iso(any(AttachISORequest.class), any(AsyncMethodCallback.class));
@@ -543,7 +572,7 @@ public class HostClientTest {
       attachISOResponse.setResult(resultCode);
       attachISOResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.attach_iso_call attachIsoCall = mock(Host.AsyncClient.attach_iso_call.class);
+      final Host.AsyncSSLClient.attach_iso_call attachIsoCall = mock(Host.AsyncSSLClient.attach_iso_call.class);
       doReturn(attachISOResponse).when(attachIsoCall).getResult();
       doAnswer(getAnswer(attachIsoCall))
           .when(clientProxy).attach_iso(any(AttachISORequest.class), any(AsyncMethodCallback.class));
@@ -591,12 +620,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.copy_image_call copyImageCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.copy_image_call copyImageCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.copy_image_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.copy_image_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(copyImageCall);
           return null;
         }
@@ -607,7 +636,7 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       CopyImageResponse copyImageResponse = new CopyImageResponse();
       copyImageResponse.setResult(CopyImageResultCode.OK);
-      final Host.AsyncClient.copy_image_call copyImageCall = mock(Host.AsyncClient.copy_image_call.class);
+      final Host.AsyncSSLClient.copy_image_call copyImageCall = mock(Host.AsyncSSLClient.copy_image_call.class);
       doReturn(copyImageResponse).when(copyImageCall).getResult();
       doAnswer(getAnswer(copyImageCall))
           .when(clientProxy).copy_image(any(CopyImageRequest.class), any(AsyncMethodCallback.class));
@@ -643,7 +672,7 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.copy_image_call copyImageCall = mock(Host.AsyncClient.copy_image_call.class);
+      final Host.AsyncSSLClient.copy_image_call copyImageCall = mock(Host.AsyncSSLClient.copy_image_call.class);
       doThrow(new TException("Thrift exception")).when(copyImageCall).getResult();
       doAnswer(getAnswer(copyImageCall))
           .when(clientProxy).copy_image(any(CopyImageRequest.class), any(AsyncMethodCallback.class));
@@ -665,7 +694,7 @@ public class HostClientTest {
       copyImageResponse.setResult(resultCode);
       copyImageResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.copy_image_call copyImageCall = mock(Host.AsyncClient.copy_image_call.class);
+      final Host.AsyncSSLClient.copy_image_call copyImageCall = mock(Host.AsyncSSLClient.copy_image_call.class);
       doReturn(copyImageResponse).when(copyImageCall).getResult();
       doAnswer(getAnswer(copyImageCall))
           .when(clientProxy).copy_image(any(CopyImageRequest.class), any(AsyncMethodCallback.class));
@@ -714,12 +743,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.transfer_image_call transferImageCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.transfer_image_call transferImageCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.transfer_image_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.transfer_image_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(transferImageCall);
           return null;
         }
@@ -730,7 +759,8 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       TransferImageResponse transferImageResponse = new TransferImageResponse();
       transferImageResponse.setResult(TransferImageResultCode.OK);
-      final Host.AsyncClient.transfer_image_call transferImageCall = mock(Host.AsyncClient.transfer_image_call.class);
+      final Host.AsyncSSLClient.transfer_image_call transferImageCall
+        = mock(Host.AsyncSSLClient.transfer_image_call.class);
       doReturn(transferImageResponse).when(transferImageCall).getResult();
       doAnswer(getAnswer(transferImageCall))
           .when(clientProxy).transfer_image(any(TransferImageRequest.class), any(AsyncMethodCallback.class));
@@ -767,7 +797,8 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.transfer_image_call transferImageCall = mock(Host.AsyncClient.transfer_image_call.class);
+      final Host.AsyncSSLClient.transfer_image_call transferImageCall
+        = mock(Host.AsyncSSLClient.transfer_image_call.class);
       doThrow(new TException("Thrift exception")).when(transferImageCall).getResult();
       doAnswer(getAnswer(transferImageCall))
           .when(clientProxy).transfer_image(any(TransferImageRequest.class), any(AsyncMethodCallback.class));
@@ -789,7 +820,8 @@ public class HostClientTest {
       transferImageResponse.setResult(resultCode);
       transferImageResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.transfer_image_call transferImageCall = mock(Host.AsyncClient.transfer_image_call.class);
+      final Host.AsyncSSLClient.transfer_image_call transferImageCall
+        = mock(Host.AsyncSSLClient.transfer_image_call.class);
       doReturn(transferImageResponse).when(transferImageCall).getResult();
       doAnswer(getAnswer(transferImageCall))
           .when(clientProxy).transfer_image(any(TransferImageRequest.class), any(AsyncMethodCallback.class));
@@ -831,12 +863,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.create_disks_call createDisksCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.create_disks_call createDisksCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.create_disks_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.create_disks_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(createDisksCall);
           return null;
         }
@@ -847,7 +879,7 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       CreateDisksResponse createDisksResponse = new CreateDisksResponse();
       createDisksResponse.setResult(CreateDisksResultCode.OK);
-      final Host.AsyncClient.create_disks_call createDisksCall = mock(Host.AsyncClient.create_disks_call.class);
+      final Host.AsyncSSLClient.create_disks_call createDisksCall = mock(Host.AsyncSSLClient.create_disks_call.class);
       doReturn(createDisksResponse).when(createDisksCall).getResult();
       doAnswer(getAnswer(createDisksCall))
           .when(clientProxy).create_disks(any(CreateDisksRequest.class), any(AsyncMethodCallback.class));
@@ -883,7 +915,7 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.create_disks_call createDisksCall = mock(Host.AsyncClient.create_disks_call.class);
+      final Host.AsyncSSLClient.create_disks_call createDisksCall = mock(Host.AsyncSSLClient.create_disks_call.class);
       doThrow(new TException("Thrift exception")).when(createDisksCall).getResult();
       doAnswer(getAnswer(createDisksCall))
           .when(clientProxy).create_disks(any(CreateDisksRequest.class), any(AsyncMethodCallback.class));
@@ -905,7 +937,7 @@ public class HostClientTest {
       createDisksResponse.setResult(resultCode);
       createDisksResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.create_disks_call createDisksCall = mock(Host.AsyncClient.create_disks_call.class);
+      final Host.AsyncSSLClient.create_disks_call createDisksCall = mock(Host.AsyncSSLClient.create_disks_call.class);
       doReturn(createDisksResponse).when(createDisksCall).getResult();
       doAnswer(getAnswer(createDisksCall))
           .when(clientProxy).create_disks(any(CreateDisksRequest.class), any(AsyncMethodCallback.class));
@@ -951,12 +983,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.create_vm_call createVmCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.create_vm_call createVmCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.create_vm_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.create_vm_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(createVmCall);
           return null;
         }
@@ -967,7 +999,7 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       CreateVmResponse createVmResponse = new CreateVmResponse();
       createVmResponse.setResult(CreateVmResultCode.OK);
-      final Host.AsyncClient.create_vm_call createVmCall = mock(Host.AsyncClient.create_vm_call.class);
+      final Host.AsyncSSLClient.create_vm_call createVmCall = mock(Host.AsyncSSLClient.create_vm_call.class);
       doReturn(createVmResponse).when(createVmCall).getResult();
       doAnswer(getAnswer(createVmCall))
           .when(clientProxy).create_vm(any(CreateVmRequest.class), any(AsyncMethodCallback.class));
@@ -1004,7 +1036,7 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.create_vm_call createVmCall = mock(Host.AsyncClient.create_vm_call.class);
+      final Host.AsyncSSLClient.create_vm_call createVmCall = mock(Host.AsyncSSLClient.create_vm_call.class);
       doThrow(new TException("Thrift exception")).when(createVmCall).getResult();
       doAnswer(getAnswer(createVmCall))
           .when(clientProxy).create_vm(any(CreateVmRequest.class), any(AsyncMethodCallback.class));
@@ -1026,7 +1058,7 @@ public class HostClientTest {
       createVmResponse.setResult(resultCode);
       createVmResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.create_vm_call createVmCall = mock(Host.AsyncClient.create_vm_call.class);
+      final Host.AsyncSSLClient.create_vm_call createVmCall = mock(Host.AsyncSSLClient.create_vm_call.class);
       doReturn(createVmResponse).when(createVmCall).getResult();
       doAnswer(getAnswer(createVmCall))
           .when(clientProxy).create_vm(any(CreateVmRequest.class), any(AsyncMethodCallback.class));
@@ -1075,12 +1107,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.delete_disks_call deleteDisksCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.delete_disks_call deleteDisksCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.delete_disks_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.delete_disks_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(deleteDisksCall);
           return null;
         }
@@ -1091,7 +1123,7 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       DeleteDisksResponse deleteDisksResponse = new DeleteDisksResponse();
       deleteDisksResponse.setResult(DeleteDisksResultCode.OK);
-      final Host.AsyncClient.delete_disks_call deleteDisksCall = mock(Host.AsyncClient.delete_disks_call.class);
+      final Host.AsyncSSLClient.delete_disks_call deleteDisksCall = mock(Host.AsyncSSLClient.delete_disks_call.class);
       doReturn(deleteDisksResponse).when(deleteDisksCall).getResult();
       doAnswer(getAnswer(deleteDisksCall))
           .when(clientProxy).delete_disks(any(DeleteDisksRequest.class), any(AsyncMethodCallback.class));
@@ -1127,7 +1159,7 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.delete_disks_call deleteDisksCall = mock(Host.AsyncClient.delete_disks_call.class);
+      final Host.AsyncSSLClient.delete_disks_call deleteDisksCall = mock(Host.AsyncSSLClient.delete_disks_call.class);
       doThrow(new TException("Thrift exception")).when(deleteDisksCall).getResult();
       doAnswer(getAnswer(deleteDisksCall))
           .when(clientProxy).delete_disks(any(DeleteDisksRequest.class), any(AsyncMethodCallback.class));
@@ -1149,7 +1181,7 @@ public class HostClientTest {
       deleteDisksResponse.setResult(resultCode);
       deleteDisksResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.delete_disks_call deleteDisksCall = mock(Host.AsyncClient.delete_disks_call.class);
+      final Host.AsyncSSLClient.delete_disks_call deleteDisksCall = mock(Host.AsyncSSLClient.delete_disks_call.class);
       doReturn(deleteDisksResponse).when(deleteDisksCall).getResult();
 
 
@@ -1198,12 +1230,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.finalize_image_call finalizeImageCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.finalize_image_call finalizeImageCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.finalize_image_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.finalize_image_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(finalizeImageCall);
           return null;
         }
@@ -1214,7 +1246,8 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       FinalizeImageResponse finalizeImageResponse = new FinalizeImageResponse();
       finalizeImageResponse.setResult(FinalizeImageResultCode.OK);
-      final Host.AsyncClient.finalize_image_call createImageCall = mock(Host.AsyncClient.finalize_image_call.class);
+      final Host.AsyncSSLClient.finalize_image_call createImageCall
+        = mock(Host.AsyncSSLClient.finalize_image_call.class);
       doReturn(finalizeImageResponse).when(createImageCall).getResult();
       doAnswer(getAnswer(createImageCall))
           .when(clientProxy).finalize_image(any(FinalizeImageRequest.class), any(AsyncMethodCallback.class));
@@ -1250,7 +1283,8 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.finalize_image_call finalizeImageCall = mock(Host.AsyncClient.finalize_image_call.class);
+      final Host.AsyncSSLClient.finalize_image_call finalizeImageCall
+        = mock(Host.AsyncSSLClient.finalize_image_call.class);
       doThrow(new TException("Thrift exception")).when(finalizeImageCall).getResult();
       doAnswer(getAnswer(finalizeImageCall))
           .when(clientProxy).finalize_image(any(FinalizeImageRequest.class), any(AsyncMethodCallback.class));
@@ -1272,7 +1306,8 @@ public class HostClientTest {
       finalizeImageResponse.setResult(resultCode);
       finalizeImageResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.finalize_image_call finalizeImageCall = mock(Host.AsyncClient.finalize_image_call.class);
+      final Host.AsyncSSLClient.finalize_image_call finalizeImageCall
+        = mock(Host.AsyncSSLClient.finalize_image_call.class);
       doReturn(finalizeImageResponse).when(finalizeImageCall).getResult();
 
 
@@ -1583,12 +1618,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.create_image_from_vm_call createImageCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.create_image_from_vm_call createImageCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.create_image_from_vm_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.create_image_from_vm_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(createImageCall);
           return null;
         }
@@ -1599,8 +1634,8 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       CreateImageFromVmResponse createImageResponse = new CreateImageFromVmResponse();
       createImageResponse.setResult(CreateImageFromVmResultCode.OK);
-      final Host.AsyncClient.create_image_from_vm_call createImageCall =
-          mock(Host.AsyncClient.create_image_from_vm_call.class);
+      final Host.AsyncSSLClient.create_image_from_vm_call createImageCall =
+          mock(Host.AsyncSSLClient.create_image_from_vm_call.class);
       doReturn(createImageResponse).when(createImageCall).getResult();
       doAnswer(getAnswer(createImageCall))
           .when(clientProxy).create_image_from_vm(
@@ -1637,8 +1672,8 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.create_image_from_vm_call createImageCall =
-          mock(Host.AsyncClient.create_image_from_vm_call.class);
+      final Host.AsyncSSLClient.create_image_from_vm_call createImageCall =
+          mock(Host.AsyncSSLClient.create_image_from_vm_call.class);
       doThrow(new TException("Thrift exception")).when(createImageCall).getResult();
       doAnswer(getAnswer(createImageCall))
           .when(clientProxy).create_image_from_vm(any(CreateImageFromVmRequest.class), any(AsyncMethodCallback.class));
@@ -1660,8 +1695,8 @@ public class HostClientTest {
       createImageResponse.setResult(resultCode);
       createImageResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.create_image_from_vm_call createImageCall =
-          mock(Host.AsyncClient.create_image_from_vm_call.class);
+      final Host.AsyncSSLClient.create_image_from_vm_call createImageCall =
+          mock(Host.AsyncSSLClient.create_image_from_vm_call.class);
       doReturn(createImageResponse).when(createImageCall).getResult();
 
 
@@ -1708,12 +1743,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.detach_disks_call detachDisksCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.detach_disks_call detachDisksCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.detach_disks_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.detach_disks_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(detachDisksCall);
           return null;
         }
@@ -1724,7 +1759,7 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       VmDisksOpResponse vmDisksOpResponse = new VmDisksOpResponse();
       vmDisksOpResponse.setResult(VmDiskOpResultCode.OK);
-      final Host.AsyncClient.detach_disks_call detachDisksCall = mock(Host.AsyncClient.detach_disks_call.class);
+      final Host.AsyncSSLClient.detach_disks_call detachDisksCall = mock(Host.AsyncSSLClient.detach_disks_call.class);
       doReturn(vmDisksOpResponse).when(detachDisksCall).getResult();
       doAnswer(getAnswer(detachDisksCall))
           .when(clientProxy).detach_disks(any(VmDisksDetachRequest.class), any(AsyncMethodCallback.class));
@@ -1760,7 +1795,7 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.detach_disks_call detachDisksCall = mock(Host.AsyncClient.detach_disks_call.class);
+      final Host.AsyncSSLClient.detach_disks_call detachDisksCall = mock(Host.AsyncSSLClient.detach_disks_call.class);
       doThrow(new TException("Thrift exception")).when(detachDisksCall).getResult();
       doAnswer(getAnswer(detachDisksCall))
           .when(clientProxy).detach_disks(any(VmDisksDetachRequest.class), any(AsyncMethodCallback.class));
@@ -1782,7 +1817,7 @@ public class HostClientTest {
       vmDisksOpResponse.setResult(resultCode);
       vmDisksOpResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.detach_disks_call detachDisksCall = mock(Host.AsyncClient.detach_disks_call.class);
+      final Host.AsyncSSLClient.detach_disks_call detachDisksCall = mock(Host.AsyncSSLClient.detach_disks_call.class);
       doReturn(vmDisksOpResponse).when(detachDisksCall).getResult();
 
 
@@ -1832,10 +1867,10 @@ public class HostClientTest {
     @Test
     public void testSuccess() throws Exception {
       final CountDownLatch latch = new CountDownLatch(1);
-      AsyncMethodCallback<Host.AsyncClient.set_host_mode_call> handler =
-          new AsyncMethodCallback<Host.AsyncClient.set_host_mode_call>() {
+      AsyncMethodCallback<Host.AsyncSSLClient.set_host_mode_call> handler =
+          new AsyncMethodCallback<Host.AsyncSSLClient.set_host_mode_call>() {
             @Override
-            public void onComplete(Host.AsyncClient.set_host_mode_call call) {
+            public void onComplete(Host.AsyncSSLClient.set_host_mode_call call) {
             latch.countDown();
             }
 
@@ -1849,7 +1884,7 @@ public class HostClientTest {
           () {
         @Override
         public Void answer(InvocationOnMock invocation) throws Throwable {
-          ((AsyncMethodCallback<Host.AsyncClient.set_host_mode_call>) invocation.getArguments()[1])
+          ((AsyncMethodCallback<Host.AsyncSSLClient.set_host_mode_call>) invocation.getArguments()[1])
               .onComplete(null);
           return null;
         }
@@ -1889,12 +1924,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.detach_iso_call detachIsoCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.detach_iso_call detachIsoCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.detach_iso_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.detach_iso_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(detachIsoCall);
           return null;
         }
@@ -1905,7 +1940,7 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       DetachISOResponse detachISOResponse = new DetachISOResponse();
       detachISOResponse.setResult(DetachISOResultCode.OK);
-      final Host.AsyncClient.detach_iso_call detachIsoCall = mock(Host.AsyncClient.detach_iso_call.class);
+      final Host.AsyncSSLClient.detach_iso_call detachIsoCall = mock(Host.AsyncSSLClient.detach_iso_call.class);
       doReturn(detachISOResponse).when(detachIsoCall).getResult();
       doAnswer(getAnswer(detachIsoCall))
           .when(clientProxy).detach_iso(any(DetachISORequest.class), any(AsyncMethodCallback.class));
@@ -1941,7 +1976,7 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.detach_iso_call detachIsoCall = mock(Host.AsyncClient.detach_iso_call.class);
+      final Host.AsyncSSLClient.detach_iso_call detachIsoCall = mock(Host.AsyncSSLClient.detach_iso_call.class);
       doThrow(new TException("Thrift exception")).when(detachIsoCall).getResult();
       doAnswer(getAnswer(detachIsoCall))
           .when(clientProxy).detach_iso(any(DetachISORequest.class), any(AsyncMethodCallback.class));
@@ -1963,7 +1998,7 @@ public class HostClientTest {
       detachISOResponse.setResult(resultCode);
       detachISOResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.detach_iso_call detachIsoCall = mock(Host.AsyncClient.detach_iso_call.class);
+      final Host.AsyncSSLClient.detach_iso_call detachIsoCall = mock(Host.AsyncSSLClient.detach_iso_call.class);
       doReturn(detachISOResponse).when(detachIsoCall).getResult();
       doAnswer(getAnswer(detachIsoCall))
           .when(clientProxy).detach_iso(any(DetachISORequest.class), any(AsyncMethodCallback.class));
@@ -2008,12 +2043,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.get_host_config_call getHostConfigCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.get_host_config_call getHostConfigCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.get_host_config_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(getHostConfigCall);
           return null;
         }
@@ -2025,8 +2060,8 @@ public class HostClientTest {
       GetConfigResponse getConfigResponse = new GetConfigResponse();
       getConfigResponse.setResult(GetConfigResultCode.OK);
 
-      final Host.AsyncClient.get_host_config_call getHostConfigCall =
-          mock(Host.AsyncClient.get_host_config_call.class);
+      final Host.AsyncSSLClient.get_host_config_call getHostConfigCall =
+          mock(Host.AsyncSSLClient.get_host_config_call.class);
 
       doReturn(getConfigResponse).when(getHostConfigCall).getResult();
 
@@ -2066,8 +2101,8 @@ public class HostClientTest {
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
 
-      final Host.AsyncClient.get_host_config_call getHostConfigCall =
-          mock(Host.AsyncClient.get_host_config_call.class);
+      final Host.AsyncSSLClient.get_host_config_call getHostConfigCall =
+          mock(Host.AsyncSSLClient.get_host_config_call.class);
 
       doThrow(new TException("Thrift exception")).when(getHostConfigCall).getResult();
 
@@ -2092,8 +2127,8 @@ public class HostClientTest {
       getConfigResponse.setResult(resultCode);
       getConfigResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.get_host_config_call getHostConfigCall =
-          mock(Host.AsyncClient.get_host_config_call.class);
+      final Host.AsyncSSLClient.get_host_config_call getHostConfigCall =
+          mock(Host.AsyncSSLClient.get_host_config_call.class);
 
       doReturn(getConfigResponse).when(getHostConfigCall).getResult();
       doAnswer(getAnswer(getHostConfigCall))
@@ -2139,12 +2174,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.get_images_call getImagesCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.get_images_call getImagesCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.get_images_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.get_images_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(getImagesCall);
           return null;
         }
@@ -2155,7 +2190,7 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       GetImagesResponse getImagesResponse = new GetImagesResponse();
       getImagesResponse.setResult(GetImagesResultCode.OK);
-      final Host.AsyncClient.get_images_call getImagesCall = mock(Host.AsyncClient.get_images_call.class);
+      final Host.AsyncSSLClient.get_images_call getImagesCall = mock(Host.AsyncSSLClient.get_images_call.class);
       doReturn(getImagesResponse).when(getImagesCall).getResult();
       doAnswer(getAnswer(getImagesCall))
           .when(clientProxy).get_images(any(GetImagesRequest.class), any(AsyncMethodCallback.class));
@@ -2191,7 +2226,7 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.get_images_call getImagesCall = mock(Host.AsyncClient.get_images_call.class);
+      final Host.AsyncSSLClient.get_images_call getImagesCall = mock(Host.AsyncSSLClient.get_images_call.class);
       doThrow(new TException("Thrift exception")).when(getImagesCall).getResult();
       doAnswer(getAnswer(getImagesCall))
           .when(clientProxy).get_images(any(GetImagesRequest.class), any(AsyncMethodCallback.class));
@@ -2213,7 +2248,7 @@ public class HostClientTest {
       getImagesResponse.setResult(resultCode);
       getImagesResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.get_images_call getImagesCall = mock(Host.AsyncClient.get_images_call.class);
+      final Host.AsyncSSLClient.get_images_call getImagesCall = mock(Host.AsyncSSLClient.get_images_call.class);
       doReturn(getImagesResponse).when(getImagesCall).getResult();
       doAnswer(getAnswer(getImagesCall))
           .when(clientProxy).get_images(any(GetImagesRequest.class), any(AsyncMethodCallback.class));
@@ -2259,12 +2294,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.get_service_ticket_call getServiceTicketCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.get_service_ticket_call getServiceTicketCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.get_service_ticket_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.get_service_ticket_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(getServiceTicketCall);
           return null;
         }
@@ -2275,8 +2310,8 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       ServiceTicketResponse serviceTicketResponse = new ServiceTicketResponse(ServiceTicketResultCode.OK);
 
-      final Host.AsyncClient.get_service_ticket_call getServiceTicketCall =
-          mock(Host.AsyncClient.get_service_ticket_call.class);
+      final Host.AsyncSSLClient.get_service_ticket_call getServiceTicketCall =
+          mock(Host.AsyncSSLClient.get_service_ticket_call.class);
 
       doReturn(serviceTicketResponse).when(getServiceTicketCall).getResult();
       doAnswer(getAnswer(getServiceTicketCall))
@@ -2314,8 +2349,8 @@ public class HostClientTest {
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
 
-      final Host.AsyncClient.get_service_ticket_call getServiceTicketCall =
-          mock(Host.AsyncClient.get_service_ticket_call.class);
+      final Host.AsyncSSLClient.get_service_ticket_call getServiceTicketCall =
+          mock(Host.AsyncSSLClient.get_service_ticket_call.class);
 
       doThrow(new TException("Thrift exception")).when(getServiceTicketCall).getResult();
       doAnswer(getAnswer(getServiceTicketCall))
@@ -2338,8 +2373,8 @@ public class HostClientTest {
       serviceTicketResponse.setResult(resultCode);
       serviceTicketResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.get_service_ticket_call getServiceTicketCall =
-          mock(Host.AsyncClient.get_service_ticket_call.class);
+      final Host.AsyncSSLClient.get_service_ticket_call getServiceTicketCall =
+          mock(Host.AsyncSSLClient.get_service_ticket_call.class);
 
       doReturn(serviceTicketResponse).when(getServiceTicketCall).getResult();
 
@@ -2387,12 +2422,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.get_vm_networks_call getVmNetworksCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.get_vm_networks_call getVmNetworksCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.get_vm_networks_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.get_vm_networks_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(getVmNetworksCall);
           return null;
         }
@@ -2404,8 +2439,8 @@ public class HostClientTest {
       GetVmNetworkResponse getVmNetworkResponse = new GetVmNetworkResponse();
       getVmNetworkResponse.setResult(GetVmNetworkResultCode.OK);
 
-      final Host.AsyncClient.get_vm_networks_call getVmNetworksCall =
-          mock(Host.AsyncClient.get_vm_networks_call.class);
+      final Host.AsyncSSLClient.get_vm_networks_call getVmNetworksCall =
+          mock(Host.AsyncSSLClient.get_vm_networks_call.class);
 
       doReturn(getVmNetworkResponse).when(getVmNetworksCall).getResult();
       doAnswer(getAnswer(getVmNetworksCall))
@@ -2443,8 +2478,8 @@ public class HostClientTest {
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
 
-      final Host.AsyncClient.get_vm_networks_call getVmNetworksCall =
-          mock(Host.AsyncClient.get_vm_networks_call.class);
+      final Host.AsyncSSLClient.get_vm_networks_call getVmNetworksCall =
+          mock(Host.AsyncSSLClient.get_vm_networks_call.class);
 
       doThrow(new TException("Thrift exception")).when(getVmNetworksCall).getResult();
       doAnswer(getAnswer(getVmNetworksCall))
@@ -2467,8 +2502,8 @@ public class HostClientTest {
       getVmNetworkResponse.setResult(resultCode);
       getVmNetworkResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.get_vm_networks_call getVmNetworksCall =
-          mock(Host.AsyncClient.get_vm_networks_call.class);
+      final Host.AsyncSSLClient.get_vm_networks_call getVmNetworksCall =
+          mock(Host.AsyncSSLClient.get_vm_networks_call.class);
 
       doReturn(getVmNetworkResponse).when(getVmNetworksCall).getResult();
       doAnswer(getAnswer(getVmNetworksCall))
@@ -2515,12 +2550,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.get_mks_ticket_call getVmMksTicketCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.get_mks_ticket_call getVmMksTicketCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.get_mks_ticket_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.get_mks_ticket_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(getVmMksTicketCall);
           return null;
         }
@@ -2532,8 +2567,8 @@ public class HostClientTest {
       MksTicketResponse mksTicketResponse = new MksTicketResponse();
       mksTicketResponse.setResult(MksTicketResultCode.OK);
 
-      final Host.AsyncClient.get_mks_ticket_call getVmMksTicketCall =
-          mock(Host.AsyncClient.get_mks_ticket_call.class);
+      final Host.AsyncSSLClient.get_mks_ticket_call getVmMksTicketCall =
+          mock(Host.AsyncSSLClient.get_mks_ticket_call.class);
 
       doReturn(mksTicketResponse).when(getVmMksTicketCall).getResult();
       doAnswer(getAnswer(getVmMksTicketCall))
@@ -2571,8 +2606,8 @@ public class HostClientTest {
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
 
-      final Host.AsyncClient.get_mks_ticket_call getVmMksTicketCall =
-          mock(Host.AsyncClient.get_mks_ticket_call.class);
+      final Host.AsyncSSLClient.get_mks_ticket_call getVmMksTicketCall =
+          mock(Host.AsyncSSLClient.get_mks_ticket_call.class);
 
       doThrow(new TException("Thrift exception")).when(getVmMksTicketCall).getResult();
       doAnswer(getAnswer(getVmMksTicketCall))
@@ -2595,8 +2630,8 @@ public class HostClientTest {
       mksTicketResponse.setResult(resultCode);
       mksTicketResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.get_mks_ticket_call getVmMksTicketCall =
-          mock(Host.AsyncClient.get_mks_ticket_call.class);
+      final Host.AsyncSSLClient.get_mks_ticket_call getVmMksTicketCall =
+          mock(Host.AsyncSSLClient.get_mks_ticket_call.class);
 
       doReturn(mksTicketResponse).when(getVmMksTicketCall).getResult();
       doAnswer(getAnswer(getVmMksTicketCall))
@@ -2640,12 +2675,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.place_call placeCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.place_call placeCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.place_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.place_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(placeCall);
           return null;
         }
@@ -2656,7 +2691,7 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       PlaceResponse placeResponse = new PlaceResponse();
       placeResponse.setResult(PlaceResultCode.OK);
-      final Host.AsyncClient.place_call placeCall = mock(Host.AsyncClient.place_call.class);
+      final Host.AsyncSSLClient.place_call placeCall = mock(Host.AsyncSSLClient.place_call.class);
       doReturn(placeResponse).when(placeCall).getResult();
       doAnswer(getAnswer(placeCall))
           .when(clientProxy).place(any(PlaceRequest.class), any(AsyncMethodCallback.class));
@@ -2692,7 +2727,7 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.place_call placeCall = mock(Host.AsyncClient.place_call.class);
+      final Host.AsyncSSLClient.place_call placeCall = mock(Host.AsyncSSLClient.place_call.class);
       doThrow(new TException("Thrift exception")).when(placeCall).getResult();
       doAnswer(getAnswer(placeCall))
           .when(clientProxy).place(any(PlaceRequest.class), any(AsyncMethodCallback.class));
@@ -2714,7 +2749,7 @@ public class HostClientTest {
       placeResponse.setResult(resultCode);
       placeResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.place_call placeCall = mock(Host.AsyncClient.place_call.class);
+      final Host.AsyncSSLClient.place_call placeCall = mock(Host.AsyncSSLClient.place_call.class);
       doReturn(placeResponse).when(placeCall).getResult();
       doAnswer(getAnswer(placeCall))
           .when(clientProxy).place(any(PlaceRequest.class), any(AsyncMethodCallback.class));
@@ -2761,12 +2796,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.power_vm_op_call powerVmOpCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.power_vm_op_call powerVmOpCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.power_vm_op_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.power_vm_op_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(powerVmOpCall);
           return null;
         }
@@ -2777,7 +2812,7 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       PowerVmOpResponse powerVmOpResponse = new PowerVmOpResponse();
       powerVmOpResponse.setResult(PowerVmOpResultCode.OK);
-      final Host.AsyncClient.power_vm_op_call powerVmOpCall = mock(Host.AsyncClient.power_vm_op_call.class);
+      final Host.AsyncSSLClient.power_vm_op_call powerVmOpCall = mock(Host.AsyncSSLClient.power_vm_op_call.class);
       doReturn(powerVmOpResponse).when(powerVmOpCall).getResult();
       doAnswer(getAnswer(powerVmOpCall))
           .when(clientProxy).power_vm_op(any(PowerVmOpRequest.class), any(AsyncMethodCallback.class));
@@ -2813,7 +2848,7 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.power_vm_op_call powerVmOpCall = mock(Host.AsyncClient.power_vm_op_call.class);
+      final Host.AsyncSSLClient.power_vm_op_call powerVmOpCall = mock(Host.AsyncSSLClient.power_vm_op_call.class);
       doThrow(new TException("Thrift exception")).when(powerVmOpCall).getResult();
       doAnswer(getAnswer(powerVmOpCall))
           .when(clientProxy).power_vm_op(any(PowerVmOpRequest.class), any(AsyncMethodCallback.class));
@@ -2835,7 +2870,7 @@ public class HostClientTest {
       powerVmOpResponse.setResult(resultCode);
       powerVmOpResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.power_vm_op_call powerVmOpCall = mock(Host.AsyncClient.power_vm_op_call.class);
+      final Host.AsyncSSLClient.power_vm_op_call powerVmOpCall = mock(Host.AsyncSSLClient.power_vm_op_call.class);
       doReturn(powerVmOpResponse).when(powerVmOpCall).getResult();
       doAnswer(getAnswer(powerVmOpCall))
           .when(clientProxy).power_vm_op(any(PowerVmOpRequest.class), any(AsyncMethodCallback.class));
@@ -2883,12 +2918,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.reserve_call reserveCall) {
+    private Answer getAnswer(final Host.AsyncSSLClient.reserve_call reserveCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.reserve_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.reserve_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(reserveCall);
           return null;
         }
@@ -2898,7 +2933,7 @@ public class HostClientTest {
     public void testSuccess() throws Exception {
       ReserveResponse reserveResponse = new ReserveResponse();
       reserveResponse.setResult(ReserveResultCode.OK);
-      final Host.AsyncClient.reserve_call reserveCall = mock(Host.AsyncClient.reserve_call.class);
+      final Host.AsyncSSLClient.reserve_call reserveCall = mock(Host.AsyncSSLClient.reserve_call.class);
       doReturn(reserveResponse).when(reserveCall).getResult();
       doAnswer(getAnswer(reserveCall))
           .when(clientProxy).reserve(any(ReserveRequest.class), any(AsyncMethodCallback.class));
@@ -2911,7 +2946,7 @@ public class HostClientTest {
     public void testSuccessNullGeneration() throws Exception {
       ReserveResponse reserveResponse = new ReserveResponse();
       reserveResponse.setResult(ReserveResultCode.OK);
-      final Host.AsyncClient.reserve_call reserveCall = mock(Host.AsyncClient.reserve_call.class);
+      final Host.AsyncSSLClient.reserve_call reserveCall = mock(Host.AsyncSSLClient.reserve_call.class);
       doReturn(reserveResponse).when(reserveCall).getResult();
       doAnswer(getAnswer(reserveCall))
           .when(clientProxy).reserve(any(ReserveRequest.class), any(AsyncMethodCallback.class));
@@ -2939,7 +2974,7 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.reserve_call reserveCall = mock(Host.AsyncClient.reserve_call.class);
+      final Host.AsyncSSLClient.reserve_call reserveCall = mock(Host.AsyncSSLClient.reserve_call.class);
       doThrow(new TException("Thrift exception")).when(reserveCall).getResult();
       doAnswer(getAnswer(reserveCall))
           .when(clientProxy).reserve(any(ReserveRequest.class), any(AsyncMethodCallback.class));
@@ -2961,7 +2996,7 @@ public class HostClientTest {
       reserveResponse.setResult(resultCode);
       reserveResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.reserve_call reserveCall = mock(Host.AsyncClient.reserve_call.class);
+      final Host.AsyncSSLClient.reserve_call reserveCall = mock(Host.AsyncSSLClient.reserve_call.class);
       doReturn(reserveResponse).when(reserveCall).getResult();
       doAnswer(getAnswer(reserveCall))
           .when(clientProxy).reserve(any(ReserveRequest.class), any(AsyncMethodCallback.class));

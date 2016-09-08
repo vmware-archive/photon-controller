@@ -118,7 +118,7 @@ public class HostClientMock extends HostClient {
     CopyImageResponse response = new CopyImageResponse();
     response.setResult(copyImageResultCode);
 
-    Host.AsyncClient.copy_image_call copyImageCall = mock(Host.AsyncClient.copy_image_call.class);
+    Host.AsyncSSLClient.copy_image_call copyImageCall = mock(Host.AsyncSSLClient.copy_image_call.class);
     try {
       when(copyImageCall.getResult()).thenReturn(response);
     } catch (Exception e) {
@@ -138,7 +138,7 @@ public class HostClientMock extends HostClient {
     TransferImageResponse response = new TransferImageResponse();
     response.setResult(transferImageResultCode);
 
-    Host.AsyncClient.transfer_image_call transferImageCall = mock(Host.AsyncClient.transfer_image_call.class);
+    Host.AsyncSSLClient.transfer_image_call transferImageCall = mock(Host.AsyncSSLClient.transfer_image_call.class);
     try {
       when(transferImageCall.getResult()).thenReturn(response);
     } catch (Exception e) {
@@ -153,7 +153,7 @@ public class HostClientMock extends HostClient {
   }
 
   @Override
-  public void getImages(String datastoreId, AsyncMethodCallback<Host.AsyncClient.get_images_call> callback) {
+  public void getImages(String datastoreId, AsyncMethodCallback<Host.AsyncSSLClient.get_images_call> callback) {
     logger.info("Host getImages complete invocation");
     GetImagesResponse response = new GetImagesResponse(getImagesResultCode);
     if (imageListForGetImagesRequest != null &&
@@ -162,7 +162,7 @@ public class HostClientMock extends HostClient {
     } else {
       response.setImage_ids(imagesForGetImagesRequest);
     }
-    Host.AsyncClient.get_images_call getImagesCall = mock(Host.AsyncClient.get_images_call.class);
+    Host.AsyncSSLClient.get_images_call getImagesCall = mock(Host.AsyncSSLClient.get_images_call.class);
     try {
       when(getImagesCall.getResult()).thenReturn(response);
     } catch (Exception e) {
@@ -173,7 +173,7 @@ public class HostClientMock extends HostClient {
 
   @Override
   public void startImageScan(String datastore, Long scanRate, Long timeout,
-                             AsyncMethodCallback<Host.AsyncClient.start_image_scan_call> callback) {
+                             AsyncMethodCallback<Host.AsyncSSLClient.start_image_scan_call> callback) {
     this.incrementImageGCCounter(datastore);
 
     StartImageScanResponse response = new StartImageScanResponse(StartImageOperationResultCode.OK);
@@ -182,7 +182,7 @@ public class HostClientMock extends HostClient {
 
   @Override
   public void getInactiveImages(String datastore,
-                                AsyncMethodCallback<Host.AsyncClient.get_inactive_images_call> callback) {
+                                AsyncMethodCallback<Host.AsyncSSLClient.get_inactive_images_call> callback) {
     this.checkImageGCCounter(datastore, 1L);
 
     if (null == this.state.get("isGetInactiveImagesFirstCall")) {
@@ -201,7 +201,7 @@ public class HostClientMock extends HostClient {
 
   @Override
   public void startImageSweep(String datastore, List<InactiveImageDescriptor> images, Long sweepRate, Long timeout,
-                              AsyncMethodCallback<Host.AsyncClient.start_image_sweep_call> callback) {
+                              AsyncMethodCallback<Host.AsyncSSLClient.start_image_sweep_call> callback) {
     this.checkImageGCCounter(datastore, 1L);
     this.state.put(String.format(DELETED_IMAGES_KEY_FORMAT_STRING, datastore), images);
 
@@ -211,7 +211,7 @@ public class HostClientMock extends HostClient {
 
   @Override
   public void getDeletedImages(String datastore,
-                               AsyncMethodCallback<Host.AsyncClient.get_deleted_images_call> callback) {
+                               AsyncMethodCallback<Host.AsyncSSLClient.get_deleted_images_call> callback) {
     this.checkImageGCCounter(datastore, 1L);
 
     if (null == this.state.get("isGetDeletedImagesFirstCall")) {

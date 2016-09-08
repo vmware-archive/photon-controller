@@ -98,6 +98,7 @@ import io.dropwizard.configuration.ConfigurationException;
 import io.dropwizard.hibernate.HibernateBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
@@ -131,6 +132,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
   private ApiFeModule apiModule;
   private HibernateBundle<ApiFeStaticConfiguration> hibernateBundle;
   private static ServiceHost xenonHost;
+  private static TSSLTransportParameters params;
 
   public static void main(String[] args) throws Exception {
     setupApiFeConfigurationForServerCommand(args);
@@ -154,11 +156,15 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     ApiFeService.xenonHost = xenonHost;
   }
 
+  public static void setTSSLTransportParameters(TSSLTransportParameters params) {
+    ApiFeService.params = params;
+  }
+
   @Override
   public void initialize(Bootstrap<ApiFeStaticConfiguration> bootstrap) {
     bootstrap.addBundle(new AssetsBundle("/assets", "/api/", "index.html"));
 
-    apiModule = new ApiFeModule();
+    apiModule = new ApiFeModule(params);
     apiModule.setConfiguration(apiFeConfiguration);
     apiModule.setServiceHost(xenonHost);
 

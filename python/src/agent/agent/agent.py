@@ -35,7 +35,7 @@ import traceback
 from thrift import TMultiplexedProcessor
 from thrift.protocol import TCompactProtocol
 from thrift.server import TNonblockingServer
-from thrift.transport import TSocket
+from thrift.transport import TSSLSocket
 
 from .agent_config import AgentConfig
 import common
@@ -131,8 +131,8 @@ class Agent:
             handler = plugin.handler
             processor = plugin.service.Processor(handler)
             mux_processor.registerProcessor(plugin.name, processor)
-
-        transport = TSocket.TServerSocket(port=self._config.host_port)
+        cert_file = "/etc/vmware/ssl/host.pem"
+        transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=cert_file)
         protocol_factory = TCompactProtocol.TCompactProtocolFactory()
 
         server = TNonblockingServer.TNonblockingServer(
