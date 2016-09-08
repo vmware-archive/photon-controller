@@ -1,7 +1,4 @@
 #cloud-config
-bootcmd:
-  - rm -f /etc/systemd/network/*.network
-  - systemctl stop systemd-networkd
 
 write_files:
   - content: |
@@ -67,6 +64,8 @@ users:
 
 runcmd:
   - source /root/env_variables.txt
+  - rm -f /etc/systemd/network/*.network
+  - systemctl stop systemd-networkd
   - sh /tmp/init-network.sh
   - sh /tmp/check-docker.sh
   - /root/docker-multinode/etcd.sh >> /var/log/start-etcd.log 2>&1
