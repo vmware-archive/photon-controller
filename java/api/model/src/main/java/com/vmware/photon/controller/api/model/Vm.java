@@ -79,6 +79,10 @@ public class Vm extends Infrastructure {
   @JsonIgnore
   private String projectId;
 
+  @JsonProperty
+  @ApiModelProperty(value = "The public accessible IP of the vm")
+  private String floatingIp;
+
   @Override
   public String getKind() {
     return kind;
@@ -148,6 +152,14 @@ public class Vm extends Infrastructure {
     this.projectId = projectId;
   }
 
+  public String getFloatingIp() {
+    return floatingIp;
+  }
+
+  public void setFloatingIp(String floatingIp) {
+    this.floatingIp = floatingIp;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -171,12 +183,14 @@ public class Vm extends Infrastructure {
         Objects.equals(attachedDisks, other.attachedDisks) &&
         Objects.equals(attachedIsos, other.attachedIsos) &&
         Objects.equals(metadata, other.metadata) &&
-        Objects.equals(projectId, other.projectId);
+        Objects.equals(projectId, other.projectId) &&
+        Objects.equals(floatingIp, other.floatingIp);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(), state, sourceImageId, host, datastore, attachedDisks, attachedIsos, metadata, projectId);
+        super.hashCode(), state, sourceImageId, host, datastore, attachedDisks, attachedIsos, metadata, projectId,
+          floatingIp);
   }
 }

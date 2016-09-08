@@ -78,6 +78,7 @@ public class VmTest {
     vm.setProjectId("project-id");
     vm.setAttachedDisks(ImmutableList.of(disk1, disk2, disk3));
     vm.addAttachedIso(iso);
+    vm.setFloatingIp("1.2.3.4");
 
     return vm;
   }
