@@ -47,6 +47,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,8 +76,8 @@ public class PhotonControllerXenonHost
     public static final String KEYSTORE_FILE = "/keystore.jks";
     public static final String KEYSTORE_PASSWORD = UUID.randomUUID().toString();
 
-    private final AgentControlClientFactory agentControlClientFactory;
-    private final HostClientFactory hostClientFactory;
+    private AgentControlClientFactory agentControlClientFactory;
+    private HostClientFactory hostClientFactory;
     private final NsxClientFactory nsxClientFactory;
     private CloudStoreHelper cloudStoreHelper;
     private BuildInfo buildInfo;
@@ -92,7 +93,6 @@ public class PhotonControllerXenonHost
     // This flag is set to true only in the installer based deployment and it is used to override the Xenon service
     // client for a non-auth installer to be able to talk to auth enabled management plane.
     private boolean inInstaller = false;
-
 
     @SuppressWarnings("rawtypes")
     public static final Class[] FACTORY_SERVICES = {
@@ -114,12 +114,13 @@ public class PhotonControllerXenonHost
                                      HostClientFactory hostClientFactory,
                                      AgentControlClientFactory agentControlClientFactory,
                                      NsxClientFactory nsxClientFactory,
-                                     CloudStoreHelper cloudStoreHelper) throws Throwable {
+                                     CloudStoreHelper cloudStoreHelper,
+                                     SSLContext sslContext) throws Throwable {
         super(xenonConfig);
         this.buildInfo = BuildInfo.get(this.getClass());
 
         if (hostClientFactory == null || agentControlClientFactory == null) {
-            ThriftModule thriftModule = new ThriftModule();
+            ThriftModule thriftModule = new ThriftModule(sslContext);
             if (hostClientFactory == null) {
                 hostClientFactory = thriftModule.getHostClientFactory();
             }
@@ -133,6 +134,16 @@ public class PhotonControllerXenonHost
         this.agentControlClientFactory = agentControlClientFactory;
         this.nsxClientFactory = nsxClientFactory;
         this.cloudStoreHelper = cloudStoreHelper;
+    }
+
+    public void regenerateThriftClients(SSLContext sslContext) {
+      try {
+        ThriftModule thriftModule = new ThriftModule(sslContext);
+        this.agentControlClientFactory = thriftModule.getAgentControlClientFactory();
+        this.hostClientFactory = thriftModule.getHostClientFactory();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     @Override
@@ -328,6 +339,7 @@ public class PhotonControllerXenonHost
      * Adds a service to a privileged list, allowing it to operate on authorization.
      * context
      */
+    @Override
     public void addPrivilegedService(Class<? extends Service> serviceType) {
       super.addPrivilegedService(serviceType);
     }
