@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.common.ssl.KeyStoreUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -57,8 +58,13 @@ import org.apache.commons.io.FileUtils;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 import java.io.File;
+import java.io.InputStream;
+import java.net.URL;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -607,6 +613,24 @@ public class CreateContainersWorkflowService extends StatefulService {
                 // Set the inInstaller flag to true which would allow us to override the xenon service client to talk
                 // to the auth enabled newly deployed management plane using https with two way SSL.
                 ((PhotonControllerXenonHost) getHost()).setInInstaller(true);
+
+                // need to switch the ssl context for the thrift clients to use
+                // the generated certs to be able to talk to the authenticated
+                // agents
+                SSLContext sslContext = SSLContext.getInstance(KeyStoreUtils.THRIFT_PROTOCOL);
+                TrustManagerFactory tmf = null;
+
+                tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                KeyStore keyStore = KeyStore.getInstance("JKS");
+                InputStream in = new URL(PhotonControllerXenonHost.KEYSTORE_FILE).openStream();
+                keyStore.load(in, PhotonControllerXenonHost.KEYSTORE_PASSWORD.toCharArray());
+                tmf.init(keyStore);
+                sslContext.init(null, tmf.getTrustManagers(), null);
+                ((PhotonControllerXenonHost) getHost()).regenerateThriftClients(sslContext);
+
+                KeyStoreUtils.acceptAllCerts(KeyStoreUtils.THRIFT_PROTOCOL);
+
+
                 sendStageProgressPatch(nextStage, nextSubStage);
               }
             } catch (Throwable t) {

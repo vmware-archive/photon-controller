@@ -98,12 +98,14 @@ import io.dropwizard.configuration.ConfigurationException;
 import io.dropwizard.hibernate.HibernateBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
 
+import javax.net.ssl.SSLContext;
 import javax.servlet.DispatcherType;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorFactory;
@@ -131,6 +133,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
   private ApiFeModule apiModule;
   private HibernateBundle<ApiFeStaticConfiguration> hibernateBundle;
   private static ServiceHost xenonHost;
+  private static SSLContext sslContext;
 
   public static void main(String[] args) throws Exception {
     setupApiFeConfigurationForServerCommand(args);
@@ -154,11 +157,15 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     ApiFeService.xenonHost = xenonHost;
   }
 
+  public static void setSSLContext(SSLContext sslContext) {
+    ApiFeService.sslContext = sslContext;
+  }
+
   @Override
   public void initialize(Bootstrap<ApiFeStaticConfiguration> bootstrap) {
     bootstrap.addBundle(new AssetsBundle("/assets", "/api/", "index.html"));
 
-    apiModule = new ApiFeModule();
+    apiModule = new ApiFeModule(sslContext);
     apiModule.setConfiguration(apiFeConfiguration);
     apiModule.setServiceHost(xenonHost);
 

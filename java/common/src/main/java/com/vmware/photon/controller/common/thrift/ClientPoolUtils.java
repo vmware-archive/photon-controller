@@ -14,37 +14,50 @@
 package com.vmware.photon.controller.common.thrift;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.thrift.async.TAsyncClient;
+import org.apache.thrift.async.TAsyncSSLClient;
 import org.apache.thrift.protocol.TProtocolFactory;
-import org.apache.thrift.transport.TNonblockingSocket;
-import org.apache.thrift.transport.TNonblockingTransport;
+import org.apache.thrift.transport.SSLClientSocketFactory;
+import org.apache.thrift.transport.TNonBlockingSSLSocket;
+import org.apache.thrift.transport.TNonblockingSSLTransport;
+import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
+import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.net.ssl.SSLContext;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
 /**
- * Utility functions for classes {@link ClientPoolImpl} and {@link BasicClientPool}.
+ * Utility functions for classes {@link ClientPoolImpl} and
+ * {@link BasicClientPool}.
  */
 public class ClientPoolUtils {
 
-  private static final Logger logger = LoggerFactory.getLogger(ClientPoolUtils.class);
+    private static final int DEFAULT_TIMEOUT = 0;
+    private static final Logger logger = LoggerFactory.getLogger(ClientPoolUtils.class);
 
-  public static <C extends TAsyncClient> C createNewClient(
-      InetSocketAddress address, TProtocolFactory protocolFactory,
-      ClientPoolOptions options, ThriftFactory thriftFactory,
-      TAsyncClientFactory<C> clientFactory, Map<C, TNonblockingTransport> clientTransportMap)
-      throws IOException {
-    TNonblockingSocket socket = new TNonblockingSocket(address.getHostString(), address.getPort());
-    if (StringUtils.isNotBlank(options.getServiceName())) {
-      protocolFactory = thriftFactory.create(options.getServiceName());
+    public static <C extends TAsyncSSLClient> C createNewClient(
+        InetSocketAddress address,
+        TProtocolFactory protocolFactory,
+        ClientPoolOptions options,
+        ThriftFactory thriftFactory,
+        TAsyncSSLClientFactory<C> clientFactory, Map<C, TNonblockingSSLTransport> clientTransportMap,
+        SSLContext sslContext
+        ) throws IOException, TTransportException {
+
+        TNonBlockingSSLSocket socket
+          = SSLClientSocketFactory.create(address.getHostString(), address.getPort(), DEFAULT_TIMEOUT, sslContext);
+
+        if (StringUtils.isNotBlank(options.getServiceName())) {
+            protocolFactory = thriftFactory.create(options.getServiceName());
+        }
+
+        C client = clientFactory.create(protocolFactory, socket);
+        clientTransportMap.put(client, socket);
+        logger.debug("created new client {} for {}", client, address);
+        return client;
     }
-
-    C client = clientFactory.create(protocolFactory, socket);
-    clientTransportMap.put(client, socket);
-    logger.debug("created new client {} for {}", client, address);
-    return client;
-  }
 }

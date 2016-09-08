@@ -360,10 +360,10 @@ public class ImageDatastoreSweeperService extends StatefulService {
    * @param current
    */
   private void triggerImageScan(final State current) throws RpcException {
-    final AsyncMethodCallback<Host.AsyncClient.start_image_scan_call> callback =
-        new AsyncMethodCallback<Host.AsyncClient.start_image_scan_call>() {
+    final AsyncMethodCallback<Host.AsyncSSLClient.start_image_scan_call> callback =
+        new AsyncMethodCallback<Host.AsyncSSLClient.start_image_scan_call>() {
           @Override
-          public void onComplete(Host.AsyncClient.start_image_scan_call call) {
+          public void onComplete(Host.AsyncSSLClient.start_image_scan_call call) {
             try {
               StartImageScanResponse response = call.getResult();
               ServiceUtils.logInfo(ImageDatastoreSweeperService.this, "Received: %s", response);
@@ -394,10 +394,10 @@ public class ImageDatastoreSweeperService extends StatefulService {
    * @param current
    */
   private void waitForImageScanCompletion(final State current) throws RpcException {
-    final AsyncMethodCallback<Host.AsyncClient.get_inactive_images_call> callback =
-        new AsyncMethodCallback<Host.AsyncClient.get_inactive_images_call>() {
+    final AsyncMethodCallback<Host.AsyncSSLClient.get_inactive_images_call> callback =
+        new AsyncMethodCallback<Host.AsyncSSLClient.get_inactive_images_call>() {
           @Override
-          public void onComplete(Host.AsyncClient.get_inactive_images_call call) {
+          public void onComplete(Host.AsyncSSLClient.get_inactive_images_call call) {
             try {
 
               GetInactiveImagesResponse response = call.getResult();
@@ -446,10 +446,10 @@ public class ImageDatastoreSweeperService extends StatefulService {
    * @throws RpcException
    */
   private void triggerImageDelete(final State current) throws RpcException {
-    final AsyncMethodCallback<Host.AsyncClient.get_inactive_images_call> callback =
-        new AsyncMethodCallback<Host.AsyncClient.get_inactive_images_call>() {
+    final AsyncMethodCallback<Host.AsyncSSLClient.get_inactive_images_call> callback =
+        new AsyncMethodCallback<Host.AsyncSSLClient.get_inactive_images_call>() {
           @Override
-          public void onComplete(Host.AsyncClient.get_inactive_images_call call) {
+          public void onComplete(Host.AsyncSSLClient.get_inactive_images_call call) {
             try {
 
               GetInactiveImagesResponse response = call.getResult();
@@ -494,10 +494,10 @@ public class ImageDatastoreSweeperService extends StatefulService {
    * @param current
    */
   private void waitForImageDeleteCompletion(final State current) throws RpcException {
-    final AsyncMethodCallback<Host.AsyncClient.get_deleted_images_call> callback =
-        new AsyncMethodCallback<Host.AsyncClient.get_deleted_images_call>() {
+    final AsyncMethodCallback<Host.AsyncSSLClient.get_deleted_images_call> callback =
+        new AsyncMethodCallback<Host.AsyncSSLClient.get_deleted_images_call>() {
           @Override
-          public void onComplete(Host.AsyncClient.get_deleted_images_call call) {
+          public void onComplete(Host.AsyncSSLClient.get_deleted_images_call call) {
             try {
 
               GetDeletedImagesResponse response = call.getResult();
@@ -611,10 +611,10 @@ public class ImageDatastoreSweeperService extends StatefulService {
   private void startImageDelete(final State current,
                                 final List<InactiveImageDescriptor> inactiveImages,
                                 final Map<String, ImageService.State> referenceImages) throws RpcException {
-    final AsyncMethodCallback<Host.AsyncClient.start_image_sweep_call> callback =
-        new AsyncMethodCallback<Host.AsyncClient.start_image_sweep_call>() {
+    final AsyncMethodCallback<Host.AsyncSSLClient.start_image_sweep_call> callback =
+        new AsyncMethodCallback<Host.AsyncSSLClient.start_image_sweep_call>() {
           @Override
-          public void onComplete(Host.AsyncClient.start_image_sweep_call call) {
+          public void onComplete(Host.AsyncSSLClient.start_image_sweep_call call) {
             try {
 
               StartImageSweepResponse response = call.getResult();

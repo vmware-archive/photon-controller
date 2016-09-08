@@ -25,7 +25,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.Test;
-import static com.example.echo.Echoer.AsyncClient;
+import static com.example.echo.Echoer.AsyncSSLClient;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.doAnswer;
@@ -47,28 +47,28 @@ import java.util.concurrent.TimeUnit;
  */
 public class ClientProxyImplTest extends PowerMockTestCase {
 
-  private TypeLiteral<AsyncClient> typeLiteral = new TypeLiteral<AsyncClient>() {
+  private TypeLiteral<AsyncSSLClient> typeLiteral = new TypeLiteral<AsyncSSLClient>() {
   };
   private ExecutorService executor = Executors.newCachedThreadPool();
 
   @Mock
-  private ClientPool<AsyncClient> clientPool;
+  private ClientPool<AsyncSSLClient> clientPool;
 
   @Mock
-  private AsyncClient client;
+  private AsyncSSLClient client;
 
   @Captor
   private ArgumentCaptor<String> echoArgument;
 
   @Captor
-  private ArgumentCaptor<AsyncMethodCallback<AsyncClient.echo_call>> echoHandler;
+  private ArgumentCaptor<AsyncMethodCallback<AsyncSSLClient.echo_call>> echoHandler;
 
   @Test
   public void testSuccessfulProxyMethodCall() throws Exception {
     when(clientPool.acquire()).thenReturn(Futures.immediateFuture(client));
     mockCallSuccess(client);
 
-    ClientProxyImpl<AsyncClient> proxy = new ClientProxyImpl<>(executor, typeLiteral, clientPool);
+    ClientProxyImpl<AsyncSSLClient> proxy = new ClientProxyImpl<>(executor, typeLiteral, clientPool);
     assertThat(performEchoCall(proxy.get(), "foobar"), is("foobar"));
 
     verify(clientPool).acquire();
@@ -81,7 +81,7 @@ public class ClientProxyImplTest extends PowerMockTestCase {
     when(clientPool.acquire()).thenReturn(Futures.immediateFuture(client));
     mockCallError(client, new TException("Something happened"));
 
-    ClientProxyImpl<AsyncClient> proxy = new ClientProxyImpl<>(executor, typeLiteral, clientPool);
+    ClientProxyImpl<AsyncSSLClient> proxy = new ClientProxyImpl<>(executor, typeLiteral, clientPool);
 
     try {
       performEchoCall(proxy.get(), "foobar");
@@ -100,7 +100,7 @@ public class ClientProxyImplTest extends PowerMockTestCase {
     when(clientPool.acquire()).thenReturn(Futures.immediateFuture(client));
     mockCallError(client, new TApplicationException("Something happened"));
 
-    ClientProxyImpl<AsyncClient> proxy = new ClientProxyImpl<>(executor, typeLiteral, clientPool);
+    ClientProxyImpl<AsyncSSLClient> proxy = new ClientProxyImpl<>(executor, typeLiteral, clientPool);
 
     try {
       performEchoCall(proxy.get(), "foobar");
@@ -116,9 +116,9 @@ public class ClientProxyImplTest extends PowerMockTestCase {
 
   @Test
   public void testCannotAcquireClient() throws Exception {
-    when(clientPool.acquire()).thenReturn(Futures.<AsyncClient>immediateFailedFuture(new Exception("foo")));
+    when(clientPool.acquire()).thenReturn(Futures.<AsyncSSLClient>immediateFailedFuture(new Exception("foo")));
 
-    ClientProxyImpl<AsyncClient> proxy = new ClientProxyImpl<>(executor, typeLiteral, clientPool);
+    ClientProxyImpl<AsyncSSLClient> proxy = new ClientProxyImpl<>(executor, typeLiteral, clientPool);
 
     try {
       performEchoCall(proxy.get(), "foobar");
@@ -133,7 +133,7 @@ public class ClientProxyImplTest extends PowerMockTestCase {
 
   @Test
   public void testCallMethodWithoutCallback() throws Exception {
-    ClientProxyImpl<AsyncClient> proxy = new ClientProxyImpl<>(executor, typeLiteral, clientPool);
+    ClientProxyImpl<AsyncSSLClient> proxy = new ClientProxyImpl<>(executor, typeLiteral, clientPool);
 
     try {
       proxy.get().getProtocolFactory();
@@ -147,16 +147,16 @@ public class ClientProxyImplTest extends PowerMockTestCase {
 
   @Test
   public void testSetTimeoutMultipleClients() throws Exception {
-    AsyncClient client2 = mock(AsyncClient.class);
+    AsyncSSLClient client2 = mock(AsyncSSLClient.class);
 
     //noinspection unchecked
     when(clientPool.acquire()).thenReturn(Futures.immediateFuture(client), Futures.immediateFuture(client2));
     mockCallSuccess(client);
     mockCallSuccess(client2);
 
-    ClientProxy<AsyncClient> proxy = new ClientProxyImpl<>(executor, typeLiteral, clientPool);
+    ClientProxy<AsyncSSLClient> proxy = new ClientProxyImpl<>(executor, typeLiteral, clientPool);
 
-    AsyncClient clientProxy = proxy.get();
+    AsyncSSLClient clientProxy = proxy.get();
     clientProxy.setTimeout(10);
     assertThat(performEchoCall(clientProxy, "foo"), is("foo"));
     assertThat(performEchoCall(clientProxy, "bar"), is("bar"));
@@ -171,11 +171,11 @@ public class ClientProxyImplTest extends PowerMockTestCase {
     verifyNoMoreInteractions(clientPool);
   }
 
-  private void mockCallSuccess(AsyncClient client) throws Exception {
+  private void mockCallSuccess(AsyncSSLClient client) throws Exception {
     doAnswer(new Answer() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
-        AsyncClient.echo_call response = mock(AsyncClient.echo_call.class);
+        AsyncSSLClient.echo_call response = mock(AsyncSSLClient.echo_call.class);
         when(response.getResult()).thenReturn(echoArgument.getValue());
         echoHandler.getValue().onComplete(response);
         return null;
@@ -183,7 +183,7 @@ public class ClientProxyImplTest extends PowerMockTestCase {
     }).when(client).echo(echoArgument.capture(), echoHandler.capture());
   }
 
-  private void mockCallError(AsyncClient client, final Exception error) throws Exception {
+  private void mockCallError(AsyncSSLClient client, final Exception error) throws Exception {
     doAnswer(new Answer() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
@@ -193,14 +193,14 @@ public class ClientProxyImplTest extends PowerMockTestCase {
     }).when(client).echo(echoArgument.capture(), echoHandler.capture());
   }
 
-  private String performEchoCall(AsyncClient client, String message) throws Exception {
+  private String performEchoCall(AsyncSSLClient client, String message) throws Exception {
     final String[] result = {null};
     final Exception[] error = {null};
     final CountDownLatch done = new CountDownLatch(1);
 
-    client.echo(message, new AsyncMethodCallback<AsyncClient.echo_call>() {
+    client.echo(message, new AsyncMethodCallback<AsyncSSLClient.echo_call>() {
       @Override
-      public void onComplete(AsyncClient.echo_call response) {
+      public void onComplete(AsyncSSLClient.echo_call response) {
         try {
           result[0] = response.getResult();
         } catch (TException e) {
