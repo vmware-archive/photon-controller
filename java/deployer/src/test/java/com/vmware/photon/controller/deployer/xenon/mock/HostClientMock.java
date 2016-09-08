@@ -54,7 +54,7 @@ public class HostClientMock extends HostClient {
   }
 
   @Override
-  public void getHostConfig(AsyncMethodCallback<Host.AsyncClient.get_host_config_call> handler) {
+  public void getHostConfig(AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call> handler) {
 
     logger.info("Host get config complete invocation");
 
@@ -62,7 +62,7 @@ public class HostClientMock extends HostClient {
       handler.onError(getConfigFailure);
 
     } else if (null != getConfigResultCode) {
-      Host.AsyncClient.get_host_config_call getHostConfigCall = mock(Host.AsyncClient.get_host_config_call.class);
+      Host.AsyncSSLClient.get_host_config_call getHostConfigCall = mock(Host.AsyncSSLClient.get_host_config_call.class);
       GetConfigResponse getConfigResponse = new GetConfigResponse();
       getConfigResponse.setResult(getConfigResultCode);
       getConfigResponse.setHostConfig(hostConfig);
@@ -81,11 +81,11 @@ public class HostClientMock extends HostClient {
   }
 
   @Override
-  public void setHostMode(HostMode hostMode, AsyncMethodCallback<Host.AsyncClient.set_host_mode_call> callback) {
+  public void setHostMode(HostMode hostMode, AsyncMethodCallback<Host.AsyncSSLClient.set_host_mode_call> callback) {
     if (this.setHostModeFailure != null) {
       callback.onError(this.setHostModeFailure);
     } else if (this.setHostModeResultCode != null){
-      Host.AsyncClient.set_host_mode_call call = mock(Host.AsyncClient.set_host_mode_call.class);
+      Host.AsyncSSLClient.set_host_mode_call call = mock(Host.AsyncSSLClient.set_host_mode_call.class);
       SetHostModeResponse response = new SetHostModeResponse();
       response.setResult(this.setHostModeResultCode);
       try {
