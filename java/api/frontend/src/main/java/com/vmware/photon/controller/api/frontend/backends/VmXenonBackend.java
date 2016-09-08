@@ -700,6 +700,13 @@ public class VmXenonBackend implements VmBackend {
       }
     }
 
+    for (VmService.NetworkInfo networkInfo : vm.networkInfo.values()) {
+      if (networkInfo.floatingIpAddress != null) {
+        vmEntity.setFloatingIp(networkInfo.floatingIpAddress);
+        break;
+      }
+    }
+
     return vmEntity;
   }
 
@@ -919,6 +926,8 @@ public class VmXenonBackend implements VmBackend {
     for (IsoEntity isoEntity : vmEntity.getIsos()) {
       vm.addAttachedIso(isoToApiRepresentation(isoEntity));
     }
+
+    vm.setFloatingIp(vmEntity.getFloatingIp());
 
     return vm;
   }
