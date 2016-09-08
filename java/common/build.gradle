@@ -60,6 +60,13 @@ dependencies {
   testThrift files(fileTree(dir: 'src/test/resources').matching { include '**/*.thrift' })
 }
 
+// This enables us to access sun.security which is needed to generate certs in java 8
+compileJava {
+  options.fork = true
+  options.forkOptions.executable = 'javac'
+  options.compilerArgs << "-XDignore.symbol.file=true"
+}
+
 task testJar(type: Jar, dependsOn: testClasses) {
   baseName = "test-${project.archivesBaseName}"
   from sourceSets.test.output

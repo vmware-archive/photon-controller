@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.common.thrift;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import org.apache.thrift.async.TAsyncClient;
+import org.apache.thrift.async.TAsyncSSLClient;
 
 /**
  * Manages a pool of clients ({@link TAsyncClient}). Each client has it's own connection because
@@ -24,7 +24,7 @@ import org.apache.thrift.async.TAsyncClient;
  *
  * @param <C> client type
  */
-public interface ClientPool<C extends TAsyncClient> {
+public interface ClientPool<C extends TAsyncSSLClient> {
 
   /**
    * Acquire a new client.

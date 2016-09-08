@@ -38,7 +38,7 @@ public class ErrorMockStartImageScan extends HostClientMock {
 
   @Override
   public void startImageScan(String dataStore, Long scanRate, Long timeout,
-                             AsyncMethodCallback<Host.AsyncClient.start_image_scan_call> callback) {
+                             AsyncMethodCallback<Host.AsyncSSLClient.start_image_scan_call> callback) {
     if (null == this.errorCode) {
       callback.onError(new TException("startImageScan error"));
       return;
