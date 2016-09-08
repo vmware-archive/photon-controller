@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.common.thrift;
 
 import com.google.common.util.concurrent.SettableFuture;
-import org.apache.thrift.async.TAsyncClient;
+import org.apache.thrift.async.TAsyncSSLClient;
 
 import java.util.concurrent.ScheduledFuture;
 
@@ -23,7 +23,7 @@ import java.util.concurrent.ScheduledFuture;
  *
  * @param <C> thrift async client type
  */
-class Promise<C extends TAsyncClient> {
+class Promise<C extends TAsyncSSLClient> {
   private SettableFuture<C> future;
   private ScheduledFuture<Void> timeout;
   private boolean invoked;
