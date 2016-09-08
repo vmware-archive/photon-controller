@@ -69,7 +69,7 @@ public class VmFloatingIpResourceTest extends ResourceTest {
     task.setId(taskId);
     VmFloatingIpSpec spec = new VmFloatingIpSpec();
     spec.setNetworkId("networkId");
-    when(vmFeClient.aquireFloatingIp(vmId, spec)).thenReturn(task);
+    when(vmFeClient.acquireFloatingIp(vmId, spec)).thenReturn(task);
 
     Response response = client()
         .target(vmAssignFloatingIpRoute)
@@ -89,14 +89,12 @@ public class VmFloatingIpResourceTest extends ResourceTest {
 
     Task task = new Task();
     task.setId(taskId);
-    VmFloatingIpSpec spec = new VmFloatingIpSpec();
-    spec.setNetworkId("networkId");
-    when(vmFeClient.releaseFloatingIp(vmId, spec)).thenReturn(task);
+    when(vmFeClient.releaseFloatingIp(vmId)).thenReturn(task);
 
     Response response = client()
         .target(vmReleaseFloatingIpRoute)
         .request()
-        .post(Entity.entity(spec, MediaType.APPLICATION_JSON_TYPE));
+        .delete();
 
     assertThat(response.getStatus(), is(Response.Status.CREATED.getStatusCode()));
 

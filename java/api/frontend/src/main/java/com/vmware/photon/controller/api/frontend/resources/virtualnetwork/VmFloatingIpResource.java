@@ -31,6 +31,7 @@ import io.dropwizard.validation.Validated;
 import org.glassfish.jersey.server.ContainerRequest;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -67,23 +68,22 @@ public class VmFloatingIpResource {
                                    @Validated VmFloatingIpSpec spec) throws ExternalException {
     return generateCustomResponse(
         Response.Status.CREATED,
-        vmFeClient.aquireFloatingIp(id, spec),
+        vmFeClient.acquireFloatingIp(id, spec),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
 
-  @POST
+  @DELETE
   @Path(VmResourceRoutes.VM_RELEASE_FLOATING_IP_ACTION)
   @ApiOperation(value = "Release a floating IP from a VM", response = Task.class)
   @ApiResponses(value = {
       @ApiResponse(code = 201, message = "Floating IP is being released, progress communicated via the task")
   })
   public Response releaseFloatingIp(@Context Request request,
-                                    @PathParam("id") String id,
-                                    @Validated VmFloatingIpSpec spec) throws ExternalException {
+                                    @PathParam("id") String id) throws ExternalException {
     return generateCustomResponse(
         Response.Status.CREATED,
-        vmFeClient.releaseFloatingIp(id, spec),
+        vmFeClient.releaseFloatingIp(id),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

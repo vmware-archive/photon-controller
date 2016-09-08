@@ -100,6 +100,8 @@ public interface VmBackend {
 
   VmEntity findById(String id) throws VmNotFoundException;
 
+  VmService.State getVmById(String id) throws VmNotFoundException;
+
   void updateIsoEntitySize(IsoEntity isoEntity, long size);
 
   void tombstoneIsoEntity(IsoEntity isoEntity);

@@ -128,7 +128,9 @@ public enum ErrorCode {
   PAGE_EXPIRED("PageExpired", Response.Status.NOT_FOUND),
   INVALID_PAGE_SIZE("InvalidPageSize", Response.Status.BAD_REQUEST),
   INVALID_IMAGE_DATASTORE_SET("InvalidImageDatastoreSet", Response.Status.BAD_REQUEST),
-  INVALID_DEPLOYMENT_DESIRED_STATE("InvalidDeploymentDesiredState", Response.Status.BAD_REQUEST);
+  INVALID_DEPLOYMENT_DESIRED_STATE("InvalidDeploymentDesiredState", Response.Status.BAD_REQUEST),
+  FLOATING_IP_ALREADY_ACQUIRED("FloatingIpAlreadyAcquired", Response.Status.BAD_REQUEST),
+  FLOATING_IP_NOT_ACQUIRED("FloatingIpNotAcquired", Response.Status.BAD_REQUEST);
 
   private final String code;
   private final int httpStatus;

@@ -21,8 +21,9 @@ import com.vmware.photon.controller.api.frontend.backends.utils.TaskUtils;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
-import com.vmware.photon.controller.api.frontend.entities.VmEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.FloatingIpAlreadyAcquiredException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.FloatingIpNotAcquiredException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.model.ImageCreateSpec;
 import com.vmware.photon.controller.api.model.Operation;
@@ -36,6 +37,7 @@ import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIp
 import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.AssignFloatingIpToVmWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.RemoveFloatingIpFromVmWorkflowService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
@@ -203,16 +205,28 @@ public class VmFeClient {
     return task;
   }
 
-  public Task aquireFloatingIp(String vmId, VmFloatingIpSpec spec) throws ExternalException {
-    VmEntity vmEntity = vmBackend.findById(vmId);
+  public Task acquireFloatingIp(String vmId, VmFloatingIpSpec spec) throws ExternalException {
+    VmService.State vmState = vmBackend.getVmById(vmId);
 
-    if (!vmEntity.getNetworks().contains(spec.getNetworkId())) {
-      throw new NetworkNotFoundException(spec.getNetworkId());
+    String networkIdWithFloatingIP = getNetworkHasFloatingIp(vmState);
+    if (networkIdWithFloatingIP != null) {
+      throw new FloatingIpAlreadyAcquiredException(vmId, networkIdWithFloatingIP);
+    }
+
+    String networkId;
+    if (spec.getNetworkId() != null) {
+      if (!vmState.networks.contains(spec.getNetworkId())) {
+        throw new NetworkNotFoundException(spec.getNetworkId());
+      }
+
+      networkId = spec.getNetworkId();
+    } else {
+      networkId = vmState.networks.iterator().next();
     }
 
     AssignFloatingIpToVmWorkflowDocument startState = new AssignFloatingIpToVmWorkflowDocument();
     startState.vmId = vmId;
-    startState.networkId = spec.getNetworkId();
+    startState.networkId = networkId;
 
     AssignFloatingIpToVmWorkflowDocument finalState = backendClient.post(
         AssignFloatingIpToVmWorkflowService.FACTORY_LINK,
@@ -221,21 +235,32 @@ public class VmFeClient {
     return TaskUtils.convertBackEndToFrontEnd(finalState.taskServiceState);
   }
 
-  public Task releaseFloatingIp(String vmId, VmFloatingIpSpec spec) throws ExternalException {
-    VmEntity vmEntity = vmBackend.findById(vmId);
+  public Task releaseFloatingIp(String vmId) throws ExternalException {
+    VmService.State vmState = vmBackend.getVmById(vmId);
 
-    if (!vmEntity.getNetworks().contains(spec.getNetworkId())) {
-      throw new NetworkNotFoundException(spec.getNetworkId());
+    String networkIdWithFloatingIP = getNetworkHasFloatingIp(vmState);
+    if (networkIdWithFloatingIP == null) {
+      throw new FloatingIpNotAcquiredException(vmId);
     }
 
     RemoveFloatingIpFromVmWorkflowDocument startState = new RemoveFloatingIpFromVmWorkflowDocument();
     startState.vmId = vmId;
-    startState.networkId = spec.getNetworkId();
+    startState.networkId = networkIdWithFloatingIP;
 
     RemoveFloatingIpFromVmWorkflowDocument finalState = backendClient.post(
         RemoveFloatingIpFromVmWorkflowService.FACTORY_LINK,
         startState).getBody(RemoveFloatingIpFromVmWorkflowDocument.class);
 
     return TaskUtils.convertBackEndToFrontEnd(finalState.taskServiceState);
+  }
+
+  private String getNetworkHasFloatingIp(VmService.State vmState) {
+    for (VmService.NetworkInfo networkInfo : vmState.networkInfo.values()) {
+      if (networkInfo.floatingIpAddress != null) {
+        return networkInfo.id;
+      }
+    }
+
+    return null;
   }
 }
