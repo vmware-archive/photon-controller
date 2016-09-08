@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.common.thrift;
 
-import org.apache.thrift.async.TAsyncClient;
+import org.apache.thrift.async.TAsyncSSLClient;
 
 /**
  * Creates client proxies for a given client pool.
  *
  * @param <C> client type
  */
-public interface ClientProxyFactory<C extends TAsyncClient> {
+public interface ClientProxyFactory<C extends TAsyncSSLClient> {
   ClientProxy<C> create(ClientPool<C> clientPool);
 }
