@@ -1,5 +1,4 @@
 #!/bin/bash
-
 tools=$(readlink -nf $(dirname $0))
 source $tools/common.sh
 
@@ -75,18 +74,78 @@ function create_and_copy_certificate() {
   export JAVA_HOME="/usr/java/default"
   export PATH=$PATH:$JAVA_HOME/bin:/opt/esxcli:/opt/vmware/bin:/opt/likewise/bin
 
-  mkdir -p ./host_cert
+  cert_dir="./host_cert_${host_address}"
+  host_cert_dir="/etc/vmware/ssl"
+  priv_key_name="host.privkey"
+  pub_key_name="host.pubkey"
+  crt_name="host.crt"
+  pem_name="host.pem"
+  priv_key_path="${cert_dir}/${priv_key_name}"
+  pub_key_path="${cert_dir}/${pub_key_name}"
+  host_crt_path="${cert_dir}/${crt_name}"
+  host_pem_path="${cert_dir}/${pem_name}"
+  esxi_priv_key_path="${host_cert_dir}/${priv_key_name}"
+  esxi_pub_key_path="${host_cert_dir}/${pub_key_name}"
+  esxi_host_crt_path="${host_cert_dir}/${crt_name}"
+  esxi_host_pem_path="${host_cert_dir}/${pem_name}"
 
-  #copying the config file to local directory which is going to be used in the cerficate generation.
-  cp /opt/vmware/share/config/certool.cfg ./host_cert/certool.cfg
+  cert_alias=`keytool --list --keystore /keystore.jks -storepass ${lightwave_password} -alias MACHINE_CERT_${host_address}`
+  if [[ "$cert_alias" == *"does not exist"* ]]; then
 
-  # Fill in the ip address for generating a host certificate
-  sed -i s/IPAddress.*/"IPAddress = $host_address"/ /opt/vmware/share/config/certool.cfg
+    mkdir -p ${cert_dir}
 
-  # Generate keys if they don't exist
-  if [ ! -f ./host_cert/host.privkey ] || [ ! -f ./host_cert/host.pubkey ]; then
-    certool --genkey --privkey=./host_cert/host.privkey --pubkey=./host_cert/host.pubkey \
-      --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} --server ${lightwave_address}
+    echo "Deleting cert for ${host_address}"
+    sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} rm -f "${esxi_host_crt_path}"
+    sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} rm -f "${esxi_host_pem_path}"
+    sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} rm -f "${esxi_pub_key_path}"
+    sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} rm -f "${esxi_priv_key_path}"
+    #copying the config file to local directory which is going to be used in the cerficate generation.
+    config_file_path="${cert_dir}/certool.cfg"
+    cp /opt/vmware/share/config/certool.cfg "${config_file_path}"
+
+    # Fill in the ip address for generating a host certificate
+    sed -i s/IPAddress.*/"IPAddress = ${host_address}"/ "${config_file_path}"
+
+    # Generate keys if they don't exist
+    if [ ! -f "${priv_key_path}" ] || [ ! -f "${pub_key_path}" ]; then
+      echo "Creating keys for ${host_address}"
+      certool --genkey --privkey="${priv_key_path}" --pubkey="${pub_key_path}" \
+        --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} --server ${lightwave_address}
+    fi
+
+    # Generate certificate if it doesn't exist
+    if [ ! -f "${host_crt_path}" ]; then
+      echo "Creating cert for ${host_address}"
+      certool --gencert --privkey="${priv_key_path}" --cert="${host_crt_path}" \
+        --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} \
+        --server ${lightwave_address} --config "${config_file_path}"
+
+      cat ${host_crt_path} ${priv_key_path} > ${host_pem_path}
+
+      # Generate pkcs12 keystore
+      openssl pkcs12 -export -in ${host_crt_path} -inkey ${priv_key_path} -out hostkeystore.p12 -name MACHINE_CERT_${host_address} \
+        -password pass:${lightwave_password}
+
+      # Convert it into JKS
+      keytool -importkeystore -deststorepass ${lightwave_password} -destkeypass ${lightwave_password} \
+        -destkeystore /keystore.jks -srckeystore hostkeystore.p12 -srcstoretype PKCS12 -srcstorepass ${lightwave_password} \
+        -alias MACHINE_CERT_${host_address}
+
+    fi
+
+    # listing /etc/vmware/ssl contents before copying
+    echo "listing /etc/vmware/ssl contents before copying"
+    sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} ls /etc/vmware/ssl
+
+    sshpass -p "$password" scp -o StrictHostKeyChecking=no ${host_crt_path} ${username}@${host_address}:/etc/vmware/ssl
+    sshpass -p "$password" scp -o StrictHostKeyChecking=no ${host_pem_path} ${username}@${host_address}:/etc/vmware/ssl
+    sshpass -p "$password" scp -o StrictHostKeyChecking=no ${priv_key_path} ${username}@${host_address}:/etc/vmware/ssl
+
+    # listing /etc/vmware/ssl contents after copying
+    echo "listing /etc/vmware/ssl contents after coying"
+    sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} ls /etc/vmware/ssl
+
+    rm -rf "${cert_dir}"
   fi
 
   # Generate certificate if it doesn't exist

@@ -18,8 +18,8 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.Test;
-import static com.example.echo.Echoer.AsyncClient;
-import static com.example.echo.Echoer.AsyncClient.echo_call;
+import static com.example.echo.Echoer.AsyncSSLClient;
+import static com.example.echo.Echoer.AsyncSSLClient.echo_call;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -32,17 +32,17 @@ public class WrappedCallbackTest extends PowerMockTestCase {
   private AsyncMethodCallback<echo_call> callback;
 
   @Mock
-  private AsyncClient client;
+  private AsyncSSLClient client;
 
   @Mock
-  private ClientPool<AsyncClient> clientPool;
+  private ClientPool<AsyncSSLClient> clientPool;
 
   @Mock
   private echo_call response;
 
   @Test
   public void testOnComplete() throws Exception {
-    WrappedCallback<AsyncClient, echo_call> wcb = new WrappedCallback<>(callback, client, clientPool);
+    WrappedCallback<AsyncSSLClient, echo_call> wcb = new WrappedCallback<>(callback, client, clientPool);
     wcb.onComplete(response);
 
     InOrder inOrder = inOrder(client, clientPool, callback);
@@ -55,7 +55,7 @@ public class WrappedCallbackTest extends PowerMockTestCase {
 
   @Test
   public void testOnError() throws Exception {
-    WrappedCallback<AsyncClient, echo_call> wcb = new WrappedCallback<>(callback, client, clientPool);
+    WrappedCallback<AsyncSSLClient, echo_call> wcb = new WrappedCallback<>(callback, client, clientPool);
     Exception e = new Exception("foo bar");
     wcb.onError(e);
 

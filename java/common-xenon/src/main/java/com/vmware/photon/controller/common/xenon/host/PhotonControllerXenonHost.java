@@ -39,6 +39,7 @@ import com.vmware.xenon.common.http.netty.NettyHttpServiceClient;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
+import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +94,6 @@ public class PhotonControllerXenonHost
     // client for a non-auth installer to be able to talk to auth enabled management plane.
     private boolean inInstaller = false;
 
-
     @SuppressWarnings("rawtypes")
     public static final Class[] FACTORY_SERVICES = {
             RootNamespaceService.class,
@@ -114,12 +114,13 @@ public class PhotonControllerXenonHost
                                      HostClientFactory hostClientFactory,
                                      AgentControlClientFactory agentControlClientFactory,
                                      NsxClientFactory nsxClientFactory,
-                                     CloudStoreHelper cloudStoreHelper) throws Throwable {
+                                     CloudStoreHelper cloudStoreHelper,
+                                     TSSLTransportParameters params) throws Throwable {
         super(xenonConfig);
         this.buildInfo = BuildInfo.get(this.getClass());
 
         if (hostClientFactory == null || agentControlClientFactory == null) {
-            ThriftModule thriftModule = new ThriftModule();
+            ThriftModule thriftModule = new ThriftModule(params);
             if (hostClientFactory == null) {
                 hostClientFactory = thriftModule.getHostClientFactory();
             }
@@ -328,6 +329,7 @@ public class PhotonControllerXenonHost
      * Adds a service to a privileged list, allowing it to operate on authorization.
      * context
      */
+    @Override
     public void addPrivilegedService(Class<? extends Service> serviceType) {
       super.addPrivilegedService(serviceType);
     }

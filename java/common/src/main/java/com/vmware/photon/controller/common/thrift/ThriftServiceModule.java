@@ -18,7 +18,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Names;
 import com.google.inject.util.Types;
-import org.apache.thrift.async.TAsyncClient;
+import org.apache.thrift.async.TAsyncSSLClient;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -28,7 +28,7 @@ import java.lang.reflect.Type;
  *
  * @param <C> client type
  */
-public class ThriftServiceModule<C extends TAsyncClient> extends AbstractModule {
+public class ThriftServiceModule<C extends TAsyncSSLClient> extends AbstractModule {
   private final TypeLiteral<C> client;
 
   public ThriftServiceModule(TypeLiteral<C> client) {

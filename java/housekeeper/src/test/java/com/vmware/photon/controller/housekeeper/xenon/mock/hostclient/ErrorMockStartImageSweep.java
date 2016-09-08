@@ -40,7 +40,7 @@ public class ErrorMockStartImageSweep extends HostClientMock {
 
   @Override
   public void startImageSweep(String datastore, List<InactiveImageDescriptor> images, Long sweepRate, Long timeout,
-                              AsyncMethodCallback<Host.AsyncClient.start_image_sweep_call> callback) {
+                              AsyncMethodCallback<Host.AsyncSSLClient.start_image_sweep_call> callback) {
     if (null == this.errorCode) {
       callback.onError(new TException("startImageScan error"));
       return;

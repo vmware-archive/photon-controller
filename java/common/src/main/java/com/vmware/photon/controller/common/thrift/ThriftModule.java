@@ -27,15 +27,16 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
-import org.apache.thrift.async.TAsyncClientManager;
+import org.apache.thrift.async.TAsyncSSLClient;
+import org.apache.thrift.async.TAsyncSSLClientManager;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
-import org.apache.thrift.transport.TFastFramedTransport;
-import org.apache.thrift.transport.TTransportFactory;
+import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
 
 import javax.inject.Named;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -49,8 +50,13 @@ public class ThriftModule extends AbstractModule {
   private static final Object lock = new Object();
   private volatile SecureRandom secureRandom;
   private volatile TProtocolFactory tProtocolFactory;
-  private volatile TAsyncClientManager tAsyncClientManager;
+  private volatile TAsyncSSLClientManager tAsyncSSLClientManager;
   private volatile ScheduledExecutorService scheduledExecutorService;
+  private final TSSLTransportParameters params;
+
+  public ThriftModule(TSSLTransportParameters params) {
+    this.params = params;
+  }
 
   @Override
   protected void configure() {
@@ -92,15 +98,21 @@ public class ThriftModule extends AbstractModule {
 
   @Provides
   @Singleton
-  TAsyncClientManager getTAsyncClientManager() throws IOException {
-    if (tAsyncClientManager == null) {
+  TAsyncSSLClientManager getTAsyncClientManager() throws IOException {
+    if (tAsyncSSLClientManager == null) {
       synchronized (lock) {
-        if (tAsyncClientManager == null) {
-          tAsyncClientManager = new TAsyncClientManager();
+        if (tAsyncSSLClientManager == null) {
+          tAsyncSSLClientManager = new TAsyncSSLClientManager();
         }
       }
     }
-    return tAsyncClientManager;
+    return tAsyncSSLClientManager;
+  }
+
+  @Provides
+  @Singleton
+  TSSLTransportParameters getTSSLTransportParameters() {
+    return this.params;
   }
 
   @Provides
@@ -118,27 +130,23 @@ public class ThriftModule extends AbstractModule {
 
   @Provides
   @Singleton
-  TTransportFactory getTTransportFactory() {
-    return new TFastFramedTransport.Factory();
-  }
-
-  @Provides
-  @Singleton
   @Named("ClientProxyExecutor")
   ExecutorService getClientProxyExecutor() {
     return Executors.newCachedThreadPool();
   }
 
+
   /**
-   * Creates a TAsyncClientFactory of the given type.
+   * Creates a TAsyncSSLClientFactory of the given type.
    *
-   * @param type the type of TAsyncClientFactory to create.
+   * @param type the type of TAsyncSSLClientFactory to create.
    * @return
    * @throws IOException
    */
-  private TAsyncClientFactory getTAsyncClientFactory(TypeLiteral type) throws IOException {
-    final TAsyncClientManager clientManager = getTAsyncClientManager();
-    return new TAsyncClientFactory<>(type, clientManager);
+  private <T extends TAsyncSSLClient> TAsyncSSLClientFactory<T> getTAsyncSSLClientFactory(TypeLiteral<T> type)
+      throws IOException {
+    final TAsyncSSLClientManager clientManager = getTAsyncClientManager();
+    return new TAsyncSSLClientFactory<T>(type, clientManager);
   }
 
   /**
@@ -146,14 +154,20 @@ public class ThriftModule extends AbstractModule {
    *
    * @return
    */
-  private ClientPoolFactory getClientPoolFactory(TAsyncClientFactory tAsyncClientFactory) {
+  public <T extends TAsyncSSLClient> ClientPoolFactory<T> getClientPoolFactory(
+      TAsyncSSLClientFactory<T> tAsyncSSLClientFactory) {
     final SecureRandom random = getSecureRandom();
     final TProtocolFactory protocolFactory = getTProtocolFactory();
     final ScheduledExecutorService scheduledExecutorService = getClientPoolTimer();
     final ThriftFactory thriftFactory = getThriftFactory();
 
-    return new ClientPoolFactoryImpl(random, protocolFactory, scheduledExecutorService, thriftFactory,
-        tAsyncClientFactory);
+    return new ClientPoolFactoryImpl<T>(
+        random,
+        protocolFactory,
+        scheduledExecutorService,
+        thriftFactory,
+        tAsyncSSLClientFactory,
+        params);
   }
 
   /**
@@ -162,10 +176,10 @@ public class ThriftModule extends AbstractModule {
    * @param type the type of ClientProxy to create.
    * @return
    */
-  private ClientProxyFactory getClientProxyFactory(TypeLiteral type) {
+  public <T extends TAsyncSSLClient> ClientProxyFactory<T> getClientProxyFactory(TypeLiteral<T> type) {
     final ExecutorService clientProxyExecutor = getClientProxyExecutor();
 
-    return new ClientProxyFactoryImpl(clientProxyExecutor, type);
+    return new ClientProxyFactoryImpl<T>(clientProxyExecutor, type);
   }
 
   /**
@@ -186,10 +200,10 @@ public class ThriftModule extends AbstractModule {
    * @throws IOException
    */
   public AgentControlClientFactory getAgentControlClientFactory() throws IOException {
-    TypeLiteral type = new TypeLiteral<AgentControl.AsyncClient>() {};
-    TAsyncClientFactory tAsyncClientFactory = getTAsyncClientFactory(type);
-    ClientPoolFactory clientPoolFactory = getClientPoolFactory(tAsyncClientFactory);
-    ClientProxyFactory clientProxyFactory = getClientProxyFactory(type);
+    TypeLiteral<AgentControl.AsyncSSLClient> type = new TypeLiteral<AgentControl.AsyncSSLClient>() {};
+    TAsyncSSLClientFactory<AgentControl.AsyncSSLClient> tAsyncSSLClientFactory = getTAsyncSSLClientFactory(type);
+    ClientPoolFactory<AgentControl.AsyncSSLClient> clientPoolFactory = getClientPoolFactory(tAsyncSSLClientFactory);
+    ClientProxyFactory<AgentControl.AsyncSSLClient> clientProxyFactory = getClientProxyFactory(type);
 
     return new AgentControlClientFactoryImpl(clientPoolFactory, clientProxyFactory);
   }
@@ -201,10 +215,10 @@ public class ThriftModule extends AbstractModule {
    * @throws IOException
    */
   public HostClientFactory getHostClientFactory() throws IOException {
-    TypeLiteral type = new TypeLiteral<Host.AsyncClient>() {};
-    TAsyncClientFactory tAsyncClientFactory = getTAsyncClientFactory(type);
-    ClientPoolFactory clientPoolFactory = getClientPoolFactory(tAsyncClientFactory);
-    ClientProxyFactory clientProxyFactory = getClientProxyFactory(type);
+    TypeLiteral<Host.AsyncSSLClient> type = new TypeLiteral<Host.AsyncSSLClient>() {};
+    TAsyncSSLClientFactory<Host.AsyncSSLClient> tAsyncSSLClientFactory = getTAsyncSSLClientFactory(type);
+    ClientPoolFactory<Host.AsyncSSLClient> clientPoolFactory = getClientPoolFactory(tAsyncSSLClientFactory);
+    ClientProxyFactory<Host.AsyncSSLClient> clientProxyFactory = getClientProxyFactory(type);
 
     return new HostClientFactoryImpl(clientPoolFactory, clientProxyFactory);
   }
@@ -213,10 +227,12 @@ public class ThriftModule extends AbstractModule {
    * Implementation of HostClientFactory.
    */
   private static class HostClientFactoryImpl implements HostClientFactory {
-    private ClientPoolFactory clientPoolFactory;
-    private ClientProxyFactory clientProxyFactory;
+    private ClientPoolFactory<Host.AsyncSSLClient> clientPoolFactory;
+    private ClientProxyFactory<Host.AsyncSSLClient> clientProxyFactory;
 
-    private HostClientFactoryImpl(ClientPoolFactory clientPoolFactory, ClientProxyFactory clientProxyFactory) {
+    private HostClientFactoryImpl(
+        ClientPoolFactory<Host.AsyncSSLClient> clientPoolFactory,
+        ClientProxyFactory<Host.AsyncSSLClient> clientProxyFactory) {
       this.clientPoolFactory = clientPoolFactory;
       this.clientProxyFactory = clientProxyFactory;
     }
@@ -230,17 +246,17 @@ public class ThriftModule extends AbstractModule {
   /**
    * Implementation of a ClientProxyFactory.
    */
-  private static class ClientProxyFactoryImpl implements ClientProxyFactory {
+  private static class ClientProxyFactoryImpl<T extends TAsyncSSLClient> implements ClientProxyFactory<T> {
     private final ExecutorService clientProxyExecutor;
-    private TypeLiteral type;
+    private TypeLiteral<T> type;
 
-    private ClientProxyFactoryImpl(final ExecutorService clientProxyExecutor, TypeLiteral type) {
+    private ClientProxyFactoryImpl(final ExecutorService clientProxyExecutor, TypeLiteral<T> type) {
       this.clientProxyExecutor = clientProxyExecutor;
       this.type = type;
     }
 
     @Override
-    public ClientProxy create(ClientPool clientPool) {
+    public ClientProxy<T> create(ClientPool<T> clientPool) {
       return new ClientProxyImpl<>(clientProxyExecutor, type, clientPool);
     }
   }
@@ -248,33 +264,52 @@ public class ThriftModule extends AbstractModule {
   /**
    * Implementation of a ClientPoolFactory.
    */
-  private static class ClientPoolFactoryImpl implements ClientPoolFactory {
+  private static class ClientPoolFactoryImpl<T extends TAsyncSSLClient>  implements ClientPoolFactory<T> {
     private final SecureRandom random;
     private final TProtocolFactory protocolFactory;
     private final ScheduledExecutorService scheduledExecutorService;
     private final ThriftFactory thriftFactory;
-    private final TAsyncClientFactory tAsyncClientFactory;
+    private final TAsyncSSLClientFactory<T> tAsyncSSLClientFactory;
+    private final TSSLTransportParameters params;
 
-    private ClientPoolFactoryImpl(final SecureRandom random, final TProtocolFactory protocolFactory,
+    private ClientPoolFactoryImpl(final SecureRandom random,
+                                  final TProtocolFactory protocolFactory,
                                   final ScheduledExecutorService scheduledExecutorService,
-                                  final ThriftFactory thriftFactory, final TAsyncClientFactory tAsyncClientFactory) {
+                                  final ThriftFactory thriftFactory,
+                                  final TAsyncSSLClientFactory<T> tAsyncSSLClientFactory,
+                                  final TSSLTransportParameters params) {
       this.random = random;
       this.protocolFactory = protocolFactory;
       this.scheduledExecutorService = scheduledExecutorService;
       this.thriftFactory = thriftFactory;
-      this.tAsyncClientFactory = tAsyncClientFactory;
+      this.tAsyncSSLClientFactory = tAsyncSSLClientFactory;
+      this.params = params;
     }
 
     @Override
-    public ClientPool create(ServerSet serverSet, ClientPoolOptions options) {
-      return new ClientPoolImpl<>(random, tAsyncClientFactory, protocolFactory, thriftFactory,
-          scheduledExecutorService, serverSet, options);
+    public ClientPool<T> create(ServerSet serverSet, ClientPoolOptions options) {
+      return new ClientPoolImpl<>(
+          random,
+          tAsyncSSLClientFactory,
+          params,
+          protocolFactory,
+          thriftFactory,
+          scheduledExecutorService,
+          serverSet,
+          options);
     }
 
     @Override
-    public ClientPool create(Set servers, ClientPoolOptions options) {
-      return new BasicClientPool<>(random, tAsyncClientFactory, protocolFactory, thriftFactory,
-          scheduledExecutorService, servers, options);
+    public ClientPool<T> create(Set<InetSocketAddress> servers, ClientPoolOptions options) {
+      return new BasicClientPool<>(
+          random,
+          tAsyncSSLClientFactory,
+          params,
+          protocolFactory,
+          thriftFactory,
+          scheduledExecutorService,
+          servers,
+          options);
     }
   }
 
@@ -303,10 +338,11 @@ public class ThriftModule extends AbstractModule {
    * Implementation of AgentControlClientFactory.
    */
   private static class AgentControlClientFactoryImpl implements AgentControlClientFactory {
-    private ClientPoolFactory clientPoolFactory;
-    private ClientProxyFactory clientProxyFactory;
+    private ClientPoolFactory<AgentControl.AsyncSSLClient> clientPoolFactory;
+    private ClientProxyFactory<AgentControl.AsyncSSLClient> clientProxyFactory;
 
-    private AgentControlClientFactoryImpl(ClientPoolFactory clientPoolFactory, ClientProxyFactory clientProxyFactory) {
+    private AgentControlClientFactoryImpl(ClientPoolFactory<AgentControl.AsyncSSLClient> clientPoolFactory,
+        ClientProxyFactory<AgentControl.AsyncSSLClient> clientProxyFactory) {
       this.clientPoolFactory = clientPoolFactory;
       this.clientProxyFactory = clientProxyFactory;
     }
