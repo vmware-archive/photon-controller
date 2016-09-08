@@ -374,6 +374,7 @@ public class ResourceReserveStepCmd extends StepCommand {
         if (key.startsWith(STORAGE_PREFIX)) {
           if (key.equalsIgnoreCase(STORAGE_PREFIX + resourceConstants.LOCAL_VMFS_TAG) ||
               key.equalsIgnoreCase(STORAGE_PREFIX + resourceConstants.SHARED_VMFS_TAG) ||
+              key.equalsIgnoreCase(STORAGE_PREFIX + resourceConstants.VSAN_TAG) ||
               key.equalsIgnoreCase(STORAGE_PREFIX + resourceConstants.NFS_TAG)) {
             ResourceConstraint resourceConstraint = new ResourceConstraint();
             resourceConstraint.setType(ResourceConstraintType.DATASTORE_TAG);
