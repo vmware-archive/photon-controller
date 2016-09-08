@@ -21,9 +21,11 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.housekeeper.helpers.xenon.TestEnvironment;
+import com.vmware.photon.controller.housekeeper.helpers.xenon.services.TestServiceWithStage;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -35,6 +37,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.startsWith;
@@ -44,6 +47,7 @@ import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +66,7 @@ public class SubnetIpLeaseSyncServiceTest {
   /**
    * Dummy test case to make Intellij recognize this as a test class.
    */
-  @Test(enabled = false)
+  @Test
   private void dummy() {
   }
 
@@ -263,7 +267,6 @@ public class SubnetIpLeaseSyncServiceTest {
    * Tests for end-to-end scenarios.
    */
   public class EndToEndTest {
-
     private TestEnvironment machine;
     private TestEnvironment.Builder machineBuilder;
 
@@ -273,6 +276,7 @@ public class SubnetIpLeaseSyncServiceTest {
     public final Map<Class<? extends Service>, Supplier<FactoryService>> factoryServicesMap =
             ImmutableMap.<Class<? extends Service>, Supplier<FactoryService>>builder()
                     .put(IpLeaseService.class, IpLeaseService::createFactory)
+                    .put(TestServiceWithStage.class, TestServiceWithStage::createFactory)
                     .build();
 
     @BeforeMethod
@@ -323,16 +327,15 @@ public class SubnetIpLeaseSyncServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "Success")
-    public void testSuccess(int totalIpLeases, int totalWithNoVMId)
+    public void testSuccess(int totalIpLeases, int totalWithNoVMId, int hostCount)
         throws Throwable {
       machine = machineBuilder
-              .hostCount(1)
+              .hostCount(hostCount)
               .build();
 
-      ServiceHostUtils.startFactoryServices(machine.getHosts()[0], factoryServicesMap);
-
       seedTestEnvironment(machine, totalIpLeases, totalWithNoVMId);
-
+      URI hostUri = machine.getHosts()[0].getUri();
+      request.dhcpAgentEndpoint = hostUri.getScheme() + "://" + hostUri.getHost() + ":" + hostUri.getPort();
       SubnetIPLeaseSyncService.State response = machine.callServiceAndWaitForState(
               SubnetIPLeaseSyncService.FACTORY_LINK,
               request,
@@ -348,15 +351,25 @@ public class SubnetIpLeaseSyncServiceTest {
     @DataProvider(name = "Success")
     public Object[][] getSuccessData() {
       return new Object[][]{
-          {0, 0},
-          {2, 2},
-          {5, 3},
-          // Test cases with Ip Lease service documents greater than the default page limit.
-          {TEST_PAGE_LIMIT + 10, TEST_PAGE_LIMIT + 1},
+              {0, 0, 1},
+              {0, 0, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
+              {2, 2, 1},
+              {2, 2, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
+              {5, 3, 1},
+              {5, 3, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
+              // Test cases with Ip Lease service documents greater than the default page limit.
+              {TEST_PAGE_LIMIT + 10, TEST_PAGE_LIMIT + 1, 1},
+              {TEST_PAGE_LIMIT + 10, TEST_PAGE_LIMIT + 1, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
       };
     }
 
     private void seedTestEnvironment(TestEnvironment env, int totalIpLeases, int totalWithNoVMId) throws Throwable {
+
+      ServiceHost[] hostsList = env.getHosts();
+      for (int i = 0; i < hostsList.length; i++) {
+        ServiceHostUtils.startFactoryServices(hostsList[i], factoryServicesMap);
+      }
+
       for (int i = 0; i < totalIpLeases; i++) {
         IpLeaseService.State state = new IpLeaseService.State();
         state.documentSelfLink = "ip-lease-" + i;
