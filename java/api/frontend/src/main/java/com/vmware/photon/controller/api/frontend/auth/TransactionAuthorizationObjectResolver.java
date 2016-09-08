@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.frontend.resources.routes.ClusterResourc
 import com.vmware.photon.controller.api.frontend.resources.routes.DiskResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.FlavorsResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.ImageResourceRoutes;
+import com.vmware.photon.controller.api.frontend.resources.routes.InfoResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.ResourceTicketResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.SubnetResourceRoutes;
@@ -155,6 +156,16 @@ public class TransactionAuthorizationObjectResolver {
             new Rule(
                 TransactionAuthorizationObject.Kind.VM,
                 TransactionAuthorizationObject.Strategy.PARENT)
+        });
+
+    // INFO
+    EVALUATION_RULES.put(
+        InfoResourceRoutes.API.substring(1),
+        new Rule[]{
+            new Rule(
+                Pattern.compile("get", Pattern.CASE_INSENSITIVE),
+                TransactionAuthorizationObject.Kind.NONE
+            )
         });
   }
 
