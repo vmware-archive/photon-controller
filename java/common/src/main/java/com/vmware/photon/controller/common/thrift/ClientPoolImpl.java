@@ -24,11 +24,15 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
-import org.apache.thrift.async.TAsyncClient;
+import org.apache.thrift.async.TAsyncSSLClient;
 import org.apache.thrift.protocol.TProtocolFactory;
-import org.apache.thrift.transport.TNonblockingTransport;
+import org.apache.thrift.transport.TNonblockingSSLTransport;
+import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
+import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.net.ssl.SSLContext;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -51,12 +55,13 @@ import java.util.concurrent.TimeUnit;
  *
  * @param <C> thrift async client type
  */
-class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet.ChangeListener {
+class ClientPoolImpl<C extends TAsyncSSLClient> implements ClientPool<C>, ServerSet.ChangeListener {
 
   private static final Logger logger = LoggerFactory.getLogger(ClientPoolImpl.class);
 
   private final SecureRandom random;
-  private final TAsyncClientFactory<C> clientFactory;
+  private final TAsyncSSLClientFactory<C> clientFactory;
+  private final SSLContext sslContext;
   private final TProtocolFactory protocolFactory;
   private final ThriftFactory thriftFactory;
   private final ScheduledExecutorService scheduledExecutor;
@@ -65,13 +70,14 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
   private final ListMultimap<InetSocketAddress, C> availableClients;
   private final Map<C, InetSocketAddress> acquiredClients;
   private final Set<InetSocketAddress> availableServers;
-  private final Map<C, TNonblockingTransport> clientTransportMap;
+  private final Map<C, TNonblockingSSLTransport> clientTransportMap;
   private final Queue<Promise<C>> promises;
   private boolean closed;
 
   @Inject
   public ClientPoolImpl(SecureRandom random,
-                        TAsyncClientFactory<C> clientFactory,
+                        TAsyncSSLClientFactory<C> clientFactory,
+                        SSLContext sslContext,
                         TProtocolFactory protocolFactory,
                         ThriftFactory thriftFactory,
                         @ClientPoolTimer ScheduledExecutorService scheduledExecutor,
@@ -79,6 +85,7 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
                         @Assisted ClientPoolOptions options) {
     this.random = random;
     this.clientFactory = clientFactory;
+    this.sslContext = sslContext;
     this.protocolFactory = protocolFactory;
     this.thriftFactory = thriftFactory;
     this.scheduledExecutor = scheduledExecutor;
@@ -95,6 +102,7 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
     this.serverSet.addChangeListener(this);
   }
 
+  @Override
   public synchronized void onServerAdded(InetSocketAddress address) {
     logger.debug("Server {} added", address);
     availableServers.add(address);
@@ -102,13 +110,14 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
         canCreateClient()) {
       try {
         availableClients.put(address, createNewClient(address));
-      } catch (IOException ex) {
+      } catch (IOException | TTransportException ex) {
         logger.error("Error occurred when createNewClient for {}", address);
       }
     }
     processPromises();
   }
 
+  @Override
   public synchronized void onServerRemoved(InetSocketAddress address) {
     logger.debug("Server {} removed", address);
     availableServers.remove(address);
@@ -242,7 +251,7 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
       if (client == null && canCreateClient()) {
         try {
           client = fulfillWithNewClient();
-        } catch (IOException ex) {
+        } catch (IOException | TTransportException ex) {
           logger.error("fulfillWithNewClient has IOException", ex);
           promises.remove().setException(ex);
           break;
@@ -285,7 +294,7 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
           newClient = createNewClient(address);
           removeClient(availableClients.get(availableClientAddress).remove(0));
           break;
-        } catch (IOException ex) {
+        } catch (IOException | TTransportException ex) {
           logger.error("moveClient: fail to create new client for {}", address);
           return;
         }
@@ -302,7 +311,7 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
 
   private void removeClient(C client) {
     logger.debug("remove client {}", client);
-    TNonblockingTransport transport = clientTransportMap.remove(client);
+    TNonblockingSSLTransport transport = clientTransportMap.remove(client);
     transport.close();
   }
 
@@ -345,7 +354,7 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
     return client;
   }
 
-  private C fulfillWithNewClient() throws IOException {
+  private C fulfillWithNewClient() throws IOException, TTransportException {
     logger.debug("start fulfillWithNewClient");
     InetSocketAddress[] servers = availableServers.toArray(new InetSocketAddress[availableServers.size()]);
     int randomIndex = random.nextInt(servers.length);
@@ -356,9 +365,15 @@ class ClientPoolImpl<C extends TAsyncClient> implements ClientPool<C>, ServerSet
     return client;
   }
 
-  private C createNewClient(InetSocketAddress address) throws IOException {
-    return ClientPoolUtils.createNewClient(address, this.protocolFactory,
-        this.options, this.thriftFactory, this.clientFactory, this.clientTransportMap);
+  private C createNewClient(InetSocketAddress address) throws IOException, TTransportException {
+    return ClientPoolUtils.createNewClient(
+        address,
+        this.protocolFactory,
+        this.options,
+        this.thriftFactory,
+        this.clientFactory,
+        this.clientTransportMap,
+        this.sslContext);
   }
 
   private long getPromiseTimeoutMs() {

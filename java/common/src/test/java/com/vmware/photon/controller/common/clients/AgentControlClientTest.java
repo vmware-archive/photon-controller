@@ -24,6 +24,7 @@ import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentConfig
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
+import com.vmware.photon.controller.common.ssl.KeyStoreUtils;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
 import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.thrift.ModuleFactory;
@@ -36,10 +37,13 @@ import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
+import org.apache.thrift.transport.TSSLTransportFactory.TSSLTransportParameters;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -58,10 +62,16 @@ import static org.mockito.Mockito.verify;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import javax.net.ssl.SSLContext;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Test {@link AgentControlClient}.
@@ -69,19 +79,42 @@ import java.util.List;
 public class AgentControlClientTest {
 
   private AgentControlClient agentControlClient;
-  private AgentControl.AsyncClient clientProxy;
+  private AgentControl.AsyncSSLClient clientProxy;
+
+  private TSSLTransportParameters params;
+  private SSLContext sslContext = KeyStoreUtils.acceptAllCerts(KeyStoreUtils.THRIFT_PROTOCOL);
+
+  private final String keyPath = "/tmp/" + UUID.randomUUID().toString();
+
+  @BeforeClass
+  public void beforeClass() {
+    KeyStoreUtils.generateKeys(keyPath);
+  }
+
+  @AfterClass
+  public void afterClass() {
+    try {
+      Files.delete(Paths.get(keyPath));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
 
   private void setUp() {
     agentControlClient = spy(new AgentControlClient(
         mock(ClientProxyFactory.class), mock(ClientPoolFactory.class)));
-    clientProxy = mock(AgentControl.AsyncClient.class);
+    clientProxy = mock(AgentControl.AsyncSSLClient.class);
   }
 
   private void setUpWithGuiceInjection() {
+    params = new TSSLTransportParameters();
+    params.setTrustStore(
+        keyPath + "/" + KeyStoreUtils.KEY_STORE_NAME,
+        KeyStoreUtils.KEY_PASS);
     Injector injector = Guice.createInjector(
-        new ThriftModule(),
+        new ThriftModule(sslContext),
         new ThriftServiceModule<>(
-            new TypeLiteral<AgentControl.AsyncClient>() {
+            new TypeLiteral<AgentControl.AsyncSSLClient>() {
             }
         ),
         new ModuleFactory.TracingTestModule());
@@ -189,7 +222,7 @@ public class AgentControlClientTest {
       assertThat(agentControlClient.getHostIp(), is("127.0.0.1"));
       assertThat(agentControlClient.getPort(), is(2181));
 
-      agentControlClient.setClientProxy(mock(AgentControl.AsyncClient.class));
+      agentControlClient.setClientProxy(mock(AgentControl.AsyncSSLClient.class));
 
       agentControlClient.setIpAndPort("127.0.0.1", 2180);
       assertThat(agentControlClient.getHostIp(), is("127.0.0.1"));
@@ -228,12 +261,12 @@ public class AgentControlClientTest {
       agentControlClient = null;
     }
 
-    private Answer getAnswer(final AgentControl.AsyncClient.provision_call provisionCall) {
+    private Answer getAnswer(final AgentControl.AsyncSSLClient.provision_call provisionCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<AgentControl.AsyncClient.provision_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call> handler = (AsyncMethodCallback) args[1];
           handler.onComplete(provisionCall);
           return null;
         }
@@ -243,7 +276,8 @@ public class AgentControlClientTest {
     public void testSuccess() throws Exception {
       ProvisionResponse provisionResponse = new ProvisionResponse();
       provisionResponse.setResult(ProvisionResultCode.OK);
-      final AgentControl.AsyncClient.provision_call provisionCall = mock(AgentControl.AsyncClient.provision_call.class);
+      final AgentControl.AsyncSSLClient.provision_call provisionCall
+        = mock(AgentControl.AsyncSSLClient.provision_call.class);
       doReturn(provisionResponse).when(provisionCall).getResult();
       ArgumentCaptor<ProvisionRequest> request = ArgumentCaptor.forClass(ProvisionRequest.class);
       doAnswer(getAnswer(provisionCall))
@@ -291,7 +325,8 @@ public class AgentControlClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final AgentControl.AsyncClient.provision_call provisionCall = mock(AgentControl.AsyncClient.provision_call.class);
+      final AgentControl.AsyncSSLClient.provision_call provisionCall
+        = mock(AgentControl.AsyncSSLClient.provision_call.class);
       doThrow(new TException("Thrift exception")).when(provisionCall).getResult();
       doAnswer(getAnswer(provisionCall))
           .when(clientProxy).provision(any(ProvisionRequest.class), any(AsyncMethodCallback.class));
@@ -315,7 +350,8 @@ public class AgentControlClientTest {
       provisionResponse.setResult(resultCode);
       provisionResponse.setError(resultCode.toString());
 
-      final AgentControl.AsyncClient.provision_call provisionCall = mock(AgentControl.AsyncClient.provision_call.class);
+      final AgentControl.AsyncSSLClient.provision_call provisionCall
+        = mock(AgentControl.AsyncSSLClient.provision_call.class);
       doReturn(provisionResponse).when(provisionCall).getResult();
       doAnswer(getAnswer(provisionCall))
           .when(clientProxy).provision(any(ProvisionRequest.class), any(AsyncMethodCallback.class));
@@ -362,12 +398,13 @@ public class AgentControlClientTest {
       agentControlClient = null;
     }
 
-    private Answer getAnswer(final AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall) {
+    private Answer getAnswer(final AgentControl.AsyncSSLClient.get_agent_status_call getAgentStatusCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call> handler = (AsyncMethodCallback) args[0];
+          AsyncMethodCallback<AgentControl.AsyncSSLClient.get_agent_status_call> handler
+            = (AsyncMethodCallback) args[0];
           handler.onComplete(getAgentStatusCall);
           return null;
         }
@@ -379,8 +416,8 @@ public class AgentControlClientTest {
       AgentStatusResponse agentStatusResponse = new AgentStatusResponse();
       agentStatusResponse.setStatus(AgentStatusCode.OK);
 
-      final AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall =
-          mock(AgentControl.AsyncClient.get_agent_status_call.class);
+      final AgentControl.AsyncSSLClient.get_agent_status_call getAgentStatusCall =
+          mock(AgentControl.AsyncSSLClient.get_agent_status_call.class);
 
       doReturn(agentStatusResponse).when(getAgentStatusCall).getResult();
 
@@ -420,8 +457,8 @@ public class AgentControlClientTest {
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
 
-      final AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall =
-          mock(AgentControl.AsyncClient.get_agent_status_call.class);
+      final AgentControl.AsyncSSLClient.get_agent_status_call getAgentStatusCall =
+          mock(AgentControl.AsyncSSLClient.get_agent_status_call.class);
 
       doThrow(new TException("Thrift exception")).when(getAgentStatusCall).getResult();
 
@@ -445,8 +482,8 @@ public class AgentControlClientTest {
       AgentStatusResponse agentStatusResponse = new AgentStatusResponse();
       agentStatusResponse.setStatus(resultCode);
 
-      final AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall =
-          mock(AgentControl.AsyncClient.get_agent_status_call.class);
+      final AgentControl.AsyncSSLClient.get_agent_status_call getAgentStatusCall =
+          mock(AgentControl.AsyncSSLClient.get_agent_status_call.class);
 
       doReturn(agentStatusResponse).when(getAgentStatusCall).getResult();
       doAnswer(getAnswer(getAgentStatusCall))
@@ -486,10 +523,10 @@ public class AgentControlClientTest {
       agentControlClient = null;
     }
 
-    private Answer getAnswer(final AgentControl.AsyncClient.ping_call pingCall) {
+    private Answer getAnswer(final AgentControl.AsyncSSLClient.ping_call pingCall) {
       return invocation -> {
         Object[] args = invocation.getArguments();
-        AsyncMethodCallback<AgentControl.AsyncClient.ping_call> handler = (AsyncMethodCallback) args[1];
+        AsyncMethodCallback<AgentControl.AsyncSSLClient.ping_call> handler = (AsyncMethodCallback) args[1];
         handler.onComplete(pingCall);
         return null;
       };
@@ -497,7 +534,7 @@ public class AgentControlClientTest {
 
     @Test
     public void testSuccess() throws Exception {
-      final AgentControl.AsyncClient.ping_call pingCall = mock(AgentControl.AsyncClient.ping_call.class);
+      final AgentControl.AsyncSSLClient.ping_call pingCall = mock(AgentControl.AsyncSSLClient.ping_call.class);
       ArgumentCaptor<PingRequest> request = ArgumentCaptor.forClass(PingRequest.class);
       doAnswer(getAnswer(pingCall))
           .when(clientProxy).ping(any(PingRequest.class), any(AsyncMethodCallback.class));

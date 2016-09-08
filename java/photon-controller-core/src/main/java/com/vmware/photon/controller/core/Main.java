@@ -23,6 +23,7 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingFactory;
+import com.vmware.photon.controller.common.ssl.KeyStoreUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
@@ -65,6 +66,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.commons.io.FileUtils;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
@@ -81,8 +83,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.util.Arrays;
@@ -98,7 +102,6 @@ import java.util.concurrent.TimeUnit;
 public class Main {
 
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
-  private static final long retryIntervalMillis = TimeUnit.SECONDS.toMillis(30);
   public static final String CLUSTER_SCRIPTS_DIRECTORY = "clusters";
 
   public static void main(String[] args) throws Throwable {
@@ -118,9 +121,26 @@ public class Main {
 
     new LoggingFactory(photonControllerConfig.getLogging(), "photon-controller-core").configure();
 
-    ThriftModule thriftModule = new ThriftModule();
+    SSLContext sslContext;
+    if (deployerConfig.getDeployerContext().isAuthEnabled()) {
+      sslContext = SSLContext.getInstance(KeyStoreUtils.THRIFT_PROTOCOL);
+      TrustManagerFactory tmf = null;
 
-    ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig);
+      tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      KeyStore keyStore = KeyStore.getInstance("JKS");
+      InputStream in = FileUtils.openInputStream(new File(deployerConfig.getDeployerContext().getKeyStorePath()));
+      keyStore.load(in, deployerConfig.getDeployerContext().getKeyStorePassword().toCharArray());
+      tmf.init(keyStore);
+      sslContext.init(null, tmf.getTrustManagers(), null);
+    } else {
+      KeyStoreUtils.generateKeys("/thrift/");
+      sslContext = KeyStoreUtils.acceptAllCerts(KeyStoreUtils.THRIFT_PROTOCOL);
+    }
+
+
+    ThriftModule thriftModule = new ThriftModule(sslContext);
+
+    ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig, sslContext);
 
     // Creating a temp configuration file for apife with modification to some named sections in photon-controller-config
     // so that it can match the Configuration class of dropwizard.
@@ -150,9 +170,15 @@ public class Main {
     apiFeArgs[1] = apiFeTempConfig.getAbsolutePath();
     ApiFeService.setupApiFeConfigurationForServerCommand(apiFeArgs);
     ApiFeService.addServiceHost(xenonHost);
+    ApiFeService.setSSLContext(sslContext);
 
     new ApiFeService().run(apiFeArgs);
     apiFeTempConfig.deleteOnExit();
+
+    // in the non-auth enabled scenario we need to be able to accept any self-signed certificate
+    if (!deployerConfig.getDeployerContext().isAuthEnabled()) {
+      KeyStoreUtils.acceptAllCerts(KeyStoreUtils.THRIFT_PROTOCOL);
+    }
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
@@ -166,7 +192,9 @@ public class Main {
   }
 
   private static ServiceHost startXenonHost(PhotonControllerConfig photonControllerConfig,
-                                            ThriftModule thriftModule, DeployerConfig deployerConfig) throws Throwable {
+                                            ThriftModule thriftModule,
+                                            DeployerConfig deployerConfig,
+                                            SSLContext sslContext) throws Throwable {
     // Values for CloudStore
     final HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
     final AgentControlClientFactory agentControlClientFactory = thriftModule.getAgentControlClientFactory();
@@ -196,9 +224,13 @@ public class Main {
         photonControllerConfig.getXenonConfig().getRegistrationAddress(), Constants.MANAGEMENT_API_PORT));
 
     logger.info("Creating PhotonController Xenon Host");
-    final PhotonControllerXenonHost photonControllerXenonHost =
-            new PhotonControllerXenonHost(photonControllerConfig.getXenonConfig(),
-                hostClientFactory, agentControlClientFactory, nsxClientFactory, cloudStoreHelper);
+    final PhotonControllerXenonHost photonControllerXenonHost = new PhotonControllerXenonHost(
+                photonControllerConfig.getXenonConfig(),
+                hostClientFactory,
+                agentControlClientFactory,
+                nsxClientFactory,
+                cloudStoreHelper,
+                sslContext);
     logger.info("Created PhotonController Xenon Host");
 
     final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper, photonControllerXenonHost);

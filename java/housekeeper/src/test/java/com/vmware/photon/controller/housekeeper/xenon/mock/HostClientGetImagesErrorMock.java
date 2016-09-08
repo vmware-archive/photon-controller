@@ -30,7 +30,7 @@ public class HostClientGetImagesErrorMock extends HostClientMock {
   }
 
   @Override
-  public void getImages(String datastoreId, AsyncMethodCallback<Host.AsyncClient.get_images_call> callback) {
+  public void getImages(String datastoreId, AsyncMethodCallback<Host.AsyncSSLClient.get_images_call> callback) {
     logger.info("Host getImages error invocation");
     callback.onError(new RuntimeException("getImages error"));
   }

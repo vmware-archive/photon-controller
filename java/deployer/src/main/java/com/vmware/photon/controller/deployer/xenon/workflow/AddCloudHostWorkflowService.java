@@ -197,38 +197,63 @@ public class AddCloudHostWorkflowService extends StatefulService {
   }
 
   private void provisionCloudHost(final State currentState, String deploymentServiceLink) {
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+        .createGet(deploymentServiceLink)
+        .setCompletion(
+            (operation, throwable) -> {
+              if (null != throwable) {
+                failTask(throwable);
+                return;
+              }
+
+              DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+              try {
+                provisionCloudHost(currentState, deploymentState);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }
+            )
+        );
+  }
+
+  private void provisionCloudHost(final State currentState, DeploymentService.State deploymentService) {
+
     final Service service = this;
 
     FutureCallback<BulkProvisionHostsWorkflowService.State> callback = new
         FutureCallback<BulkProvisionHostsWorkflowService.State>() {
-          @Override
-          public void onSuccess(@Nullable BulkProvisionHostsWorkflowService.State result) {
-            if (result.taskState.stage == TaskState.TaskStage.FAILED) {
-              State state = buildPatch(TaskState.TaskStage.FAILED, null);
-              state.taskState.failure = result.taskState.failure;
-              TaskUtils.sendSelfPatch(service, state);
-              return;
-            }
+      @Override
+      public void onSuccess(@Nullable BulkProvisionHostsWorkflowService.State result) {
+        if (result.taskState.stage == TaskState.TaskStage.FAILED) {
+          State state = buildPatch(TaskState.TaskStage.FAILED, null);
+          state.taskState.failure = result.taskState.failure;
+          TaskUtils.sendSelfPatch(service, state);
+          return;
+        }
 
-            if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
-              TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null));
-              return;
-            }
+        if (result.taskState.stage == TaskState.TaskStage.CANCELLED) {
+          TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.CANCELLED, null));
+          return;
+        }
 
-            ServiceUtils.logInfo(service, "Provision new cloud host completed");
-            TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED, null));
-          }
+        ServiceUtils.logInfo(service, "Provision new cloud host completed");
+        TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED, null));
+      }
 
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        };
+      @Override
+      public void onFailure(Throwable t) {
+        failTask(t);
+      }
+    };
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
-    startState.deploymentServiceLink = deploymentServiceLink;
+    startState.deploymentServiceLink = deploymentService.documentSelfLink;
     startState.usageTag = UsageTag.CLOUD.name();
     startState.querySpecification = MiscUtils.generateHostQuerySpecification(currentState.hostServiceLink, null);
+    ServiceUtils.logInfo(this, "Assigning createCert the value %s", deploymentService.oAuthEnabled.toString());
+    startState.createCert = deploymentService.oAuthEnabled;
 
     TaskUtils.startTaskAsync(
         this,

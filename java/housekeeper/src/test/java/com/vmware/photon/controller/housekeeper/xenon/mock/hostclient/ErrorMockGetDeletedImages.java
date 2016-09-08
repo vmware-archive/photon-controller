@@ -38,7 +38,7 @@ public class ErrorMockGetDeletedImages extends HostClientMock {
 
   @Override
   public void getDeletedImages(String datastore,
-                               AsyncMethodCallback<Host.AsyncClient.get_deleted_images_call> callback) {
+                               AsyncMethodCallback<Host.AsyncSSLClient.get_deleted_images_call> callback) {
 
     if (null == this.errorCode) {
       callback.onError(new TException("getInactiveImages error"));
