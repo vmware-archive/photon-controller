@@ -15,7 +15,7 @@ package com.vmware.photon.controller.common.thrift;
 
 import org.apache.thrift.TApplicationException;
 import org.apache.thrift.async.AsyncMethodCallback;
-import org.apache.thrift.async.TAsyncClient;
+import org.apache.thrift.async.TAsyncSSLClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
  * @param <C> async thrift client type
  * @param <T> response type
  */
-class WrappedCallback<C extends TAsyncClient, T> implements AsyncMethodCallback<T> {
+class WrappedCallback<C extends TAsyncSSLClient, T> implements AsyncMethodCallback<T> {
 
   private static final Logger logger = LoggerFactory.getLogger(WrappedCallback.class);
 
