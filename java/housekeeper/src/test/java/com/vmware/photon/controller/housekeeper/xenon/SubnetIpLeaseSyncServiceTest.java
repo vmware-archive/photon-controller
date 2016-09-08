@@ -21,6 +21,7 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.housekeeper.helpers.xenon.TestEnvironment;
+import com.vmware.photon.controller.housekeeper.helpers.xenon.services.TestServiceWithStage;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -35,6 +36,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.startsWith;
@@ -263,7 +265,6 @@ public class SubnetIpLeaseSyncServiceTest {
    * Tests for end-to-end scenarios.
    */
   public class EndToEndTest {
-
     private TestEnvironment machine;
     private TestEnvironment.Builder machineBuilder;
 
@@ -273,6 +274,7 @@ public class SubnetIpLeaseSyncServiceTest {
     public final Map<Class<? extends Service>, Supplier<FactoryService>> factoryServicesMap =
             ImmutableMap.<Class<? extends Service>, Supplier<FactoryService>>builder()
                     .put(IpLeaseService.class, IpLeaseService::createFactory)
+                    .put(TestServiceWithStage.class, TestServiceWithStage::createFactory)
                     .build();
 
     @BeforeMethod
@@ -328,11 +330,11 @@ public class SubnetIpLeaseSyncServiceTest {
       machine = machineBuilder
               .hostCount(1)
               .build();
-
       ServiceHostUtils.startFactoryServices(machine.getHosts()[0], factoryServicesMap);
 
       seedTestEnvironment(machine, totalIpLeases, totalWithNoVMId);
-
+      request.dhcpAgentProtocol = machine.getHosts()[0].getUri().getScheme();
+      request.dhcpAgentIP = machine.getHosts()[0].getUri().getHost();
       SubnetIPLeaseSyncService.State response = machine.callServiceAndWaitForState(
               SubnetIPLeaseSyncService.FACTORY_LINK,
               request,

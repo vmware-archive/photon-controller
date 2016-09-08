@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.housekeeper.xenon;
 
 import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -25,6 +26,8 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.dhcpagent.xenon.service.SubnetIPLeaseService;
+import com.vmware.photon.controller.dhcpagent.xenon.service.SubnetIPLeaseTask;
 import com.vmware.photon.controller.dhcpagent.xenon.service.SubnetIPLeaseTask.SubnetIPLease;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
@@ -175,34 +178,93 @@ public class SubnetIPLeaseSyncService extends StatefulService {
    */
   private void processIpLeaseDocuments(final State current) {
     if (current.nextPageLink == null) {
-      //// TODO(fijaz): 8/17/16 Add call to DHCP agent to send out the SubnetIPLease from current state
-
-      finishTask(current);
+      this.triggerSubnetIPLeaseService(current);
       return;
     }
 
     Operation getOnePageOfIpLeaseDocuments =
-            Operation.createGet(UriUtils.buildUri(getHost(), current.nextPageLink));
+      Operation.createGet(UriUtils.buildUri(getHost(), current.nextPageLink));
     getOnePageOfIpLeaseDocuments
-            .setCompletion((op, throwable) -> {
-              if (throwable != null) {
-                failTask(throwable);
-                return;
-              }
-              current.nextPageLink = op.getBody(QueryTask.class).results.nextPageLink;
-              if (current.subnetIPLease == null) {
-                current.subnetIPLease = new SubnetIPLease();
-                current.subnetIPLease.subnetId = current.subnetId;
-              }
+      .setCompletion((op, throwable) -> {
+        if (throwable != null) {
+          failTask(throwable);
+          return;
+        }
+        current.nextPageLink = op.getBody(QueryTask.class).results.nextPageLink;
+        if (current.subnetIPLease == null) {
+          current.subnetIPLease = new SubnetIPLease();
+          current.subnetIPLease.subnetId = current.subnetId;
+        }
 
-              if (current.subnetIPLease.ipToMACAddressMap == null) {
-                current.subnetIPLease.ipToMACAddressMap = new HashMap<>();
-              }
+        if (current.subnetIPLease.ipToMACAddressMap == null) {
+          current.subnetIPLease.ipToMACAddressMap = new HashMap<>();
+        }
 
-              parseIpLeaseServiceQueryResults(op.getBody(QueryTask.class), current);
-              sendStageProgressPatch(current);
-            })
-            .sendWith(this);
+        parseIpLeaseServiceQueryResults(op.getBody(QueryTask.class), current);
+        sendStageProgressPatch(current);
+      })
+      .sendWith(this);
+  }
+
+  /**
+   * Triggers a DHC agent SubnetIPLeaseService.
+   *
+   * @param current
+   */
+  protected void triggerSubnetIPLeaseService(final State current) {
+    // build completion handler
+    Operation.CompletionHandler handler = (Operation acknowledgeOp, Throwable failure) -> {
+      if (failure != null) {
+        // we could not start an SubnetIPLease service. Something went wrong. Fail
+        // the current task and stop processing.
+        RuntimeException e = new RuntimeException(
+                String.format("Failed to send DHCP agent subnet IP lease request %s", failure));
+        failTask(e);
+      }
+
+      ServiceUtils.logInfo(SubnetIPLeaseSyncService.this, "DHCP agent SubnetIPLeaseService %s, is triggered",
+              acknowledgeOp.getBody(SubnetIPLeaseTask.class).documentSelfLink);
+      this.finishTask(current);
+    };
+
+    // build SubnetIPLease service start state
+    SubnetIPLeaseTask subnetIPLeaseTask = this.buildSubnetIPLeaseState(current);
+
+    // start service
+    this.startSubnetIPLeaseService(current, subnetIPLeaseTask, handler);
+  }
+
+  /**
+   * Starts DHCP agent SubnetIPLease service.
+   *
+   * @param current
+   * @param startState
+   * @param handler
+   * @return
+   */
+  private void startSubnetIPLeaseService(State current, final SubnetIPLeaseTask startState,
+                                         final Operation.CompletionHandler handler) {
+    Operation copyOperation = Operation
+            .createPost(UriUtils.buildUri(current.dhcpAgentProtocol, current.dhcpAgentIP, Constants.DHCP_AGENT_PORT,
+                    SubnetIPLeaseService.FACTORY_LINK, null))
+            .setBody(startState)
+            .setCompletion(handler);
+    this.sendRequest(copyOperation);
+  }
+
+  /**
+   * Builds DHCP agent SubnetIPLease service start state.
+   *
+   * @param current
+   * @return
+   */
+  private SubnetIPLeaseTask buildSubnetIPLeaseState(final State current) {
+    SubnetIPLeaseTask startState = new SubnetIPLeaseTask();
+    startState.subnetIPLease = current.subnetIPLease;
+
+    startState.documentExpirationTimeMicros = current.documentExpirationTimeMicros;
+
+    return startState;
   }
 
   /**
@@ -392,6 +454,16 @@ public class SubnetIPLeaseSyncService extends StatefulService {
      */
     @NotNull
     public String subnetId;
+
+    /**
+     * IP for DHCP agent.
+     */
+    public String dhcpAgentIP;
+
+    /**
+     * Protocol for communicating with DHCP agent.
+     */
+    public String dhcpAgentProtocol;
 
     /**
      * Subnet IP lease details.
