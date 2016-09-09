@@ -40,7 +40,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
 
     puts "Starting to create a Kubernetes cluster"
     begin
-      public_key_contents = `cat /tmp/test_rsa.pub`
+      public_key_contents = File.read("/tmp/test_rsa.pub")
       project = @seeder.project!
       props = {
         "dns" => ENV["MESOS_ZK_DNS"],
@@ -81,14 +81,17 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
       expect(cluster.extended_properties.length).to be > 12
 
       puts "Check that host can ssh successfully"
-      # Enabling BatchMode means that we won't be prompted for a password, so the ssh command won't hang, waiting for user input.
-      # Disabling StrictHostKeyChecking and setting to UserKnownHostsFile to null to not validate the host key as it
-      # will change with each lifecycle run.
-      ssh_opts = "-oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oBatchMode=yes"
-      ssh_response = `ssh #{ssh_opts} -i /tmp/test_rsa root@#{ENV["KUBERNETES_MASTER_IP"]} /bin/ls 2>&1`
-
-      SUCCESSFUL_SSH_RESPONSE="WARNING: Your password has expired.\nPassword change required but no TTY available."
-      expect(ssh_response).to include(SUCCESSFUL_SSH_RESPONSE)
+      # Disabling strict_host_key_checking (:paranoid => false) and setting user_known_hosts_file to null to not validate
+      # the host key as it will change with each lifecycle run.
+      Net::SSH.start(ENV["KUBERNETES_MASTER_IP"], "root",
+                     :keys => ["/tmp/test_rsa"],
+                     :paranoid => false,
+                     :user_known_hosts_file => ["/dev/null"]) do |ssh|
+        # Getting here without an exception means we can connect with ssh successfully. If SSH failed, we would get an
+        # exception like Authentication Failed or Connection Timeout and our tests will fail as we are catching the
+        # exception and failing the test below.
+        puts "SSH successful"
+      end
 
       N_WORKERS = (ENV["N_SLAVES"] || 2).to_i
 

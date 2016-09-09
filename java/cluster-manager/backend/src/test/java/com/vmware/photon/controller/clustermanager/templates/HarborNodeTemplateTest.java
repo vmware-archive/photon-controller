@@ -35,9 +35,11 @@ public class HarborNodeTemplateTest {
   private static final String GATEWAY = "11.11.11.11";
   private static final String NETMASK = "255.255.255.0";
   private static final String IP_ADDRESS = "10.0.0.1";
+  private static final String SSH_KEY = "test-key";
 
   private Map<String, String> createCloudConfigProperties(int nodeIndex) {
-    Map<String, String> nodeProperties = HarborNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, IP_ADDRESS);
+    Map<String, String> nodeProperties = HarborNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, IP_ADDRESS,
+        SSH_KEY);
     nodeProperties.put(NodeTemplateUtils.NODE_INDEX_PROPERTY, Integer.toString(nodeIndex));
     return nodeProperties;
   }
@@ -138,22 +140,27 @@ public class HarborNodeTemplateTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullDns() {
-      HarborNodeTemplate.createProperties(null, GATEWAY, NETMASK, IP_ADDRESS);
+      HarborNodeTemplate.createProperties(null, GATEWAY, NETMASK, IP_ADDRESS, SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullGateway() {
-      HarborNodeTemplate.createProperties(DNS, null, NETMASK, IP_ADDRESS);
+      HarborNodeTemplate.createProperties(DNS, null, NETMASK, IP_ADDRESS, SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullNetmask() {
-      HarborNodeTemplate.createProperties(DNS, GATEWAY, null, IP_ADDRESS);
+      HarborNodeTemplate.createProperties(DNS, GATEWAY, null, IP_ADDRESS, SSH_KEY);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullHarborAddresses() {
-      HarborNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, null);
+      HarborNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, null, SSH_KEY);
+    }
+
+    @Test
+    public void testNullSshKey() {
+      HarborNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, IP_ADDRESS, null);
     }
   }
 }
