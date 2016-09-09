@@ -403,6 +403,7 @@ public class ClusterManagerClientTest {
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "10.1.0.1");
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "10.1.0.2");
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "255.255.255.128");
+      extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY, "test-key");
       if (setMasterIp) {
         extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "10.1.2.3");
       }

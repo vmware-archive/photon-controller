@@ -71,8 +71,7 @@ module EsxCloud
 
       def remove_temporary_ssh_key()
         puts "Removing ssh key"
-        `rm -f /tmp/test_rsa`
-        `rm -f /tmp/test_rsa.pub`
+        File.delete('/tmp/test_rsa', '/tmp/test_rsa.pub')
       end
 
       def wait_for_cluster_state(cluster_id, target_cluster_state, retry_interval, retry_count, client)

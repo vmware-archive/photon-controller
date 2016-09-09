@@ -150,7 +150,8 @@ public class HarborClusterCreateTaskService extends StatefulService {
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_DNS),
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY),
               cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK),
-              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP));
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP),
+              cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY));
 
           NodeRollout rollout = new BasicNodeRollout();
           rollout.run(this, rolloutInput, new FutureCallback<NodeRolloutResult>() {

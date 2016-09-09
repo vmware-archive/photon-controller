@@ -74,6 +74,12 @@ write_files:
     permissions: 0644
     path: /tmp/check-docker.sh
 
+users:
+  - name: root
+    lock_passwd: false
+    ssh-authorized-keys:
+      - $SSH_KEY
+
 runcmd:
   - sh /tmp/init-network.sh
   - systemctl enable docker
