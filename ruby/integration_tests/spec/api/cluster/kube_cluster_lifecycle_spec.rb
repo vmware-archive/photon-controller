@@ -31,7 +31,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
     EsxCloud::ClusterHelper.remove_temporary_ssh_key()
   end
 
-  it 'should create/resize/delete Kubernetes cluster successfully' do
+  it 'should create/resize/delete/create a second Kubernetes cluster successfully' do
     fail("MESOS_ZK_DNS is not defined") unless ENV["MESOS_ZK_DNS"]
     fail("MESOS_ZK_GATEWAY is not defined") unless ENV["MESOS_ZK_GATEWAY"]
     fail("MESOS_ZK_NETMASK is not defined") unless ENV["MESOS_ZK_NETMASK"]
@@ -119,7 +119,74 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
       expect(master_count).to eq 1
       expect(worker_count).to eq N_WORKERS
 
-      puts "Starting to delete a Kubernetes cluster"
+      # Create another cluster and verify that that it works.
+      it 'should create another cluster successfully' do
+        # Using the Swarm IP to fill in the  master ip and etcd ip for the second cluster
+        fail("Second Cluster Master IP not defined") unless ENV["SWARM_ETCD_1_IP"]
+        fail("Second Cluster ETCD IP not defined") unless ENVp["SWARM_ETCD_2_IP"]
+        puts "Starting to create a second Kubernetes cluster"
+        props2 = {
+            "dns" => ENV["MESOS_ZK_DNS"],
+            "gateway" => ENV["MESOS_ZK_GATEWAY"],
+            "netmask" => ENV["MESOS_ZK_NETMASK"],
+            "master_ip" => ENV["SWARM_ETCD_1_IP"],
+            "container_network" => "10.2.0.0/16",
+            "etcd_ip1" => ENV["SWARM_ETCD_2_IP=10.146.34.208"],
+            "ssh_key" => public_key_contents
+        }
+
+        cluster2 = project.create_cluster(
+            name: random_name("kubernetes-"),
+            type: "KUBERNETES",
+            vm_flavor: @seeder.vm_flavor!.name,
+            disk_flavor: @seeder.ephemeral_disk_flavor!.name,
+            network_id: @seeder.network!.id,
+            worker_count: 1,
+            batch_size: nil,
+            extended_properties: props2
+        )
+
+        # Check that the second cluster is created
+        cid2 = cluster2.id
+        cluster2 = client.find_cluster_by_id(cid2)
+        expect(cluster2.name).to start_with("kubernetes-")
+        expect(cluster2.type).to eq("KUBERNETES")
+        expect(cluster2.worker_count).to eq 1
+        expect(cluster2.state).to eq "READY"
+        expect(cluster2.extended_properties.length).to be > 12
+
+        # Check that the second kubernetes cluster  responds
+        puts "Check Kubernetes api for cluster 2 is responding"
+        # Curl to the Kubernetes api to make sure that it is responding. Check that there is exactly 1 worker
+        get_node_count_cmd = "http://" + ENV["SWARM_ETCD_1_IP"] + ":8080/api/v1/nodes | grep nodeInfo | wc -l"
+        total_node_count = `curl #{get_node_count_cmd} `
+        expect(total_node_count.to_i).to eq 1
+
+        # Check that the first cluster still good
+        put "Check Kubernetes Cluster 1 still good after the creation of the second cluster"
+        cid1 = cluster.id
+        cluster = client.find_cluster_by_id(cid)
+        expect(cluster.name).to start_with("kubernetes-")
+        puts "Check Kubernetes api for cluster 1 is still responding"
+        # Curl to the Kubernetes api to make sure that it is responding. Check that there is 2 workers from the resize
+        get_node_count_cmd = "http://" + ENV["KUBERNETES_MASTER_IP"] + ":8080/api/v1/nodes | grep nodeInfo | wc -l"
+        total_node_count = `curl #{get_node_count_cmd} `
+        expect(total_node_count.to_i).to eq N_WORKERS
+
+        puts "Starting to delete the second Kubernetes cluster"
+        client.delete_cluster(cid2)
+        begin
+          client.find_cluster_by_id(cid2)
+          fail("KUBERNETES Cluster #{cid2} should be deleted")
+        rescue EsxCloud::ApiError => e
+          e.response_code.should == 404
+        rescue EsxCloud::CliError => e
+          e.output.should match("not found")
+        end
+
+      end
+
+      puts "Starting to delete the first Kubernetes cluster"
       client.delete_cluster(cid)
       begin
         client.find_cluster_by_id(cid)
@@ -129,6 +196,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
       rescue EsxCloud::CliError => e
         e.output.should match("not found")
       end
+
     rescue EsxCloud::Error => e
       EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
       fail "KUBERNETES cluster integration Test failed. Error: #{e.message}"
