@@ -90,6 +90,8 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
       SUCCESSFUL_SSH_RESPONSE="WARNING: Your password has expired.\nPassword change required but no TTY available."
       expect(ssh_response).to include(SUCCESSFUL_SSH_RESPONSE)
 
+      validate_kube_api_responding(ENV["KUBERNETES_MASTER_IP"], 2)
+
       N_WORKERS = (ENV["N_SLAVES"] || 2).to_i
 
       puts "Starting to resize a Kubernetes cluster"
@@ -133,5 +135,16 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
       EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
       fail "KUBERNETES cluster integration Test failed. Error: #{e.message}"
     end
+  end
+
+  private
+
+  # Curl to the Kubernetes api using env_master_ip to make sure that it is responding.
+  # Check that there is exactly expect_node number of nodes from the api response
+  def validate_kube_api_responding(env_master_ip, expect_node)
+    puts "Check Kubernetes api is responding"
+    get_node_count_cmd = "http://" + ENV["KUBERNETES_MASTER_IP"] + ":8080/api/v1/nodes | grep nodeInfo | wc -l"
+    total_node_count = `curl #{get_node_count_cmd} `
+    expect(total_node_count.to_i).to eq expect_node
   end
 end
