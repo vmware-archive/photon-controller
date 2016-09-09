@@ -10,6 +10,11 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
 # specific language governing permissions and limitations under the License.
 
+# The argument is always set through build-kubernetes-stem-cell. We expect it
+# to be the version number. We modify kubernetes_version as Kubernetes
+# expects the format to be v{version number}.
+kubernetes_version="v$1"
+
 # The docker.service file in Photon has an ExecStart line with a continuation.
 # This breaks docker-multinode, which will edit this file on the when we start
 # up flannel. We fix this by joining lines that end with backslash.
@@ -40,7 +45,7 @@ docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/etcd-amd64:2.2.5
 docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/flannel-amd64:0.5.5
 
 # Pull the Kubernetes hyperkube container, which is how we'll deploy Kubernetes
-docker pull gcr.io/google_containers/hyperkube-amd64:v1.3.6
+docker pull gcr.io/google_containers/hyperkube-amd64:$kubernetes_version
 
 # Pull the containers that Kubernetes needs
 docker pull gcr.io/google_containers/pause-amd64:3.0
@@ -56,7 +61,10 @@ docker pull gcr.io/google_containers/exechealthz-amd64:1.1 # For DNS
 
 # Now we create the hyperkube container so we can copy its configuration
 # We'll edit the etcd configuration when we bring up Kubernetes at run-time
-docker run gcr.io/google_containers/hyperkube-amd64:v1.3.6 /bin/true
+docker run gcr.io/google_containers/hyperkube-amd64:$kubernetes_version /bin/true
 ID=`docker ps -a -q`
 docker cp $ID:/etc/kubernetes /etc/kubernetes
 docker rm -f $ID
+
+# Write environment variables to a file, allowing it to be sourced later
+echo "export K8S_VERSION=${kubernetes_version}" >> /root/env_variables.txt

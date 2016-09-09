@@ -15,7 +15,7 @@ export SOURCE_OVA=${SCRIPT_DIR}/../photon-ova/build/photon-ova-virtualbox.ova
 export FORCE_REBUILD_PHOTON=0
 
 if [ ! -n "${KUBERNETES_VERSION}" ]; then
-  export KUBERNETES_VERSION=1.3.5
+  export KUBERNETES_VERSION=1.3.6
 fi
 
 while [ $# -gt 0 ]; do
