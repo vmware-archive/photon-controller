@@ -489,11 +489,18 @@ public class ClusterManagerClient {
       throws SpecInvalidException {
 
     String masterIp = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
+    String adminPassword = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_ADMIN_PASSWORD);
 
     if (masterIp == null) {
-      throw new SpecInvalidException("Missing extended property: master ip");
+      throw new SpecInvalidException("Missing extended property: " +
+          ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
     } else if (!InetAddressValidator.getInstance().isValidInet4Address(masterIp)) {
       throw new SpecInvalidException("Invalid extended property: master ip: " + masterIp);
+    }
+
+    if (adminPassword == null) {
+      throw new SpecInvalidException("Missing extended property: " +
+          ClusterManagerConstants.EXTENDED_PROPERTY_ADMIN_PASSWORD);
     }
 
     // Assemble the cluster entity
@@ -503,6 +510,7 @@ public class ClusterManagerClient {
     // This is because we currently don't support a multinode Harbor deployment.
     cluster.workerCount = 0;
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, masterIp);
+    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_ADMIN_PASSWORD, adminPassword);
 
     // Create the cluster entity
     apiFeXenonClient.post(
