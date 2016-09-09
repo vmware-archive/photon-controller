@@ -41,6 +41,8 @@ write_files:
         eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
         ipAddress=`ifconfig ${eno_name} | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
         sed -i s/hostname.*/"hostname = ${ipAddress}"/ /root/harbor/harbor.cfg
+        sed -i s/harbor_admin_password.*/"harbor_admin_password = $ADMIN_PASSWORD"/ /root/harbor/harbor.cfg
+        sed -i s/db_password.*/"db_password = $ADMIN_PASSWORD"/ /root/harbor/harbor.cfg
 
         cd /root/harbor
         echo "Preparing Harbor"

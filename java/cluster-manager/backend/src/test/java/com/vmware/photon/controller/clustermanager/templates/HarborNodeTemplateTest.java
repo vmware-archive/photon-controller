@@ -36,10 +36,11 @@ public class HarborNodeTemplateTest {
   private static final String NETMASK = "255.255.255.0";
   private static final String IP_ADDRESS = "10.0.0.1";
   private static final String SSH_KEY = "test-key";
+  private static final String ADMIN_PASSWORD = "admin-password";
 
   private Map<String, String> createCloudConfigProperties(int nodeIndex) {
     Map<String, String> nodeProperties = HarborNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, IP_ADDRESS,
-        SSH_KEY);
+        SSH_KEY, ADMIN_PASSWORD);
     nodeProperties.put(NodeTemplateUtils.NODE_INDEX_PROPERTY, Integer.toString(nodeIndex));
     return nodeProperties;
   }
@@ -140,27 +141,32 @@ public class HarborNodeTemplateTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullDns() {
-      HarborNodeTemplate.createProperties(null, GATEWAY, NETMASK, IP_ADDRESS, SSH_KEY);
+      HarborNodeTemplate.createProperties(null, GATEWAY, NETMASK, IP_ADDRESS, SSH_KEY, ADMIN_PASSWORD);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullGateway() {
-      HarborNodeTemplate.createProperties(DNS, null, NETMASK, IP_ADDRESS, SSH_KEY);
+      HarborNodeTemplate.createProperties(DNS, null, NETMASK, IP_ADDRESS, SSH_KEY, ADMIN_PASSWORD);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullNetmask() {
-      HarborNodeTemplate.createProperties(DNS, GATEWAY, null, IP_ADDRESS, SSH_KEY);
+      HarborNodeTemplate.createProperties(DNS, GATEWAY, null, IP_ADDRESS, SSH_KEY, ADMIN_PASSWORD);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullHarborAddresses() {
-      HarborNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, null, SSH_KEY);
+      HarborNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, null, SSH_KEY, ADMIN_PASSWORD);
     }
 
     @Test
     public void testNullSshKey() {
-      HarborNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, IP_ADDRESS, null);
+      HarborNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, IP_ADDRESS, null, ADMIN_PASSWORD);
+    }
+
+    @Test(expectedExceptions = NullPointerException.class)
+    public void testNullAdminPassword() {
+      HarborNodeTemplate.createProperties(DNS, GATEWAY, NETMASK, IP_ADDRESS, SSH_KEY, null);
     }
   }
 }
