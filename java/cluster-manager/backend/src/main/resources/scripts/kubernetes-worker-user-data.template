@@ -57,6 +57,7 @@ users:
       - $SSH_KEY
 
 runcmd:
+  - source /root/env_variables.txt
   - sh /tmp/init-network.sh
   - sh /tmp/check-docker.sh
   - sh /root/setup-kubernetes-worker.sh >> /var/log/kubernetes-worker.log 2>&1

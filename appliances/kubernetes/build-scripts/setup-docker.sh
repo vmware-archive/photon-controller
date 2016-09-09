@@ -30,6 +30,7 @@ sleep 5 # Wait for docker to start
 
 # Create the bootstrap docker so we can pull the etcd and flannel
 # images into it, instead of the regular docker
+K8S_VERSION=v1.3.6
 cd /root/docker-multinode
 source common.sh
 kube::multinode::main
@@ -37,7 +38,7 @@ docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/etcd-amd64:2.2.5
 docker ${BOOTSTRAP_DOCKER_PARAM} pull gcr.io/google_containers/flannel-amd64:0.5.5
 
 # Pull the Kubernetes hyperkube container, which is how we'll deploy Kubernetes
-docker pull gcr.io/google_containers/hyperkube-amd64:v1.3.6
+docker pull gcr.io/google_containers/hyperkube-amd64:${K8S_VERSION}
 
 # Pull the containers that Kubernetes needs
 docker pull gcr.io/google_containers/pause-amd64:3.0
@@ -53,7 +54,10 @@ docker pull gcr.io/google_containers/exechealthz-amd64:1.1 # For DNS
 
 # Now we create the hyperkube container so we can copy its configuration
 # We'll edit the etcd configuration when we bring up Kubernetes at run-time
-docker run gcr.io/google_containers/hyperkube-amd64:v1.3.6 /bin/true
+docker run gcr.io/google_containers/hyperkube-amd64:${K8S_VERSION} /bin/true
 ID=`docker ps -a -q`
 docker cp $ID:/etc/kubernetes /etc/kubernetes
 docker rm -f $ID
+
+# Write environment variables to a file, allowing it to be sourced later
+echo "export K8S_VERSION=${K8S_VERSION}" >> /root/env_variables.txt
