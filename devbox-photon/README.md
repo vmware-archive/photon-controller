@@ -134,6 +134,11 @@ The following self-explanatory variables are optional:
 * `BRIDGE_NETWORK`
 * `PUBLIC_NETWORK_GATEWAY`
 
+### Management UI
+To bring up the management UI container in devbox expose the following environment variable
+
+* `UI_CONTAINER_URL` - url for the ui container tar file (http://example.com/esxcloud-management-ui.tar)
+
 ### Using devbox with Lightwave for authentication
 To enable authentication in Photon Controller services, a Lightwave STS must be installed, configured and available. In most cases a public IP address needs to be set on the devbox in order to access the Lightwave server. To enable authentication define the following environment variables before starting devbox:
 
