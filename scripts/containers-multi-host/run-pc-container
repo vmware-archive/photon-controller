@@ -1,0 +1,270 @@
+#!/bin/sh -xe
+
+MEMORY_MB=1024
+
+ENABLE_SYSLOG=False
+SYSLOG_ENDPOINT=
+NTP_ENDPOINT=
+IMAGE_DATASTORE_NAME=datastore1
+PHOTON_USER=photon
+PHOTON_USER_PASSWORD='P@ssword!'
+PHOTON_USER_FIRST_NAME="Light"
+PHOTON_USER_LAST_NAME="Wave"
+
+
+HOST_IP=$1
+PEER1_IP=$2
+PEER2_IP=$3
+LIGHTWAVE_MASTER_HOST_NAME=$4
+SWARM_NODE=$5
+
+LIGHTWAVE_PASSWORD='Admin!23'
+LIGHTWAVE_TENANT=photon.local
+LIGHTWAVE_DOMAIN_CONTROLLER=$LIGHTWAVE_MASTER_HOST_NAME
+LIGHTWAVE_MACHINE_ACCOUNT=voltron-1-pc
+LIGHTWAVE_SUBJECT_ALT_NAME=$HOST_IP
+
+PHOTON_CONTROLLER_CONFIG_DIR=/var/lib/vmware/config
+LOG_DIRECTORY=/var/log/vmware/photon-controller
+
+mkdir -p $PHOTON_CONTROLLER_CONFIG_DIR
+mkdir -p $LOG_DIRECTORY
+
+cat << EOF > $PHOTON_CONTROLLER_CONFIG_DIR/photon-controller-core.yml
+
+xenon:
+  bindAddress: "0.0.0.0"
+  securePort: 19000
+  keyFile: "/etc/keys/machine.privkey"
+  certificateFile: "/etc/keys/machine.crt"
+  port: 0
+  registrationAddress: "${HOST_IP}"
+  storagePath: "/etc/esxcloud/cloud-store/sandbox_19000"
+  peerNodes:
+  - https://${HOST_IP}:19000
+  - https://${PEER1_IP}:19000
+  - https://${PEER2_IP}:19000
+
+deployer:
+  deployer:
+    apifeEndpoint: "https://${HOST_IP}:9000"
+    configDirectory: "/etc/esxcloud-deployer/configurations/"
+    maxMemoryGb: 10000
+    maxVmCount: 1000
+    tenantName: "photon-controller"
+    projectName: "photon-controller"
+    resourceTicketName: "photon-controller-rt"
+    scriptDirectory: "/usr/lib/esxcloud/photon-controller-core/scripts"
+    scriptLogDirectory: "/var/log/photon-controller/script_logs"
+    sharedSecret: "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+    vibDirectory: "/var/esxcloud/packages"
+    enableAuth: true
+    vibUninstallOrder:
+    - photon-controller-agent
+    - envoy
+    memoryMb: ${MEMORY_MB}
+    installDirectory: "/usr/lib/esxcloud/photon-controller-core"
+    enableSyslog: "${ENABLE_SYSLOG}"
+    syslogEndpoint: "${SYSLOG_ENDPOINT}"
+    logDirectory: /var/log/photon-controller/
+    keyStorePath: /keystore.jks
+    keyStorePassword: ${LIGHTWAVE_PASSWORD}
+    lightwaveDomain: ${LIGHTWAVE_TENANT}
+    lightwaveHostname: ${LIGHTWAVE_MASTER_HOST_NAME}
+    lightwaveDomainController: ${LIGHTWAVE_DOMAIN_CONTROLLER}
+    lightwaveMachineAccount:  ${LIGHTWAVE_MACHINE_ACCOUNT}
+    lightwaveDisableVmafdListener: True
+    lightwaveSubjectAltName: ${LIGHTWAVE_SUBJECT_ALT_NAME}
+
+photon-controller-logging:
+  file:
+    enabled: true
+    currentLogFilename: /var/log/photon-controller/photon-controller.log
+    archivedLogFilenamePattern: /var/log/photon-controller/photon-controller-%d.log.gz
+    logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
+  syslog:
+    enabled: ${ENABLE_SYSLOG}
+    host: "${SYSLOG_ENDPOINT}"
+    logFormat: "%-5p [%d{ISO8601}] [photon-controller] [%property{instance}]%X{request}%X{task} %c: %m\n%ex"
+    facility: LOCAL0
+
+apife:
+  type: simple
+  minThreads: 8
+  maxThreads: 512
+  applicationContextPath: /
+  registerDefaultExceptionMappers: false
+  connector:
+    type: https
+    port: 9000
+    bindHost: "0.0.0.0"
+    keyStorePath: /keystore.jks
+    keyStorePassword: ${LIGHTWAVE_PASSWORD}
+    validateCerts: false
+    supportedProtocols: [TLSv1.1, TLSv1.2]
+    excludedProtocols: [TLSv1, SSLv2Hello, SSLv3]
+
+use_virtual_network: false
+
+# to add console logging add '- type: console' below
+logging:
+  appenders:
+    - type: file
+      currentLogFilename: /var/log/photon-controller/photon-controller.log
+      archive: true
+      archivedLogFilenamePattern: /var/log/photon-controller/photon-controller-%d.log.gz
+      archivedFileCount: 5
+      logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
+# if you are using syslog
+#    - type: syslog
+#      host: "${SYSLOG_ENDPOINT}"
+#      logFormat: "%-5p [%d{ISO8601}] [photon-controller] %X{request}%X{task} %c: %m\n%ex"
+#      facility: LOCAL0
+
+image:
+  use_esx_store: false
+
+auth:
+  enable_auth: true
+  sharedSecret: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+  auth_server_address: ${LIGHTWAVE_MASTER_HOST_NAME}
+  auth_server_port: 443
+  tenant: ${LIGHTWAVE_TENANT}
+
+EOF
+
+cat << EOF > $PHOTON_CONTROLLER_CONFIG_DIR/make-deployment.sh
+#!/bin/bash
+
+# Wait for certificates to be generated
+attempts=1
+certs_created="false"
+total_attempts=50
+while [ \$attempts -lt \$total_attempts ] && [ \$certs_created != "true" ]; do
+   if [ ! -f /etc/keys/machine.crt -o ! -f /etc/keys/machine.privkey -o ! -f /etc/keys/cacert.crt ]; then
+      echo "Certificates not yet created, will try again"
+      attempts=\$[\$attempts+1]
+      sleep 5
+   else
+      certs_created="true"
+      break
+   fi
+done
+
+if [ \$attempts -eq \$total_attempts ]; then
+   echo "Could not create certificates after \$total_attempts attempts"
+   exit 1
+fi
+
+# Wait for Photon Controller Service to be functioning
+attempts=1
+pc_running="false"
+total_attempts=50
+while [ \$attempts -lt \$total_attempts ] && [ \$pc_running != "true" ]; do
+   http_code=\$(curl -I -so /dev/null --key /etc/keys/machine.privkey --cert /etc/keys/machine.crt --cacert /etc/keys/cacert.crt -w "%{response_code}" -s -X GET https://${HOST_IP}:19000/core/node-groups/default)
+   # The curl returns 000 when it fails to connect to the lightwave server
+   if [ "\$http_code" == "000" ]; then
+      echo "Photon Controller not yet functional, will try again"
+      attempts=\$[\$attempts+1]
+      sleep 5
+   else
+      pc_running="true"
+      break
+   fi
+done
+
+if [ \$attempts -eq \$total_attempts ]; then
+   echo "Photon Controller not functional after \$total_attempts attempts"
+   exit 1
+fi
+
+echo "Setting Quorum"
+
+curl --key /etc/keys/machine.privkey --cert /etc/keys/machine.crt --cacert /etc/keys/cacert.crt -H "Content-Type: application/json" -X PATCH https://${HOST_IP}:19000/core/node-groups/default --data @/etc/photon-controller/node-group.json
+
+
+echo "Creating Deployment"
+
+curl --key /etc/keys/machine.privkey --cert /etc/keys/machine.crt --cacert /etc/keys/cacert.crt -X POST \
+  -H "Content-type: application/json" -d "{ \
+  \"state\" : \"READY\", \
+  \"imageDataStoreNames\" : [\"${IMAGE_DATASTORE_NAME}\"], \
+  \"imageDataStoreUsedForVMs\" : \"true\", \
+  \"imageId\" : \"none\", \
+  \"projectId\" : \"none\", \
+  \"ntpEndpoint\" : \"${NTP_ENDPOINT}\", \
+  \"virtualNetworkEnabled\" : \"false\", \
+  \"syslogEndpoint\" : \"${SYSLOG_ENDPOINT}\", \
+  \"statsEnabled\" : \"false\", \
+  \"loadBalancerEnabled\": \"false\", \
+  \"loadBalancerAddress\" : \"${HOST_IP}:9000\", \
+  \"oAuthEnabled\" : \"true\", \
+  \"oAuthTenantName\" : \"${LIGHTWAVE_TENANT}\", \
+  \"oAuthUserName\" : \"Administrator\", \
+  \"oAuthPassword\" : \"${LIGHTWAVE_PASSWORD}\", \
+  \"oAuthServerAddress\" : \"${LIGHTWAVE_MASTER_HOST_NAME}\", \
+  \"oAuthServerPort\" : 443, \
+  \"oAuthSecurityGroups\": [\"${LIGHTWAVE_TENANT}\\\\\\admins\"], \
+  \"documentSelfLink\" : \"deployment\" \
+  }" \
+  https://${HOST_IP}:19000/photon/cloudstore/deployments
+
+rc=\$?
+
+if [ \$rc -ne 0 ]; then
+    echo "Failed to create Deployment"
+    exit 1
+fi
+
+echo "Creating Groups in Lightwave Directory"
+/opt/vmware/bin/dir-cli ssogroup create --name admins --password $LIGHTWAVE_PASSWORD
+
+
+rc=\$?
+if [ \$rc -ne 0 ]; then
+    echo "Failed to create group [Name: ssogroup]"
+    exit 1
+fi
+
+echo "Creating Users  in Lightwave Directory"
+/opt/vmware/bin/dir-cli user create --account $PHOTON_USER \
+                                    --user-password $PHOTON_USER_PASSWORD \
+                                    --first-name $PHOTON_USER_FIRST_NAME \
+                                    --last-name $PHOTON_USER_LAST_NAME \
+                                    --password $LIGHTWAVE_PASSWORD
+rc=\$?
+if [ \$rc -ne 0 ]; then
+    echo "Failed to create user [ Name: $PHOTON_USER ]"
+    exit 1
+fi
+
+echo "Adding Users to Groups in Lightwave Directory"
+
+/opt/vmware/bin/dir-cli group modify --name admins \
+                                     --add $PHOTON_USER \
+                                     --password $LIGHTWAVE_PASSWORD
+rc=\$?
+if [ \$rc -ne 0 ]; then
+    echo "Failed to add user [$PHOTON_USER] to group [ admins ]"
+    exit 1
+fi
+
+EOF
+
+chmod +x $PHOTON_CONTROLLER_CONFIG_DIR/make-deployment.sh
+
+docker run -d \
+  --name photon-controller-${SWARM_NODE} \
+  --privileged=true \
+  --net=lightwave \
+  -e constraint:node==${SWARM_NODE} \
+  --ip=$HOST_IP \
+  --entrypoint=/usr/sbin/init \
+  -v ${LOG_DIRECTORY}:/var/log \
+  -v /sys/fs/cgroup:/sys/fs/cgroup \
+  -v ${PHOTON_CONTROLLER_CONFIG_DIR}:/etc/photon-controller \
+  -p 9000:9000 \
+  -p 19000:19000 \
+  vmware/photon-controller-lightwave-client
+
+# docker exec -d photon-controller /bin/bash -c "/etc/photon-controller/make-deployment.sh > /var/log/photon-controller/script_logs/make-deployment.log 2>&1"

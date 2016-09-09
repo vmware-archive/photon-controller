@@ -1,0 +1,44 @@
+#!/bin/sh -xe
+
+PHOTON_USER_PASSWORD="P@ssword!"
+LIGHTWAVE_PASSWORD="Admin!23"
+LIGHTWAVE_MASTER_IP=192.168.114.2
+
+PC_PEER0_IP=192.168.114.11
+PC_PEER1_IP=192.168.114.12
+PC_PEER2_IP=192.168.114.13
+
+function wait_to_start()
+{
+  echo "in function"
+  echo $1
+  node=$1
+  # Check if lightwave server is up
+  attempts=1
+  reachable="false"
+  total_attempts=50
+  while [ $attempts -lt $total_attempts ] && [ $reachable != "true" ]; do
+    http_code=$(docker-machine ssh $node curl -I -so /dev/null -w "%{response_code}" -s -X GET --insecure https://127.0.0.1) || true
+    # The curl returns 000 when it fails to connect to the lightwave server
+    if [ "$http_code" == "000" ]; then
+      echo "Lightwave REST server $node not reachable (attempt $attempts/$total_attempts), will try again."
+      attempts=$[$attempts+1]
+      sleep 5
+    else
+      reachable="true"
+      break
+    fi
+  done
+  if [ $attempts -eq $total_attempts ]; then
+    echo "Could not connect to Lightwave REST client at $node after $total_attempts attempts"
+    exit 1
+  fi
+}
+
+docker-machine ls -q | xargs -I {} docker-machine scp ./run-pc-container {}:/tmp/
+
+docker-machine ssh mhs-demo0 /tmp/run-pc-container $PC_PEER0_IP $PC_PEER1_IP $PC_PEER2_IP $LIGHTWAVE_MASTER_IP mhs-demo0
+#wait_to_start mhs-demo0
+
+docker-machine ssh mhs-demo1 /tmp/run-pc-container $PC_PEER1_IP $PC_PEER0_IP $PC_PEER2_IP $LIGHTWAVE_MASTER_IP mhs-demo1
+docker-machine ssh mhs-demo2 /tmp/run-pc-container $PC_PEER2_IP $PC_PEER0_IP $PC_PEER1_IP $LIGHTWAVE_MASTER_IP mhs-demo2
