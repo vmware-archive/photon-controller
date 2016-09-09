@@ -90,6 +90,19 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
       SUCCESSFUL_SSH_RESPONSE="WARNING: Your password has expired.\nPassword change required but no TTY available."
       expect(ssh_response).to include(SUCCESSFUL_SSH_RESPONSE)
 
+      puts "Check Kubernetes api is responding"
+      # Curl to the Kubernetes api to make sure that it is responding. Check that there is exactly 1 worker
+      # For bug testing, Print the curl result of nodes
+      url_to_curl = "http://" + ENV["KUBERNETES_MASTER_IP"] + ":8080/api/v1/nodes"
+      result_curl = `curl #{url_to_curl} `
+      puts "start of bug testing, checking the whole page returned"
+      puts `echo #{result_curl} `
+      puts "End of bug testing"
+
+      get_node_count_cmd = "http://" + ENV["KUBERNETES_MASTER_IP"] + ":8080/api/v1/nodes | grep nodeInfo | wc -l"
+      total_node_count = `curl #{get_node_count_cmd} `
+      expect(total_node_count.to_i).to eq 1
+
       N_WORKERS = (ENV["N_SLAVES"] || 2).to_i
 
       puts "Starting to resize a Kubernetes cluster"
