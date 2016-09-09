@@ -21,12 +21,14 @@ before(:all) do
   @deployment = @seeder.deployment!
   @harbor_image = EsxCloud::ClusterHelper.upload_harbor_image(client)
   EsxCloud::ClusterHelper.enable_cluster_type(client, @deployment, @harbor_image, "HARBOR")
+  EsxCloud::ClusterHelper.generate_temporary_ssh_key()
 end
 
 after(:all) do
   puts "Staring to clean up Harbor Cluster lifecycle tests Env"
   EsxCloud::ClusterHelper.disable_cluster_type(client, @deployment, "HARBOR")
   @cleaner.delete_image(@harbor_image)
+  EsxCloud::ClusterHelper.remove_temporary_ssh_key()
 end
 
 it 'should create/delete Harbor cluster successfully' do
@@ -37,12 +39,14 @@ it 'should create/delete Harbor cluster successfully' do
 
   puts "Starting to create a Harbor cluster"
   begin
+    public_key_contents = File.read("/tmp/test_rsa.pub")
     project = @seeder.project!
     props = {
         "dns" => ENV["MESOS_ZK_DNS"],
         "gateway" => ENV["MESOS_ZK_GATEWAY"],
         "netmask" => ENV["MESOS_ZK_NETMASK"],
-        "master_ip" => ENV["KUBERNETES_MASTER_IP"]
+        "master_ip" => ENV["KUBERNETES_MASTER_IP"],
+        "ssh_key" => public_key_contents
     }
 
     cluster = project.create_cluster(
@@ -61,6 +65,19 @@ it 'should create/delete Harbor cluster successfully' do
     expect(cluster.type).to eq("HARBOR")
     expect(cluster.worker_count).to eq 0
     expect(cluster.state).to eq "READY"
+
+    puts "Check that host can ssh successfully"
+    # Disabling strict_host_key_checking (:paranoid => false) and setting user_known_hosts_file to null to not validate
+    # the host key as it will change with each lifecycle run.
+    Net::SSH.start(ENV["KUBERNETES_MASTER_IP"], "root",
+                   :keys => ["/tmp/test_rsa"],
+                   :paranoid => false,
+                   :user_known_hosts_file => ["/dev/null"]) do |ssh|
+      # Getting here without an exception means we can connect with ssh successfully. If SSH failed, we would get an
+      # exception like Authentication Failed or Connection Timeout and our tests will fail as we are catching the
+      # exception and failing the test below.
+      puts "SSH successful"
+    end
 
     puts "Starting to delete a Harbor cluster"
     client.delete_cluster(cid)

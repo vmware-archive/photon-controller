@@ -640,6 +640,8 @@ public class HarborClusterCreateTaskServiceTest {
           ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "4.4.4.4");
       cluster.extendedProperties.put(
           ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "100.0.0.1");
+      cluster.extendedProperties.put(
+          ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY, "test-key");
       cluster.documentSelfLink = UUID.randomUUID().toString();
 
       cloudStoreMachine.callServiceAndWaitForState(

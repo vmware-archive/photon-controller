@@ -34,6 +34,7 @@ public class HarborNodeTemplate implements NodeTemplate {
   public static final String IP_PROPERTY = "ip";
   public static final String NETMASK_PROPERTY = "netmask";
   public static final String VM_NAME_PREFIX = "harbor";
+  public static final String SSH_KEY_PROPERTY = "sshKey";
 
   public String getVmName(Map<String, String> properties) {
     Preconditions.checkNotNull(properties, "properties cannot be null");
@@ -56,6 +57,7 @@ public class HarborNodeTemplate implements NodeTemplate {
     parameters.put("$ADDRESS", cidrSignature);
     parameters.put("$HARBOR_PORT", String.valueOf(ClusterManagerConstants.Harbor.HARBOR_PORT));
     parameters.put("$LOCAL_HOSTNAME", getVmName(properties));
+    parameters.put("$SSH_KEY", properties.get(SSH_KEY_PROPERTY));
 
     FileTemplate template = new FileTemplate();
     template.filePath = Paths.get(scriptDirectory, USER_DATA_TEMPLATE).toString();
@@ -71,7 +73,7 @@ public class HarborNodeTemplate implements NodeTemplate {
   }
 
   public static Map<String, String> createProperties(
-      String dns, String gateway, String netmask, String ip) {
+      String dns, String gateway, String netmask, String ip, String sshKey) {
     Preconditions.checkNotNull(dns, "dns cannot be null");
     Preconditions.checkNotNull(gateway, "gateway cannot be null");
     Preconditions.checkNotNull(ip, "ip cannot be null");
@@ -82,6 +84,7 @@ public class HarborNodeTemplate implements NodeTemplate {
     properties.put(GATEWAY_PROPERTY, gateway);
     properties.put(IP_PROPERTY, ip);
     properties.put(NETMASK_PROPERTY, netmask);
+    properties.put(SSH_KEY_PROPERTY, sshKey);
 
     return properties;
   }

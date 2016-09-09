@@ -279,6 +279,7 @@ public class ClusterManagerClient {
     String dns = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_DNS);
     String gateway = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY);
     String netmask = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK);
+    String sshKey = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY);
 
     // Verify the cluster entity
     if (dns == null) {
@@ -322,6 +323,9 @@ public class ClusterManagerClient {
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, dns);
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, gateway);
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, netmask);
+    if (sshKey != null) {
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY, sshKey);
+    }
 
     return cluster;
   }
@@ -389,15 +393,12 @@ public class ClusterManagerClient {
       }
     }
 
-    String sshKey = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY);
-
     // Assemble the cluster entity
     ClusterService.State cluster = assembleCommonClusterEntity(
         ClusterType.KUBERNETES, projectId, spec, clusterConfiguration);
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, containerNetwork);
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS, serializeIpAddresses(etcdIps));
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, masterIp);
-    cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY, sshKey);
 
     // Create the cluster entity
     apiFeXenonClient.post(
