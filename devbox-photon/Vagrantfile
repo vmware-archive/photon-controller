@@ -722,6 +722,25 @@ EOM
   EOS
 
   #
+  # Set up management-ui container if management-ui-container-url is specified
+  #
+  if ENV['UI_CONTAINER_URL']
+    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
+
+    wget #{ENV['UI_CONTAINER_URL']}
+    docker load -i esxcloud-management-ui.tar
+
+    docker run \
+      -p #{ENV['PUBLIC_NETWORK_IP']}:20000:80 \
+      -e LOAD_BALANCER_IP="#{ENV['PUBLIC_NETWORK_IP']}" \
+      -e LOAD_BALANCER_API_PORT="28080" \
+      -e LOAD_BALANCER_HTTPS_PORT="9213" \
+      -e ENABLE_AUTH="false" \
+      -d --name management-ui \
+      esxcloud/management_ui
+    EOS
+  end
+  #
   # Generate service check script, gets called by start-all script
   #
   photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
