@@ -38,6 +38,7 @@ public class ClusterManagerConstants {
   public static final String EXTENDED_PROPERTY_CLIENT_WINDOWS_AMD64_URL = "client_windows_amd64_url";
   public static final String EXTENDED_PROPERTY_CLIENT_WINDOWS_386_URL   = "client_windows_386_url";
   public static final String EXTENDED_PROPERTY_SSH_KEY                  = "ssh_key";
+  public static final String EXTENDED_PROPERTY_ADMIN_PASSWORD           = "admin_password";
 
   public static final String KUBECTL_BASE_URI = "storage.googleapis.com";
   public static final String KUBECTL_PATH_RELEASE = "kubernetes-release/release";

@@ -46,7 +46,8 @@ it 'should create/delete Harbor cluster successfully' do
         "gateway" => ENV["MESOS_ZK_GATEWAY"],
         "netmask" => ENV["MESOS_ZK_NETMASK"],
         "master_ip" => ENV["KUBERNETES_MASTER_IP"],
-        "ssh_key" => public_key_contents
+        "ssh_key" => public_key_contents,
+        "admin_password" => SecureRandom.urlsafe_base64(16)
     }
 
     cluster = project.create_cluster(

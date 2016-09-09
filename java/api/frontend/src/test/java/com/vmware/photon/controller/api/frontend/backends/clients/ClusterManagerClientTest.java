@@ -119,6 +119,7 @@ public class ClusterManagerClientTest {
       extendedProperty.put(ClusterManagerClient.EXTENDED_PROPERTY_ETCD_IP3, "10.1.0.5");
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "10.1.0.6");
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY, "test-key");
+      extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_ADMIN_PASSWORD, "admin-password");
       if (hasContainerNetwork) {
         extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "10.1.0.0/16");
       }
@@ -404,6 +405,7 @@ public class ClusterManagerClientTest {
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "10.1.0.2");
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "255.255.255.128");
       extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_SSH_KEY, "test-key");
+      extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_ADMIN_PASSWORD, "admin-password");
       if (setMasterIp) {
         extendedProperty.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "10.1.2.3");
       }
