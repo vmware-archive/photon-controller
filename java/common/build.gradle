@@ -3,7 +3,14 @@ apply plugin: 'thrift'
 dependencies {
 
   compile "org.apache.commons:commons-lang3:${versions.commons_lang3}"
-  compile 'org.apache.thrift:libthrift:0.9.3'
+
+  // custom build thrift jar supporting non-blocking ssl
+  // downloaded from s3 see task below
+  compile files('libthrift-0.9.3-ssl.jar')
+  // now we need to add thrift jar dependencies manually
+  compile 'org.apache.httpcomponents:httpclient:4.4.1'
+  compile 'org.apache.httpcomponents:httpcore:4.4.1'
+
   compile 'ch.qos.logback:logback-classic:1.0.9'
   compile "com.fasterxml.jackson.core:jackson-databind:${versions.jackson_core}"
   compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${versions.jackson_core}"
@@ -65,3 +72,11 @@ configurations {
 artifacts {
   tests testJar
 }
+
+task downloadThriftJar(type: Exec) {
+  workingDir "."
+  executable "bash"
+  args "-c", "rm -f libthrift-0.9.3-ssl.jar && wget https://s3.amazonaws.com/photon-platform/artifacts/thrift/non-blocking-ssl/libthrift-0.9.3-ssl.jar"
+}
+
+compileJava.dependsOn downloadThriftJar
