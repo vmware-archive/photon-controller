@@ -66,6 +66,7 @@ users:
       - $SSH_KEY
 
 runcmd:
+  - source /root/env_variables.txt
   - sh /tmp/init-network.sh
   - sh /tmp/check-docker.sh
   - /root/docker-multinode/etcd.sh >> /var/log/start-etcd.log 2>&1
