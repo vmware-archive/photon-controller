@@ -71,27 +71,10 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
         extended_properties: props
       )
 
-      cid = cluster.id
-      cluster = client.find_cluster_by_id(cid)
-      expect(cluster.name).to start_with("kubernetes-")
-      expect(cluster.type).to eq("KUBERNETES")
-      expect(cluster.worker_count).to eq 1
-      expect(cluster.state).to eq "READY"
-      expect(cluster.extended_properties["cluster_version"]).to eq ("v1.3.5")
-      expect(cluster.extended_properties.length).to be > 12
+      validate_cluster_responding(cluster, 1)
+      validate_kube_api_responding(ENV["KUBERNETES_MASTER_IP"], 2 )
 
-      puts "Check that host can ssh successfully"
-      # Disabling strict_host_key_checking (:paranoid => false) and setting user_known_hosts_file to null to not validate
-      # the host key as it will change with each lifecycle run.
-      Net::SSH.start(ENV["KUBERNETES_MASTER_IP"], "root",
-                     :keys => ["/tmp/test_rsa"],
-                     :paranoid => false,
-                     :user_known_hosts_file => ["/dev/null"]) do |ssh|
-        # Getting here without an exception means we can connect with ssh successfully. If SSH failed, we would get an
-        # exception like Authentication Failed or Connection Timeout and our tests will fail as we are catching the
-        # exception and failing the test below.
-        puts "SSH successful"
-      end
+      validate_ssh()
 
       N_WORKERS = (ENV["N_SLAVES"] || 2).to_i
 
@@ -135,6 +118,45 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
     rescue EsxCloud::Error => e
       EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
       fail "KUBERNETES cluster integration Test failed. Error: #{e.message}"
+    end
+  end
+
+  private
+
+  # Curl to the Kubernetes api using env_master_ip to make sure that it is responding.
+  # Check that there is exactly expect_node number of nodes from the api response
+  def validate_kube_api_responding(env_master_ip, expect_node)
+    puts "Check Kubernetes api is responding"
+    get_node_count_cmd = "http://" + env_master_ip + ":8080/api/v1/nodes | grep nodeInfo | wc -l"
+    total_node_count = `curl #{get_node_count_cmd} `
+    expect(total_node_count.to_i).to eq expect_node
+  end
+
+  # This function validate that our cluster manager api is working properly
+  # It also checks that the extended properties added later were put it properly
+  def validate_cluster_responding(cluster_current, expected_worker_count)
+    cid_current = cluster_current.id
+    cluster_current = client.find_cluster_by_id(cid_current)
+    expect(cluster_current.name).to start_with("kubernetes-")
+    expect(cluster_current.type).to eq("KUBERNETES")
+    expect(cluster_current.worker_count).to eq expected_worker_count
+    expect(cluster_current.state).to eq "READY"
+    expect(cluster_current.extended_properties["cluster_version"]).to eq ("v1.3.5")
+    expect(cluster_current.extended_properties.length).to be > 12
+  end
+
+  def validate_ssh()
+    puts "Check that host can ssh successfully"
+    # Disabling strict_host_key_checking (:paranoid => false) and setting user_known_hosts_file to null to not validate
+    # the host key as it will change with each lifecycle run.
+    Net::SSH.start(ENV["KUBERNETES_MASTER_IP"], "root",
+                   :keys => ["/tmp/test_rsa"],
+                   :paranoid => false,
+                   :user_known_hosts_file => ["/dev/null"]) do |ssh|
+      # Getting here without an exception means we can connect with ssh successfully. If SSH failed, we would get an
+      # exception like Authentication Failed or Connection Timeout and our tests will fail as we are catching the
+      # exception and failing the test below.
+      puts "SSH successful"
     end
   end
 end
