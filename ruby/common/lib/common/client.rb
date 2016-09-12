@@ -23,6 +23,7 @@ require_relative "api_client/image_api"
 require_relative "api_client/deployment_api"
 require_relative "api_client/cluster_api"
 require_relative "api_client/availability_zone_api"
+require_relative "api_client/data_store_api"
 
 module EsxCloud
   #noinspection RubyUnusedLocalVariable
@@ -548,6 +549,11 @@ module EsxCloud
     # @param [String] network_id
     # @return [VirtualNetwork]
     def find_virtual_network_by_id(network_id)
+    end
+
+    # @param [String] id
+    # @return [Datastore]
+    def find_datastore_by_id(id)
     end
   end
 end

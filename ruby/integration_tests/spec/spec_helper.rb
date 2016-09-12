@@ -133,6 +133,8 @@ RSpec.configure do |config|
 
   config.filter_run_excluding go_cli: true unless ENV["DRIVER"] == "gocli"
 
+  config.filter_run_excluding vsan: true unless ENV["VSAN"]
+
   config.before(:suite) do
     if ENV["UPTIME"]
       get_system_status(ENV["MANAGEMENT_VM_COUNT"])
