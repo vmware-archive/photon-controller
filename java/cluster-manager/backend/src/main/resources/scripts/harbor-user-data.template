@@ -43,12 +43,57 @@ write_files:
         sed -i s/hostname.*/"hostname = ${ipAddress}"/ /root/harbor/harbor.cfg
         sed -i s/harbor_admin_password.*/"harbor_admin_password = $ADMIN_PASSWORD"/ /root/harbor/harbor.cfg
         sed -i s/db_password.*/"db_password = $ADMIN_PASSWORD"/ /root/harbor/harbor.cfg
+        sed -i s/ui_url_protocol.*/"ui_url_protocol = https"/ /root/harbor/harbor.cfg
 
-        cd /root/harbor
+        echo "Generating CA certificate"
+        openssl req -newkey rsa:4096 -nodes -sha256 \
+          -keyout /root/ca.key -x509 -days 365 \
+          -out /root/ca.crt \
+          -subj "/C=US/ST=California/L=Palo Alto/O=VMware/OU=VMware Engineering/CN=www.pc-harbor.vmware.com"
+
+        echo "Generating certificate signing request"
+        openssl req -newkey rsa:4096 -nodes -sha256 \
+          -keyout /root/pc-harbor.vmware.com.key \
+          -out /root/pc-harbor.vmware.com.csr \
+          -subj "/C=US/ST=California/L=Palo Alto/O=VMware/OU=VMware Engineering/CN=www.pc-harbor.vmware.com"
+
+        echo "Generating certificate for the Harbor registry host"
+        mkdir -p /root/demoCA
+        pushd /root/demoCA
+        touch index.txt
+        echo '01' > serial
+        popd
+
+        echo subjectAltName = IP:${ipAddress} > /root/extfile.cnf
+        pushd /root
+        openssl ca \
+          -batch \
+          -in /root/pc-harbor.vmware.com.csr \
+          -out /root/pc-harbor.vmware.com.crt \
+          -cert /root/ca.crt \
+          -keyfile /root/ca.key \
+          -extfile /root/extfile.cnf \
+          -outdir /root/
+        popd
+
+        echo "Configuring Nginx"
+        pushd /root/harbor/config/nginx
+        mkdir -p cert/
+        cp /root/pc-harbor.vmware.com.crt cert/
+        cp /root/pc-harbor.vmware.com.key cert/
+        mv nginx.conf nginx.conf.bak
+        cp nginx.https.conf nginx.conf
+        sed -i "s|server_name harbordomain.com|server_name ${ipAddress}|g" nginx.conf
+        sed -i "s|harbordomain.crt|pc-harbor.vmware.com.crt|g" nginx.conf
+        sed -i "s|harbordomain.key|pc-harbor.vmware.com.key|g" nginx.conf
+        popd
+
+        pushd /root/harbor
         echo "Preparing Harbor"
         ./prepare
         echo "Starting Harbor"
         docker-compose up -d
+        popd
         echo "done"
     owner: root:root
     permissions: 0644
