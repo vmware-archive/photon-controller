@@ -69,7 +69,7 @@ public class DhcpSubnetServiceTest {
     }
   }
 
-  @Test(enabled = false)
+  @Test
   private void dummy() {
   }
 

@@ -104,6 +104,18 @@ public class DhcpSubnetService extends StatefulService {
             IpOperationPatch.class, "kind", IpOperationPatch.Kind.ReleaseIp),
         this::handleReleaseIpPatch, "Release Ip lease for the provided IP address");
 
+    myRouter.register(
+            Action.PATCH,
+            new RequestRouter.RequestBodyMatcher<>(
+                    VersionOperationPatch.class, "kind", VersionOperationPatch.Kind.PatchStagedVersion),
+            this::handleStagedVersionPatch, "Patch Dhcp subnet with new staged version");
+
+    myRouter.register(
+            Action.PATCH,
+            new RequestRouter.RequestBodyMatcher<>(
+                    VersionOperationPatch.class, "kind", VersionOperationPatch.Kind.PatchPushedVersion),
+            this::handlePushedVersionPatch, "Patch Dhcp subnet with new pushed version");
+
     OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
     opProcessingChain.add(myRouter);
     setOperationProcessingChain(opProcessingChain);
@@ -268,6 +280,46 @@ public class DhcpSubnetService extends StatefulService {
     }
   }
 
+  public void handleStagedVersionPatch(Operation patch) {
+    ServiceUtils.logInfo(this, "Patching service %s to new staged version", getSelfLink());
+    try {
+      State currentState = getState(patch);
+      VersionOperationPatch versionOperationPatch = patch.getBody(VersionOperationPatch.class);
+
+      if (currentState.versionStaged == null || currentState.versionStaged < versionOperationPatch.versionStaged) {
+        currentState.versionStaged = versionOperationPatch.versionStaged;
+        setState(patch, currentState);
+        patch.complete();
+      } else {
+        patch.fail(new Throwable(
+                "Staged version in patch is less than or equal to current Dhcp subnet staged version."));
+      }
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patch.fail(t);
+    }
+  }
+
+  public void handlePushedVersionPatch(Operation patch) {
+    ServiceUtils.logInfo(this, "Patching service %s to new pushed version", getSelfLink());
+    try {
+      State currentState = getState(patch);
+      VersionOperationPatch versionOperationPatch = patch.getBody(VersionOperationPatch.class);
+
+      if (currentState.versionPushed == null || currentState.versionPushed < versionOperationPatch.versionPushed) {
+        currentState.versionPushed = versionOperationPatch.versionPushed;
+        setState(patch, currentState);
+        patch.complete();
+      } else {
+        patch.fail(new Throwable(
+                "Pushed version in patch is less than or equal to current Dhcp subnet pushed version."));
+      }
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patch.fail(t);
+    }
+  }
+
   @Override
   public void handleDelete(Operation deleteOperation) {
     ServiceUtils.logInfo(this, "Deleting service %s", getSelfLink());
@@ -344,6 +396,49 @@ public class DhcpSubnetService extends StatefulService {
     public enum Kind {
       AllocateIp,
       ReleaseIp
+    }
+  }
+
+  /**
+   * Class for patching staged and pushed versions.
+   */
+  @NoMigrationDuringUpgrade
+  @NoMigrationDuringDeployment
+  public static class VersionOperationPatch extends ServiceDocument {
+    public Kind kind;
+    public Long versionStaged;
+    public Long versionPushed;
+
+    private VersionOperationPatch() {
+      kind = null;
+    }
+
+    public VersionOperationPatch(Kind kind, Long versionStaged, Long versionPushed) {
+      if (kind == null) {
+        throw new IllegalArgumentException("kind cannot be null");
+      }
+
+      if (kind == Kind.PatchStagedVersion) {
+        if (versionStaged == null) {
+          throw new IllegalArgumentException("staged version cannot be null");
+        }
+      } else {
+        if (versionPushed == null) {
+          throw new IllegalArgumentException("pushed version cannot be null");
+        }
+      }
+
+      this.kind = kind;
+      this.versionStaged = versionStaged;
+      this.versionPushed = versionPushed;
+    }
+
+    /**
+     * Defines type of Version operations that are supported.
+     */
+    public enum Kind {
+      PatchStagedVersion,
+      PatchPushedVersion
     }
   }
 
@@ -429,24 +524,31 @@ public class DhcpSubnetService extends StatefulService {
      * This version number represents the current version of the subnet based on changes in IP leases.
      * It will be patched for increment on each IP lease change.
      */
-    public long version;
+    @DefaultLong(0L)
+    public Long version;
 
     /**
      * This version number represents the subnet version selected for pushing changes to DHCP agent.
      */
-    public long versionStaged;
+    public Long versionStaged;
 
     /**
      * This version number represents the subnet version for which changes in IP leases are pushed
      * successfully to DHCP agent.
      */
-    public long versionPushed;
+    public Long versionPushed;
 
     /**
      * This is the same id as the VirtualNetworkService that this subnet is associated with
      * in a one-to-one relationship.
      */
     public String subnetId;
+
+    /**
+     * Endpoint for communicating with DHCP agent.
+     * Endpoint includes: IP, port and protocol.
+     */
+    public String dhcpAgentEndpoint;
 
     /**
      * Each bit in this bitset represents one IP address in the range.
