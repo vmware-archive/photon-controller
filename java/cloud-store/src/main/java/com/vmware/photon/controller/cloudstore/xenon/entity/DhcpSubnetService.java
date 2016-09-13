@@ -449,6 +449,12 @@ public class DhcpSubnetService extends StatefulService {
     public String subnetId;
 
     /**
+     * Endpoint for communicating with DHCP agent.
+     * Endpoint includes: IP, port and protocol.
+     */
+    public String dhcpAgentEndpoint;
+
+    /**
      * Each bit in this bitset represents one IP address in the range.
      * A set bit indicates the mapping IP address is allocated.
      * An unset bit indicates the mapping IP address is available for allocation.

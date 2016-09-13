@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper.xenon;
 
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -33,7 +34,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
@@ -102,9 +102,13 @@ public class SubnetIPLeaseSyncService extends StatefulService {
    * @param current
    */
 
-  private void processStart(final State current) {
+  private void processStart(State current) {
+
     if (current.taskState.stage == TaskState.TaskStage.CREATED) {
       current.taskState.stage = TaskState.TaskStage.STARTED;
+      current.taskState.subStage = TaskState.SubStage.CHECK_SUBNET_VERSION;
+      sendStageProgressPatch(current);
+      return;
     }
 
     if (current.isSelfProgressionDisabled) {
@@ -112,31 +116,8 @@ public class SubnetIPLeaseSyncService extends StatefulService {
       return;
     }
 
-    try {
-      if (!isFinalStage(current) && current.nextPageLink == null) {
-        Operation queryIpLeasePagination = Operation
-                .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
-                .setBody(buildIpLeaseQuery(current));
-        queryIpLeasePagination
-                .setCompletion(((op, failure) -> {
-                  if (failure != null) {
-                    failTask(failure);
-                    return;
-                  }
-
-                  ServiceDocumentQueryResult results = op.getBody(QueryTask.class).results;
-
-                  if (results.nextPageLink != null) {
-                    current.nextPageLink = results.nextPageLink;
-                  }
-
-                  sendStageProgressPatch(current);
-                })).sendWith(this);
-      } else {
-        sendStageProgressPatch(current);
-      }
-    } catch (Throwable e) {
-      failTask(e);
+    if (current.taskState.stage == TaskState.TaskStage.STARTED) {
+      processStartSubStage(current);
     }
   }
 
@@ -145,13 +126,14 @@ public class SubnetIPLeaseSyncService extends StatefulService {
    *
    * @param current
    */
-  private void processPatch(final State current) {
+  private void processPatch(State current) {
     try {
       switch (current.taskState.stage) {
         case CREATED:
           break;
+
         case STARTED:
-          processIpLeaseDocuments(current);
+          processStartSubStage(current);
           break;
 
         case FAILED:
@@ -165,6 +147,176 @@ public class SubnetIPLeaseSyncService extends StatefulService {
                           String.format("Un-expected stage: %s", current.taskState.stage))
           );
       }
+    } catch (Throwable e) {
+      failTask(e);
+    }
+  }
+
+  /**
+   * Process start sub stage for the task.
+   *
+   * @param current
+   */
+  private void processStartSubStage(State current) {
+    switch(current.taskState.subStage) {
+     case CHECK_SUBNET_VERSION:
+       checkSubnetVersion(current);
+        break;
+
+      case PATCH_SUBNET_STAGED_VERSION:
+        patchSubnetStagedVersion(current);
+        break;
+
+      case QUERY_IP_LEASES:
+        queryIpLeaseDocuments(current);
+        break;
+
+      case SYNC_IP_LEASES:
+        processIpLeaseDocuments(current);
+        break;
+
+      case PATCH_SUBNET_PUSHED_VERSION:
+        patchSubnetPushedVersion(current);
+        break;
+
+      default:
+        this.failTask(
+                new IllegalStateException(
+                        String.format("Un-expected sub stage: %s", current.taskState.subStage))
+        );
+    }
+  }
+
+  /**
+   * Check subnet version before triggering sync.
+   *
+   * @param current
+   */
+  private void checkSubnetVersion(State current) {
+    try {
+      Operation queryDhcpSubnetPagination = Operation
+              .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
+              .setBody(buildSubnetQuery(current));
+      queryDhcpSubnetPagination
+              .setCompletion((op, failure) -> {
+                if (failure != null) {
+                  failTask(failure);
+                  return;
+                }
+
+                ServiceDocumentQueryResult results = op.getBody(QueryTask.class).results;
+                parseDhcpSubnetServiceQueryResults(results, current);
+                sendStageProgressPatch(current);
+              }).sendWith(this);
+    } catch (Throwable e) {
+      failTask(e);
+    }
+  }
+
+  /**
+   * Parse DhcpSubnetService query results.
+   *
+   * @param results
+   */
+  private void parseDhcpSubnetServiceQueryResults(ServiceDocumentQueryResult results, State current) {
+    if (results != null && results.documentCount > 0) {
+      for (Map.Entry<String, Object> doc : results.documents.entrySet()) {
+        DhcpSubnetService.State dhcpSubnet = Utils.fromJson(doc.getValue(), DhcpSubnetService.State.class);
+        if (dhcpSubnet.version == dhcpSubnet.versionPushed || dhcpSubnet.version == dhcpSubnet.versionStaged) {
+          current.taskState.stage = com.vmware.xenon.common.TaskState.TaskStage.FINISHED;
+        } else {
+          current.subnetVersion = dhcpSubnet.version;
+          current.dhcpAgentEndpoint = dhcpSubnet.dhcpAgentEndpoint;
+
+          current.subnetIPLease = new SubnetIPLease();
+          current.subnetIPLease.subnetId = current.subnetId;
+          current.subnetIPLease.ipToMACAddressMap = new HashMap<>();
+          current.dhcpSubnet = dhcpSubnet;
+          current.dhcpSubnet.versionStaged = current.subnetVersion;
+
+          current.taskState.subStage = TaskState.SubStage.PATCH_SUBNET_STAGED_VERSION;
+        }
+
+        return;
+      }
+    }
+  }
+
+  /**
+   * Patch subnet staged version.
+   *
+   * @param current
+   */
+  private void patchSubnetStagedVersion(State current) {
+    try {
+      Operation queryDhcpSubnet = Operation
+              .createPost(UriUtils.buildUri(getHost(), DhcpSubnetService.FACTORY_LINK))
+              .setBody(current.dhcpSubnet);
+      queryDhcpSubnet
+              .setCompletion((op, failure) -> {
+                if (failure != null) {
+                  failTask(failure);
+                  return;
+                }
+
+                current.taskState.subStage = TaskState.SubStage.QUERY_IP_LEASES;
+                sendStageProgressPatch(current);
+              }).sendWith(this);
+    } catch (Throwable e) {
+      failTask(e);
+    }
+  }
+
+  /**
+   * Patch subnet pushed version.
+   *
+   * @param current
+   */
+  private void patchSubnetPushedVersion(final State current) {
+    try {
+      Operation queryDhcpSubnet = Operation
+              .createPost(UriUtils.buildUri(getHost(), DhcpSubnetService.FACTORY_LINK))
+              .setBody(current.dhcpSubnet);
+      queryDhcpSubnet
+              .setCompletion((op, failure) -> {
+                if (failure != null) {
+                  failTask(failure);
+                  return;
+                }
+
+                finishTask(current);
+              }).sendWith(this);
+    } catch (Throwable e) {
+      failTask(e);
+    }
+  }
+
+  /**
+   * Querying subnet IP leases for sync.
+   *
+   * @param current
+   */
+  private void queryIpLeaseDocuments(final State current) {
+    try {
+      Operation queryIpLeasePagination = Operation
+        .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
+        .setBody(buildIpLeaseQuery(current));
+      queryIpLeasePagination
+        .setCompletion((op, failure) -> {
+          if (failure != null) {
+            failTask(failure);
+            return;
+          }
+
+          ServiceDocumentQueryResult results = op.getBody(QueryTask.class).results;
+
+          if (results.nextPageLink != null) {
+            current.nextPageLink = results.nextPageLink;
+          }
+
+          current.taskState.subStage = TaskState.SubStage.SYNC_IP_LEASES;
+          sendStageProgressPatch(current);
+        }).sendWith(this);
     } catch (Throwable e) {
       failTask(e);
     }
@@ -210,7 +362,7 @@ public class SubnetIPLeaseSyncService extends StatefulService {
    *
    * @param current
    */
-  protected void triggerSubnetIPLeaseService(final State current) {
+  protected void triggerSubnetIPLeaseService(State current) {
     // build completion handler
     Operation.CompletionHandler handler = (Operation acknowledgeOp, Throwable failure) -> {
       if (failure != null) {
@@ -223,7 +375,9 @@ public class SubnetIPLeaseSyncService extends StatefulService {
 
       ServiceUtils.logInfo(SubnetIPLeaseSyncService.this, "DHCP agent SubnetIPLeaseService %s, is triggered",
               acknowledgeOp.getBody(SubnetIPLeaseTask.class).documentSelfLink);
-      this.finishTask(current);
+      current.taskState.subStage = TaskState.SubStage.PATCH_SUBNET_PUSHED_VERSION;
+      current.dhcpSubnet.versionPushed = current.subnetVersion;
+      sendStageProgressPatch(current);
     };
 
     // build SubnetIPLease service start state
@@ -434,6 +588,46 @@ public class SubnetIPLeaseSyncService extends StatefulService {
     return QueryTask.create(querySpec).setDirect(true);
   }
 
+  private QueryTask buildSubnetQuery(State s) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+            .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+            .setTermMatchValue(Utils.buildKind(DhcpSubnetService.State.class));
+
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+
+    QueryTask.Query subnetIdClause = new QueryTask.Query()
+            .setTermPropertyName("subnetId")
+            .setTermMatchValue(s.subnetId);
+
+    querySpec.query
+            .addBooleanClause(kindClause)
+            .addBooleanClause(subnetIdClause);
+
+    querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+    return QueryTask.create(querySpec).setDirect(true);
+  }
+
+  /**
+   * Service execution stages.
+   */
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
+    /**
+     * The execution substage.
+     */
+    public SubStage subStage;
+
+    /**
+     * Execution sub-stage.
+     */
+    public static enum SubStage {
+      CHECK_SUBNET_VERSION,
+      PATCH_SUBNET_STAGED_VERSION,
+      QUERY_IP_LEASES,
+      SYNC_IP_LEASES,
+      PATCH_SUBNET_PUSHED_VERSION,
+    }
+  }
+
   /**
    * Durable service state data.
    */
@@ -452,6 +646,16 @@ public class SubnetIPLeaseSyncService extends StatefulService {
      */
     @NotNull
     public String subnetId;
+
+    /**
+     * Subnet version.
+     */
+    public long subnetVersion;
+
+    /**
+     * Dhcp subnet.
+     */
+    public DhcpSubnetService.State dhcpSubnet;
 
     /**
      * Endpoint for communicating with DHCP agent.

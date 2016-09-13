@@ -13,7 +13,9 @@
 
 package com.vmware.photon.controller.housekeeper.xenon;
 
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
+import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
@@ -32,6 +34,7 @@ import com.vmware.xenon.common.Utils;
 
 import com.google.common.collect.ImmutableMap;
 
+import org.apache.commons.net.util.SubnetUtils;
 import org.hamcrest.Matchers;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -59,6 +62,7 @@ import java.util.function.Supplier;
 public class SubnetIpLeaseSyncServiceTest {
 
   private static final int TEST_PAGE_LIMIT = 100;
+  private final String SUBNET_ID = "subnetId";
 
   private BasicServiceHost host;
   private SubnetIPLeaseSyncService service;
@@ -275,6 +279,7 @@ public class SubnetIpLeaseSyncServiceTest {
     private SubnetIPLeaseSyncService.State request;
     public final Map<Class<? extends Service>, Supplier<FactoryService>> factoryServicesMap =
             ImmutableMap.<Class<? extends Service>, Supplier<FactoryService>>builder()
+                    .put(DhcpSubnetService.class, DhcpSubnetService::createFactory)
                     .put(IpLeaseService.class, IpLeaseService::createFactory)
                     .put(TestServiceWithStage.class, TestServiceWithStage::createFactory)
                     .build();
@@ -289,7 +294,7 @@ public class SubnetIpLeaseSyncServiceTest {
               .hostClientFactory(hostClientFactory);
       // Build input.
       request = buildValidStartupState();
-      request.taskState = new TaskState();
+      request.taskState = new SubnetIPLeaseSyncService.TaskState();
       request.taskState.stage = TaskState.TaskStage.CREATED;
       request.isSelfProgressionDisabled = false;
       request.pageLimit = TEST_PAGE_LIMIT;
@@ -334,8 +339,7 @@ public class SubnetIpLeaseSyncServiceTest {
               .build();
 
       seedTestEnvironment(machine, totalIpLeases, totalWithNoVMId);
-      URI hostUri = machine.getHosts()[0].getUri();
-      request.dhcpAgentEndpoint = hostUri.getScheme() + "://" + hostUri.getHost() + ":" + hostUri.getPort();
+
       SubnetIPLeaseSyncService.State response = machine.callServiceAndWaitForState(
               SubnetIPLeaseSyncService.FACTORY_LINK,
               request,
@@ -345,6 +349,8 @@ public class SubnetIpLeaseSyncServiceTest {
       if (totalIpLeases > 0) {
         assertThat(response.subnetIPLease.subnetId, Matchers.is(response.subnetId));
         assertNotNull(response.subnetIPLease.ipToMACAddressMap);
+        assertThat(response.subnetVersion, Matchers.is(1L));
+        assertThat(response.dhcpSubnet.versionPushed, Matchers.is(1L));
       }
     }
 
@@ -364,31 +370,54 @@ public class SubnetIpLeaseSyncServiceTest {
     }
 
     private void seedTestEnvironment(TestEnvironment env, int totalIpLeases, int totalWithNoVMId) throws Throwable {
-
       ServiceHost[] hostsList = env.getHosts();
       for (int i = 0; i < hostsList.length; i++) {
         ServiceHostUtils.startFactoryServices(hostsList[i], factoryServicesMap);
       }
 
-      for (int i = 0; i < totalIpLeases; i++) {
-        IpLeaseService.State state = new IpLeaseService.State();
-        state.documentSelfLink = "ip-lease-" + i;
-        state.subnetId = "subnet-id";
-        state.ip = "dummy-ip";
+      createDhcpSubnet(env);
+      createIPLeases(env, totalIpLeases, totalWithNoVMId);
+    }
+  }
 
-        if (i >= totalWithNoVMId) {
-          state.ownerVmId = "vmId" + i;
-        }
+  private void createDhcpSubnet(TestEnvironment env)  throws Throwable {
+    String cidr = "192.168.0.0/16";
+    SubnetUtils subnetUtils = new SubnetUtils(cidr);
+    SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
 
-        env.sendPostAndWaitForReplication(IpLeaseService.FACTORY_LINK, state);
+    DhcpSubnetService.State subnetState = new DhcpSubnetService.State();
+    subnetState.subnetId = SUBNET_ID;
+    subnetState.version = 1;
+    subnetState.lowIp = IpHelper.ipStringToLong(subnetInfo.getLowAddress());
+    subnetState.highIp = IpHelper.ipStringToLong(subnetInfo.getHighAddress());
+    subnetState.lowIpDynamic = subnetState.lowIp + 1;
+    subnetState.highIpDynamic = subnetState.highIp - 1;
+    subnetState.cidr = cidr;
+    URI hostUri = env.getHosts()[0].getUri();
+    subnetState.dhcpAgentEndpoint = hostUri.getScheme() + "://" + hostUri.getHost() + ":" + hostUri.getPort();
+
+    env.sendPostAndWaitForReplication(DhcpSubnetService.FACTORY_LINK, subnetState);
+  }
+
+  private void createIPLeases(TestEnvironment env, int totalIpLeases, int totalWithNoVMId)  throws Throwable {
+    for (int i = 0; i < totalIpLeases; i++) {
+      IpLeaseService.State state = new IpLeaseService.State();
+      state.documentSelfLink = "ip-lease-" + i;
+      state.subnetId = SUBNET_ID;
+      state.ip = "dummy-ip";
+
+      if (i >= totalWithNoVMId) {
+        state.ownerVmId = "vmId" + i;
       }
+
+      env.sendPostAndWaitForReplication(IpLeaseService.FACTORY_LINK, state);
     }
   }
 
   private SubnetIPLeaseSyncService.State buildValidStartupState() {
     SubnetIPLeaseSyncService.State state = new SubnetIPLeaseSyncService.State();
     state.isSelfProgressionDisabled = true;
-    state.subnetId = "subnet-id";
+    state.subnetId = SUBNET_ID;
     return state;
   }
 }
