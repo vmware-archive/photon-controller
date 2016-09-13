@@ -1,0 +1,74 @@
+#!/bin/bash -x
+# Copyright 2016 VMware, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License.  You may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed
+# under the License is distributed on an "AS IS" BASIS, without warranties or
+# conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
+# specific language governing permissions and limitations under the License.
+
+admin_password="$1"
+eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
+ipAddress=`ifconfig ${eno_name} | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
+sed -i s/hostname.*/"hostname = ${ipAddress}"/ /root/harbor/harbor.cfg
+sed -i s/harbor_admin_password.*/"harbor_admin_password = ${admin_password}"/ /root/harbor/harbor.cfg
+sed -i s/db_password.*/"db_password = ${admin_password}"/ /root/harbor/harbor.cfg
+sed -i s/ui_url_protocol.*/"ui_url_protocol = https"/ /root/harbor/harbor.cfg
+
+echo "Generating CA certificate"
+openssl req -newkey rsa:4096 -nodes -sha256 \
+  -keyout /root/ca.key -x509 -days 365 \
+  -out /root/ca.crt \
+  -subj "/C=US/ST=California/L=Palo Alto/O=VMware/OU=VMware Engineering/CN=www.pc-harbor.vmware.com"
+
+echo "Generating certificate signing request"
+openssl req -newkey rsa:4096 -nodes -sha256 \
+  -keyout /root/pc-harbor.vmware.com.key \
+  -out /root/pc-harbor.vmware.com.csr \
+  -subj "/C=US/ST=California/L=Palo Alto/O=VMware/OU=VMware Engineering/CN=www.pc-harbor.vmware.com"
+
+echo "Generating certificate for the Harbor registry host"
+mkdir -p /root/demoCA
+pushd /root/demoCA
+touch index.txt
+echo '01' > serial
+popd
+
+echo subjectAltName = IP:${ipAddress} > /root/extfile.cnf
+pushd /root
+openssl ca \
+  -batch \
+  -in /root/pc-harbor.vmware.com.csr \
+  -out /root/pc-harbor.vmware.com.crt \
+  -cert /root/ca.crt \
+  -keyfile /root/ca.key \
+  -extfile /root/extfile.cnf \
+  -outdir /root/
+popd
+
+echo "Configuring Nginx"
+pushd /root/harbor/config/nginx
+mkdir -p cert/
+cp /root/pc-harbor.vmware.com.crt cert/
+cp /root/pc-harbor.vmware.com.key cert/
+mv nginx.conf nginx.conf.bak
+cp nginx.https.conf nginx.conf
+sed -i "s|server_name harbordomain.com|server_name ${ipAddress}|g" nginx.conf
+sed -i "s|harbordomain.crt|pc-harbor.vmware.com.crt|g" nginx.conf
+sed -i "s|harbordomain.key|pc-harbor.vmware.com.key|g" nginx.conf
+popd
+
+pushd /root/harbor
+echo "Preparing Harbor"
+./prepare
+echo "Starting Harbor"
+docker-compose up -d
+popd
+echo "Harbor is up"
+
+echo "Exposing CA certificate"
+docker exec deploy_ui_1 mkdir -p /go/bin/static/resources/certs/
+docker cp /root/ca.crt deploy_ui_1:/go/bin/static/resources/certs/
