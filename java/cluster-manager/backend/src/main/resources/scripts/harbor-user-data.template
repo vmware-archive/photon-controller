@@ -38,23 +38,6 @@ write_files:
     path: /tmp/init-network.sh
 
   - content: |
-        eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
-        ipAddress=`ifconfig ${eno_name} | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
-        sed -i s/hostname.*/"hostname = ${ipAddress}"/ /root/harbor/harbor.cfg
-        sed -i s/harbor_admin_password.*/"harbor_admin_password = $ADMIN_PASSWORD"/ /root/harbor/harbor.cfg
-        sed -i s/db_password.*/"db_password = $ADMIN_PASSWORD"/ /root/harbor/harbor.cfg
-
-        cd /root/harbor
-        echo "Preparing Harbor"
-        ./prepare
-        echo "Starting Harbor"
-        docker-compose up -d
-        echo "done"
-    owner: root:root
-    permissions: 0644
-    path: /tmp/start-harbor.sh
-
-  - content: |
         retry_max="60"
         retry="0"
         while [ "$retry" -lt "$retry_max" ]
@@ -87,4 +70,4 @@ runcmd:
   - systemctl enable docker
   - systemctl start docker
   - sh /tmp/check-docker.sh
-  - sh /tmp/start-harbor.sh > /var/log/start-harbor.log 2>&1
+  - sh /root/start-harbor.sh $ADMIN_PASSWORD > /var/log/start-harbor.log 2>&1

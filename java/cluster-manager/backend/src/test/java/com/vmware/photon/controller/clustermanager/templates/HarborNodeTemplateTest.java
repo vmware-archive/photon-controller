@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.clustermanager.templates;
 
+import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.FileTemplate;
 
 import org.testng.annotations.Test;
@@ -89,7 +90,7 @@ public class HarborNodeTemplateTest {
       assertEquals(address, "10.0.0.1/24");
 
       String harborPort = userData.parameters.get("$HARBOR_PORT");
-      assertEquals(harborPort, "80");
+      assertEquals(harborPort, String.valueOf(ClusterManagerConstants.Harbor.HARBOR_PORT));
     }
 
     @Test(expectedExceptions = NullPointerException.class)
