@@ -15,6 +15,7 @@ package com.vmware.photon.controller.api.model;
 
 import com.vmware.photon.controller.api.model.base.VisibleModel;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
@@ -46,6 +47,12 @@ public class VirtualSubnet extends VisibleModel {
       required = true)
   @NotNull
   private SubnetState state;
+
+  @JsonIgnore
+  private String parentId;
+
+  @JsonIgnore
+  private String parentKind;
 
   @JsonProperty
   @ApiModelProperty(value = "Whether allow the VMs on this subnet to access Internet",
@@ -100,6 +107,22 @@ public class VirtualSubnet extends VisibleModel {
 
   public void setState(SubnetState state) {
     this.state = state;
+  }
+
+  public String getParentId() {
+    return parentId;
+  }
+
+  public void setParentId(String parentId) {
+    this.parentId = parentId;
+  }
+
+  public String getParentKind() {
+    return parentKind;
+  }
+
+  public void setParentKind(String parentKind) {
+    this.parentKind = parentKind;
   }
 
   public RoutingType getRoutingType() {

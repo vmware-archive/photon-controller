@@ -31,6 +31,8 @@ public class VirtualNetworkUtils {
     virtualSubnet.setName(virtualNetworkState.name);
     virtualSubnet.setDescription(virtualNetworkState.description);
     virtualSubnet.setState(virtualNetworkState.state);
+    virtualSubnet.setParentId(virtualNetworkState.parentId);
+    virtualSubnet.setParentKind(virtualNetworkState.parentKind);
     virtualSubnet.setRoutingType(virtualNetworkState.routingType);
     virtualSubnet.setIsDefault(virtualNetworkState.isDefault);
     virtualSubnet.setCidr(virtualNetworkState.cidr);

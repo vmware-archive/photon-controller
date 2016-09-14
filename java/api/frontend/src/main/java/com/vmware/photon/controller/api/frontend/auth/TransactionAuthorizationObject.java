@@ -66,6 +66,7 @@ public class TransactionAuthorizationObject {
     DISK,
     PROJECT,
     RESOURCE_TICKET,
+    SUBNET,
     TENANT,
     VM
   }
