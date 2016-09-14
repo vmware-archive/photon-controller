@@ -89,6 +89,6 @@ public class ClusterManagerConstants {
    * This class defines constant values for Harbor cluster.
    */
   public static class Harbor {
-    public static final int HARBOR_PORT = 80;
+    public static final int HARBOR_PORT = 443;
   }
 }

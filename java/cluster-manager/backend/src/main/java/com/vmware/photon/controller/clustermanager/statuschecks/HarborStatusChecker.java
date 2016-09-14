@@ -65,6 +65,6 @@ public class HarborStatusChecker implements StatusChecker {
   }
 
   private static String createConnectionString(String serverAddress) {
-    return "http://" + serverAddress + ":" + ClusterManagerConstants.Harbor.HARBOR_PORT;
+    return "https://" + serverAddress + ":" + ClusterManagerConstants.Harbor.HARBOR_PORT;
   }
 }
