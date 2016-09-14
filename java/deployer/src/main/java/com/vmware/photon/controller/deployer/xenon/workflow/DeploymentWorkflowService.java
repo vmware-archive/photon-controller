@@ -20,6 +20,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -802,7 +803,8 @@ public class DeploymentWorkflowService extends StatefulService {
       return;
     }
 
-    DhcpSubnetService.State dhcpSubnetServiceState = createDhcpSubnetServiceState(deploymentState.floatingIpRange);
+    DhcpSubnetService.State dhcpSubnetServiceState = createDhcpSubnetServiceState(deploymentState.floatingIpRange,
+            deploymentState.dhcpServers.get(0));
     sendRequest(HostUtils.getCloudStoreHelper(this)
         .createPost(DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK)
         .setBody(dhcpSubnetServiceState)
@@ -994,13 +996,15 @@ public class DeploymentWorkflowService extends StatefulService {
     }
   }
 
-  private static DhcpSubnetService.State createDhcpSubnetServiceState(IpRange ipRange) {
+  private static DhcpSubnetService.State createDhcpSubnetServiceState(IpRange ipRange,
+                                                                      String dhcpAgentIP) {
     DhcpSubnetService.State state = new DhcpSubnetService.State();
     state.lowIp = IpHelper.ipStringToLong(ipRange.getStart());
     state.highIp = IpHelper.ipStringToLong(ipRange.getEnd());
     state.isFloatingIpSubnet = true;
     state.documentSelfLink = DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK;
     state.subnetId = ServiceUtils.getIDFromDocumentSelfLink(state.documentSelfLink);
+    state.dhcpAgentEndpoint = "http://" + dhcpAgentIP + ":" + Constants.DHCP_AGENT_PORT;
 
     return state;
   }
