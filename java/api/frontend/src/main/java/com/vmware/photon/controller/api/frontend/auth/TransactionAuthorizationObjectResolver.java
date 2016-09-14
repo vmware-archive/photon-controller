@@ -94,15 +94,6 @@ public class TransactionAuthorizationObjectResolver {
             new Rule(TransactionAuthorizationObject.Kind.NONE)
         });
 
-    // NETWORKS
-    EVALUATION_RULES.put(
-        SubnetResourceRoutes.API.substring(1),
-        new Rule[]{
-            new Rule(
-                Pattern.compile("get", Pattern.CASE_INSENSITIVE),
-                TransactionAuthorizationObject.Kind.NONE)
-        });
-
     // PROJECT
     EVALUATION_RULES.put(
         ProjectResourceRoutes.API.substring(1),
@@ -167,6 +158,26 @@ public class TransactionAuthorizationObjectResolver {
                 TransactionAuthorizationObject.Kind.NONE
             )
         });
+  }
+
+  public static void configureSubnetRule(boolean isSDN) {
+    if (isSDN) {
+      EVALUATION_RULES.put(
+          SubnetResourceRoutes.API.substring(1),
+          new Rule[]{
+              new Rule(
+                  TransactionAuthorizationObject.Kind.SUBNET,
+                  TransactionAuthorizationObject.Strategy.PARENT)
+          });
+    } else {
+      EVALUATION_RULES.put(
+          SubnetResourceRoutes.API.substring(1),
+          new Rule[]{
+              new Rule(
+                  Pattern.compile("get", Pattern.CASE_INSENSITIVE),
+                  TransactionAuthorizationObject.Kind.NONE)
+          });
+    }
   }
 
   /**
