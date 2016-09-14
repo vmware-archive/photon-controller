@@ -60,7 +60,8 @@ public class MultiplexedSecurityGroupFetcherTest {
           mock(ResourceTicketSecurityGroupFetcher.class),
           mock(ClusterSecurityGroupFetcher.class),
           mock(DiskSecurityGroupFetcher.class),
-          mock(VmSecurityGroupFetcher.class));
+          mock(VmSecurityGroupFetcher.class),
+          mock(SubnetSecurityGroupFetcher.class));
       assertThat(fetcher, notNullValue());
       assertThat(fetcher.getFetcherMap().size(), is(8));
     }

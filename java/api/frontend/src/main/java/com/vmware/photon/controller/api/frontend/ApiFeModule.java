@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api.frontend;
 
+import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObjectResolver;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.Cluster;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.ClusterSecurityGroupFetcher;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.Deployment;
@@ -28,6 +29,8 @@ import com.vmware.photon.controller.api.frontend.auth.fetcher.ProjectSecurityGro
 import com.vmware.photon.controller.api.frontend.auth.fetcher.ResourceTicket;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.ResourceTicketSecurityGroupFetcher;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.SecurityGroupFetcher;
+import com.vmware.photon.controller.api.frontend.auth.fetcher.Subnet;
+import com.vmware.photon.controller.api.frontend.auth.fetcher.SubnetSecurityGroupFetcher;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.Tenant;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.TenantSecurityGroupFetcher;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.Vm;
@@ -268,6 +271,8 @@ public class ApiFeModule extends AbstractModule {
   }
 
   private void bindAuthSecurityGroupFetchers() {
+    TransactionAuthorizationObjectResolver.configureSubnetRule(configuration.useVirtualNetwork());
+
     bind(SecurityGroupFetcher.class).annotatedWith(Cluster.class).to(ClusterSecurityGroupFetcher.class);
     bind(SecurityGroupFetcher.class).annotatedWith(Deployment.class).to(DeploymentSecurityGroupFetcher.class);
     bind(SecurityGroupFetcher.class).annotatedWith(Disk.class).to(DiskSecurityGroupFetcher.class);
@@ -277,6 +282,7 @@ public class ApiFeModule extends AbstractModule {
     bind(SecurityGroupFetcher.class).annotatedWith(ResourceTicket.class).to(ResourceTicketSecurityGroupFetcher.class);
     bind(SecurityGroupFetcher.class).annotatedWith(Tenant.class).to(TenantSecurityGroupFetcher.class);
     bind(SecurityGroupFetcher.class).annotatedWith(Vm.class).to(VmSecurityGroupFetcher.class);
+    bind(SecurityGroupFetcher.class).annotatedWith(Subnet.class).to(SubnetSecurityGroupFetcher.class);
   }
 
   private void bindNetworkHelper() {
