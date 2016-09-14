@@ -372,6 +372,7 @@ public class SubnetIPLeaseServiceTest {
         subnetIPLeaseTask.subnetIPLease = new SubnetIPLeaseTask.SubnetIPLease();
         subnetIPLeaseTask.subnetIPLease.subnetId = subnetId;
         subnetIPLeaseTask.subnetIPLease.subnetOperation = subnetOperation;
+        subnetIPLeaseTask.subnetIPLease.version = 1L;
 
         if (subnetOperation == SubnetIPLeaseTask.SubnetOperation.UPDATE) {
             subnetIPLeaseTask.subnetIPLease.ipToMACAddressMap = new HashMap<>();

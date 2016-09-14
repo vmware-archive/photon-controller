@@ -70,6 +70,11 @@ public class SubnetIPLeaseTask extends ServiceDocument {
          * The type of operation update or delete for subnet information.
          */
         public SubnetOperation subnetOperation;
+
+        /**
+         * The version of the subnet IP lease.
+         */
+        public Long version;
     }
 
     /**

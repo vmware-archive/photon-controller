@@ -349,6 +349,7 @@ public class SubnetIpLeaseSyncServiceTest {
       if (totalIpLeases > 0) {
         assertThat(response.subnetIPLease.subnetId, Matchers.is(response.subnetId));
         assertNotNull(response.subnetIPLease.ipToMACAddressMap);
+        assertThat(response.subnetIPLease.version, Matchers.is(1L));
         assertThat(response.operationPatch.versionStaged, Matchers.is(1L));
         assertThat(response.operationPatch.versionPushed, Matchers.is(1L));
       }
