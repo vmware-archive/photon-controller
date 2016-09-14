@@ -15,6 +15,7 @@ package com.vmware.photon.controller.dhcpagent.dhcpdrivers;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,6 +23,8 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class implements Driver interface for Dnsmasq DHCP server.
@@ -140,24 +143,57 @@ public class DnsmasqDriver implements DHCPDriver {
      *
      * @param subnetId
      * @param ipAddressToMACAddressMap
+     * @param version
      *
      * @return
      */
-    public Response updateSubnetIPLease(String subnetId, Map<String, String> ipAddressToMACAddressMap)
-            throws Exception {
+    public Response updateSubnetIPLease(
+        String subnetId,
+        Map<String, String> ipAddressToMACAddressMap,
+        Long version) throws Exception {
         Response response = new Response();
+
+        String oldSubnetFilename = dhcpHostFileDir + "/" + subnetId;
+        File oldSubnetHostFile = new File(oldSubnetFilename);
+        if (oldSubnetHostFile.exists()) {
+          FileInputStream inputStream = new FileInputStream(oldSubnetFilename);
+          BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+
+          try {
+            String line = reader.readLine();
+            if (line != null && !line.isEmpty()) {
+              Pattern pattern = Pattern.compile("^# Version=(?<version>[0-9]+)$");
+              Matcher matcher = pattern.matcher(line);
+              if (matcher.matches()) {
+                Long oldVersion = Long.parseLong(matcher.group("version"));
+
+                if (oldVersion > version) {
+                  response.exitCode = 1;
+                  return response;
+                }
+
+                if (oldVersion == version) {
+                  response.exitCode = 0;
+                  return response;
+                }
+              }
+            }
+          } finally {
+            reader.close();
+            inputStream.close();
+          }
+        }
+
         String newSubnetFilename = dhcpHostFileCopyDir + "/" + subnetId;
 
         PrintWriter writer = new PrintWriter(newSubnetFilename, "UTF-8");
+        writer.println("# Version=" + version);
         for (Map.Entry<String, String> pair : ipAddressToMACAddressMap.entrySet()) {
             String line = pair.getKey() + " " + pair.getValue() + " " + subnetId;
             writer.println(line);
         }
 
         writer.close();
-
-        String oldSubnetFilename = dhcpHostFileDir + "/" + subnetId;
-        File oldSubnetHostFile = new File(oldSubnetFilename);
         File newSubnetHostFile = new File(newSubnetFilename);
 
         Files.move(newSubnetHostFile.toPath(), oldSubnetHostFile.toPath(), StandardCopyOption.REPLACE_EXISTING);

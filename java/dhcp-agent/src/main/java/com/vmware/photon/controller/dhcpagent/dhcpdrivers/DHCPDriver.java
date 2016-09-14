@@ -45,10 +45,14 @@ public interface DHCPDriver {
      *
      * @param subnetId
      * @param ipAddressToMACAddressMap
+     * @param version
      *
      * @return
      */
-    Response updateSubnetIPLease(String subnetId, Map<String, String> ipAddressToMACAddressMap) throws Exception;
+    Response updateSubnetIPLease(
+        String subnetId,
+        Map<String, String> ipAddressToMACAddressMap,
+        Long version) throws Exception;
 
     /**
      * This method deletes subnet.

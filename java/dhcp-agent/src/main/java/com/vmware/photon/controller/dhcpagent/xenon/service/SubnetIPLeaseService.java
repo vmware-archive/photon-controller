@@ -146,7 +146,8 @@ public class SubnetIPLeaseService extends StatefulService {
         try {
             ((DHCPAgentXenonHost) getHost()).getDHCPDriver().updateSubnetIPLease(
                     currentState.subnetIPLease.subnetId,
-                    currentState.subnetIPLease.ipToMACAddressMap);
+                    currentState.subnetIPLease.ipToMACAddressMap,
+                    currentState.subnetIPLease.version);
 
             SubnetIPLeaseTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
             if (operation == null) {

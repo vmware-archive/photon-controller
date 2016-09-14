@@ -20,6 +20,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 import java.io.BufferedReader;
@@ -148,7 +149,7 @@ public class DnsmasqDriverTest {
             Map<String, String> macAddressIPMap = new HashMap<>();
             macAddressIPMap.put(ipAddress, macAddress);
 
-            dnsmasqDriver.updateSubnetIPLease("subnet1", macAddressIPMap);
+            dnsmasqDriver.updateSubnetIPLease("subnet1", macAddressIPMap, 1L);
 
             FileReader subnetHostFile = new FileReader(
                     DnsmasqDriverTest.class.getResource("/hosts").getPath() + "/subnet1");
@@ -157,13 +158,18 @@ public class DnsmasqDriverTest {
 
             String line;
             while ((line = bufferedReader.readLine()) != null) {
-                if (!line.contains(ipAddress)) {
-                    fail(String.format("IP address not found in host file:", ipAddress));
-                }
+              if (line.contains("Version")) {
+                assertEquals(line, "# Version=1");
+                continue;
+              }
 
-                if (!line.contains(macAddress)) {
-                    fail(String.format("MAC address not found in host file:", macAddress));
-                }
+              if (!line.contains(ipAddress)) {
+                fail(String.format("IP address not found in host file:", ipAddress));
+              }
+
+              if (!line.contains(macAddress)) {
+                fail(String.format("MAC address not found in host file:", macAddress));
+              }
             }
 
         } catch (Throwable e) {
