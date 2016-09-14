@@ -502,13 +502,6 @@ end
     # Real agent parameters
     if ENV['REAL_AGENT']
       dynamic_params += %Q(,\n  "USE_ESX_STORE" : "true")
-
-      if ENV['ESX_IP'] && ENV['ESX_DATASTORE']
-        dynamic_params += %Q(,\n  "ESX_HOST" : "#{ENV['ESX_IP']}")
-        dynamic_params += %Q(,\n  "DATASTORE" : "#{ENV['ESX_DATASTORE']}")
-      else
-        abort("ESX_IP or ESX_DATASTORE not set")
-      end
     else
       dynamic_params += %Q(,\n  "USE_ESX_STORE" : "false")
       dynamic_params += %Q(,\n  "DATASTORE" : "devbox_datastore")
