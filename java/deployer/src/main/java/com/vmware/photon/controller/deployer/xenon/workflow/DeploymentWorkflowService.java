@@ -753,9 +753,10 @@ public class DeploymentWorkflowService extends StatefulService {
 
     SubnetAllocatorService.State subnetAllocatorServiceState = new SubnetAllocatorService.State();
     subnetAllocatorServiceState.rootCidr = deploymentState.ipRange;
+    subnetAllocatorServiceState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
 
     sendRequest(HostUtils.getCloudStoreHelper(this)
-        .createPost(SubnetAllocatorService.SINGLETON_LINK)
+        .createPost(SubnetAllocatorService.FACTORY_LINK)
         .setBody(subnetAllocatorServiceState)
         .setCompletion(
             (completedOp, failure) -> {
@@ -803,8 +804,10 @@ public class DeploymentWorkflowService extends StatefulService {
     }
 
     DhcpSubnetService.State dhcpSubnetServiceState = createDhcpSubnetServiceState(deploymentState.floatingIpRange);
+    dhcpSubnetServiceState.documentSelfLink = DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK;
+
     sendRequest(HostUtils.getCloudStoreHelper(this)
-        .createPost(DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK)
+        .createPost(DhcpSubnetService.FACTORY_LINK)
         .setBody(dhcpSubnetServiceState)
         .setCompletion(
             (completedOp, failure) -> {
