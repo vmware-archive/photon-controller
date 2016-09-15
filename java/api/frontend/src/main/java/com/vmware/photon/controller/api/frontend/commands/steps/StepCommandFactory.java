@@ -245,6 +245,7 @@ public class StepCommandFactory {
       case CREATE_HARBOR_CLUSTER_INITIATE:
         return new HarborClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
       case CREATE_HARBOR_CLUSTER_SETUP_HARBOR:
+      case CREATE_HARBOR_CLUSTER_UPDATE_EXTENDED_PROPERTIES:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new HarborClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
       case RESIZE_CLUSTER_INITIATE:

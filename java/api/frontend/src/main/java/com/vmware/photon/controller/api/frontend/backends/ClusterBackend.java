@@ -241,6 +241,8 @@ public class ClusterBackend {
 
     // Dummy steps that are mapped to HarborClusterCreateTask's subStages
     taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.CREATE_HARBOR_CLUSTER_SETUP_HARBOR);
+    taskBackend.getStepBackend().createQueuedStep(taskEntity,
+        Operation.CREATE_HARBOR_CLUSTER_UPDATE_EXTENDED_PROPERTIES);
 
     return taskEntity;
   }

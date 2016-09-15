@@ -15,6 +15,7 @@ package com.vmware.photon.controller.clustermanager.tasks;
 import com.vmware.photon.controller.api.model.ClusterState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
+import com.vmware.photon.controller.clustermanager.clients.HarborClient;
 import com.vmware.photon.controller.clustermanager.rolloutplans.BasicNodeRollout;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRollout;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRolloutInput;
@@ -32,6 +33,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
@@ -42,6 +44,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This class implements a Xenon service representing a task to create a Harbor cluster.
@@ -114,7 +120,9 @@ public class HarborClusterCreateTaskService extends StatefulService {
       case SETUP_HARBOR:
         setupHarbor(currentState);
         break;
-
+      case UPDATE_EXTENDED_PROPERTIES:
+        updateExtendedProperties(currentState);
+        break;
       default:
         throw new IllegalStateException("Unknown sub-stage: " + currentState.taskState.subStage);
     }
@@ -170,26 +178,71 @@ public class HarborClusterCreateTaskService extends StatefulService {
   }
 
   private void startMaintenance(final HarborClusterCreateTask currentState) {
-    ClusterMaintenanceTaskService.State patchState = new ClusterMaintenanceTaskService.State();
-    patchState.taskState = new TaskState();
-    patchState.taskState.stage = TaskState.TaskStage.STARTED;
+    ClusterMaintenanceTaskService.State startState = new ClusterMaintenanceTaskService.State();
+    startState.documentSelfLink = currentState.clusterId;
 
     // Start the maintenance task async without waiting for its completion so that the creation task
     // can finish immediately.
-    Operation patchOperation = Operation
-        .createPatch(UriUtils.buildUri(getHost(),
-            ClusterMaintenanceTaskFactoryService.SELF_LINK + "/" + currentState.clusterId))
-        .setBody(patchState)
+    Operation postOperation = Operation
+        .createPost(UriUtils.buildUri(getHost(), ClusterMaintenanceTaskFactoryService.SELF_LINK))
+        .setBody(startState)
         .setCompletion((Operation operation, Throwable throwable) -> {
-          // We ignore the failure here since maintenance task will kick in eventually.
-          HarborClusterCreateTask desiredState = buildPatch(TaskState.TaskStage.FINISHED, null);
+          if (null != throwable) {
+            failTaskAndPatchDocument(currentState, NodeType.Harbor, throwable);
+            return;
+          }
 
-          ClusterService.State clusterPatch = new ClusterService.State();
-          clusterPatch.clusterState = ClusterState.READY;
-
-          updateStates(currentState, desiredState, clusterPatch);
+          TaskUtils.sendSelfPatch(this,
+              buildPatch(currentState.taskState.stage, TaskState.SubStage.UPDATE_EXTENDED_PROPERTIES));
         });
-    sendRequest(patchOperation);
+    sendRequest(postOperation);
+  }
+
+  private void updateExtendedProperties(HarborClusterCreateTask currentState) {
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createGet(ClusterServiceFactory.SELF_LINK + "/" + currentState.clusterId)
+        .setReferer(getUri())
+        .setCompletion((operation, throwable) -> {
+          if (null != throwable) {
+            failTask(throwable);
+            return;
+          }
+
+          ClusterService.State cluster = operation.getBody(ClusterService.State.class);
+          String harborAddress = cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
+          HarborClient harborClient = HostUtils.getHarborClient(this);
+          String connectionString = "https://" + harborAddress + ":" + ClusterManagerConstants.Harbor.HARBOR_PORT;
+          getCACertAndUpdate(currentState, cluster, harborClient, connectionString);
+        }));
+  }
+
+  private void getCACertAndUpdate(HarborClusterCreateTask currentState, ClusterService.State clusterState,
+                                  HarborClient harborClient, String connectionString) {
+      Service service = this;
+      try {
+        harborClient.getCACertificate(connectionString, new FutureCallback<String>() {
+          @Override
+          public void onSuccess(@Nullable String result) {
+            ServiceUtils.logInfo(service, "CA cert: " + result);
+            Map<String, String> extendedProperties = new HashMap<>(clusterState.extendedProperties);
+            extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CA_CERTIFICATE, result);
+            HarborClusterCreateTask desiredState = buildPatch(TaskState.TaskStage.FINISHED, null);
+
+            ClusterService.State clusterPatch = new ClusterService.State();
+            clusterPatch.clusterState = ClusterState.READY;
+            clusterPatch.extendedProperties = extendedProperties;
+
+            updateStates(currentState, desiredState, clusterPatch);
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        });
+      } catch (IOException e) {
+        failTask(e);
+      }
   }
 
   private void validateStartState(HarborClusterCreateTask startState) {
@@ -201,6 +254,8 @@ public class HarborClusterCreateTaskService extends StatefulService {
 
       switch (startState.taskState.subStage) {
         case SETUP_HARBOR:
+          break;
+        case UPDATE_EXTENDED_PROPERTIES:
           break;
         default:
           throw new IllegalStateException("Unknown task sub-stage: " + startState.taskState.subStage.toString());
