@@ -179,6 +179,7 @@ public class StepCommandFactoryTest {
 
         {Operation.CREATE_HARBOR_CLUSTER_INITIATE, HarborClusterCreateStepCmd.class},
         {Operation.CREATE_HARBOR_CLUSTER_SETUP_HARBOR, XenonTaskStatusStepCmd.class},
+        {Operation.CREATE_HARBOR_CLUSTER_UPDATE_EXTENDED_PROPERTIES, XenonTaskStatusStepCmd.class},
 
         {Operation.RESIZE_CLUSTER_INITIATE, ClusterResizeStepCmd.class},
         {Operation.RESIZE_CLUSTER_INITIALIZE_CLUSTER, XenonTaskStatusStepCmd.class},
