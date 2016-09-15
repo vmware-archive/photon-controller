@@ -67,6 +67,8 @@ public class FlavorXenonBackend implements FlavorBackend {
   private final DiskBackend diskBackend;
   private final TombstoneBackend tombstoneBackend;
 
+  private static final String STORAGE_PREFIX = "storage.";
+
   @Inject
   public FlavorXenonBackend(ApiFeXenonRestClient xenonClient, TaskBackend taskBackend, VmBackend vmBackend,
                           DiskBackend diskBackend, TombstoneBackend tombstoneBackend) {
@@ -112,6 +114,12 @@ public class FlavorXenonBackend implements FlavorBackend {
     for (QuotaLineItem quota : flavor.getCost()) {
       FlavorService.State.QuotaLineItem quotaLineItem = new FlavorService.State.QuotaLineItem();
       quotaLineItem.key = quota.getKey();
+
+      // Users can provide the flavor with lower case (storage.vsan). The Xenon query to match the type is case
+      // sensitive. Convert into upper case so that it matches the datastore type.
+      if (quotaLineItem.key.startsWith(STORAGE_PREFIX)) {
+        quotaLineItem.key = STORAGE_PREFIX + quotaLineItem.key.substring(STORAGE_PREFIX.length()).toUpperCase();
+      }
       quotaLineItem.value = quota.getValue();
       quotaLineItem.unit = quota.getUnit();
       costEntity.add(quotaLineItem);
