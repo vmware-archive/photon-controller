@@ -21,11 +21,13 @@ import com.vmware.photon.controller.api.frontend.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
+import com.vmware.photon.controller.api.frontend.utils.SubnetIPLeaseSyncUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.housekeeper.xenon.SubnetIPLeaseSyncTriggerService;
 import com.vmware.xenon.common.Operation;
 
 import org.slf4j.Logger;
@@ -100,6 +102,9 @@ public class VmReleaseIpStepCmd extends StepCommand {
 
     PhotonControllerXenonRestClient photonControllerXenonRestClient = taskCommand.getPhotonControllerXenonRestClient();
     photonControllerXenonRestClient.patch(DhcpSubnetService.FACTORY_LINK + "/" + subnetId, patch);
+    taskCommand.getPhotonControllerXenonRestClient().post(
+            SubnetIPLeaseSyncTriggerService.SELF_LINK ,
+            SubnetIPLeaseSyncUtils.buildSubnetIPLeaseSyncState(subnetId));
   }
 
   private void releaseFloatingIp(String subnetId, String ownerVmId, String ipAddress) throws ExternalException {
