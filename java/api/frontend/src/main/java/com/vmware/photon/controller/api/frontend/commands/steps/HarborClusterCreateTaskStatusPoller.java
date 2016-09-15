@@ -36,6 +36,8 @@ public class HarborClusterCreateTaskStatusPoller implements XenonTaskStatusStepC
   private static final Map<Operation, Integer> OPERATION_TO_SUBSTAGE_MAP =
       ImmutableMap.<Operation, Integer>builder()
           .put(Operation.CREATE_HARBOR_CLUSTER_SETUP_HARBOR, SubStage.SETUP_HARBOR.ordinal())
+          .put(Operation.CREATE_HARBOR_CLUSTER_UPDATE_EXTENDED_PROPERTIES,
+              SubStage.UPDATE_EXTENDED_PROPERTIES.ordinal())
           .build();
 
   private final TaskCommand taskCommand;

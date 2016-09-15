@@ -61,7 +61,8 @@ public class HarborClusterCreateTask extends ServiceDocument {
      * The sub-states for this this.
      */
     public enum SubStage {
-      SETUP_HARBOR
+      SETUP_HARBOR,
+      UPDATE_EXTENDED_PROPERTIES
     }
   }
 }

@@ -551,6 +551,9 @@ public class HarborClusterCreateTaskServiceTest {
           ClusterService.State.class);
 
       assertThat(cluster.clusterState, is(expectedState));
+      assertThat(cluster.extendedProperties.size(), is(7));
+      assertThat(cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_CA_CERTIFICATE),
+          is("ca-cert"));
     }
 
     @DataProvider(name = "clusterSizes")
@@ -694,6 +697,12 @@ public class HarborClusterCreateTaskServiceTest {
         ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(true);
         return null;
       }).when(harborClient).checkStatus(
+          any(String.class), any(FutureCallback.class));
+
+      doAnswer(invocation -> {
+        ((FutureCallback<String>) invocation.getArguments()[1]).onSuccess("ca-cert");
+        return null;
+      }).when(harborClient).getCACertificate(
           any(String.class), any(FutureCallback.class));
     }
   }

@@ -66,6 +66,9 @@ it 'should create/delete Harbor cluster successfully' do
     expect(cluster.type).to eq("HARBOR")
     expect(cluster.worker_count).to eq 0
     expect(cluster.state).to eq "READY"
+    expect(cluster.extended_properties.size).to eq(7)
+    expect(cluster.extended_properties["ca_certificate"]).to include("BEGIN CERTIFICATE")
+    expect(cluster.extended_properties["ca_certificate"]).to include("END CERTIFICATE")
 
     puts "Check that host can ssh successfully"
     # Disabling strict_host_key_checking (:paranoid => false) and setting user_known_hosts_file to null to not validate
