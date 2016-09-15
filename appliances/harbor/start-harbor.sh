@@ -70,5 +70,5 @@ popd
 echo "Harbor is up"
 
 echo "Exposing public CA certificate"
-docker exec deploy_ui_1 mkdir -p /go/bin/static/resources/certs/
-docker cp /root/ca.crt deploy_ui_1:/go/bin/static/resources/certs/
+docker exec harbor_ui_1 mkdir -p /go/bin/static/resources/certs/
+docker cp /root/ca.crt harbor_ui_1:/go/bin/static/resources/certs/
