@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.TenantBackend;
+import com.vmware.photon.controller.api.frontend.clients.TenantFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.TenantNotFoundException;
 import com.vmware.photon.controller.api.model.Tenant;
 
@@ -40,11 +40,11 @@ public class TenantSecurityGroupFetcher implements SecurityGroupFetcher {
   /**
    * Storage access object for tenant resources.
    */
-  TenantBackend backend;
+  TenantFeClient tenantFeClient;
 
   @Inject
-  public TenantSecurityGroupFetcher(TenantBackend backend) {
-    this.backend = backend;
+  public TenantSecurityGroupFetcher(TenantFeClient tenantFeClient) {
+    this.tenantFeClient = tenantFeClient;
   }
 
   @Override
@@ -56,7 +56,7 @@ public class TenantSecurityGroupFetcher implements SecurityGroupFetcher {
 
     Set<String> securityGroups = new HashSet<>();
     try {
-      Tenant tenant = backend.getApiRepresentation(authorizationObject.getId());
+      Tenant tenant = tenantFeClient.get(authorizationObject.getId());
       securityGroups.addAll(tenant.getSecurityGroups().stream().map(g -> g.getName()).collect(Collectors.toList()));
     } catch (TenantNotFoundException ex) {
       logger.warn("invalid tenant id {}", authorizationObject.getId());

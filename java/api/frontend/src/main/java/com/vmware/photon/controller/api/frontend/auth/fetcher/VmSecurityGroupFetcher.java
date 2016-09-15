@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.VmBackend;
+import com.vmware.photon.controller.api.frontend.clients.VmFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.api.model.Vm;
 
@@ -39,7 +39,7 @@ public class VmSecurityGroupFetcher implements SecurityGroupFetcher {
   /**
    * Storage access object for vm resources.
    */
-  VmBackend backend;
+  VmFeClient vmFeClient;
 
   /**
    * Fetcher used to retrieve the security groups for the parent project.
@@ -47,9 +47,9 @@ public class VmSecurityGroupFetcher implements SecurityGroupFetcher {
   SecurityGroupFetcher projectFetcher;
 
   @Inject
-  public VmSecurityGroupFetcher(VmBackend backend,
+  public VmSecurityGroupFetcher(VmFeClient vmFeClient,
                                 @Project SecurityGroupFetcher projectFetcher) {
-    this.backend = backend;
+    this.vmFeClient = vmFeClient;
     this.projectFetcher = projectFetcher;
   }
 
@@ -62,7 +62,7 @@ public class VmSecurityGroupFetcher implements SecurityGroupFetcher {
 
     Set<String> securityGroups = new HashSet<>();
     try {
-      Vm vm = backend.toApiRepresentation(authorizationObject.getId());
+      Vm vm = vmFeClient.get(authorizationObject.getId());
       securityGroups = projectFetcher.fetchSecurityGroups(
           new TransactionAuthorizationObject(
               TransactionAuthorizationObject.Kind.PROJECT,

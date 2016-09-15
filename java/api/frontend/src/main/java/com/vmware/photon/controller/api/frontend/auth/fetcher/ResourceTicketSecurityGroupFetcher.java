@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.ResourceTicketBackend;
+import com.vmware.photon.controller.api.frontend.clients.ResourceTicketFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ResourceTicketNotFoundException;
 import com.vmware.photon.controller.api.model.ResourceTicket;
 
@@ -39,7 +39,7 @@ public class ResourceTicketSecurityGroupFetcher implements SecurityGroupFetcher 
   /**
    * Storage access object for resource-ticket resources.
    */
-  ResourceTicketBackend backend;
+  ResourceTicketFeClient resourceTicketFeClient;
 
   /**
    * Fetcher used to retrieve the security groups for the parent tenant.
@@ -47,9 +47,9 @@ public class ResourceTicketSecurityGroupFetcher implements SecurityGroupFetcher 
   SecurityGroupFetcher tenantFetcher;
 
   @Inject
-  public ResourceTicketSecurityGroupFetcher(ResourceTicketBackend backend,
+  public ResourceTicketSecurityGroupFetcher(ResourceTicketFeClient resourceTicketFeClient,
                                             @Tenant SecurityGroupFetcher tenantFetcher) {
-    this.backend = backend;
+    this.resourceTicketFeClient = resourceTicketFeClient;
     this.tenantFetcher = tenantFetcher;
   }
 
@@ -62,7 +62,7 @@ public class ResourceTicketSecurityGroupFetcher implements SecurityGroupFetcher 
 
     Set<String> securityGroups = new HashSet<>();
     try {
-      ResourceTicket ticket = backend.getApiRepresentation(authorizationObject.getId());
+      ResourceTicket ticket = resourceTicketFeClient.get(authorizationObject.getId());
       securityGroups = tenantFetcher.fetchSecurityGroups(
           new TransactionAuthorizationObject(
               TransactionAuthorizationObject.Kind.TENANT,

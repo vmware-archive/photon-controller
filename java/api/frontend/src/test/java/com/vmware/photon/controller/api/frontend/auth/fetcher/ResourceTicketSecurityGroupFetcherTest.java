@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.ResourceTicketBackend;
+import com.vmware.photon.controller.api.frontend.clients.ResourceTicketFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ResourceTicketNotFoundException;
 import com.vmware.photon.controller.api.model.ResourceTicket;
 
@@ -36,7 +36,7 @@ import java.util.Set;
  */
 public class ResourceTicketSecurityGroupFetcherTest {
 
-  private ResourceTicketBackend backend;
+  private ResourceTicketFeClient resourceTicketFeClient;
   private TenantSecurityGroupFetcher tenantFetcher;
 
   private ResourceTicketSecurityGroupFetcher fetcher;
@@ -58,9 +58,9 @@ public class ResourceTicketSecurityGroupFetcherTest {
 
     @BeforeMethod
     private void setUp() {
-      backend = mock(ResourceTicketBackend.class);
+      resourceTicketFeClient = mock(ResourceTicketFeClient.class);
       tenantFetcher = mock(TenantSecurityGroupFetcher.class);
-      fetcher = new ResourceTicketSecurityGroupFetcher(backend, tenantFetcher);
+      fetcher = new ResourceTicketSecurityGroupFetcher(resourceTicketFeClient, tenantFetcher);
 
       authorizationObject = new TransactionAuthorizationObject(
           TransactionAuthorizationObject.Kind.RESOURCE_TICKET,
@@ -80,7 +80,7 @@ public class ResourceTicketSecurityGroupFetcherTest {
 
     @Test
     public void testInvalidId() throws Throwable {
-      doThrow(new ResourceTicketNotFoundException("id")).when(backend).getApiRepresentation("id");
+      doThrow(new ResourceTicketNotFoundException("id")).when(resourceTicketFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(0));
@@ -92,7 +92,7 @@ public class ResourceTicketSecurityGroupFetcherTest {
 
       ResourceTicket ticket = new ResourceTicket();
       ticket.setTenantId("tenant-id");
-      doReturn(ticket).when(backend).getApiRepresentation("id");
+      doReturn(ticket).when(resourceTicketFeClient).get("id");
 
       ArgumentCaptor<TransactionAuthorizationObject> captor =
           ArgumentCaptor.forClass(TransactionAuthorizationObject.class);
@@ -109,7 +109,7 @@ public class ResourceTicketSecurityGroupFetcherTest {
 
       ResourceTicket ticket = new ResourceTicket();
       ticket.setTenantId("tenant-id");
-      doReturn(ticket).when(backend).getApiRepresentation("id");
+      doReturn(ticket).when(resourceTicketFeClient).get("id");
 
       ArgumentCaptor<TransactionAuthorizationObject> captor =
           ArgumentCaptor.forClass(TransactionAuthorizationObject.class);
