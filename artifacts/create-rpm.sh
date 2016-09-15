@@ -26,6 +26,7 @@ TAR_PATH="/java/photon-controller-core/build/distributions/"
 TAR_PREFIX="photon-controller-core"
 RPM_PREFIX="photon-controller"
 ENVOY_VIB_URL=${ENVOY_VIB_URL:="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/envoy/${BRANCH}/latest/vmware-envoy-latest.vib"}
+LIGHTWAVE_VIB_URL=${LIGHTWAVE_VIB_URL:="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/lightwave-vib/${BRANCH}/latest/VMware-lightwave-esx-latest.vib"}
 
 trap "rm -rf ${TEMP_DIR}; rm -rf ${SOURCES_DIR};" EXIT
 
@@ -46,8 +47,9 @@ tar -czf "${SOURCES_DIR}/${RPM_DIR}.tar" "${RPM_DIR}"
 
 cp "${SPECS_DIR}"/* "${SOURCES_DIR}"
 
-# Download pre-build ENVOY vib from artifactory. Ignore if not found, in the case when branches do not match in the URL.
-wget "${ENVOY_VIB_URL}" -P "${SOURCES_DIR}" || true
+# Download pre-build ENVOY and LIGHTWAVE vibs from artifactory.
+wget "${ENVOY_VIB_URL}" -P "${SOURCES_DIR}"
+wget "${LIGHTWAVE_VIB_URL}" -P "${SOURCES_DIR}"
 
 # Build the Photon-Controller vib from local repo and copy to SROUCES folder
 cd "${ROOT}"
