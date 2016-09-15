@@ -720,9 +720,9 @@ EOM
   if ENV['UI_CONTAINER_URL']
     photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 
-    wget #{ENV['UI_CONTAINER_URL']}
+    wget --no-verbose #{ENV['UI_CONTAINER_URL']}
     # Extracting out the base file from url and loading the image
-    docker load -i "${#{ENV['UI_CONTAINER_URL']}##*/}"
+    docker load -i `basename #{ENV['UI_CONTAINER_URL']}`
 
     docker run \
       -p 20000:80 \
