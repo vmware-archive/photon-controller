@@ -42,7 +42,7 @@ public class VmFloatingIpResourceTest extends ResourceTest {
   private String vmId = "vm1";
 
   private String vmAssignFloatingIpRoute =
-      UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_AQUIRE_FLOATING_IP_ACTION).build(vmId)
+      UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_ACQUIRE_FLOATING_IP_ACTION).build(vmId)
           .toString();
 
   private String vmReleaseFloatingIpRoute =
@@ -63,7 +63,7 @@ public class VmFloatingIpResourceTest extends ResourceTest {
   }
 
   @Test
-  public void testAquireFloatingIp() throws Exception {
+  public void testAcquireFloatingIp() throws Exception {
 
     Task task = new Task();
     task.setId(taskId);
