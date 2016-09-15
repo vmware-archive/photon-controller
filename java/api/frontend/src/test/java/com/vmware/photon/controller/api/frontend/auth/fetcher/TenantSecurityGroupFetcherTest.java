@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.TenantBackend;
+import com.vmware.photon.controller.api.frontend.clients.TenantFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.TenantNotFoundException;
 import com.vmware.photon.controller.api.model.SecurityGroup;
 import com.vmware.photon.controller.api.model.Tenant;
@@ -36,7 +36,7 @@ import java.util.Set;
  */
 public class TenantSecurityGroupFetcherTest {
 
-  private TenantBackend backend;
+  private TenantFeClient tenantFeClient;
 
   private TenantSecurityGroupFetcher fetcher;
 
@@ -57,14 +57,14 @@ public class TenantSecurityGroupFetcherTest {
 
     @BeforeMethod
     private void setUp() {
-      backend = mock(TenantBackend.class);
+      tenantFeClient = mock(TenantFeClient.class);
 
       authorizationObject = new TransactionAuthorizationObject(
           TransactionAuthorizationObject.Kind.TENANT,
           TransactionAuthorizationObject.Strategy.SELF,
           "id");
 
-      fetcher = new TenantSecurityGroupFetcher(backend);
+      fetcher = new TenantSecurityGroupFetcher(tenantFeClient);
     }
 
     /**
@@ -92,7 +92,7 @@ public class TenantSecurityGroupFetcherTest {
 
     @Test
     public void testInvalidId() throws Throwable {
-      doThrow(new TenantNotFoundException("id")).when(backend).getApiRepresentation("id");
+      doThrow(new TenantNotFoundException("id")).when(tenantFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(0));
@@ -101,7 +101,7 @@ public class TenantSecurityGroupFetcherTest {
     @Test
     public void testWithoutSecurityGroups() throws Throwable {
       Tenant tenant = new Tenant();
-      doReturn(tenant).when(backend).getApiRepresentation("id");
+      doReturn(tenant).when(tenantFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(0));
@@ -111,7 +111,7 @@ public class TenantSecurityGroupFetcherTest {
     public void testWithSecurityGroups() throws Throwable {
       Tenant tenant = new Tenant();
       tenant.setSecurityGroups(ImmutableList.of(new SecurityGroup("SG1", true), new SecurityGroup("SG2", false)));
-      doReturn(tenant).when(backend).getApiRepresentation("id");
+      doReturn(tenant).when(tenantFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(2));

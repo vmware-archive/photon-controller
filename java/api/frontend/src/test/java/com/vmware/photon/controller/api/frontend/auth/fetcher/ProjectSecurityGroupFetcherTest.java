@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.ProjectBackend;
+import com.vmware.photon.controller.api.frontend.clients.ProjectFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ProjectNotFoundException;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.SecurityGroup;
@@ -36,7 +36,7 @@ import java.util.Set;
  */
 public class ProjectSecurityGroupFetcherTest {
 
-  private ProjectBackend backend;
+  private ProjectFeClient projectFeClient;
 
   private ProjectSecurityGroupFetcher fetcher;
 
@@ -57,8 +57,8 @@ public class ProjectSecurityGroupFetcherTest {
 
     @BeforeMethod
     private void setUp() {
-      backend = mock(ProjectBackend.class);
-      fetcher = new ProjectSecurityGroupFetcher(backend);
+      projectFeClient = mock(ProjectFeClient.class);
+      fetcher = new ProjectSecurityGroupFetcher(projectFeClient);
 
       authorizationObject = new TransactionAuthorizationObject(
           TransactionAuthorizationObject.Kind.PROJECT,
@@ -78,7 +78,7 @@ public class ProjectSecurityGroupFetcherTest {
 
     @Test
     public void testInvalidId() throws Throwable {
-      doThrow(new ProjectNotFoundException("id")).when(backend).getApiRepresentation("id");
+      doThrow(new ProjectNotFoundException("id")).when(projectFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(0));
@@ -87,7 +87,7 @@ public class ProjectSecurityGroupFetcherTest {
     @Test
     public void testSelfWithoutSecurityGroups() throws Throwable {
       Project project = new Project();
-      doReturn(project).when(backend).getApiRepresentation("id");
+      doReturn(project).when(projectFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(0));
@@ -97,7 +97,7 @@ public class ProjectSecurityGroupFetcherTest {
     public void testSelfWithSecurityGroups() throws Throwable {
       Project project = new Project();
       project.setSecurityGroups(ImmutableList.of(new SecurityGroup("SG1", true), new SecurityGroup("SG2", false)));
-      doReturn(project).when(backend).getApiRepresentation("id");
+      doReturn(project).when(projectFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(2));
@@ -110,7 +110,7 @@ public class ProjectSecurityGroupFetcherTest {
 
       Project project = new Project();
       project.setSecurityGroups(ImmutableList.of(new SecurityGroup("SG1", false), new SecurityGroup("SG2", false)));
-      doReturn(project).when(backend).getApiRepresentation("id");
+      doReturn(project).when(projectFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(0));
@@ -122,7 +122,7 @@ public class ProjectSecurityGroupFetcherTest {
 
       Project project = new Project();
       project.setSecurityGroups(ImmutableList.of(new SecurityGroup("SG1", true), new SecurityGroup("SG2", false)));
-      doReturn(project).when(backend).getApiRepresentation("id");
+      doReturn(project).when(projectFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(1));

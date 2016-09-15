@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.DiskBackend;
+import com.vmware.photon.controller.api.frontend.clients.DiskFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.api.model.PersistentDisk;
 
@@ -39,7 +39,7 @@ public class DiskSecurityGroupFetcher implements SecurityGroupFetcher {
   /**
    * Storage access object for disk resources.
    */
-  DiskBackend backend;
+  DiskFeClient diskFeClient;
 
   /**
    * Fetcher used to retrieve the security groups for the parent project.
@@ -47,9 +47,9 @@ public class DiskSecurityGroupFetcher implements SecurityGroupFetcher {
   SecurityGroupFetcher projectFetcher;
 
   @Inject
-  public DiskSecurityGroupFetcher(DiskBackend backend,
+  public DiskSecurityGroupFetcher(DiskFeClient diskFeClient,
                                   @Project SecurityGroupFetcher projectFetcher) {
-    this.backend = backend;
+    this.diskFeClient = diskFeClient;
     this.projectFetcher = projectFetcher;
   }
 
@@ -62,7 +62,7 @@ public class DiskSecurityGroupFetcher implements SecurityGroupFetcher {
 
     Set<String> securityGroups = new HashSet<>();
     try {
-      PersistentDisk disk = backend.toApiRepresentation(authorizationObject.getId());
+      PersistentDisk disk = diskFeClient.get(authorizationObject.getId());
       securityGroups = projectFetcher.fetchSecurityGroups(
           new TransactionAuthorizationObject(
               TransactionAuthorizationObject.Kind.PROJECT,

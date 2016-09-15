@@ -189,6 +189,10 @@ public class DeploymentFeClient {
     return new ResourceList<>(deploymentBackend.getAll());
   }
 
+  public List<Deployment> getAll() {
+    return deploymentBackend.getAll();
+  }
+
   public Task delete(String id) throws ExternalException {
     TaskEntity taskEntity = deploymentBackend.prepareDeleteDeployment(id);
     Task task = taskBackend.getApiRepresentation(taskEntity);

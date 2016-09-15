@@ -14,8 +14,9 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
+import com.vmware.photon.controller.api.frontend.clients.DeploymentFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentNotFoundException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Deployment;
 
 import com.google.inject.Inject;
@@ -44,11 +45,11 @@ public class DeploymentSecurityGroupFetcher implements SecurityGroupFetcher {
   /**
    * Storage access object for deployment resources.
    */
-  private DeploymentBackend backend;
+  private DeploymentFeClient deploymentFeClient;
 
   @Inject
-  public DeploymentSecurityGroupFetcher(DeploymentBackend deploymentBackend) {
-    this.backend = deploymentBackend;
+  public DeploymentSecurityGroupFetcher(DeploymentFeClient deploymentFeClient) {
+    this.deploymentFeClient = deploymentFeClient;
   }
 
   @Override
@@ -74,13 +75,13 @@ public class DeploymentSecurityGroupFetcher implements SecurityGroupFetcher {
   }
 
 
-  private Deployment getDeploymentResource(String id) throws DeploymentNotFoundException {
+  private Deployment getDeploymentResource(String id) throws ExternalException {
     if (null != id && !id.isEmpty()) {
       // we seem to have a deployment id
-      return backend.toApiRepresentation(id);
+      return deploymentFeClient.get(id);
     }
 
-    List<Deployment> deploymentList = backend.getAll();
+    List<Deployment> deploymentList = deploymentFeClient.getAll();
     if (null == deploymentList || 1 > deploymentList.size()) {
       // there is no deployment object
       logger.warn("no deployment object present. returning 'null'.");

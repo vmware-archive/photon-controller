@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.DiskBackend;
+import com.vmware.photon.controller.api.frontend.clients.DiskFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.api.model.PersistentDisk;
 
@@ -36,7 +36,7 @@ import java.util.Set;
  */
 public class DiskSecurityGroupFetcherTest {
 
-  private DiskBackend backend;
+  private DiskFeClient diskFeClient;
   private ProjectSecurityGroupFetcher projectFetcher;
 
   private DiskSecurityGroupFetcher fetcher;
@@ -58,9 +58,9 @@ public class DiskSecurityGroupFetcherTest {
 
     @BeforeMethod
     private void setUp() {
-      backend = mock(DiskBackend.class);
+      diskFeClient = mock(DiskFeClient.class);
       projectFetcher = mock(ProjectSecurityGroupFetcher.class);
-      fetcher = new DiskSecurityGroupFetcher(backend, projectFetcher);
+      fetcher = new DiskSecurityGroupFetcher(diskFeClient, projectFetcher);
 
       authorizationObject = new TransactionAuthorizationObject(
           TransactionAuthorizationObject.Kind.DISK,
@@ -80,7 +80,7 @@ public class DiskSecurityGroupFetcherTest {
 
     @Test
     public void testInvalidId() throws Throwable {
-      doThrow(new DiskNotFoundException("id")).when(backend).toApiRepresentation("id");
+      doThrow(new DiskNotFoundException("id")).when(diskFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(0));
@@ -92,7 +92,7 @@ public class DiskSecurityGroupFetcherTest {
 
       PersistentDisk disk = new PersistentDisk();
       disk.setProjectId("project-id");
-      doReturn(disk).when(backend).toApiRepresentation("id");
+      doReturn(disk).when(diskFeClient).get("id");
 
       ArgumentCaptor<TransactionAuthorizationObject> captor =
           ArgumentCaptor.forClass(TransactionAuthorizationObject.class);
@@ -109,7 +109,7 @@ public class DiskSecurityGroupFetcherTest {
 
       PersistentDisk disk = new PersistentDisk();
       disk.setProjectId("project-id");
-      doReturn(disk).when(backend).toApiRepresentation("id");
+      doReturn(disk).when(diskFeClient).get("id");
 
       ArgumentCaptor<TransactionAuthorizationObject> captor =
           ArgumentCaptor.forClass(TransactionAuthorizationObject.class);

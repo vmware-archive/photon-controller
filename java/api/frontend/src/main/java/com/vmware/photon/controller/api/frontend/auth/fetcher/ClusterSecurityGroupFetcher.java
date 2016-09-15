@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.ClusterBackend;
+import com.vmware.photon.controller.api.frontend.clients.ClusterFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ClusterNotFoundException;
 import com.vmware.photon.controller.api.model.Cluster;
 
@@ -39,7 +39,7 @@ public class ClusterSecurityGroupFetcher implements SecurityGroupFetcher {
   /**
    * Storage access object for cluster resources.
    */
-  ClusterBackend backend;
+  ClusterFeClient clusterFeClient;
 
   /**
    * Fetcher used to retrieve the security groups for the parent project.
@@ -47,9 +47,9 @@ public class ClusterSecurityGroupFetcher implements SecurityGroupFetcher {
   com.vmware.photon.controller.api.frontend.auth.fetcher.SecurityGroupFetcher projectFetcher;
 
   @Inject
-  public ClusterSecurityGroupFetcher(ClusterBackend backend,
+  public ClusterSecurityGroupFetcher(ClusterFeClient clusterFeClient,
                                      @Project SecurityGroupFetcher projectFetcher) {
-    this.backend = backend;
+    this.clusterFeClient = clusterFeClient;
     this.projectFetcher = projectFetcher;
   }
 
@@ -62,7 +62,7 @@ public class ClusterSecurityGroupFetcher implements SecurityGroupFetcher {
 
     Set<String> securityGroups = new HashSet<>();
     try {
-      Cluster cluster = backend.get(authorizationObject.getId());
+      Cluster cluster = clusterFeClient.get(authorizationObject.getId());
       securityGroups = projectFetcher.fetchSecurityGroups(
           new TransactionAuthorizationObject(
               TransactionAuthorizationObject.Kind.PROJECT,
