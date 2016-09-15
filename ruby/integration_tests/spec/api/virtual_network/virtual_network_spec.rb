@@ -128,7 +128,6 @@ describe "virtual_network", :virtual_network => true do
         expect(e.errors.first.size).to eq 1
         step_error = e.errors.first.first.step
         expect(step_error["state"]).to eq "ERROR"
-        expect(step_error["sequence"]).to eq 6
         expect(step_error["operation"]).to eq "SET_UP_LOGICAL_ROUTER"
         expect(step_error["errors"].size).to eq 1
         expect(step_error["errors"].first["message"]).to include error_msg
