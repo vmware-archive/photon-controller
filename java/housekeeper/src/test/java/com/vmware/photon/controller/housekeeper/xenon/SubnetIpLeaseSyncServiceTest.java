@@ -59,7 +59,7 @@ import java.util.function.Supplier;
 /**
  * Tests {@link com.vmware.photon.controller.housekeeper.xenon.SubnetIPLeaseSyncService}.
  */
-public class SubnetIpLeaseSyncServiceTest {
+public class SubnetIPLeaseSyncServiceTest {
 
   private static final int TEST_PAGE_LIMIT = 100;
   private static final String SUBNET_ID = "subnetId";

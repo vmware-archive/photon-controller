@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.VmNotFoundException;
+import com.vmware.photon.controller.api.frontend.utils.SubnetIPLeaseSyncUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
@@ -28,6 +29,7 @@ import com.vmware.xenon.common.Operation;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -56,6 +58,7 @@ public class VmGetIpStepCmd extends StepCommand {
     if (networkInfoMap.size() > 0) {
       for (VmService.NetworkInfo networkInfo : networkInfoMap.values()) {
         networkInfo.privateIpAddress = allocateIpToMac(networkInfo.id, vmId, networkInfo.macAddress);
+        SubnetIPLeaseSyncUtils.triggerSubnetIPLeaseSync(networkInfo.id, taskCommand);
       }
 
       updateVmNetworkInfo(vmId, networkInfoMap);

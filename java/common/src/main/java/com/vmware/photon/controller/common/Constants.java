@@ -62,6 +62,9 @@ public class Constants {
 
   public static final int DEFAULT_SCHEDULED_THREAD_POOL_SIZE = 10;
 
+  // Time unit is fixed to seconds.
+  public static final int SUBNET_IP_LEASE_SYNC_DELAY = 5;
+
   private Constants() {
   }
 }

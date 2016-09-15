@@ -134,6 +134,9 @@ public class HousekeeperServiceGroup
     //Start the special services
     startTaskSchedulerServices();
     startTaskTriggerServices();
+    ServiceHostUtils.startService(photonControllerXenonHost,
+            SubnetIPLeaseSyncTriggerService.class,
+            SubnetIPLeaseSyncTriggerService.SELF_LINK);
   }
 
   @Override
@@ -153,6 +156,7 @@ public class HousekeeperServiceGroup
         && photonControllerXenonHost.checkServiceAvailable(ImageCleanerServiceFactory.SELF_LINK)
         && photonControllerXenonHost.checkServiceAvailable(ImageDatastoreSweeperServiceFactory.SELF_LINK)
         && photonControllerXenonHost.checkServiceAvailable(SubnetIPLeaseSyncService.FACTORY_LINK)
+        && photonControllerXenonHost.checkServiceAvailable(SubnetIPLeaseSyncTriggerService.SELF_LINK)
 
         && photonControllerXenonHost.checkServiceAvailable(TaskTriggerFactoryService.SELF_LINK)
         && photonControllerXenonHost.checkServiceAvailable(getTriggerCleanerServiceUri())

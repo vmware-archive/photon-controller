@@ -21,6 +21,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
+import com.vmware.photon.controller.api.frontend.utils.SubnetIPLeaseSyncUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
@@ -100,6 +101,7 @@ public class VmReleaseIpStepCmd extends StepCommand {
 
     PhotonControllerXenonRestClient photonControllerXenonRestClient = taskCommand.getPhotonControllerXenonRestClient();
     photonControllerXenonRestClient.patch(DhcpSubnetService.FACTORY_LINK + "/" + subnetId, patch);
+    SubnetIPLeaseSyncUtils.triggerSubnetIPLeaseSync(subnetId, taskCommand);
   }
 
   private void releaseFloatingIp(String subnetId, String ownerVmId, String ipAddress) throws ExternalException {
