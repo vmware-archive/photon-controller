@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
+import com.vmware.photon.controller.api.frontend.clients.DeploymentFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.api.model.AuthInfo;
 import com.vmware.photon.controller.api.model.Deployment;
@@ -39,7 +39,7 @@ import java.util.Set;
  */
 public class DeploymentSecurityGroupFetcherTest {
 
-  private DeploymentBackend backend;
+  private DeploymentFeClient deploymentFeClient;
 
   private DeploymentSecurityGroupFetcher fetcher;
 
@@ -60,14 +60,14 @@ public class DeploymentSecurityGroupFetcherTest {
 
     @BeforeMethod
     private void setUp() {
-      backend = mock(DeploymentBackend.class);
+      deploymentFeClient = mock(DeploymentFeClient.class);
 
       authorizationObject = new TransactionAuthorizationObject(
           TransactionAuthorizationObject.Kind.DEPLOYMENT,
           TransactionAuthorizationObject.Strategy.SELF,
           "id");
 
-      fetcher = new DeploymentSecurityGroupFetcher(backend);
+      fetcher = new DeploymentSecurityGroupFetcher(deploymentFeClient);
     }
 
     /**
@@ -95,7 +95,7 @@ public class DeploymentSecurityGroupFetcherTest {
 
     @Test
     public void testInvalidDeploymentId() throws Throwable {
-      doThrow(new DeploymentNotFoundException("id")).when(backend).toApiRepresentation("id");
+      doThrow(new DeploymentNotFoundException("id")).when(deploymentFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(0));
@@ -103,7 +103,7 @@ public class DeploymentSecurityGroupFetcherTest {
 
     @Test(dataProvider = "NoDeploymentObject")
     public void testNoDeploymentIdAndNoDeploymentObject(List<Deployment> deploymentList) throws Throwable {
-      doReturn(deploymentList).when(backend).getAll();
+      doReturn(deploymentList).when(deploymentFeClient).getAll();
       authorizationObject.setId(null);
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
@@ -123,7 +123,7 @@ public class DeploymentSecurityGroupFetcherTest {
       List<Deployment> deploymentList = new ArrayList<>();
       deploymentList.add(new Deployment());
       deploymentList.add(new Deployment());
-      doReturn(deploymentList).when(backend).getAll();
+      doReturn(deploymentList).when(deploymentFeClient).getAll();
 
       authorizationObject.setId(null);
 
@@ -134,7 +134,7 @@ public class DeploymentSecurityGroupFetcherTest {
     @Test
     public void testDeploymentMissingAuthObject() throws Throwable {
       Deployment deployment = new Deployment();
-      doReturn(deployment).when(backend).toApiRepresentation("id");
+      doReturn(deployment).when(deploymentFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(0));
@@ -144,7 +144,7 @@ public class DeploymentSecurityGroupFetcherTest {
     public void testDeploymentMissingSecurityGroups() throws Throwable {
       Deployment deployment = new Deployment();
       deployment.setAuth(new AuthInfo());
-      doReturn(deployment).when(backend).toApiRepresentation("id");
+      doReturn(deployment).when(deploymentFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(0));
@@ -155,7 +155,7 @@ public class DeploymentSecurityGroupFetcherTest {
       Deployment deployment = new Deployment();
       deployment.setAuth(new AuthInfo());
       deployment.getAuth().setSecurityGroups(ImmutableList.of("SG1", "SG2"));
-      doReturn(deployment).when(backend).toApiRepresentation("id");
+      doReturn(deployment).when(deploymentFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(2));

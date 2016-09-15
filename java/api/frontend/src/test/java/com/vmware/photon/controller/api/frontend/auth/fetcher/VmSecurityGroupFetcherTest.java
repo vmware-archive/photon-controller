@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.VmBackend;
+import com.vmware.photon.controller.api.frontend.clients.VmFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.api.model.Vm;
 
@@ -36,7 +36,7 @@ import java.util.Set;
  */
 public class VmSecurityGroupFetcherTest {
 
-  private VmBackend backend;
+  private VmFeClient vmFeClient;
   private ProjectSecurityGroupFetcher projectFetcher;
 
   private VmSecurityGroupFetcher fetcher;
@@ -58,9 +58,9 @@ public class VmSecurityGroupFetcherTest {
 
     @BeforeMethod
     private void setUp() {
-      backend = mock(VmBackend.class);
+      vmFeClient = mock(VmFeClient.class);
       projectFetcher = mock(ProjectSecurityGroupFetcher.class);
-      fetcher = new VmSecurityGroupFetcher(backend, projectFetcher);
+      fetcher = new VmSecurityGroupFetcher(vmFeClient, projectFetcher);
 
       authorizationObject = new TransactionAuthorizationObject(
           TransactionAuthorizationObject.Kind.VM,
@@ -80,7 +80,7 @@ public class VmSecurityGroupFetcherTest {
 
     @Test
     public void testInvalidId() throws Throwable {
-      doThrow(new VmNotFoundException("id")).when(backend).toApiRepresentation("id");
+      doThrow(new VmNotFoundException("id")).when(vmFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(0));
@@ -92,7 +92,7 @@ public class VmSecurityGroupFetcherTest {
 
       Vm vm = new Vm();
       vm.setProjectId("project-id");
-      doReturn(vm).when(backend).toApiRepresentation("id");
+      doReturn(vm).when(vmFeClient).get("id");
 
       ArgumentCaptor<TransactionAuthorizationObject> captor =
           ArgumentCaptor.forClass(TransactionAuthorizationObject.class);
@@ -109,7 +109,7 @@ public class VmSecurityGroupFetcherTest {
 
       Vm vm = new Vm();
       vm.setProjectId("project-id");
-      doReturn(vm).when(backend).toApiRepresentation("id");
+      doReturn(vm).when(vmFeClient).get("id");
 
       ArgumentCaptor<TransactionAuthorizationObject> captor =
           ArgumentCaptor.forClass(TransactionAuthorizationObject.class);

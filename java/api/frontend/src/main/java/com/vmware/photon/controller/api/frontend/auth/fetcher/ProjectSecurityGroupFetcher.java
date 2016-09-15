@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.ProjectBackend;
+import com.vmware.photon.controller.api.frontend.clients.ProjectFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ProjectNotFoundException;
 import com.vmware.photon.controller.api.model.Project;
 
@@ -40,11 +40,11 @@ public class ProjectSecurityGroupFetcher implements SecurityGroupFetcher {
   /**
    * Storage access object for project resources.
    */
-  ProjectBackend backend;
+  ProjectFeClient projectFeClient;
 
   @Inject
-  public ProjectSecurityGroupFetcher(ProjectBackend backend) {
-    this.backend = backend;
+  public ProjectSecurityGroupFetcher(ProjectFeClient projectFeClient) {
+    this.projectFeClient = projectFeClient;
   }
 
   @Override
@@ -54,7 +54,7 @@ public class ProjectSecurityGroupFetcher implements SecurityGroupFetcher {
 
     Set<String> securityGroups = new HashSet<>();
     try {
-      Project project = backend.getApiRepresentation(authorizationObject.getId());
+      Project project = projectFeClient.get(authorizationObject.getId());
       switch (authorizationObject.getStrategy()) {
         case SELF:
           securityGroups = getAllSecurityGroups(project);

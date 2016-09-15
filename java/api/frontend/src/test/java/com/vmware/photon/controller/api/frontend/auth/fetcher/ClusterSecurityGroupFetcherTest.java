@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.backends.ClusterBackend;
+import com.vmware.photon.controller.api.frontend.clients.ClusterFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ClusterNotFoundException;
 import com.vmware.photon.controller.api.model.Cluster;
 
@@ -36,7 +36,7 @@ import java.util.Set;
  */
 public class ClusterSecurityGroupFetcherTest {
 
-  private ClusterBackend backend;
+  private ClusterFeClient clusterFeClient;
   private ProjectSecurityGroupFetcher projectFetcher;
 
   private ClusterSecurityGroupFetcher fetcher;
@@ -58,9 +58,9 @@ public class ClusterSecurityGroupFetcherTest {
 
     @BeforeMethod
     private void setUp() {
-      backend = mock(ClusterBackend.class);
+      clusterFeClient = mock(ClusterFeClient.class);
       projectFetcher = mock(ProjectSecurityGroupFetcher.class);
-      fetcher = new ClusterSecurityGroupFetcher(backend, projectFetcher);
+      fetcher = new ClusterSecurityGroupFetcher(clusterFeClient, projectFetcher);
 
       authorizationObject = new TransactionAuthorizationObject(
           TransactionAuthorizationObject.Kind.CLUSTER,
@@ -80,7 +80,7 @@ public class ClusterSecurityGroupFetcherTest {
 
     @Test
     public void testInvalidId() throws Throwable {
-      doThrow(new ClusterNotFoundException("id")).when(backend).get("id");
+      doThrow(new ClusterNotFoundException("id")).when(clusterFeClient).get("id");
 
       Set<String> groups = fetcher.fetchSecurityGroups(authorizationObject);
       assertThat(groups.size(), is(0));
@@ -92,7 +92,7 @@ public class ClusterSecurityGroupFetcherTest {
 
       Cluster cluster = new Cluster();
       cluster.setProjectId("project-id");
-      doReturn(cluster).when(backend).get("id");
+      doReturn(cluster).when(clusterFeClient).get("id");
 
       ArgumentCaptor<TransactionAuthorizationObject> captor =
           ArgumentCaptor.forClass(TransactionAuthorizationObject.class);
@@ -109,7 +109,7 @@ public class ClusterSecurityGroupFetcherTest {
 
       Cluster cluster = new Cluster();
       cluster.setProjectId("project-id");
-      doReturn(cluster).when(backend).get("id");
+      doReturn(cluster).when(clusterFeClient).get("id");
 
       ArgumentCaptor<TransactionAuthorizationObject> captor =
           ArgumentCaptor.forClass(TransactionAuthorizationObject.class);
