@@ -45,6 +45,7 @@ deployer:
     vibUninstallOrder:
     - photon-controller-agent
     - envoy
+    - lightwave-esx
     memoryMb: {{{memoryMb}}}
     installDirectory: "/usr/lib/esxcloud/photon-controller-core"
     logDirectory: {{{LOG_DIRECTORY}}}
