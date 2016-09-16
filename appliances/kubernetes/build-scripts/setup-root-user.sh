@@ -16,5 +16,7 @@
 # scripts from running.
 sed -i -e 's/^PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
 
-# When logging in via the console, root must immediately change its password
-chage -d 0 root
+# We don't chage because it makes it really hard to fetch log files during testing.
+# We aren't concerned because we disable the use of passwords with ssh, so
+# passwords can only be used if a user has access to the console
+# chage -d 0 root
