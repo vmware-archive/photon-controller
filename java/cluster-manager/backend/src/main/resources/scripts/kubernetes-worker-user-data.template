@@ -12,6 +12,25 @@ write_files:
         EOF
         ip addr flush label "${eno_name}"
         systemctl restart systemd-networkd
+        timeout=20
+        second=0
+        DEFAULT_INTERFACE=$(ip -o -4 route show to default | awk '{print $5}' | head -1)
+        # waiting for the interface to be not loopback
+        echo "current INTERFACE"
+        echo $DEFAULT_INTERFACE
+        ip addr
+        while [[ "${DEFAULT_INTERFACE}" == "" ]] || [[ "${DEFAULT_INTERFACE}" == "lo" ]]; do
+          ((second++))
+          echo ${second}
+          if [[ ${second} -gt ${timeout} ]]; then
+            echo "ERROR: No network interface ready!"
+            break
+          fi
+          sleep 1
+          DEFAULT_INTERFACE=$(ip -o -4 route show to default | awk '{print $5}' | head -1)
+        done
+        echo "done"
+        ip addr
     owner: root:root
     permissions: 0644
     path: /tmp/init-network.sh
@@ -57,6 +76,6 @@ runcmd:
   - source /root/env_variables.txt
   - rm -f /etc/systemd/network/*.network
   - systemctl stop systemd-networkd
-  - sh /tmp/init-network.sh
+  - sh /tmp/init-network.sh >> /var/log/init-network.log 2>&1
   - sh /tmp/check-docker.sh
   - sh /root/setup-kubernetes-worker.sh >> /var/log/kubernetes-worker.log 2>&1
