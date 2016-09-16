@@ -1,14 +1,16 @@
 xenon:
   bindAddress: "0.0.0.0"
-  port: 17000
+  securePort: 17000
   registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
   storagePath: "{{{DHCP-AGENT_XENON_STORAGE_PATH}}}"
+  keyFile: "/etc/keys/machine.privkey"
+  certificateFile: "/etc/keys/machine.crt"
   peerNodes:
 {{#PEER_NODES}}
-  - http://{{peerAddress}}:{{peerPort}}
+  - https://{{peerAddress}}:{{peerPort}}
 {{/PEER_NODES}}
 {{^PEER_NODES}}
-  - http://{{{REGISTRATION_ADDRESS}}}:17000
+  - https://{{{REGISTRATION_ADDRESS}}}:17000
 {{/PEER_NODES}}
 
 logging:
