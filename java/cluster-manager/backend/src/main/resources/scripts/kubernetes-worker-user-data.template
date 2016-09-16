@@ -12,6 +12,19 @@ write_files:
         EOF
         ip addr flush label "${eno_name}"
         systemctl restart systemd-networkd
+        timeout=20
+        second=0
+        DEFAULT_INTERFACE=$(ip -o -4 route show to default | awk '{print $5}' | head -1)
+        # waiting for the interface to be not lo
+        while [[ ${DEFAULT_INTERFACE} == "lo" ]]; do
+          ((second++))
+          if [[ ${second} -gt ${timeout} ]]; then
+            echo "ERROR: No network interface ready!"
+            break
+          fi
+          sleep 1s
+          DEFAULT_INTERFACE=$(ip -o -4 route show to default | awk '{print $5}' | head -1)
+        done
     owner: root:root
     permissions: 0644
     path: /tmp/init-network.sh
