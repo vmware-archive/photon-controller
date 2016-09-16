@@ -138,7 +138,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
       delete_cluster(cluster)
 
     rescue EsxCloud::Error => e
-      EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
+      EsxCloud::ClusterHelper.show_logs(@seeder.project, client, "/tmp/test_rsa")
       fail "KUBERNETES cluster integration Test failed. Error: #{e.message}"
     end
   end

@@ -91,7 +91,7 @@ it 'should create/delete Harbor cluster successfully' do
       e.output.should match("not found")
     end
   rescue EsxCloud::Error => e
-    EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
+    EsxCloud::ClusterHelper.show_logs(@seeder.project, client, "/tmp/test_rsa")
     fail "HARBOR cluster integration Test failed. Error: #{e.message}"
   end
 end

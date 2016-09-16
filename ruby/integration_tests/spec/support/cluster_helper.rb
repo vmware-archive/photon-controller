@@ -57,10 +57,10 @@ module EsxCloud
         client.disable_cluster_type(deployment.id, spec.to_hash)
       end
 
-      def show_logs(project, client)
+      def show_logs(project, client, key_file = nil)
         clusters = client.get_project_clusters(project.id).items
         clusters.map do |cluster|
-          show_cluster_logs(cluster, client)
+          show_cluster_logs(cluster, client, key_file)
         end
       end
 
@@ -88,7 +88,7 @@ module EsxCloud
 
       private
 
-      def show_cluster_logs(cluster, client)
+      def show_cluster_logs(cluster, client, key_file = nil)
         begin
           vms = client.get_cluster_vms(cluster.id).items
           vms.map do |vm|
@@ -96,7 +96,12 @@ module EsxCloud
             connections = client.get_vm_networks(vm.id).network_connections.select { |n| !n.network.nil? }
             puts "ip address is " + connections.first.ip_address
             begin
-              ssh = Net::SSH.start(connections.first.ip_address, "root", :password => "vmware")
+              if key_file.nil?
+                ssh = Net::SSH.start(connections.first.ip_address, "root", :password => "vmware")
+              else
+                ssh = Net::SSH.start(connections.first.ip_address, "root", :keys => [key_file], :paranoid => false,
+                                     :user_known_hosts_file => ["/dev/null"])
+              end
               puts "=============== ifconfig ==============="
               res = ssh.exec!("ifconfig")
               puts res
