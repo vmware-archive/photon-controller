@@ -11,7 +11,7 @@
 
 require "spec_helper"
 
-describe "vm", vsan: true do
+describe "vm", management: true, vsan: true do
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.new(create_small_limits, [5.0])
     @cleaner = EsxCloud::SystemCleaner.new(client)
