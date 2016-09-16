@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.common.xenon.host;
 
+import com.vmware.xenon.common.ServiceHost.ServiceHostState.SslClientAuthMode;
+
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.Range;
@@ -43,6 +45,8 @@ public class XenonConfig {
   private String keyFile;
 
   private String certificateFile;
+
+  private SslClientAuthMode sslClientAuthMode;
 
   public void setPort(int port) {
     this.port = port;
@@ -98,6 +102,14 @@ public class XenonConfig {
 
   public String getCertificateFile() {
     return this.certificateFile;
+  }
+
+  public void setSslClientAuthMode(SslClientAuthMode sslClientAuthMode) {
+    this.sslClientAuthMode = sslClientAuthMode;
+  }
+
+  public SslClientAuthMode getSslClientAuthMode() {
+    return this.sslClientAuthMode;
   }
 
   public void setPeerNodes(String[] peerNodes) {

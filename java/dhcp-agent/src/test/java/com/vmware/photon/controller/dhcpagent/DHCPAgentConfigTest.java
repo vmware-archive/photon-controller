@@ -16,6 +16,7 @@ package com.vmware.photon.controller.dhcpagent;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.xenon.common.ServiceHost.ServiceHostState.SslClientAuthMode;
 
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -33,7 +34,7 @@ public class DHCPAgentConfigTest {
   /**
    * Dummy test case to make Intellij recognize this as a test class.
    */
-  @Test(enabled = false)
+  @Test
   public void dummy() {
   }
 
@@ -51,5 +52,6 @@ public class DHCPAgentConfigTest {
     assertThat(xenonConfig.getPort(), is(17000));
     assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
     assertThat(xenonConfig.getStoragePath(), is("/tmp/xenon/dhcp-agent/"));
+    assertThat(xenonConfig.getSslClientAuthMode(), is(SslClientAuthMode.WANT));
   }
 }
