@@ -16,6 +16,7 @@ xenon:
   securePort: 19000
   keyFile: "/etc/keys/machine.privkey"
   certificateFile: "/etc/keys/machine.crt"
+  sslClientAuthMode: NEED
   port: 0
   peerNodes:
   {{#PHOTON_CONTROLLER_PEER_NODES}}

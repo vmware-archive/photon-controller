@@ -5,6 +5,7 @@ xenon:
   storagePath: "{{{DHCP-AGENT_XENON_STORAGE_PATH}}}"
   keyFile: "/etc/keys/machine.privkey"
   certificateFile: "/etc/keys/machine.crt"
+  sslClientAuthMode: WANT
   peerNodes:
 {{#PEER_NODES}}
   - https://{{peerAddress}}:{{peerPort}}

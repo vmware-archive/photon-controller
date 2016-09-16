@@ -39,7 +39,7 @@ public abstract class AbstractServiceHost extends ServiceHost {
       arguments.securePort = xenonConfig.getSecurePort();
       arguments.keyFile = Paths.get(xenonConfig.getKeyFile());
       arguments.certificateFile = Paths.get(xenonConfig.getCertificateFile());
-      arguments.sslClientAuthMode = ServiceHostState.SslClientAuthMode.NEED;
+      arguments.sslClientAuthMode = xenonConfig.getSslClientAuthMode();
       // This is needed to disable the http port
       arguments.port = -1;
     } else {

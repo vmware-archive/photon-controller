@@ -3,5 +3,6 @@ xenon:
   port: 17000
   registrationAddress: "127.0.0.1"
   storagePath: "/tmp/xenon/dhcp-agent/"
+  sslClientAuthMode: WANT
   peerNodes:
   - http://127.0.0.1:17000
