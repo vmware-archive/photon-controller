@@ -27,7 +27,7 @@ public abstract class AbstractServiceHost extends ServiceHost {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractServiceHost.class);
 
-  public AbstractServiceHost(XenonConfig xenonConfig) throws Throwable {
+  public void setup(XenonConfig xenonConfig, ServiceHostState.SslClientAuthMode sslClientAuthMode) throws Throwable {
     Arguments arguments = new Arguments();
     arguments.bindAddress = xenonConfig.getBindAddress();
     arguments.sandbox = Paths.get(xenonConfig.getStoragePath());
@@ -39,7 +39,7 @@ public abstract class AbstractServiceHost extends ServiceHost {
       arguments.securePort = xenonConfig.getSecurePort();
       arguments.keyFile = Paths.get(xenonConfig.getKeyFile());
       arguments.certificateFile = Paths.get(xenonConfig.getCertificateFile());
-      arguments.sslClientAuthMode = ServiceHostState.SslClientAuthMode.NEED;
+      arguments.sslClientAuthMode = sslClientAuthMode;
       // This is needed to disable the http port
       arguments.port = -1;
     } else {
@@ -47,6 +47,15 @@ public abstract class AbstractServiceHost extends ServiceHost {
     }
 
     this.initialize(arguments);
+  }
+
+  public AbstractServiceHost(XenonConfig xenonConfig) throws Throwable {
+    setup(xenonConfig, ServiceHostState.SslClientAuthMode.NEED);
+  }
+
+  public AbstractServiceHost(XenonConfig xenonConfig,
+                             ServiceHostState.SslClientAuthMode sslClientAuthMode) throws Throwable {
+    setup(xenonConfig, sslClientAuthMode);
   }
 
   @Override

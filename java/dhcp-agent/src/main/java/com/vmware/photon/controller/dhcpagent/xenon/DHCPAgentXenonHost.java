@@ -62,7 +62,7 @@ public class DHCPAgentXenonHost
       BuildInfo buildInfo,
       ListeningExecutorService listeningExecutorService,
       DHCPDriver dhcpDriver) throws Throwable {
-    super(xenonConfig);
+    super(xenonConfig, ServiceHostState.SslClientAuthMode.WANT);
     this.buildInfo = buildInfo;
     this.listeningExecutorService = listeningExecutorService;
     this.dhcpDriver = dhcpDriver;
