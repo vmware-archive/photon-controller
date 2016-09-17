@@ -546,6 +546,9 @@ public class ClusterManagerClient {
     cluster.setState(clusterDocument.clusterState);
     cluster.setProjectId(clusterDocument.projectId);
     cluster.setWorkerCount(clusterDocument.workerCount);
+    cluster.setMasterVmFlavorName(clusterDocument.masterVmFlavorName);
+    cluster.setOtherVmFlavorName(clusterDocument.otherVmFlavorName);
+    cluster.setImageId(clusterDocument.imageId);
     cluster.setExtendedProperties(clusterDocument.extendedProperties);
 
     return cluster;

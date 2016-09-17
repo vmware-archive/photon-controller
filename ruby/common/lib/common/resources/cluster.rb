@@ -11,7 +11,10 @@
 
 module EsxCloud
   class Cluster
-    attr_reader :id, :name, :type, :state, :worker_count, :extended_properties
+    attr_reader :id, :name, :type, :state, :worker_count,
+                :master_vm_flavor, :other_vm_flavor, :extended_vm_flavor,
+                :image_id,
+                :extended_properties
 
     # @param [String] id
     # @param [String] name
@@ -19,18 +22,26 @@ module EsxCloud
     # @param [String] state
     # @param [int] worker_count
     # @param [Hash] extended_properties
-    def initialize(id, name, type, state, worker_count, extended_properties)
+    def initialize(id, name, type, state, worker_count,
+                   master_vm_flavor, other_vm_flavor, image_id,
+                   extended_properties)
       @id = id
       @name = name
       @type = type
       @state = state
       @worker_count = worker_count
+      @master_vm_flavor = master_vm_flavor
+      @other_vm_flavor = other_vm_flavor
+      @image_id = image_id
       @extended_properties = extended_properties
     end
 
     def ==(other)
       @id == other.id && @name == other.name && @type == other.type &&
       @state == state && @worker_count == other.worker_count &&
+      @master_vm_flavor == master_vm_flavor &&
+      @other_vm_flavor == other_vm_flavor &&
+      @image_id == image_id &&
       @extended_properties == other.extended_properties
     end
 
@@ -41,8 +52,15 @@ module EsxCloud
         raise UnexpectedFormat, "Invalid Cluster hash: #{hash}"
       end
 
-      new(hash["id"], hash["name"], hash["type"], hash["state"],
-          hash["workerCount"], hash["extendedProperties"])
+      new(hash["id"],
+          hash["name"],
+          hash["type"],
+          hash["state"],
+          hash["workerCount"],
+          hash["masterVmFlavorName"],
+          hash["otherVmFlavorName"],
+          hash["imageId"],
+          hash["extendedProperties"])
     end
 
     # @param [String] project_id
