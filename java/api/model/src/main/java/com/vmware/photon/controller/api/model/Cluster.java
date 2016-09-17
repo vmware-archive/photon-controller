@@ -29,47 +29,66 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * This class represents a cluster.
+ * This is the representation of a cluster for a GET request.
+ *
+ * See ClusterCreateSpec to see how a cluster is created with a POST request.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Cluster extends Base implements Named {
 
   public static final String KIND = "cluster";
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies the cluster name.",
+  @ApiModelProperty(value = "The name of the cluster",
       required = true)
   @NotNull
   @Size(min = 1, max = 63)
   @Pattern(regexp = Named.PATTERN, message = ": The specified cluster name does not match pattern: " + Named.PATTERN)
   private String name;
+
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies the cluster type.",
+  @ApiModelProperty(value = "The cluster type",
       allowableValues = ClusterType.ALLOWABLE_VALUES, required = true)
   @NotNull
   private ClusterType type;
+
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies the cluster state.",
+  @ApiModelProperty(value = "The cluster state",
       required = true)
   @NotNull
   private ClusterState state;
+
   @JsonProperty
   @ApiModelProperty(value = "The id of the project that this cluster belongs to.")
   @NotNull
   @Size(min = 1)
   private String projectId;
+
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies the number of slave VMs " +
-      "in the cluster.", required = false)
+  @ApiModelProperty(value = "Deprecated, use workerCount instead ", required = false)
   @Min(0)
   private int slaveCount;
+
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies the number of worker VMs " +
-      "in the cluster.", required = false)
+  @ApiModelProperty(value = "The number of worker VMs in the cluster.", required = false)
   @Min(1)
   private int workerCount;
+
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies extended properties needed by " +
-      "various cluster types.", required = true)
+  @ApiModelProperty(value = "This is the name of the flavor used to make the master VM(s).")
+  private String masterVmFlavorName;
+
+  @JsonProperty
+  @ApiModelProperty(value = "This is the name of the flavor used to make all the VMs other "
+      + "than the master (e.g. the workers).")
+  private String otherVmFlavorName;
+
+  @JsonProperty
+  @ApiModelProperty(value = "Id of the image used to create the cluster", required = false)
+  private String imageId;
+
+  @JsonProperty
+  @ApiModelProperty(value = "A table of extra properties describing the cluster: "
+      + "please see the documentation for the complete list.", required = true)
   @NotNull
   @Size(min = 1)
   private Map<String, String> extendedProperties;
@@ -130,6 +149,30 @@ public class Cluster extends Base implements Named {
     this.workerCount = workerCount;
   }
 
+  public void setMasterVmFlavor(String masterVmFlavor) {
+    this.masterVmFlavorName = masterVmFlavor;
+  }
+
+  public String getMasterVmFlavor() {
+    return this.masterVmFlavorName;
+  }
+
+  public void setOtherVmFlavor(String otherVmFlavorName) {
+    this.otherVmFlavorName = otherVmFlavorName;
+  }
+
+  public String getOtherVmFlavorName() {
+    return this.otherVmFlavorName;
+  }
+
+  public void setImageId(String imageId) {
+    this.imageId = imageId;
+  }
+
+  public String getImageId() {
+    return this.imageId;
+  }
+
   public Map<String, String> getExtendedProperties() {
     return extendedProperties;
   }
@@ -157,12 +200,16 @@ public class Cluster extends Base implements Named {
         Objects.equals(state, other.state) &&
         Objects.equals(projectId, other.projectId) &&
         Objects.equals(workerCount, other.workerCount) &&
+        Objects.equals(masterVmFlavorName, other.masterVmFlavorName) &&
+        Objects.equals(otherVmFlavorName, other.otherVmFlavorName) &&
+        Objects.equals(imageId, other.imageId) &&
         Objects.equals(extendedProperties, other.extendedProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), name, type, projectId, workerCount, extendedProperties);
+    return Objects.hash(super.hashCode(),
+        name, type, projectId, workerCount, masterVmFlavorName, otherVmFlavorName, imageId, extendedProperties);
   }
 
   @Override
@@ -173,6 +220,9 @@ public class Cluster extends Base implements Named {
         .add("state", state)
         .add("projectId", projectId)
         .add("workerCount", workerCount)
+        .add("masterVmFlavorName", masterVmFlavorName)
+        .add("otherVmFlavorName", otherVmFlavorName)
+        .add("imageId", imageId)
         .add("extendedProperties", extendedProperties)
         .toString();
   }
