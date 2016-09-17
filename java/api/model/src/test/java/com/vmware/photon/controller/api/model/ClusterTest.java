@@ -48,6 +48,9 @@ public class ClusterTest {
     c.setName("name");
     c.setProjectId("projectId");
     c.setWorkerCount(3);
+    c.setMasterVmFlavorName("flavor");
+    c.setOtherVmFlavorName("flavor");
+    c.setImageId("image");
     c.setExtendedProperties(ImmutableMap.of("containerNetwork", "10.1.0.0/16"));
     return c;
   }
@@ -81,7 +84,8 @@ public class ClusterTest {
     @Test
     public void testToString() {
       String expectedString = "Cluster{id=id, Kind=cluster, name=name, type=KUBERNETES, state=READY," +
-          " projectId=projectId, workerCount=3, extendedProperties={containerNetwork=10.1.0.0/16}}";
+          " projectId=projectId, workerCount=3, masterVmFlavorName=flavor, otherVmFlavorName=flavor, " +
+          "imageId=image, extendedProperties={containerNetwork=10.1.0.0/16}}";
       assertThat(cluster.toString(), is(expectedString));
     }
   }
