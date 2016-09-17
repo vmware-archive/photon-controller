@@ -53,28 +53,28 @@ public class ClusterCreateSpec implements Named {
   private ClusterType type;
 
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies the desired VM flavor of " +
-      "the component. If omitted, default flavor will be used.", required = false)
+  @ApiModelProperty(value = "This property specifies the name of VM flavor to use " +
+      "for all VMs in the cluster. If omitted, the 'cluster-master-vm' and " +
+      "'cluster-other-vm' flavors will be used.", required = false)
   @Size(min = 0, max = 63)
   @Pattern(regexp = Named.PATTERN, message = ": The specified vmFlavor name does not match pattern: " + Named.PATTERN)
   private String vmFlavor;
 
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies the desired disk flavor " +
-      "of the component. Each VM is attached one disk.  If omitted, default flavor " +
+  @ApiModelProperty(value = "This property specifies the name of the ephemeral disk flavor " +
+      "to use for the boot disk for all  VMs in the cluster. If omitted, the 'cluster-vm-disk' flavor " +
       "will be used.", required = false)
   @Size(min = 0, max = 63)
   @Pattern(regexp = Named.PATTERN, message = ": The specified diskFlavor name does not match pattern: " + Named.PATTERN)
   private String diskFlavor;
 
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies the desired network id " +
-      "of the component. If omitted, default network will be used.", required = false)
+  @ApiModelProperty(value = "This property specifies the id of the network " +
+      "that the VMs should be attached to. If omitted, the default network will be used.", required = false)
   private String vmNetworkId;
 
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies the desired number of slave VMs " +
-      "in the cluster.", required = false)
+  @ApiModelProperty(value = "Deprecated, use workerCount instead", required = false)
   @Min(0)
   @Max(1000)
   private int slaveCount;
@@ -87,8 +87,7 @@ public class ClusterCreateSpec implements Named {
   private int workerCount;
 
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies the size of batch expansion for slave VMs.",
-  required = false)
+  @ApiModelProperty(value = "Deprecated, use workerBatchExpansionSize instead", required = false)
   private int slaveBatchExpansionSize;
 
   @JsonProperty
@@ -97,8 +96,8 @@ public class ClusterCreateSpec implements Named {
   private int workerBatchExpansionSize;
 
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies extended properties needed by " +
-      "various cluster types.", required = true)
+  @ApiModelProperty(value = "This property specifies extra attributes for the cluster. These are extra" +
+      "cluster attributes: please see the documentation for the complete list.", required = true)
   @NotNull
   @Size(min = 1)
   private Map<String, String> extendedProperties;
