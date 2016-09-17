@@ -705,18 +705,13 @@ public class KubernetesClusterCreateTaskServiceTest {
       cluster.vmNetworkId = "vmNetworkId";
       cluster.workerCount = size;
       cluster.extendedProperties = new HashMap<>();
-      cluster.extendedProperties.put(
-          ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "1.1.1.1");
-      cluster.extendedProperties.put(
-          ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "2.2.2.2");
-      cluster.extendedProperties.put(
-          ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "3.3.3.3");
-      cluster.extendedProperties.put(
-          ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "4.4.4.4");
-      cluster.extendedProperties.put(
-          ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS, "10.0.0.1,10.0.0.2,10.0.0.3,");
-      cluster.extendedProperties.put(
-          ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "100.0.0.1");
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "1.1.1.1");
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "2.2.2.2");
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "3.3.3.3");
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "4.4.4.4");
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS, "10.0.0.1,10.0.0.2,10.0.0.3,");
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "100.0.0.1");
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CA_CERT, "example-ca-cert");
       cluster.documentSelfLink = UUID.randomUUID().toString();
 
       cloudStoreMachine.callServiceAndWaitForState(

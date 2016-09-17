@@ -16,6 +16,16 @@ write_files:
     permissions: 0644
     path: /tmp/init-network.sh
   - content: |
+        echo "Copying CA Cert to ca-bundle"
+        if [[ $CA_CERT ]]
+          echo $CA_CERT >> /etc/pki/tls/certs/ca-bundle.crt
+        fi
+        systemctl restart docker
+        echo "Done"
+    owner: root:root
+    permissions: 0644
+    path: /tmp/copy-ca-cert.sh
+  - content: |
         echo "Starting Kubernetes worker"
         export ETCD_IPS=$ETCD_QUORUM
         export MASTER_IP=$MASTER_ADDRESS

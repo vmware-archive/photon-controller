@@ -346,6 +346,7 @@ public class ClusterManagerClient {
     String masterIp = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
     String containerNetwork =
         spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK);
+    String caCert = spec.getExtendedProperties().get(ClusterManagerConstants.EXTENDED_PROPERTY_CA_CERT);
 
     if (etcdIps.size() == 0) {
       throw new SpecInvalidException("Missing extended property: etcd ips");
@@ -399,6 +400,10 @@ public class ClusterManagerClient {
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, containerNetwork);
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS, serializeIpAddresses(etcdIps));
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, masterIp);
+
+    if (caCert != null) {
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CA_CERT, caCert);
+    }
 
     // Create the cluster entity
     apiFeXenonClient.post(
