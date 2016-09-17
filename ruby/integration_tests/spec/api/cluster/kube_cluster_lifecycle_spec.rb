@@ -78,7 +78,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
           extended_properties: props
       )
 
-      validate_cluster_info(cluster, 1)
+      validate_cluster_info(cluster, 1, @seeder.vm_flavor!.name)
       validate_kube_api_responding(ENV["KUBERNETES_MASTER_IP"], 2)
 
       validate_ssh
@@ -102,11 +102,11 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
           batch_size: nil,
           extended_properties: props2
       )
-      validate_cluster_info(cluster2, 1)
+      validate_cluster_info(cluster2, 1, @seeder.vm_flavor!.name)
       validate_kube_api_responding(kube2_master_ip, 2 )
 
       # Validate that cluster 1 still works
-      validate_cluster_info(cluster, N_WORKERS)
+      validate_cluster_info(cluster, N_WORKERS, @seeder.vm_flavor!.name)
       validate_kube_api_responding(ENV["KUBERNETES_MASTER_IP"], N_WORKERS + 1 )
 
       delete_cluster(cluster2)
@@ -126,11 +126,11 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
           extended_properties: props2
       )
 
-      validate_cluster_info(cluster3, 1)
+      validate_cluster_info(cluster3, 1, @seeder2.vm_flavor!.name)
       validate_kube_api_responding(kube2_master_ip, 2 )
 
       # Validate that cluster 1 is stilling responding
-      validate_cluster_info(cluster, N_WORKERS)
+      validate_cluster_info(cluster, N_WORKERS, @seeder.vm_flavor!.name)
       validate_kube_api_responding(ENV["KUBERNETES_MASTER_IP"], N_WORKERS + 1 )
 
       delete_cluster(cluster3)
@@ -165,13 +165,16 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
 
   # This function validate that our cluster manager api is working properly
   # It also checks that the extended properties added later were put it properly
-  def validate_cluster_info(cluster_current, expected_worker_count)
+  def validate_cluster_info(cluster_current, expected_worker_count, flavor)
     cid_current = cluster_current.id
     cluster_current = client.find_cluster_by_id(cid_current)
     expect(cluster_current.name).to start_with("kubernetes-")
     expect(cluster_current.type).to eq("KUBERNETES")
     expect(cluster_current.worker_count).to eq expected_worker_count
     expect(cluster_current.state).to eq "READY"
+    expect(cluster_current.masterVmFlavorName).to eq flavor
+    expect(cluster_current.otherVmFlavorName).to eq flavor
+    expect(cluster_current.imageId).to eq @kubernetes_image
     expect(cluster_current.extended_properties["cluster_version"]).to eq ("v1.3.6")
     expect(cluster_current.extended_properties.length).to be > 12
   end
