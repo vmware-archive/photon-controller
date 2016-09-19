@@ -93,10 +93,9 @@ public class HostCreateTaskStatusPoller implements XenonTaskStatusStepCmd.XenonT
       case InvalidLogin:
         throw new InvalidLoginException();
       case ManagementVmAddressAlreadyInUse:
-        String errorMsg = String.format("Management host (%s)'s management VM IP Address in use: %s",
-            state.hostAddress,
-            state.taskState.failure);
-        throw new ManagementVmAddressInUseException(errorMsg);
+        throw new ManagementVmAddressInUseException(
+          state.hostAddress,
+          state.taskState.failure != null ? state.taskState.failure.message : null);
       default:
         break;
     }
