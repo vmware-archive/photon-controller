@@ -22,7 +22,7 @@ import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DuplicateHostException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidLoginException;
-import com.vmware.photon.controller.api.frontend.exceptions.external.IpAddressInUseException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ManagementVmAddressInUseException;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.Operation;
@@ -93,7 +93,10 @@ public class HostCreateTaskStatusPoller implements XenonTaskStatusStepCmd.XenonT
       case InvalidLogin:
         throw new InvalidLoginException();
       case ManagementVmAddressAlreadyInUse:
-        throw new IpAddressInUseException(state.hostAddress);
+        String errorMsg = String.format("Management host (%s)'s management VM IP Address in use: %s",
+            state.hostAddress,
+            state.taskState.failure);
+        throw new ManagementVmAddressInUseException(errorMsg);
       default:
         break;
     }

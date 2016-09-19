@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 VMware, Inc. All Rights Reserved.
+ * Copyright 2016 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -14,12 +14,10 @@
 package com.vmware.photon.controller.api.frontend.exceptions.external;
 
 /**
- * Thrown when IP address is in use.
+ * Thrown when management VM IP address is in use.
  */
-public class IpAddressInUseException extends ExternalException {
-  public IpAddressInUseException(String address) {
-    super(ErrorCode.IP_ADDRESS_IN_USE,
-        String.format("IP Address %s is in use", address),
-        null);
+public class ManagementVmAddressInUseException extends ExternalException {
+  public ManagementVmAddressInUseException(String message) {
+      super(ErrorCode.IP_ADDRESS_IN_USE, message, null);
   }
 }
