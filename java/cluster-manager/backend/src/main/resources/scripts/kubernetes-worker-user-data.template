@@ -2,20 +2,6 @@
 
 write_files:
   - content: |
-        eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
-        cat > "/etc/systemd/network/10-dhcp-${eno_name}.network" << EOF
-        [Match]
-        Name=${eno_name}
-
-        [Network]
-        DHCP=yes
-        EOF
-        ip addr flush label "${eno_name}"
-        systemctl restart systemd-networkd
-    owner: root:root
-    permissions: 0644
-    path: /tmp/init-network.sh
-  - content: |
         echo "Starting Kubernetes worker"
         export ETCD_IPS=$ETCD_QUORUM
         export MASTER_IP=$MASTER_ADDRESS
@@ -57,6 +43,6 @@ runcmd:
   - source /root/env_variables.txt
   - rm -f /etc/systemd/network/*.network
   - systemctl stop systemd-networkd
-  - sh /tmp/init-network.sh
+  - sh /root/init-network.sh >> /var/log/init-network.log 2>&1
   - sh /tmp/check-docker.sh
   - sh /root/setup-kubernetes-worker.sh >> /var/log/kubernetes-worker.log 2>&1
