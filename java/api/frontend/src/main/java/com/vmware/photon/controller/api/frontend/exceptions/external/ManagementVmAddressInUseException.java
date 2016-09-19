@@ -17,7 +17,17 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Thrown when management VM IP address is in use.
  */
 public class ManagementVmAddressInUseException extends ExternalException {
-  public ManagementVmAddressInUseException(String message) {
-      super(ErrorCode.IP_ADDRESS_IN_USE, message, null);
+  private final String hostIp;
+  private final String error;
+
+  public ManagementVmAddressInUseException(String hostIp, String error) {
+    super(ErrorCode.IP_ADDRESS_IN_USE);
+    this.hostIp = hostIp;
+    this.error = error;
+  }
+
+  @Override
+  public String getMessage() {
+    return String.format("Host (%s)'s management VM IP Address in use: %s", hostIp, error);
   }
 }
