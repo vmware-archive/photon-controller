@@ -36,15 +36,20 @@ public class DnsmasqDriver implements DHCPDriver {
     private String dhcpStatusPath = "/script/dhcp-status.sh";
     private String dhcpHostFileDir = "/etc/hosts";
     private String dhcpHostFileCopyDir = "/etc/hosts_copy";
+    private String dhcpPidFilePath = "/var/run/dnsmasq.pid";
+    private String dhcpReloadCachePath = "/script/dhcp-reload.sh";
 
     public DnsmasqDriver(String dhcpLeaseFilePath,
-            String dhcpReleaseUtilityPath, String releaseIPPath, String dhcpStatusPath, String dhcpHostFileDir) {
+            String dhcpReleaseUtilityPath, String releaseIPPath, String dhcpStatusPath,
+            String dhcpHostFileDir, String dhcpPidFilePath, String dhcpReloadCachePath) {
         this.dhcpLeaseFilePath = dhcpLeaseFilePath;
         this.dhcpReleaseUtilityPath = dhcpReleaseUtilityPath;
         this.releaseIPPath = releaseIPPath;
         this.dhcpStatusPath = dhcpStatusPath;
         this.dhcpHostFileDir = dhcpHostFileDir;
         this.dhcpHostFileCopyDir = dhcpHostFileDir + "_copy";
+        this.dhcpPidFilePath = dhcpPidFilePath;
+        this.dhcpReloadCachePath = dhcpReloadCachePath;
 
         File directory = new File(String.valueOf(this.dhcpHostFileCopyDir));
         if (!directory.exists()){
@@ -85,6 +90,29 @@ public class DnsmasqDriver implements DHCPDriver {
         } catch (Exception e) {
             response.exitCode = -1;
             response.stdError = e.toString();
+        } finally {
+            return response;
+        }
+    }
+
+    /**
+     * This method returns true when DHCP server
+     * cache is reloaded.
+     *
+     * @return
+     */
+    public boolean reload() {
+        boolean response = false;
+        try {
+            String command = dhcpReloadCachePath + " " + dhcpPidFilePath;
+            Process p = Runtime.getRuntime().exec(command);
+            int exitVal = p.waitFor();
+
+            if (exitVal == 0) {
+                response = true;
+            }
+        } catch (IOException e) {
+            return response;
         } finally {
             return response;
         }

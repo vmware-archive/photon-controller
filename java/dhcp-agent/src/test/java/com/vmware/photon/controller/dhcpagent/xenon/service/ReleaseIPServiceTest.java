@@ -294,7 +294,9 @@ public class ReleaseIPServiceTest {
                     "/usr/local/bin/dhcp_release",
                     ReleaseIPServiceTest.class.getResource(scriptPath).getPath(),
                     ReleaseIPServiceTest.class.getResource(scriptPath).getPath(),
-                    "/etc/hosts");
+                    "/etc/hosts",
+                    "/var/run/dnsmasq.pid",
+                    ReleaseIPServiceTest.class.getResource(scriptPath).getPath());
             testEnvironment = TestEnvironment.create(dnsmasqDriver, 1, listeningExecutorService);
         }
 

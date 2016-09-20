@@ -59,13 +59,15 @@ public class DnsmasqDriverTest {
                 "/usr/local/bin/dhcp_release",
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
-                DnsmasqDriverTest.class.getResource("/hosts").getPath());
+                DnsmasqDriverTest.class.getResource("/hosts").getPath(),
+                DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
+                DnsmasqDriverTest.class.getResource(scriptPath).getPath());
     }
 
     /**
      * Dummy test case to make Intellij recognize this as a test class.
      */
-    @Test(enabled = false)
+    @Test
     public void dummy() {
     }
 

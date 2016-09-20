@@ -64,7 +64,9 @@ public class StatusServiceTest {
                       "/usr/local/bin/dhcp_release",
                       StatusServiceTest.class.getResource(successScript).getPath(),
                       StatusServiceTest.class.getResource(successScript).getPath(),
-                      "/etc/hosts"),
+                      "/etc/hosts",
+                      "/var/run/dnsmasq.pid",
+                      StatusServiceTest.class.getResource(successScript).getPath()),
               1,
               listeningExecutorService);
     }

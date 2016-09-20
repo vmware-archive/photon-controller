@@ -49,7 +49,9 @@ public class DHCPAgentModuleTest {
               "/usr/local/bin/dhcp_release",
               DHCPAgentModuleTest.class.getResource(successScript).getPath(),
               DHCPAgentModuleTest.class.getResource(successScript).getPath(),
-              "/etc/hosts"));
+              "/etc/hosts",
+              "/var/run/dnsmasq.pid",
+              DHCPAgentModuleTest.class.getResource(successScript).getPath()));
     }
 
     @Test

@@ -52,7 +52,9 @@ public class Main {
             "/usr/local/bin/dhcp_release",
             DnsmasqDriver.class.getResource("/scripts/release-ip.sh").getPath(),
             DnsmasqDriver.class.getResource("/scripts/dhcp-status.sh").getPath(),
-            "/etc/hosts");
+            "/etc/hosts",
+            "/var/run/dnsmasq.pid",
+            DnsmasqDriver.class.getResource("/scripts/dhcp-reload.sh").getPath());
 
     Injector injector = Guice.createInjector(new DHCPAgentModule(dhcpAgentConfig, dnsmasqDriver));
 

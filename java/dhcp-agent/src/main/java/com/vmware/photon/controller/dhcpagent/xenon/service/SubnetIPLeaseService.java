@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DHCPDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.DHCPAgentXenonHost;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
@@ -144,12 +145,19 @@ public class SubnetIPLeaseService extends StatefulService {
      */
     public void handleUpdateSubnetIPLease(SubnetIPLeaseTask currentState, Operation operation) {
         try {
-            ((DHCPAgentXenonHost) getHost()).getDHCPDriver().updateSubnetIPLease(
+            DHCPDriver dhcpDriver = ((DHCPAgentXenonHost) getHost()).getDHCPDriver();
+            dhcpDriver.updateSubnetIPLease(
                     currentState.subnetIPLease.subnetId,
                     currentState.subnetIPLease.ipToMACAddressMap,
                     currentState.subnetIPLease.version);
 
-            SubnetIPLeaseTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+            SubnetIPLeaseTask patchState;
+            if (dhcpDriver.reload()) {
+                patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+            } else {
+                patchState = buildPatch(TaskState.TaskStage.FAILED, null);
+            }
+
             if (operation == null) {
                 TaskUtils.sendSelfPatch(this, patchState);
             } else {
@@ -171,9 +179,16 @@ public class SubnetIPLeaseService extends StatefulService {
      */
     public void handleDeleteSubnetIPLease(SubnetIPLeaseTask currentState, Operation operation) {
         try {
-            ((DHCPAgentXenonHost) getHost()).getDHCPDriver().deleteSubnetIPLease(currentState.subnetIPLease.subnetId);
+            DHCPDriver dhcpDriver = ((DHCPAgentXenonHost) getHost()).getDHCPDriver();
+            dhcpDriver.deleteSubnetIPLease(currentState.subnetIPLease.subnetId);
 
-            SubnetIPLeaseTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+            SubnetIPLeaseTask patchState;
+            if (dhcpDriver.reload()) {
+                patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+            } else {
+                patchState = buildPatch(TaskState.TaskStage.FAILED, null);
+            }
+
             if (operation == null) {
                 TaskUtils.sendSelfPatch(this, patchState);
             } else {

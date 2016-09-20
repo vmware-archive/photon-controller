@@ -58,7 +58,7 @@ public class SubnetIPLeaseServiceTest {
     /**
      * Dummy test case to make IntelliJ recognize this as a test class.
      */
-    @Test(enabled = false)
+    @Test
     public void dummy() {
     }
 
@@ -281,7 +281,9 @@ public class SubnetIPLeaseServiceTest {
                     "/usr/local/bin/dhcp_release",
                     SubnetIPLeaseServiceTest.class.getResource("/scripts/success.sh").getPath(),
                     SubnetIPLeaseServiceTest.class.getResource("/scripts/success.sh").getPath(),
-                    hostDirPath);
+                    hostDirPath,
+                    hostDirPath,
+                    SubnetIPLeaseServiceTest.class.getResource("/scripts/success.sh").getPath());
             testEnvironment = TestEnvironment.create(dnsmasqDriver, 1, listeningExecutorService);
         }
 
