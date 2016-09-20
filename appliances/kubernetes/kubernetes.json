@@ -51,8 +51,8 @@
     },
     {
       "type": "file",
-      "source": "vm-scripts/init-network.sh",
-      "destination": "/root/init-network.sh"
+      "source": "vm-scripts/setup-dhcp.sh",
+      "destination": "/root/setup-dhcp.sh"
     }
   ]
 }
