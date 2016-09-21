@@ -4,7 +4,7 @@ tools=$(readlink -nf $(dirname $0))
 source $tools/common.sh
 
 function usage() {
-  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD VIB_PATH" 1>&2
+  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD VIB_PATH CREATE_CERT LW_DOMAIN LW_ADDRESS LW_PASSWORD" 1>&2
   echo
   echo "Supplied args:"
   echo $*
@@ -20,7 +20,7 @@ lightwave_domain=""
 lightwave_address=""
 lightwave_password=""
 
-if [ "$#" -lt 4 ]
+if [ "$#" -lt 8 ]
 then
   usage $*
 fi
@@ -67,84 +67,26 @@ function install_vib() {
 	fi
 }
 
-function create_and_copy_certificate() {
-  # Add java home and other required binaries to path. We need this here even though we are doing this during container
-  # build because systemd service does not seem to honor the environment variables set at container build time.
-
-
-  export JAVA_HOME="/usr/java/default"
-  export PATH=$PATH:$JAVA_HOME/bin:/opt/esxcli:/opt/vmware/bin:/opt/likewise/bin
-
-  cert_dir="./host_cert_${host_address}"
-  host_cert_dir="/etc/vmware/ssl"
-  priv_key_name="host.privkey"
-  pub_key_name="host.pubkey"
-  crt_name="host.crt"
-  priv_key_path="${cert_dir}/${priv_key_name}"
-  pub_key_path="${cert_dir}/${pub_key_name}"
-  host_crt_path="${cert_dir}/${crt_name}"
-  esxi_priv_key_path="${host_cert_dir}/${priv_key_name}"
-  esxi_pub_key_path="${host_cert_dir}/${pub_key_name}"
-  esxi_host_crt_path="${host_cert_dir}/${crt_name}"
-
-
-  # Delete certificate files if it exists
-  echo "Deleting cert for ${host_address}"
-  sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} rm -f "${esxi_host_crt_path}"
-  sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} rm -f "${esxi_pub_key_path}"
-  sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} rm -f "${esxi_priv_key_path}"
-
-  if [ ! -d "${cert_dir}" ]; then
-    mkdir -p ${cert_dir}
-
-    #copying the config file to local directory which is going to be used in the cerficate generation.
-    config_file_path="${cert_dir}/certool.cfg"
-    cp /opt/vmware/share/config/certool.cfg "${config_file_path}"
-
-    # Fill in the ip address for generating a host certificate
-    sed -i s/IPAddress.*/"IPAddress = ${host_address}"/ "${config_file_path}"
-
-    # Generate keys if they don't exist
-    if [ ! -f "${priv_key_path}" ] || [ ! -f "${pub_key_path}" ]; then
-      echo "Creating keys for ${host_address}"
-      certool --genkey --privkey="${priv_key_path}" --pubkey="${pub_key_path}" \
-        --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} --server ${lightwave_address}
-    fi
-
-    # Generate certificate if it doesn't exist
-    if [ ! -f "${host_crt_path}" ]; then
-      echo "Creating cert for ${host_address}"
-      certool --gencert --privkey="${priv_key_path}" --cert="${host_crt_path}" \
-        --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} \
-        --server ${lightwave_address} --config "${config_file_path}"
-    fi
-
-    # listing /etc/vmware/ssl contents before copying
-    echo "listing /etc/vmware/ssl contents before copying"
-    sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} ls /etc/vmware/ssl
-
-    sshpass -p "$password" scp -o StrictHostKeyChecking=no ${host_crt_path} ${username}@${host_address}:/etc/vmware/ssl
-    sshpass -p "$password" scp -o StrictHostKeyChecking=no ${priv_key_path} ${username}@${host_address}:/etc/vmware/ssl
-
-    # listing /etc/vmware/ssl contents after copying
-    echo "listing /etc/vmware/ssl contents after coying"
-    sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} ls /etc/vmware/ssl
-
-    rm -rf "${cert_dir}"
-  fi
+function join_lightwave_domain() {
+  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} /etc/init.d/vmafdd start
+  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} "/usr/lib/vmware/ic-deploy/bin/ic-deploy\
+              --mode client --hostname ${host_address} --server ${lightwave_address} --domain ${lightwave_domain}\
+              --password ${lightwave_password}"
+  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} /usr/lib/vmware/vmafd/bin/vecs-cli\
+              entry list --store MACHINE_SSL_CERT --text
 }
 
-sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} date
-sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list
+sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} date
+sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list
 
 install_vib
 
-sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list
-sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} date
+sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list
+sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} date
 
-echo "Creating and copying cert: ${create_cert}"
-if [ "$create_cert" == "true" ]
+echo "create_cert=${create_cert}, vib_path=${vib_path}"
+if [[ "$create_cert" == "true" && "$vib_path" == *"lightwave"* ]]
 then
-  echo "Creating and copying cert for ${host_address}"
-  create_and_copy_certificate
+  echo "Join lightwave: host_address=${host_address}, lw_address=${lightwave_address}, lw_domain=${lightwave_domain}"
+  join_lightwave_domain
 fi
