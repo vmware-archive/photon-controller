@@ -298,6 +298,8 @@ public class GarbageInspectionTaskService extends StatefulService {
               }
 
               if (inactiveVms.size() > 0) {
+                ServiceUtils.logInfo(GarbageInspectionTaskService.this, "Inactive VMs found: %s",
+                    inactiveVms);
                 createInactiveVmEntities(currentState.clusterId, inactiveVms);
               } else {
                 TaskUtils.sendSelfPatch(GarbageInspectionTaskService.this,

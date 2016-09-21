@@ -27,6 +27,7 @@ import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -35,6 +36,7 @@ import java.util.Set;
 public class KubernetesClient {
   private static final String GET_NODES_PATH = "/api/v1/nodes";
   private static final String GET_VERSION_PATH = "/version";
+  private static final String HOSTNAME_LABEL = "vm-hostname";
 
   private CloseableHttpAsyncClient httpClient;
   private ObjectMapper objectMapper;
@@ -163,7 +165,8 @@ public class KubernetesClient {
   }
 
   /**
-   * This method calls into the Kubernetes API endpoint to retrieve the hostnames of worker nodes.
+   * This method calls into the Kubernetes API endpoint to retrieve the hostnames of worker nodes
+   * stored in the node labels.
    *
    * @param connectionString          connectionString of the master Node in the Cluster
    * @param callback                  callback that is invoked on completion of the operation.
@@ -193,8 +196,11 @@ public class KubernetesClient {
             Set<String> nodes = new HashSet();
             if (response != null && response.items != null) {
               for (Node n : response.items) {
-                if (n.getMetadata() != null && n.getMetadata().getName() != null) {
-                  nodes.add(n.getMetadata().getName());
+                if (n.getMetadata() != null && n.getMetadata().getLabels() != null) {
+                  Map<String, String> labels = n.getMetadata().getLabels();
+                  if (labels.containsKey(HOSTNAME_LABEL)) {
+                    nodes.add(labels.get(HOSTNAME_LABEL));
+                  }
                 }
               }
             }
@@ -261,6 +267,7 @@ public class KubernetesClient {
    */
   public static class NodeMetadata {
     private String name;
+    private Map<String, String> labels;
 
     public String getName() {
       return name;
@@ -268,6 +275,14 @@ public class KubernetesClient {
 
     public void setName(String name) {
       this.name = name;
+    }
+
+    public Map<String, String> getLabels() {
+      return labels;
+    }
+
+    public void setLabels(Map<String, String> labels) {
+      this.labels = labels;
     }
   }
 
