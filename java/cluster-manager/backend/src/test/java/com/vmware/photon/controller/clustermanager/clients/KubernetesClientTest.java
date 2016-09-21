@@ -21,6 +21,7 @@ import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.fail;
 
@@ -98,6 +99,48 @@ public class KubernetesClientTest {
         @Override
         public void onFailure(Throwable t) {
           assertTrue(t instanceof SocketException);
+          latch.countDown();
+        }
+      });
+
+      assertThat(latch.await(LATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+    }
+  }
+
+  /**
+   * Tests for getAvailableNodeNamesAsync method.
+   */
+  public class GetAvailableNodeNamesAsyncTest {
+    private static final String CONNECTION_STRING = "http://10.146.22.40:8080";
+    private static final int LATCH_AWAIT_TIMEOUT = 10;
+
+    private List<String> names = Arrays.asList(
+        "worker-6a8e2d24-3118-4848-bdff-fe9daabf38b9", "worker-2e4ead33-7c01-4308-8669-7ebcb65bf98f",
+        "master-71251c24-592f-4fab-ac23-6640032da897");
+
+    @Test
+    public void testGetAddressesSuccess() throws IOException, InterruptedException {
+      String clusterJson = Resources.toString(
+          KubernetesClientTest.class.getResource("/kubernetes_cluster.json"), Charsets.UTF_8);
+
+      asyncHttpClient = HttpClientTestUtil.setupMocks(clusterJson, HttpStatus.SC_OK);
+      KubernetesClient client = new KubernetesClient(asyncHttpClient);
+
+      final CountDownLatch latch = new CountDownLatch(1);
+      client.getAvailableNodeNamesAsync(CONNECTION_STRING, new FutureCallback<Set<String>>() {
+        @Override
+        public void onSuccess(@Nullable Set<String> nodeNames) {
+          for (String name : names) {
+            assertTrue(nodeNames.contains(name));
+          }
+          // This worker is marked as not ready.
+          assertFalse(nodeNames.contains("worker-8bd8b53b-e665-45cc-b7c9-83d9c02cc942"));
+          latch.countDown();
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+          fail(t.toString());
           latch.countDown();
         }
       });

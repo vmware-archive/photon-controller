@@ -459,7 +459,8 @@ public class GarbageInspectionTaskServiceTest {
       mockClusterApi(startState.clusterId);
       mockVmApi(true);
 
-      doThrow(new IOException()).when(kubernetesClient).getNodeNamesAsync(anyString(), any(FutureCallback.class));
+      doThrow(new IOException()).when(kubernetesClient).getAvailableNodeNamesAsync(anyString(),
+          any(FutureCallback.class));
 
       GarbageInspectionTaskService.State serviceState =
           machine.callServiceAndWaitForState(
@@ -527,7 +528,7 @@ public class GarbageInspectionTaskServiceTest {
       doAnswer(invocation -> {
         ((FutureCallback<Set<String>>) invocation.getArguments()[1]).onSuccess(nodeNames);
         return null;
-      }).when(kubernetesClient).getNodeNamesAsync(
+      }).when(kubernetesClient).getAvailableNodeNamesAsync(
           anyString(), any(FutureCallback.class));
     }
 

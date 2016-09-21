@@ -634,7 +634,7 @@ public class ClusterMaintenanceTaskServiceTest {
           vmList.add(vm);
           if (!hasInactiveVm || i % 2 == 0) {
             // make roughly half of the vms "inactive" and not return them in
-            // kubernetesClient.getNodeNamesAsync
+            // kubernetesClient.getAvailableNodeNamesAsync
             vmNames.add(vmId);
           }
         }
@@ -646,12 +646,12 @@ public class ClusterMaintenanceTaskServiceTest {
         doAnswer(invocation -> {
           ((FutureCallback<Set<String>>) invocation.getArguments()[1]).onSuccess(vmNames);
           return null;
-        }).when(kubernetesClient).getNodeNamesAsync(
+        }).when(kubernetesClient).getAvailableNodeNamesAsync(
             any(String.class), any(FutureCallback.class));
       } else {
         doThrow(new IOException("get cluster vms failed"))
             .when(clusterApi).getVmsInClusterAsync(any(String.class), any(FutureCallback.class));
-        doThrow(new IOException("get node names failed")).when(kubernetesClient).getNodeNamesAsync(
+        doThrow(new IOException("get node names failed")).when(kubernetesClient).getAvailableNodeNamesAsync(
             any(String.class), any(FutureCallback.class));
       }
     }
