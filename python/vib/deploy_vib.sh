@@ -45,10 +45,10 @@ cleanup() {
 
 trap cleanup EXIT
 
-sshpass -p "$ESX_PWD" scp -o $control_path $vibfile root@$target_host:/tmp/$vibfilename
+sshpass -p "$ESX_PWD" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null scp -o $control_path $vibfile root@$target_host:/tmp/$vibfilename
 
 # Assume if vib remove fails, its because the vib isn't installed
-sshpass -p "$ESX_PWD" ssh $target_host "esxcli software vib remove --vibname=${vibname} -f || true"
-sshpass -p "$ESX_PWD" ssh $target_host "esxcli software vib install -v /tmp/${vibfilename} -f"
+sshpass -p "$ESX_PWD" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ssh $target_host "esxcli software vib remove --vibname=${vibname} -f || true"
+sshpass -p "$ESX_PWD" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ssh $target_host "esxcli software vib install -v /tmp/${vibfilename} -f"
 
 exit 0
