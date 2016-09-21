@@ -147,7 +147,8 @@ mkdir -p $CONFIG_PATH/assets
 cp $API_SWAGGER_JS $CONFIG_PATH/assets
 $JAVA_HOME/bin/jar uf ${API_LIB}/swagger-ui*.jar -C $CONFIG_PATH assets/$API_SWAGGER_JS_FILE
 
-if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH,,}" == "true" ]
+# Check if Auth is enbaled or if we already joined previously or created certs.
+if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH,,}" == "true" -a ! -f /etc/keys/machine.privkey ]
 then
   ic_join_params=""
   if [ -n "${LIGHTWAVE_DOMAIN_CONTROLLER}" ]
@@ -236,6 +237,9 @@ then
        -keystore /keystore.jks -storepass ${LIGHTWAVE_PASSWORD} -noprompt
   done
 
+  # Delete temporary cacert file. For test purpose, curl command should be passed with --capath /etc/ssl/certs.
+  rm -rf /etc/keys/cacert.crt
+
   # Restrict permission on the key files
   chmod 0400 /etc/keys/machine.privkey
 fi
@@ -253,4 +257,4 @@ else
   COMMAND=photon-controller-core
 fi
 
-$COMMAND $PHOTON_CONTROLLER_CORE_CONFIG
+$COMMAND $PHOTON_CONTROLLER_CORE_CONFIG &

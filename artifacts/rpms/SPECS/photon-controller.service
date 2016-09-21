@@ -4,9 +4,9 @@ After=syslog.target network.target lwsmd.service
 Requires=lwsmd.service
 
 [Service]
-Type=oneshot
+Type=simple
 ExecStart=/usr/lib/esxcloud/photon-controller-core/configuration/run.sh
-RemainAfterExit=true
+RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target

@@ -8,7 +8,7 @@
 
 if [[ $ENABLE_AUTH == 'true' ]]; then
     DEPLOYMENT_SEED_CURL_OPTS="--cert /etc/keys/machine.crt \
-  --key /etc/keys/machine.privkey --cacert /etc/keys/cacert.crt"
+  --key /etc/keys/machine.privkey --capath /etc/ssl/certs"
     PROTOCOL="https"
 else
     DEPLOYMENT_SEED_CURL_OPTS=""
