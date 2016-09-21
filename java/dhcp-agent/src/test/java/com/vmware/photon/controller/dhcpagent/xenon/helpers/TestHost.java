@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.dhcpagent.xenon.helpers;
 
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.Constants;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DHCPDriver;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
 import com.vmware.xenon.common.Operation;
@@ -27,7 +28,7 @@ public class TestHost extends BasicServiceHost {
     private static final String successScript = "/scripts/success.sh";
 
     private DHCPDriver dhcpDriver = new DnsmasqDriver(TestHost.class.getResource("/dnsmasq.leases").getPath(),
-            "/usr/local/bin/dhcp_release",
+            Constants.DHCP_RELEASE_PATH,
             TestHost.class.getResource(successScript).getPath(),
             TestHost.class.getResource(successScript).getPath(),
             TestHost.class.getResource("/hosts/subnet1").getPath(),

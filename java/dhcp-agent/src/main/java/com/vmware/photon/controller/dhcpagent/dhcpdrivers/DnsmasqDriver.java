@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,12 +32,12 @@ import java.util.regex.Pattern;
  */
 public class DnsmasqDriver implements DHCPDriver {
     private String dhcpLeaseFilePath = "/var/lib/misc/dnsmasq.leases";
-    private String dhcpReleaseUtilityPath = "/usr/local/bin/dhcp_release";
+    private String dhcpReleaseUtilityPath = Constants.DHCP_RELEASE_PATH;
     private String releaseIPPath = "/script/release-ip.sh";
     private String dhcpStatusPath = "/script/dhcp-status.sh";
-    private String dhcpHostFileDir = "/etc/hosts";
+    private String dhcpHostFileDir = Constants.DNSMASQ_HOST_DIR_PATH;
     private String dhcpHostFileCopyDir = "/etc/hosts_copy";
-    private String dhcpPidFilePath = "/var/run/dnsmasq.pid";
+    private String dhcpPidFilePath = Constants.DNSMASQ_PID_PATH;
     private String dhcpReloadCachePath = "/script/dhcp-reload.sh";
 
     public DnsmasqDriver(String dhcpLeaseFilePath,
@@ -74,10 +75,11 @@ public class DnsmasqDriver implements DHCPDriver {
             String command = String.format("%s %s %s %s %s", releaseIPPath, dhcpReleaseUtilityPath, networkInterface,
                     ipAddress, macAddress);
             Process p = Runtime.getRuntime().exec(command);
-            int exitVal = p.waitFor();
+            boolean result = p.waitFor(Constants.TIMEOUT, TimeUnit.SECONDS);
 
-           if (exitVal != 0) {
-               response.exitCode = exitVal;
+            int exitValue = p.exitValue();
+           if (!result || exitValue != 0) {
+               response.exitCode = exitValue;
 
                String s;
                BufferedReader stdError = new BufferedReader(new
@@ -96,8 +98,8 @@ public class DnsmasqDriver implements DHCPDriver {
     }
 
     /**
-     * This method returns true when DHCP server
-     * cache is reloaded.
+     * This method attempt to reload the DHCP server's cache.
+     * Return true if it was reloaded.
      *
      * @return
      */
@@ -106,9 +108,9 @@ public class DnsmasqDriver implements DHCPDriver {
         try {
             String command = dhcpReloadCachePath + " " + dhcpPidFilePath;
             Process p = Runtime.getRuntime().exec(command);
-            int exitVal = p.waitFor();
+            boolean result = p.waitFor(Constants.TIMEOUT, TimeUnit.SECONDS);
 
-            if (exitVal == 0) {
+            if (result && p.exitValue() == 0) {
                 response = true;
             }
         } catch (IOException e) {
@@ -129,9 +131,9 @@ public class DnsmasqDriver implements DHCPDriver {
         try {
             String command = dhcpStatusPath + " dnsmasq.service";
             Process p = Runtime.getRuntime().exec(command);
-            int exitVal = p.waitFor();
+            boolean result = p.waitFor(Constants.TIMEOUT, TimeUnit.SECONDS);
 
-            if (exitVal == 0) {
+            if (result && p.exitValue() == 0) {
                 response = true;
             }
         } catch (IOException e) {

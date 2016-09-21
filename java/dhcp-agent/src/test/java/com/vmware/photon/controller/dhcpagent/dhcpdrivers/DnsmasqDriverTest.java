@@ -56,7 +56,7 @@ public class DnsmasqDriverTest {
     public void setUpDriver(String scriptPath, String leaseFilePath) {
         dnsmasqDriver = new DnsmasqDriver(
                 leaseFilePath,
-                "/usr/local/bin/dhcp_release",
+                Constants.DHCP_RELEASE_PATH,
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
                 DnsmasqDriverTest.class.getResource("/hosts").getPath(),

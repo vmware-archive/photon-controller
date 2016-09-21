@@ -16,6 +16,7 @@ package com.vmware.photon.controller.dhcpagent;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingFactory;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.Constants;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.DHCPAgentXenonHost;
 
@@ -49,11 +50,11 @@ public class Main {
     new LoggingFactory(dhcpAgentConfig.getLogging(), "dhcpagent").configure();
 
     DnsmasqDriver dnsmasqDriver = new DnsmasqDriver("/var/lib/misc/dnsmasq.leases",
-            "/usr/local/bin/dhcp_release",
+            Constants.DHCP_RELEASE_PATH,
             DnsmasqDriver.class.getResource("/scripts/release-ip.sh").getPath(),
             DnsmasqDriver.class.getResource("/scripts/dhcp-status.sh").getPath(),
-            "/etc/hosts",
-            "/var/run/dnsmasq.pid",
+            Constants.DNSMASQ_HOST_DIR_PATH,
+            Constants.DNSMASQ_PID_PATH,
             DnsmasqDriver.class.getResource("/scripts/dhcp-reload.sh").getPath());
 
     Injector injector = Guice.createInjector(new DHCPAgentModule(dhcpAgentConfig, dnsmasqDriver));

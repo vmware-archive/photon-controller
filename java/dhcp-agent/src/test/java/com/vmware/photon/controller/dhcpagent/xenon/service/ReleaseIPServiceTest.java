@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfig;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.Constants;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestHost;
@@ -291,11 +292,11 @@ public class ReleaseIPServiceTest {
 
         public void setUpEnvironment(String scriptPath) throws Throwable {
             dnsmasqDriver = new DnsmasqDriver(ReleaseIPServiceTest.class.getResource("/dnsmasq.leases").getPath(),
-                    "/usr/local/bin/dhcp_release",
+                    Constants.DHCP_RELEASE_PATH,
                     ReleaseIPServiceTest.class.getResource(scriptPath).getPath(),
                     ReleaseIPServiceTest.class.getResource(scriptPath).getPath(),
-                    "/etc/hosts",
-                    "/var/run/dnsmasq.pid",
+                    Constants.DNSMASQ_HOST_DIR_PATH,
+                    Constants.DNSMASQ_PID_PATH,
                     ReleaseIPServiceTest.class.getResource(scriptPath).getPath());
             testEnvironment = TestEnvironment.create(dnsmasqDriver, 1, listeningExecutorService);
         }

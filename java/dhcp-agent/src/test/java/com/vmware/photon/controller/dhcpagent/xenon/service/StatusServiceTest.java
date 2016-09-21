@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.dhcpagent.xenon.service;
 
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.Constants;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.status.gen.Status;
@@ -61,11 +62,11 @@ public class StatusServiceTest {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       testEnvironment = TestEnvironment.create(
               new DnsmasqDriver(StatusServiceTest.class.getResource("/dnsmasq.leases").getPath(),
-                      "/usr/local/bin/dhcp_release",
+                      Constants.DHCP_RELEASE_PATH,
                       StatusServiceTest.class.getResource(successScript).getPath(),
                       StatusServiceTest.class.getResource(successScript).getPath(),
-                      "/etc/hosts",
-                      "/var/run/dnsmasq.pid",
+                      Constants.DNSMASQ_HOST_DIR_PATH,
+                      Constants.DNSMASQ_PID_PATH,
                       StatusServiceTest.class.getResource(successScript).getPath()),
               1,
               listeningExecutorService);

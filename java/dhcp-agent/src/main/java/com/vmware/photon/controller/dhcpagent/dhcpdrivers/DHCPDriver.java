@@ -64,8 +64,8 @@ public interface DHCPDriver {
      Response deleteSubnetIPLease(String subnetId) throws Exception;
 
     /**
-     * This method returns true when DHCP server
-     * cache is reloaded.
+     * This method attempt to reload the DHCP server's cache.
+     * Return true if it was reloaded.
      *
      * @return
      */

@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfig;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.Constants;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestHost;
@@ -278,7 +279,7 @@ public class SubnetIPLeaseServiceTest {
 
         public void setUpEnvironment(String hostDirPath) throws Throwable {
             dnsmasqDriver = new DnsmasqDriver(SubnetIPLeaseServiceTest.class.getResource("/dnsmasq.leases").getPath(),
-                    "/usr/local/bin/dhcp_release",
+                    Constants.DHCP_RELEASE_PATH,
                     SubnetIPLeaseServiceTest.class.getResource("/scripts/success.sh").getPath(),
                     SubnetIPLeaseServiceTest.class.getResource("/scripts/success.sh").getPath(),
                     hostDirPath,
@@ -315,7 +316,7 @@ public class SubnetIPLeaseServiceTest {
          */
         @Test
         public void testSubnetLeaseIPFailure() throws Throwable {
-            setUpEnvironment("/etc/hosts");
+            setUpEnvironment(Constants.DNSMASQ_HOST_DIR_PATH);
 
             SubnetIPLeaseTask subnetIPLeaseTask = buildValidState(TaskState.TaskStage.CREATED, false,
                     SubnetIPLeaseTask.SubnetOperation.UPDATE);
@@ -353,7 +354,7 @@ public class SubnetIPLeaseServiceTest {
          */
         @Test
         public void testSubnetLeaseIPDeleteFailure() throws Throwable {
-            setUpEnvironment("/etc/hosts");
+            setUpEnvironment(Constants.DNSMASQ_HOST_DIR_PATH);
 
             SubnetIPLeaseTask subnetIPLeaseTask = buildValidState(TaskState.TaskStage.CREATED, false,
                     SubnetIPLeaseTask.SubnetOperation.DELETE);

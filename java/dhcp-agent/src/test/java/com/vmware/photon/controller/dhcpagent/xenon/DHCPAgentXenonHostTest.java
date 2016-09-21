@@ -18,6 +18,7 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfig;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfigTest;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.Constants;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.dhcpagent.xenon.service.StatusService;
@@ -91,11 +92,11 @@ public class DHCPAgentXenonHostTest {
     public void setUp() throws Exception {
       injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
-              "/usr/local/bin/dhcp_release",
+              Constants.DHCP_RELEASE_PATH,
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
-              "/etc/hosts",
-              "/var/run/dnsmasq.pid",
+              Constants.DNSMASQ_HOST_DIR_PATH,
+              Constants.DNSMASQ_PID_PATH,
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
     }
 
@@ -141,11 +142,11 @@ public class DHCPAgentXenonHostTest {
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
-              "/usr/local/bin/dhcp_release",
+              Constants.DHCP_RELEASE_PATH,
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
-              "/etc/hosts",
-              "/var/run/dnsmasq.pid",
+              Constants.DNSMASQ_HOST_DIR_PATH,
+              Constants.DNSMASQ_PID_PATH,
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);
     }
@@ -193,11 +194,11 @@ public class DHCPAgentXenonHostTest {
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
-              "/usr/local/bin/dhcp_release",
+              Constants.DHCP_RELEASE_PATH,
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
-              "/etc/hosts",
-              "/var/run/dnsmasq.pid",
+              Constants.DNSMASQ_HOST_DIR_PATH,
+              Constants.DNSMASQ_PID_PATH,
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);
       host.start();
