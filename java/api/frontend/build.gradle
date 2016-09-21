@@ -48,6 +48,7 @@ dependencies {
       '../../../thrift/tracing.thrift',
       '../../../thrift/status.thrift')
 
+  testCompile(project(path: ':common-tests'))
   testCompile(project(path: ':api:model', configuration: 'tests'))
   testCompile(project(path: ':api-backend', configuration: 'tests'))
 
