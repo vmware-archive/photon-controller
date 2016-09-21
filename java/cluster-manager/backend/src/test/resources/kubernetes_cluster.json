@@ -14,7 +14,8 @@
         "resourceVersion": "6216",
         "creationTimestamp": "2015-07-15T17:37:01Z",
         "labels": {
-          "kubernetes.io/hostname": "worker-6a8e2d24-3118-4848-bdff-fe9daabf38b9"
+          "kubernetes.io/hostname": "worker-6a8e2d24-3118-4848-bdff-fe9daabf38b9",
+          "vm-hostname": "worker-6a8e2d24-3118-4848-bdff-fe9daabf38b9"
         }
       },
       "spec": {
@@ -61,7 +62,8 @@
         "resourceVersion": "6213",
         "creationTimestamp": "2015-07-15T17:38:30Z",
         "labels": {
-          "kubernetes.io/hostname": "worker-2e4ead33-7c01-4308-8669-7ebcb65bf98f"
+          "kubernetes.io/hostname": "worker-2e4ead33-7c01-4308-8669-7ebcb65bf98f",
+          "vm-hostname": "worker-2e4ead33-7c01-4308-8669-7ebcb65bf98f"
         }
       },
       "spec": {
@@ -108,7 +110,8 @@
         "resourceVersion": "6215",
         "creationTimestamp": "2015-07-15T17:38:24Z",
         "labels": {
-          "kubernetes.io/hostname": "master-71251c24-592f-4fab-ac23-6640032da897"
+          "kubernetes.io/hostname": "master-71251c24-592f-4fab-ac23-6640032da897",
+          "vm-hostname": "master-71251c24-592f-4fab-ac23-6640032da897"
         }
       },
       "spec": {
@@ -155,7 +158,8 @@
         "resourceVersion": "6214",
         "creationTimestamp": "2015-07-15T17:38:25Z",
         "labels": {
-          "kubernetes.io/hostname": "worker-8bd8b53b-e665-45cc-b7c9-83d9c02cc942"
+          "kubernetes.io/hostname": "worker-8bd8b53b-e665-45cc-b7c9-83d9c02cc942",
+          "vm-hostname": "worker-8bd8b53b-e665-45cc-b7c9-83d9c02cc942"
         }
       },
       "spec": {
@@ -170,10 +174,10 @@
         "conditions": [
           {
             "type": "Ready",
-            "status": "True",
+            "status": "Unknown",
             "lastHeartbeatTime": "2015-07-15T21:19:41Z",
             "lastTransitionTime": "2015-07-15T17:38:25Z",
-            "reason": "kubelet is posting ready status"
+            "reason": "Kubelet stopped posting node status."
           }
         ],
         "addresses": [

@@ -251,7 +251,7 @@ public class KubernetesStatusCheckerTest {
       doAnswer((InvocationOnMock invocation) -> {
         ((FutureCallback<Set<String>>) invocation.getArguments()[1]).onSuccess(hostnames);
         return null;
-      }).when(kubernetesClient).getNodeNamesAsync(anyString(), any(FutureCallback.class));
+      }).when(kubernetesClient).getAvailableNodeNamesAsync(anyString(), any(FutureCallback.class));
 
       return kubernetesClient;
     }
@@ -283,7 +283,7 @@ public class KubernetesStatusCheckerTest {
     public void testKubernetesConnectionFailure() throws Throwable {
       KubernetesClient kubernetesClient = mock(KubernetesClient.class);
       doThrow(new ConnectException("Could not connect to Kubernetes"))
-          .when(kubernetesClient).getNodeNamesAsync(anyString(), any(FutureCallback.class));
+          .when(kubernetesClient).getAvailableNodeNamesAsync(anyString(), any(FutureCallback.class));
 
       KubernetesStatusChecker checker = new KubernetesStatusChecker(kubernetesClient);
 

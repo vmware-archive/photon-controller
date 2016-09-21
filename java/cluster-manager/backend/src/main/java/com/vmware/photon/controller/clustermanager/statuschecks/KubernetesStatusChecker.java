@@ -128,7 +128,7 @@ public class KubernetesStatusChecker implements StatusChecker, WorkersStatusChec
 
     try {
       String connectionString = createConnectionString(serverAddress);
-      kubernetesClient.getNodeNamesAsync(connectionString, callback);
+      kubernetesClient.getAvailableNodeNamesAsync(connectionString, callback);
     } catch (IOException e) {
       logger.warn("Kubernetes call failed: ", e);
       callback.onFailure(e);
