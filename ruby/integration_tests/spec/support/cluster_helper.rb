@@ -12,6 +12,8 @@
 module EsxCloud
   class ClusterHelper
     class << self
+      KEY_FILE = "/tmp/test_rsa"
+
       def upload_kubernetes_image(client)
         fail("KUBERNETES_IMAGE is not defined") unless ENV["KUBERNETES_IMAGE"]
         Config.logger.info "Starting to Upload Kubernetes Image"
@@ -57,21 +59,21 @@ module EsxCloud
         client.disable_cluster_type(deployment.id, spec.to_hash)
       end
 
-      def show_logs(project, client, key_file = nil)
+      def show_logs(project, client)
         clusters = client.get_project_clusters(project.id).items
         clusters.map do |cluster|
-          show_cluster_logs(cluster, client, key_file)
+          show_cluster_logs(cluster, client)
         end
       end
 
       def generate_temporary_ssh_key()
         puts "Generating ssh key"
-        `ssh-keygen -f /tmp/test_rsa -N ''`
+        `ssh-keygen -f #{KEY_FILE} -N ''`
       end
 
       def remove_temporary_ssh_key()
         puts "Removing ssh key"
-        File.delete('/tmp/test_rsa', '/tmp/test_rsa.pub')
+        File.delete(KEY_FILE, KEY_FILE + '.pub')
       end
 
       def wait_for_cluster_state(cluster_id, target_cluster_state, retry_interval, retry_count, client)
@@ -88,7 +90,7 @@ module EsxCloud
 
       private
 
-      def show_cluster_logs(cluster, client, key_file = nil)
+      def show_cluster_logs(cluster, client)
         begin
           vms = client.get_cluster_vms(cluster.id).items
           vms.map do |vm|
@@ -96,11 +98,11 @@ module EsxCloud
             connections = client.get_vm_networks(vm.id).network_connections.select { |n| !n.network.nil? }
             puts "ip address is " + connections.first.ip_address
             begin
-              if key_file.nil?
-                ssh = Net::SSH.start(connections.first.ip_address, "root", :password => "vmware")
+              if File.exist?(KEY_FILE)
+                ssh = Net::SSH.start(connections.first.ip_address, "root", :keys => [KEY_FILE],
+                                     :paranoid => false, :user_known_hosts_file => ["/dev/null"])
               else
-                ssh = Net::SSH.start(connections.first.ip_address, "root", :keys => [key_file], :paranoid => false,
-                                     :user_known_hosts_file => ["/dev/null"])
+                ssh = Net::SSH.start(connections.first.ip_address, "root", :password => "vmware")
               end
               puts "=============== ifconfig ==============="
               res = ssh.exec!("ifconfig")
@@ -123,6 +125,9 @@ module EsxCloud
                 puts res
               elsif cluster.type === "SWARM"
                 res = ssh.exec!("for container in $(docker -H tcp://0.0.0.0:2375 ps -q); do docker -H tcp://0.0.0.0:2375 logs $container; done")
+                puts res
+              elsif cluster.type === "HARBOR"
+                res = ssh.exec!("cat /var/log/harbor/*/*")
                 puts res
               end
               puts "=============== journalctl ==============="
