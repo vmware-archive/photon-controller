@@ -29,22 +29,20 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
     @deployment = @seeder.deployment!
     @kubernetes_image = EsxCloud::ClusterHelper.upload_kubernetes_image(client)
     EsxCloud::ClusterHelper.enable_cluster_type(client, @deployment, @kubernetes_image, "KUBERNETES")
-    EsxCloud::ClusterHelper.generate_temporary_ssh_key()
+    EsxCloud::ClusterHelper.generate_temporary_ssh_key
   end
 
   after(:all) do
     puts "Staring to clean up Kubernetes Cluster lifecycle tests Env"
     # Deleting tenant2
     tmp_cleaner = EsxCloud::SystemCleaner.new(ApiClientHelper.management)
-    puts "Getting tmp_Cleaner success"
-
     ignoring_all_errors {
       tmp_cleaner.delete_tenant(@seeder2.tenant)
     }
 
     EsxCloud::ClusterHelper.disable_cluster_type(client, @deployment, "KUBERNETES")
     @cleaner.delete_image(@kubernetes_image)
-    EsxCloud::ClusterHelper.remove_temporary_ssh_key()
+    EsxCloud::ClusterHelper.remove_temporary_ssh_key
   end
 
   it 'should create/resize/delete Kubernetes cluster successfully' do
@@ -138,7 +136,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
       delete_cluster(cluster)
 
     rescue EsxCloud::Error => e
-      EsxCloud::ClusterHelper.show_logs(@seeder.project, client, "/tmp/test_rsa")
+      EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
       fail "KUBERNETES cluster integration Test failed. Error: #{e.message}"
     end
   end
