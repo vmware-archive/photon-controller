@@ -16,6 +16,7 @@ package com.vmware.photon.controller.api.frontend.commands.steps;
 import com.vmware.photon.controller.api.frontend.backends.NetworkBackend;
 import com.vmware.photon.controller.api.frontend.backends.StepBackend;
 import com.vmware.photon.controller.api.frontend.backends.TaskBackend;
+import com.vmware.photon.controller.api.frontend.backends.VmBackend;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
@@ -39,34 +40,49 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * StepCommand for getting VM networks.
  */
 public class VmGetNetworksStepCmd extends StepCommand {
 
+  public static final String RETRY_TIMEOUT_KEY = "RetryTimeout";
+
   private static final Logger logger = LoggerFactory.getLogger(VmGetNetworksStepCmd.class);
   private static final ObjectMapper objectMapper = new ObjectMapper();
+
+  private static final long DEFAULT_POLL_INTERVAL = TimeUnit.SECONDS.toMillis(5);
 
   private final TaskBackend taskBackend;
 
   private final NetworkBackend networkBackend;
 
+  private final VmBackend vmBackend;
+
   private String vmId;
+
+  private Long pollInterval;
 
   public VmGetNetworksStepCmd(TaskCommand taskCommand,
                               StepBackend stepBackend,
                               StepEntity step,
                               TaskBackend taskBackend,
-                              NetworkBackend networkBackend) {
+                              NetworkBackend networkBackend,
+                              VmBackend vmBackend) {
     super(taskCommand, stepBackend, step);
 
     this.taskBackend = taskBackend;
     this.networkBackend = networkBackend;
+    this.pollInterval = DEFAULT_POLL_INTERVAL;
+    this.vmBackend = vmBackend;
   }
 
   @Override
@@ -77,8 +93,24 @@ public class VmGetNetworksStepCmd extends StepCommand {
           "There should be only 1 VM referenced by step %s", step.getId());
       VmEntity vm = entityList.get(0);
       vmId = vm.getId();
+      Long timeout = (Long) step.getTransientResource(RETRY_TIMEOUT_KEY);
 
+      Long startTime = System.currentTimeMillis();
       GetVmNetworkResponse response = getVmNetworksOp(vm);
+
+      while (timeout != null && timeout > 0 && !areMACsPresent(response)) {
+        if (System.currentTimeMillis() - startTime > timeout) {
+          throw new RuntimeException("MAC addresses were not allocated before timeout");
+        }
+
+        Thread.sleep(pollInterval);
+        response = getVmNetworksOp(vm);
+      }
+
+      if (timeout != null) {
+        vmBackend.updateState(vm, getNetworksMACAddresses(response));
+      }
+
       VmNetworks vmNetworks = toApiRepresentation(response.getNetwork_info());
       String networkProperties = objectMapper.writeValueAsString(vmNetworks);
       taskBackend.setTaskResourceProperties(taskCommand.getTask(), networkProperties);
@@ -176,4 +208,35 @@ public class VmGetNetworksStepCmd extends StepCommand {
       connection.setNetwork(networks.getItems().isEmpty() ? portGroup : networks.getItems().get(0).getId());
     }
   }
-}
+
+  private boolean areMACsPresent(GetVmNetworkResponse response) {
+    if (!response.isSetNetwork_info()) {
+      return true;
+    }
+
+    boolean result = true;
+    for (VmNetworkInfo networkConnection : response.getNetwork_info()) {
+      result &= !Strings.isNullOrEmpty(networkConnection.getMac_address());
+    }
+
+    return result;
+  }
+
+  private Map<String, String> getNetworksMACAddresses(GetVmNetworkResponse response) {
+    Map<String, String> networkInfo = new HashMap<>();
+    if (!response.isSetNetwork_info()) {
+      return networkInfo;
+    }
+
+    for (VmNetworkInfo networkConnection : response.getNetwork_info()) {
+      if (Strings.isNullOrEmpty(networkConnection.getNetwork())
+              || Strings.isNullOrEmpty(networkConnection.getMac_address())) {
+        continue;
+      }
+
+      networkInfo.put(networkConnection.getNetwork(), networkConnection.getMac_address());
+    }
+
+    return networkInfo;
+  }
+ }

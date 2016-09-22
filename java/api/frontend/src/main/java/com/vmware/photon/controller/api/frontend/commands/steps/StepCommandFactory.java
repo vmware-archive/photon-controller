@@ -145,7 +145,7 @@ public class StepCommandFactory {
       case UPLOAD_ISO:
         return new IsoUploadStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, isoStore);
       case GET_NETWORKS:
-        return new VmGetNetworksStepCmd(taskCommand, stepBackend, stepEntity, taskBackend, networkBackend);
+        return new VmGetNetworksStepCmd(taskCommand, stepBackend, stepEntity, taskBackend, networkBackend, vmBackend);
       case GET_MKS_TICKET:
         return new VmGetMksTicketStepCmd(taskCommand, stepBackend, stepEntity, taskBackend);
       case CREATE_VM_IMAGE:

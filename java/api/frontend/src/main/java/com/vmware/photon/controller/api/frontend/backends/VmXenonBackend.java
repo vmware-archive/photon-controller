@@ -16,6 +16,7 @@ package com.vmware.photon.controller.api.frontend.backends;
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.commands.steps.IsoUploadStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.ResourceReserveStepCmd;
+import com.vmware.photon.controller.api.frontend.commands.steps.VmGetNetworksStepCmd;
 import com.vmware.photon.controller.api.frontend.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.api.frontend.entities.BaseDiskEntity;
 import com.vmware.photon.controller.api.frontend.entities.DiskStateChecks;
@@ -79,6 +80,7 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
@@ -89,6 +91,7 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -103,6 +106,7 @@ public class VmXenonBackend implements VmBackend {
 
   private static final Logger logger = LoggerFactory.getLogger(VmXenonBackend.class);
   private static final int GB_TO_BYTE_CONVERSION_RATIO = 1024 * 1024 * 1024;
+  private static final Long GET_NETWORK_ON_START_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(2);
 
   private final ApiFeXenonRestClient xenonClient;
 
@@ -387,6 +391,31 @@ public class VmXenonBackend implements VmBackend {
     vmEntity.setHost(agentIp);
     vmEntity.setDatastore(datastoreId);
     vmEntity.setDatastoreName(datastoreName);
+  }
+
+  @Override
+  public void updateState(VmEntity vmEntity, Map<String, String> networkInfo)
+          throws VmNotFoundException {
+    VmService.State vm = getVmById(vmEntity.getId());
+
+    Iterator it = networkInfo.entrySet().iterator();
+    while (it.hasNext()) {
+      Map.Entry pair = (Map.Entry) it.next();
+      if (pair.getKey() == null || pair.getValue() == null) {
+        continue;
+      }
+
+      VmService.NetworkInfo vmNetworkInfo = vm.networkInfo.get(pair.getKey());
+
+      if (vmNetworkInfo != null && vmNetworkInfo.macAddress == null) {
+        vmNetworkInfo.macAddress = (String) pair.getValue();
+      }
+    }
+
+    VmService.State newVMState = new VmService.State();
+    newVMState.vmState = vm.vmState;
+    newVMState.networkInfo = vm.networkInfo;
+    patchVmService(vmEntity.getId(), newVMState);
   }
 
   @Override
@@ -701,6 +730,7 @@ public class VmXenonBackend implements VmBackend {
     }
 
     if (vm.networkInfo != null && !vm.networkInfo.isEmpty()) {
+      boolean hasAllMACs = true;
       for (VmService.NetworkInfo networkInfo : vm.networkInfo.values()) {
         if (networkInfo == null) {
           continue;
@@ -710,7 +740,11 @@ public class VmXenonBackend implements VmBackend {
           vmEntity.setFloatingIp(networkInfo.floatingIpAddress);
           break;
         }
+
+        hasAllMACs &= !Strings.isNullOrEmpty(networkInfo.macAddress);
       }
+
+      vmEntity.setHasMACAddresses(hasAllMACs);
     }
 
     return vmEntity;
@@ -845,11 +879,6 @@ public class VmXenonBackend implements VmBackend {
     if (networkHelper.isSdnEnabled()) {
       step = new StepEntity();
       step.setOperation(Operation.CONNECT_VM_SWITCH);
-      stepEntities.add(step);
-
-      step = new StepEntity();
-      step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, vm.getId());
-      step.setOperation(Operation.GET_VM_IP);
       stepEntities.add(step);
     }
 
@@ -1058,9 +1087,21 @@ public class VmXenonBackend implements VmBackend {
     entityList.add(vm);
 
     StepEntity step = new StepEntity();
-    stepEntities.add(step);
     step.addResources(entityList);
     step.setOperation(op);
+    stepEntities.add(step);
+
+    if (networkHelper.isSdnEnabled() && op == Operation.START_VM && !vm.getHasMACAddresses()) {
+      step = new StepEntity();
+      step.createOrUpdateTransientResource(VmGetNetworksStepCmd.RETRY_TIMEOUT_KEY, GET_NETWORK_ON_START_TIMEOUT_MS);
+      step.setOperation(Operation.GET_NETWORKS);
+      stepEntities.add(step);
+
+      step = new StepEntity();
+      step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, vm.getId());
+      step.setOperation(Operation.GET_VM_IP);
+      stepEntities.add(step);
+    }
 
     TaskEntity task = taskBackend.createTaskWithSteps(vm, op, false, stepEntities);
     task.getToBeLockedEntities().add(vm);
