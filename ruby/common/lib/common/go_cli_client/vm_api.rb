@@ -178,6 +178,26 @@ module EsxCloud
         find_vm_by_id(vm_id)
       end
 
+      # @param [String] id
+      # @param [Hash] payload
+      # @return [Vm]
+      def acquire_floating_ip(id, payload = nil)
+        cmd = "acquire-floating-ip '#{id}'"
+        if payload != nil and payload[:network_id] != nil
+          cmd = cmd + " -i '#{payload[:network_id]}'"
+        end
+
+        vm_id = run_cli("vm #{cmd}")
+        find_vm_by_id(vm_id)
+      end
+
+      # @param [String] id
+      # @return [Vm]
+      def release_floating_ip(id)
+        vm_id = run_cli("vm release-floating-ip '#{id}'")
+        find_vm_by_id(vm_id)
+      end
+
       private
 
       # @param [String] result
