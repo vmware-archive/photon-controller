@@ -65,6 +65,8 @@ public interface VmBackend {
                    String datastoreId, String datastoreName,
                    Map<String, VmService.NetworkInfo> networkInfo) throws ExternalException;
 
+  void updateState(VmEntity vm, Map<String, String> networkInfo) throws VmNotFoundException;
+
   TaskEntity addTag(String vmId, Tag tag) throws ExternalException;
 
   TaskEntity prepareVmCreate(String projectId, VmCreateSpec spec) throws ExternalException;
