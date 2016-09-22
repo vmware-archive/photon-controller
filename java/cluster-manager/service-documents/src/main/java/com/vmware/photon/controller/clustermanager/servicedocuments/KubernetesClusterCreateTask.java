@@ -19,6 +19,9 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.DefaultUuid;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.Positive;
+
+
 import com.vmware.xenon.common.ServiceDocument;
 
 /**
@@ -55,6 +58,29 @@ public class KubernetesClusterCreateTask extends ServiceDocument {
   @DefaultInteger(value = ClusterManagerConstants.DEFAULT_BATCH_EXPANSION_SIZE)
   @Immutable
   public Integer workerBatchExpansionSize;
+
+  /**
+   * This value represents the number of "get version call" call cycles which have been performed.
+   */
+  @DefaultInteger(value = 0)
+  public Integer versionPollIterations;
+
+  /**
+   * This value represents the number of polling iterations to perform before giving up.
+   */
+  @DefaultInteger(value = 5)
+  @Positive
+  @Immutable
+  public Integer versionMaxPollIterations;
+
+  /**
+   * This value represents the delay interval to use between the completion of one get version call cycle and
+   * the beginning of another. It is defined in milliseconds
+   */
+  @DefaultInteger(value = 500)
+  @Positive
+  @Immutable
+  public Integer versionPollDelay;
 
   /**
    * This class defines the state of a KubernetesClusterCreateTaskService task.

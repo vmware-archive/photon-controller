@@ -51,6 +51,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 
 /**
  * This class implements a Xenon service representing a task to create a Kubernetes cluster.
@@ -119,6 +121,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
   }
 
   private void processStateMachine(KubernetesClusterCreateTask currentState) throws IOException {
+    ServiceUtils.logInfo(this, "Start %s with cluster id: %s", currentState.taskState.subStage, currentState.clusterId);
     switch (currentState.taskState.subStage) {
       case SETUP_ETCD:
         setupEtcds(currentState);
@@ -340,7 +343,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
    *
    * @param currentState
    */
-  private void updateExtendedProperties(final KubernetesClusterCreateTask currentState) throws IOException {
+  private void updateExtendedProperties(final KubernetesClusterCreateTask currentState) {
 
     sendRequest(HostUtils.getCloudStoreHelper(this)
         .createGet(UriUtils.buildUriPath(ClusterServiceFactory.SELF_LINK, currentState.clusterId))
@@ -358,7 +361,7 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
           String connectionString = createKubernetesURL(masterIP, null);
           try {
             getVersionAndUpdate(kubeClient, connectionString, masterIP, currentState);
-          } catch (IOException e) {
+          } catch (Exception e) {
             failTask(e);
           }
         }));
@@ -390,7 +393,22 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
 
       @Override
       public void onFailure(Throwable t) {
-        failTask(t);
+        // Sometimes queries to Kubernetes fail, even after it comes up.
+        // To be resilient to intermittent failures, we retry upto maxPollIterations times.
+        // The retry interval is defined by pollDelay.
+        if (currentState.versionPollIterations >= currentState.versionMaxPollIterations) {
+          failTask(t);
+        } else {
+          getHost().schedule(
+              () -> {
+                KubernetesClusterCreateTask patchState = buildPatch(TaskState.TaskStage.STARTED,
+                    TaskState.SubStage.UPDATE_EXTENDED_PROPERTIES);
+                patchState.versionPollIterations = currentState.versionPollIterations + 1;
+                TaskUtils.sendSelfPatch(KubernetesClusterCreateTaskService.this, patchState);
+              },
+              currentState.versionPollDelay,
+              TimeUnit.MILLISECONDS);
+        }
       }
     });
   }
