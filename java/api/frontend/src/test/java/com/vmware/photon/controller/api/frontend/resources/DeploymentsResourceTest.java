@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.api.frontend.resources;
 
 import com.vmware.photon.controller.api.frontend.clients.DeploymentFeClient;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.resources.deployment.DeploymentsResource;
 import com.vmware.photon.controller.api.frontend.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRoutes;
@@ -272,7 +273,7 @@ public class DeploymentsResourceTest extends ResourceTest {
   }
 
   @Test
-  public void testGetEmptyDeploymentList() {
+  public void testGetEmptyDeploymentList() throws ExternalException {
     ResourceList<Deployment> resourceList = new ResourceList<>(new ArrayList<Deployment>());
     doReturn(resourceList).when(deploymentFeClient).listAllDeployments();
 

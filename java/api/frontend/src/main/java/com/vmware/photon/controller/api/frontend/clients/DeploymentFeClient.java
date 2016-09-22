@@ -32,6 +32,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpired
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
 import com.vmware.photon.controller.api.model.Auth;
 import com.vmware.photon.controller.api.model.AuthInfo;
+import com.vmware.photon.controller.api.model.ClusterConfiguration;
 import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.Deployment;
@@ -185,8 +186,15 @@ public class DeploymentFeClient {
     return task;
   }
 
-  public ResourceList<Deployment> listAllDeployments() {
-    return new ResourceList<>(deploymentBackend.getAll());
+  public ResourceList<Deployment> listAllDeployments() throws ExternalException {
+    List<ClusterConfiguration> clusterConfigs = deploymentBackend.getClusterConfigurations();
+    List<Deployment> deployments = deploymentBackend.getAll();
+    if (deployments != null) {
+      for (Deployment deployment : deployments) {
+        deployment.setClusterConfigurations(clusterConfigs);
+      }
+    }
+    return new ResourceList<>(deployments);
   }
 
   public List<Deployment> getAll() {

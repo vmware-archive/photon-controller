@@ -54,6 +54,18 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
 
     puts "Starting to create a Kubernetes cluster"
     begin
+
+      # Validate that the deployment API shows the cluster configurations.
+      # We check both the "all deployments" and "deployment by ID" because there
+      # was a bug in which they were returning different data
+      deployment = client.find_all_api_deployments.items[0]
+      expect(deployment.cluster_configurations.size).to eq 1
+      expect(deployment.cluster_configurations[0].type).to eq "KUBERNETES"
+
+      deployment = client.find_deployment_by_id(deployment.id)
+      expect(deployment.cluster_configurations.size).to eq 1
+      expect(deployment.cluster_configurations[0].type).to eq "KUBERNETES"
+
       project = @seeder.project!
       props = construct_props(ENV["KUBERNETES_MASTER_IP"],ENV["KUBERNETES_ETCD_1_IP"])
       expected_etcd_count = 1
