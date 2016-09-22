@@ -1,2 +1,0 @@
-CONTAINER           CPU %               MEM USAGE/LIMIT     MEM %               NET I/O
-0c0b05bce7fe        0.07%              7.098 MB / 1.046 GB   0.68%               0 B/0 B
