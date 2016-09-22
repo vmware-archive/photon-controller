@@ -117,9 +117,11 @@ public class HarborClusterCreateTaskService extends StatefulService {
   private void processStateMachine(HarborClusterCreateTask currentState) {
     switch (currentState.taskState.subStage) {
       case SETUP_HARBOR:
+        ServiceUtils.logInfo(this, "Start SETUP_HARBOR", getSelfLink());
         setupHarbor(currentState);
         break;
       case UPDATE_EXTENDED_PROPERTIES:
+        ServiceUtils.logInfo(this, "Start UPDATE_EXTENDED_PROPERTIES for Harbor", getSelfLink());
         updateExtendedProperties(currentState);
         break;
       default:
