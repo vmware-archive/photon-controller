@@ -50,10 +50,8 @@ fi
 # Checkout kube-deploy/docker-multinode. This is the script that is
 # used to start Kubernetes on the VMs.  We're using a custom version
 # that allows us to run etcd on a node other than the master.
-# Currently it's from Alain's GitHub repo, but it will move into the
-# VMware organization soon.
 rm -rf kube-deploy
-git clone https://github.com/AlainRoy/kube-deploy
+git clone https://github.com/vmware/kube-deploy.git
 cd kube-deploy; git checkout pc-1.1; cd ..
 
 # Run the Packer build, but first clean up previous build artifacts
