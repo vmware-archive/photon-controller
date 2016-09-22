@@ -73,6 +73,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -649,6 +650,42 @@ public class KubernetesClusterCreateTaskServiceTest {
 
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(savedState.taskState.failure.message, Matchers.containsString("vm provisioning failed"));
+    }
+
+    @Test
+    public void testEndToEndFailUpdateExtendedPropertyFails() throws Throwable {
+      createClusterEntity(1);
+      mockVmProvisioningTaskService(true);
+
+      doAnswer(invocation -> {
+        ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(true);
+        return null;
+      }).when(etcdClient).checkStatus(
+          any(String.class), any(FutureCallback.class));
+
+      doAnswer(invocation -> {
+        ((FutureCallback<Set<String>>) invocation.getArguments()[1]).onSuccess(kubernetesNodeIps);
+        return null;
+      }).when(kubernetesClient).getNodeAddressesAsync(
+          any(String.class), any(FutureCallback.class));
+
+      // throws a mock IOException. Because the bug we usually see in getVersionAsync is a Connection reset
+      // by peers which is an IO exception
+      doAnswer(invocation -> {
+        ((FutureCallback<String>) invocation.getArguments()[1]).onFailure(new IOException("mock Exception"));
+        return null;
+      }).when(kubernetesClient).getVersionAsync(
+          any(String.class), any(FutureCallback.class));
+
+      startState.pollDelay = 1;
+      KubernetesClusterCreateTask savedState = machine.callServiceAndWaitForState(
+          KubernetesClusterCreateTaskFactoryService.SELF_LINK,
+          startState,
+          KubernetesClusterCreateTask.class,
+          state -> TaskState.TaskStage.STARTED.ordinal() < state.taskState.stage.ordinal()
+      );
+
+      assertThat(savedState.currentPollIterations, is(savedState.maxPollIterations));
     }
 
     @Test
