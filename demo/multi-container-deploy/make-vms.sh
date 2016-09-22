@@ -39,6 +39,3 @@ docker-machine create \
   mhs-demo2
 
 eval $(docker-machine env --swarm mhs-demo0)
-
-# Create network
-docker network create --driver overlay --subnet=192.168.114.0/27 lightwave
