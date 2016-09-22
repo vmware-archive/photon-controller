@@ -100,6 +100,17 @@ describe EsxCloud::Vm do
     EsxCloud::Vm.detach_iso("vmId")
   end
 
+  it "delegates acquire floating IP to API client" do
+    payload = { network_id: "networkId" }
+    expect(@client).to receive(:acquire_floating_ip).with("vmId", payload)
+    EsxCloud::Vm.acquire_floating_ip("vmId", payload)
+  end
+
+  it "delegates release floating IP to API client" do
+    expect(@client).to receive(:release_floating_ip).with("vmId")
+    EsxCloud::Vm.release_floating_ip("vmId")
+  end
+
   it "can be created from hash or from JSON" do
     hash = {
         "id" => "foo",

@@ -253,4 +253,32 @@ describe EsxCloud::ApiClient do
 
     client.perform_vm_metadata_set("vm-id", {"kye"=>"value"}).should == vm
   end
+
+  it "acquires floating IP for VM" do
+    vm = double(EsxCloud::Vm)
+
+    expect(@http_client).to receive(:post_json)
+                            .with("/vms/vm-id/acquire_floating_ip", {"networkId"=>"networkId"})
+                            .and_return(task_created("task-id"))
+
+    expect(@http_client).to receive(:get).with(URL_HOST + "/tasks/task-id").and_return(task_done("task-id", "vm-id"))
+    expect(@http_client).to receive(:get).with("/vms/vm-id").and_return(ok_response("vm"))
+    expect(EsxCloud::Vm).to receive(:create_from_json).with("vm").and_return(vm)
+
+    client.acquire_floating_ip("vm-id", {"networkId"=>"networkId"}).should == vm
+  end
+
+  it "releases floating IP from VM" do
+    vm = double(EsxCloud::Vm)
+
+    expect(@http_client).to receive(:delete)
+                            .with("/vms/vm-id/release_floating_ip")
+                            .and_return(task_created("task-id"))
+
+    expect(@http_client).to receive(:get).with(URL_HOST + "/tasks/task-id").and_return(task_done("task-id", "vm-id"))
+    expect(@http_client).to receive(:get).with("/vms/vm-id").and_return(ok_response("vm"))
+    expect(EsxCloud::Vm).to receive(:create_from_json).with("vm").and_return(vm)
+
+    client.release_floating_ip("vm-id").should == vm
+  end
 end

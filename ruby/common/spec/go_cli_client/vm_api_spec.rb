@@ -260,4 +260,41 @@ describe EsxCloud::GoCliClient do
 
     expect(client.find_vms_by_name(project.id, "vm1")).to eq vms
   end
+
+  it "acquires floating IP for VM with explicit network ID" do
+    vm_id = double("vm-id")
+    vm = double(EsxCloud::Vm, id: vm_id)
+
+    expect(client).to receive(:run_cli)
+                      .with("vm acquire-floating-ip '#{vm_id}' -i 'networkId'")
+                      .and_return(vm_id)
+    expect(client).to receive(:find_vm_by_id).once.with(vm_id).and_return(vm)
+
+    spec = { network_id: "networkId" }
+    client.acquire_floating_ip(vm_id, spec).should == vm
+  end
+
+  it "acquires floating IP for VM without network ID" do
+    vm_id = double("vm-id")
+    vm = double(EsxCloud::Vm, id: vm_id)
+
+    expect(client).to receive(:run_cli)
+                      .with("vm acquire-floating-ip '#{vm_id}'")
+                      .and_return(vm_id)
+    expect(client).to receive(:find_vm_by_id).once.with(vm_id).and_return(vm)
+
+    client.acquire_floating_ip(vm_id).should == vm
+  end
+
+  it "releases floating IP from VM" do
+    vm_id = double("vm-id")
+    vm = double(EsxCloud::Vm, id: vm_id)
+
+    expect(client).to receive(:run_cli)
+    .with("vm release-floating-ip '#{vm_id}'")
+    .and_return(vm_id)
+    expect(client).to receive(:find_vm_by_id).once.with(vm_id).and_return(vm)
+
+    client.release_floating_ip(vm_id).should == vm
+  end
 end

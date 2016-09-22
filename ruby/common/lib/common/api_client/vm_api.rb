@@ -189,6 +189,27 @@ module EsxCloud
         task = poll_response(response)
         find_vm_by_id(task.entity_id)
       end
+
+      # @param [String] id
+      # @param [Hash] payload
+      # @return [Vm]
+      def acquire_floating_ip(id, payload)
+        response = @http_client.post_json("#{VMS_ROOT}/#{id}/acquire_floating_ip", payload)
+        check_response("Acquire floating IP for VM #{id}", response, 201)
+
+        task = poll_response(response)
+        find_vm_by_id(task.entity_id)
+      end
+
+      # @param [Stirng] id
+      # @return [Vm]
+      def release_floating_ip(id)
+        response = @http_client.delete("#{VMS_ROOT}/#{id}/release_floating_ip")
+        check_response("Release floating IP from VM #{id}", response, 201)
+
+        task = poll_response(response)
+        find_vm_by_id(task.entity_id)
+      end
     end
   end
 end
