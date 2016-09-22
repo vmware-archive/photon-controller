@@ -49,6 +49,7 @@ import static com.google.common.base.Preconditions.checkState;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -121,18 +122,22 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
   private void processStateMachine(KubernetesClusterCreateTask currentState) throws IOException {
     switch (currentState.taskState.subStage) {
       case SETUP_ETCD:
+        ServiceUtils.logInfo(this, "Start SETUP_ETCD", getSelfLink());
         setupEtcds(currentState);
         break;
 
       case SETUP_MASTER:
+        ServiceUtils.logInfo(this, "Start SETUP_MASTER", getSelfLink());
         setupMaster(currentState);
         break;
 
       case UPDATE_EXTENDED_PROPERTIES:
+        ServiceUtils.logInfo(this, "Start UPDATE_EXTENDED_PROPERTIES", getSelfLink());
         updateExtendedProperties(currentState);
         break;
 
       case SETUP_WORKERS:
+        ServiceUtils.logInfo(this, "Start SETUP_INITIAL_WORKER", getSelfLink());
         setupInitialWorkers(currentState);
         break;
 
@@ -358,8 +363,23 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
           String connectionString = createKubernetesURL(masterIP, null);
           try {
             getVersionAndUpdate(kubeClient, connectionString, masterIP, currentState);
-          } catch (IOException e) {
-            failTask(e);
+          } catch (Exception e) {
+            // failTask(e);
+            if (currentState.currentPollIterations >= currentState.maxPollIterations) {
+              failTask(e);
+            } else {
+              getHost().schedule(
+                  () -> {
+                    // if get version async failed, send self patch, update currentPollIteration and rerun
+                    // till we reach the maxCallPollInterations
+                    KubernetesClusterCreateTask patchState = buildPatch(TaskState.TaskStage.STARTED,
+                        TaskState.SubStage.UPDATE_EXTENDED_PROPERTIES);
+                    patchState.currentPollIterations = currentState.currentPollIterations + 1;
+                    TaskUtils.sendSelfPatch(KubernetesClusterCreateTaskService.this, patchState);
+                  },
+                  currentState.pollDelay,
+                  TimeUnit.MILLISECONDS);
+            }
           }
         }));
   }
@@ -390,7 +410,16 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
 
       @Override
       public void onFailure(Throwable t) {
-        failTask(t);
+        try {
+          if (t instanceof  NullPointerException) {
+            // DO nothing
+          } else if (t instanceof IOException) {
+            // DO nothing
+          }
+        } catch (Throwable throwable) {
+          throw new RuntimeException(throwable);
+        }
+
       }
     });
   }
