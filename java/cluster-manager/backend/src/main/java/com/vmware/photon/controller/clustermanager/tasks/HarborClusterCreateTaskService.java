@@ -115,6 +115,7 @@ public class HarborClusterCreateTaskService extends StatefulService {
   }
 
   private void processStateMachine(HarborClusterCreateTask currentState) {
+    ServiceUtils.logInfo(this, "Start %s with cluster id : %s", currentState.taskState.subStage, currentState.clusterId);
     switch (currentState.taskState.subStage) {
       case SETUP_HARBOR:
         setupHarbor(currentState);
