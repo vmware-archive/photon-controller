@@ -1,8 +1,0 @@
-#!/bin/bash
-
-vendor=$(readlink -nf $(dirname $0))
-
-# GOPATH will be binaries/go and
-# the caller's PWD, such as cargos/go
-
-GOPATH=$vendor:$PWD go $@
