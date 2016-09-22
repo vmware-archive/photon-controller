@@ -74,6 +74,8 @@ public class VmEntity extends InfrastructureEntity {
 
   private String floatingIp;
 
+  private boolean hasMACAddresses;
+
   @Override
   public String getKind() {
     return Vm.KIND;
@@ -259,6 +261,14 @@ public class VmEntity extends InfrastructureEntity {
 
   public void setFloatingIp(String floatingIp) {
     this.floatingIp = floatingIp;
+  }
+
+  public void setHasMACAddresses(boolean hasMACAddresses) {
+    this.hasMACAddresses = hasMACAddresses;
+  }
+
+  public boolean getHasMACAddresses() {
+    return this.hasMACAddresses;
   }
 
   @Override

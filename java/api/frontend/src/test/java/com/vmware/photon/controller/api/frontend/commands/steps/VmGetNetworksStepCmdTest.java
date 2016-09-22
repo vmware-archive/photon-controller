@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.frontend.backends.EntityLockBackend;
 import com.vmware.photon.controller.api.frontend.backends.NetworkBackend;
 import com.vmware.photon.controller.api.frontend.backends.StepBackend;
 import com.vmware.photon.controller.api.frontend.backends.TaskBackend;
+import com.vmware.photon.controller.api.frontend.backends.VmBackend;
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient;
 import com.vmware.photon.controller.api.frontend.backends.clients.HousekeeperClient;
@@ -76,6 +77,9 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
 
   @Mock
   private NetworkBackend networkBackend;
+
+  @Mock
+  private VmBackend vmBackend;
 
   @Mock
   private HostClient hostClient;
@@ -270,6 +274,6 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
     step.setId(stepId);
     step.addResource(vm);
 
-    return spy(new VmGetNetworksStepCmd(taskCommand, stepBackend, step, taskBackend, networkBackend));
+    return spy(new VmGetNetworksStepCmd(taskCommand, stepBackend, step, taskBackend, networkBackend, vmBackend));
   }
 }
