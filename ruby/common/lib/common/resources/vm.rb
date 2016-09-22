@@ -71,6 +71,18 @@ module EsxCloud
       Config.client.perform_vm_metadata_set(vm_id, metadata)
     end
 
+    def self.acquire_floating_ip(vm_id, floating_ip_spec)
+      if floating_ip_spec == nil
+        floating_ip_spec = {}
+      end
+
+      Config.client.acquire_floating_ip(vm_id, floating_ip_spec)
+    end
+
+    def self.release_floating_ip(vm_id)
+      Config.client.release_floating_ip(vm_id)
+    end
+
     # @param [String] json
     # @return [Vm]
     def self.create_from_json(json)
@@ -200,6 +212,16 @@ module EsxCloud
     def get_metadata
       vm = self.class.find_vm_by_id(@id)
       vm.metadata
+    end
+
+    def acquire_floating_ip(floating_ip_spec)
+      vm = self.class.acquire_floating_ip(@id, floating_ip_spec)
+      setup(vm)
+    end
+
+    def release_floating_ip
+      vm = self.class.release_floating_ip(@id)
+      setup(vm)
     end
 
     def ==(other)
