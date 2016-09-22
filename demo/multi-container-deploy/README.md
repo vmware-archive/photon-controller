@@ -3,9 +3,10 @@ These scripts use docker to create a network on which 3+3 Photon-Controller and 
 are created and form a 3 node clusters of Lightwave and Photon-Controller. Photon-Controller joins
 the Lightwave nodes and creates a auth-enabled deployment.
 
+
 ## Requirements
 1. You need following tools installed
-  * [docker](https://docs.docker.com/engine/installation/)
+  * [docker](https://docs.docker.com/engine/installation/) (Version >= 1.12.1)
   * For running these scripts on *MacBook* you need
     * [docker-machine](https://docs.docker.com/machine/install-machine/)
     * VMware Fusion (or VirtualBox)
@@ -38,3 +39,17 @@ Use following steps to prepare your MacBook to run the scripts listed above.
 * `eval $(docker-machine eval default)`
 * `docker-machine scp ./prepare-docker-machine.sh default:/tmp`
 * `docker-machien ssh default:/tmp/prepare-docker-machine.sh`
+
+# Multi-Host Multi-Container Photon-Controller and Lightwave cluster.
+To create all containers in different VMs, we can leverage docker-machine and its swarm feature.
+Make sure your have latest `docker-machine` installed. Then run following script to create three
+swarm nodes (VMs).
+```
+./make-vms.sh
+```
+After VMs are created, you can run following command to set your docker client to point to swarm cluster
+just created.
+```
+eval $(docker-machine env --swarm mhs-demo0)
+```
+Now you are ready to run all the scripts mentioned in section "Runngin the scripts" above.
