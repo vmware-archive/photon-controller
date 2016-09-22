@@ -146,14 +146,16 @@ module EsxCloud
         EsxCloud::ApiRoute.new(:post, "/subnets", 400, 400, 403, 403, 403),
         EsxCloud::ApiRoute.new(:get, "/subnets/#{id}", 404, 404, 404, 404, 404),
         EsxCloud::ApiRoute.new(:post, "/subnets/#{id}/set_portgroups", 400, 400, 403, 403, 403),
-        EsxCloud::ApiRoute.new(:delete, "/subnets/#{SecureRandom.uuid}", 404, 404, 403, 403, 403)
+        EsxCloud::ApiRoute.new(:delete, "/subnets/#{SecureRandom.uuid}", 404, 404, 403, 403, 403),
+        EsxCloud::ApiRoute.new(:post, "/subnets/#{id}/set_default", 404, 404, 403, 403, 403)
       ]
     end
 
     def self.virtual_networks_routes(id = SecureRandom.uuid)
       [
-          EsxCloud::ApiRoute.new(:get, "/subnets/#{id}", 404, 404, 404, 404, 404),
-          EsxCloud::ApiRoute.new(:delete, "/subnets/#{SecureRandom.uuid}", 404, 404, 403, 403, 403)
+        EsxCloud::ApiRoute.new(:get, "/subnets/#{id}", 404, 404, 404, 404, 404),
+        EsxCloud::ApiRoute.new(:delete, "/subnets/#{SecureRandom.uuid}", 404, 404, 403, 403, 403)
+        EsxCloud::ApiRoute.new(:post, "/subnets/#{id}/set_default", 404, 404, 403, 403, 403)
       ]
     end
 
