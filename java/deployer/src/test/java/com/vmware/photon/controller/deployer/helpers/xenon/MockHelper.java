@@ -47,6 +47,7 @@ import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -75,6 +76,7 @@ import com.vmware.photon.controller.nsxclient.models.TransportNode;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeState;
 import com.vmware.photon.controller.nsxclient.models.TransportZone;
 import com.vmware.photon.controller.resource.gen.Datastore;
+import com.vmware.photon.controller.resource.gen.DatastoreType;
 import com.vmware.photon.controller.resource.gen.Network;
 import com.vmware.xenon.common.Service;
 
@@ -103,8 +105,10 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
@@ -371,7 +375,12 @@ public class MockHelper {
           ((AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call>) invocation.getArguments()[0]);
 
       HostConfig hostConfig = new HostConfig();
-      hostConfig.setDatastores(datastoreList.stream().map(Datastore::new).collect(Collectors.toList()));
+      List<Datastore> datastores = datastoreList.stream().map(Datastore::new).collect(Collectors.toList());
+      for (Datastore datastore : datastores) {
+        datastore.setType(DatastoreType.OTHER);
+        datastore.setName(datastore.getId());
+      }
+      hostConfig.setDatastores(datastores);
       hostConfig.setNetworks(networkList.stream().map(Network::new).collect(Collectors.toList()));
       hostConfig.setEsx_version(esxVersion);
 
