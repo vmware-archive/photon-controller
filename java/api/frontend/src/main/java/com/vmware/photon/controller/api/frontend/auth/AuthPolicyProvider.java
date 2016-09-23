@@ -102,15 +102,21 @@ public class AuthPolicyProvider implements PolicyProvider {
       return;
     }
 
+    // Extract groups, and remove double quotes from beginning and end of each group name
     List<String> tokenGroups = token.getGroups().stream()
         .map(g -> g.replaceAll("^\"|\"$", ""))
         .collect(Collectors.toList());
 
+    // Remove double quotes at beginning and end of user name
     String username = token.getSubject().getValue().replaceAll("^\"|\"$", "");
     String[] parts = username.split("@");
     if (parts.length == 2) {
       username = parts[1] + "\\" + parts[0];
     }
+
+    // Add the user name to the list of security groups. While it's not a Lightwave group,
+    // we consider it to be a security group of one. This allows the lists of security groups
+    // attached to entities (deployments, tenants, projects) to include individual users.
     tokenGroups.add(username);
 
     // Make a group copy, the collection is going to be changed.
