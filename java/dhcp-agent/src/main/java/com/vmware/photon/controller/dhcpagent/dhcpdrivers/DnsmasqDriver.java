@@ -168,6 +168,42 @@ public class DnsmasqDriver implements DHCPDriver {
     }
 
     /**
+     * This method creates subnet configuration.
+     *
+     * @param subnetId
+     * @param gateway
+     * @param netmask
+     * @return
+     * @throws Exception
+     */
+    public Response createSubnetConfiguration(
+        String subnetId,
+        String gateway,
+        String netmask) throws Exception {
+        Response response = new Response();
+        response.exitCode = 1;
+        response.stdError = "NotImplemented";
+
+        return response;
+    }
+
+    /**
+     * This method deletes subnet configuration.
+     *
+     * @param subnetId
+     * @return
+     * @throws Exception
+     */
+    public Response deleteSubnetConfiguration(
+        String subnetId) throws Exception {
+        Response response = new Response();
+        response.exitCode = 1;
+        response.stdError = "NotImplemented";
+
+        return response;
+    }
+
+    /**
      * This method update subnet leases of
      * IP for MAC address.
      *
