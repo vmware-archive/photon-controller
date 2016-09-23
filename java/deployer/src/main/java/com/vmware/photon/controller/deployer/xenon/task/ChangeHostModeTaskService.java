@@ -182,10 +182,10 @@ public class ChangeHostModeTaskService extends StatefulService {
 
   private void setHostMode(final HostService.State hostState, State currentState) throws RpcException {
 
-    final AsyncMethodCallback<Host.AsyncClient.set_host_mode_call> handler =
-        new AsyncMethodCallback<Host.AsyncClient.set_host_mode_call>() {
+    final AsyncMethodCallback<Host.AsyncSSLClient.set_host_mode_call> handler =
+        new AsyncMethodCallback<Host.AsyncSSLClient.set_host_mode_call>() {
           @Override
-          public void onComplete(Host.AsyncClient.set_host_mode_call setHostModeCall) {
+          public void onComplete(Host.AsyncSSLClient.set_host_mode_call setHostModeCall) {
             try {
               HostClient.ResponseValidator.checkSetHostModeResponse(setHostModeCall.getResult());
               sendStageProgressPatch(TaskState.TaskStage.FINISHED);

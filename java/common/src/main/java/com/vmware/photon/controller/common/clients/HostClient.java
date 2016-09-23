@@ -159,20 +159,20 @@ public class HostClient {
   private static final long PLACE_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(90);
   private static final long RESERVE_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(2);
   private static final long TRANSFER_IMAGE_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
-  private final ClientProxyFactory<Host.AsyncClient> clientProxyFactory;
-  private final ClientPoolFactory<Host.AsyncClient> clientPoolFactory;
+  private final ClientProxyFactory<Host.AsyncSSLClient> clientProxyFactory;
+  private final ClientPoolFactory<Host.AsyncSSLClient> clientPoolFactory;
   /**
    * clientProxy acquires a new client from ClientPool for every thrift call.
    * Reference: {@link ClientProxyImpl#createMethodHandler() createMethodHandler}.
    */
-  private Host.AsyncClient clientProxy;
+  private Host.AsyncSSLClient clientProxy;
   private String hostIp;
   private int port;
-  private ClientPool<Host.AsyncClient> clientPool;
+  private ClientPool<Host.AsyncSSLClient> clientPool;
 
   @Inject
-  public HostClient(ClientProxyFactory<Host.AsyncClient> clientProxyFactory,
-                    ClientPoolFactory<Host.AsyncClient> clientPoolFactory) {
+  public HostClient(ClientProxyFactory<Host.AsyncSSLClient> clientProxyFactory,
+                    ClientPoolFactory<Host.AsyncSSLClient> clientPoolFactory) {
     this.clientProxyFactory = clientProxyFactory;
     this.clientPoolFactory = clientPoolFactory;
   }
@@ -216,7 +216,7 @@ public class HostClient {
    */
   @RpcMethod
   public void attachDisks(String vmId, List<String> diskIds,
-                          AsyncMethodCallback<Host.AsyncClient.attach_disks_call> handler)
+                          AsyncMethodCallback<Host.AsyncSSLClient.attach_disks_call> handler)
       throws RpcException {
     ensureClient();
     VmDisksAttachRequest vmDisksAttachRequest = new VmDisksAttachRequest(vmId, diskIds);
@@ -247,7 +247,7 @@ public class HostClient {
   @RpcMethod
   public VmDisksOpResponse attachDisks(String vmId, List<String> diskIds)
       throws InterruptedException, RpcException {
-    SyncHandler<VmDisksOpResponse, Host.AsyncClient.attach_disks_call> syncHandler = new SyncHandler<>();
+    SyncHandler<VmDisksOpResponse, Host.AsyncSSLClient.attach_disks_call> syncHandler = new SyncHandler<>();
     attachDisks(vmId, diskIds, syncHandler);
     syncHandler.await();
     logger.info("attach_disks vm {}, disks {}, target {}",
@@ -267,7 +267,7 @@ public class HostClient {
    */
   @RpcMethod
   public void attachISOtoVM(String vmId, String isoPath,
-                            AsyncMethodCallback<Host.AsyncClient.attach_iso_call> handler)
+                            AsyncMethodCallback<Host.AsyncSSLClient.attach_iso_call> handler)
       throws RpcException {
     ensureClient();
     AttachISORequest attachISORequest = new AttachISORequest(vmId, isoPath);
@@ -296,7 +296,7 @@ public class HostClient {
   @RpcMethod
   public AttachISOResponse attachISO(String vmId, String isoPath)
       throws InterruptedException, RpcException {
-    SyncHandler<AttachISOResponse, Host.AsyncClient.attach_iso_call> syncHandler = new SyncHandler<>();
+    SyncHandler<AttachISOResponse, Host.AsyncSSLClient.attach_iso_call> syncHandler = new SyncHandler<>();
     attachISOtoVM(vmId, isoPath, syncHandler);
     syncHandler.await();
     logger.info("finished attach_iso vm {}, isoPath {}, target {}",
@@ -317,7 +317,7 @@ public class HostClient {
    */
   @RpcMethod
   public void copyImage(String imageId, String source, String destination,
-                        AsyncMethodCallback<Host.AsyncClient.copy_image_call> handler)
+                        AsyncMethodCallback<Host.AsyncSSLClient.copy_image_call> handler)
       throws RpcException {
     ensureClient();
     CopyImageRequest copyImageRequest = new CopyImageRequest();
@@ -349,7 +349,7 @@ public class HostClient {
   @RpcMethod
   public CopyImageResponse copyImage(String imageId, String source, String destination)
       throws InterruptedException, RpcException {
-    SyncHandler<CopyImageResponse, Host.AsyncClient.copy_image_call> syncHandler = new SyncHandler<>();
+    SyncHandler<CopyImageResponse, Host.AsyncSSLClient.copy_image_call> syncHandler = new SyncHandler<>();
     copyImage(imageId, source, destination, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkCopyImageResponse(syncHandler.getResponse());
@@ -369,7 +369,7 @@ public class HostClient {
    */
   @RpcMethod
   public void transferImage(String imageId, String source, String destination, ServerAddress destinationHost,
-                            AsyncMethodCallback<Host.AsyncClient.copy_image_call> handler)
+                            AsyncMethodCallback<Host.AsyncSSLClient.copy_image_call> handler)
       throws RpcException {
     ensureClient();
     TransferImageRequest transferImageRequest = new TransferImageRequest();
@@ -405,7 +405,7 @@ public class HostClient {
   public TransferImageResponse transferImage(String imageId, String source, String destination,
                                              ServerAddress destinationHost)
       throws InterruptedException, RpcException {
-    SyncHandler<TransferImageResponse, Host.AsyncClient.transfer_image_call> syncHandler = new SyncHandler<>();
+    SyncHandler<TransferImageResponse, Host.AsyncSSLClient.transfer_image_call> syncHandler = new SyncHandler<>();
     transferImage(imageId, source, destination, destinationHost, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkTransferImageResponse(syncHandler.getResponse());
@@ -421,7 +421,7 @@ public class HostClient {
    */
   @RpcMethod
   public void createDisks(String reservation,
-                          AsyncMethodCallback<Host.AsyncClient.create_disks_call> handler)
+                          AsyncMethodCallback<Host.AsyncSSLClient.create_disks_call> handler)
       throws RpcException {
     ensureClient();
     CreateDisksRequest createDisksRequest = new CreateDisksRequest(reservation);
@@ -448,7 +448,7 @@ public class HostClient {
   @RpcMethod
   public CreateDisksResponse createDisks(String reservation)
       throws InterruptedException, RpcException {
-    SyncHandler<CreateDisksResponse, Host.AsyncClient.create_disks_call> syncHandler = new SyncHandler<>();
+    SyncHandler<CreateDisksResponse, Host.AsyncSSLClient.create_disks_call> syncHandler = new SyncHandler<>();
     createDisks(reservation, syncHandler);
     syncHandler.await();
     logger.info("finished create_disks reservation {}, target {}",
@@ -468,7 +468,7 @@ public class HostClient {
   @RpcMethod
   public void createVm(String reservation,
                        Map<String, String> environment,
-                       AsyncMethodCallback<Host.AsyncClient.create_vm_call> handler)
+                       AsyncMethodCallback<Host.AsyncSSLClient.create_vm_call> handler)
       throws RpcException {
     ensureClient();
     CreateVmRequest createVmRequest = new CreateVmRequest(reservation);
@@ -500,7 +500,7 @@ public class HostClient {
   public CreateVmResponse createVm(String reservation,
                                    Map<String, String> environment)
       throws InterruptedException, RpcException {
-    SyncHandler<CreateVmResponse, Host.AsyncClient.create_vm_call> syncHandler = new SyncHandler<>();
+    SyncHandler<CreateVmResponse, Host.AsyncSSLClient.create_vm_call> syncHandler = new SyncHandler<>();
     createVm(reservation, environment, syncHandler);
     syncHandler.await();
     logger.info("finished create_vm target {}, reservation {}", getHostIp(), reservation);
@@ -517,7 +517,7 @@ public class HostClient {
    */
   @RpcMethod
   public void deleteDisks(List<String> diskIds,
-                          AsyncMethodCallback<Host.AsyncClient.delete_disks_call> handler)
+                          AsyncMethodCallback<Host.AsyncSSLClient.delete_disks_call> handler)
       throws RpcException {
     ensureClient();
     DeleteDisksRequest deleteDisksRequest = new DeleteDisksRequest(diskIds);
@@ -544,7 +544,7 @@ public class HostClient {
   @RpcMethod
   public DeleteDisksResponse deleteDisks(List<String> diskIds)
       throws InterruptedException, RpcException {
-    SyncHandler<DeleteDisksResponse, Host.AsyncClient.delete_disks_call> syncHandler = new SyncHandler<>();
+    SyncHandler<DeleteDisksResponse, Host.AsyncSSLClient.delete_disks_call> syncHandler = new SyncHandler<>();
     deleteDisks(diskIds, syncHandler);
     syncHandler.await();
     logger.info("finished delete_disks diskIds {}, target {}", diskIds, getHostIp());
@@ -562,7 +562,7 @@ public class HostClient {
   @RpcMethod
   public CreateImageResponse createImage(String imageId, String datastore)
       throws InterruptedException, RpcException {
-    SyncHandler<CreateImageResponse, Host.AsyncClient.create_image_call> syncHandler = new SyncHandler<>();
+    SyncHandler<CreateImageResponse, Host.AsyncSSLClient.create_image_call> syncHandler = new SyncHandler<>();
     createImage(imageId, datastore, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkCreateImageResponse(syncHandler.getResponse());
@@ -578,7 +578,7 @@ public class HostClient {
    */
   @RpcMethod
   public void createImage(String imageId, String datastore,
-                          AsyncMethodCallback<Host.AsyncClient.create_image_call> handler)
+                          AsyncMethodCallback<Host.AsyncSSLClient.create_image_call> handler)
       throws RpcException {
     ensureClient();
 
@@ -608,7 +608,7 @@ public class HostClient {
   @RpcMethod
   public FinalizeImageResponse finalizeImage(String imageId, String datastore, String tmpImagePath)
       throws InterruptedException, RpcException {
-    SyncHandler<FinalizeImageResponse, Host.AsyncClient.finalize_image_call> syncHandler = new SyncHandler<>();
+    SyncHandler<FinalizeImageResponse, Host.AsyncSSLClient.finalize_image_call> syncHandler = new SyncHandler<>();
     finalizeImage(imageId, datastore, tmpImagePath, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkFinalizeImageResponse(syncHandler.getResponse());
@@ -626,7 +626,7 @@ public class HostClient {
    */
   @RpcMethod
   public void finalizeImage(String imageId, String datastore, String tmpImagePath,
-                          AsyncMethodCallback<Host.AsyncClient.finalize_image_call> handler)
+                          AsyncMethodCallback<Host.AsyncSSLClient.finalize_image_call> handler)
       throws RpcException {
     ensureClient();
     FinalizeImageRequest finalizeImageRequest = new FinalizeImageRequest();
@@ -654,7 +654,7 @@ public class HostClient {
    */
   @RpcMethod
   public void startImageScan(String dataStore, Long scanRate, Long timeout,
-                             AsyncMethodCallback<Host.AsyncClient.start_image_scan_call> handler)
+                             AsyncMethodCallback<Host.AsyncSSLClient.start_image_scan_call> handler)
       throws RpcException {
     ensureClient();
 
@@ -684,7 +684,7 @@ public class HostClient {
    */
   @RpcMethod
   public void getInactiveImages(String dataStore,
-                                AsyncMethodCallback<Host.AsyncClient.get_inactive_images_call> handler)
+                                AsyncMethodCallback<Host.AsyncSSLClient.get_inactive_images_call> handler)
       throws RpcException {
     ensureClient();
 
@@ -712,7 +712,7 @@ public class HostClient {
   @RpcMethod
   public void startImageSweep(String dataStore, List<InactiveImageDescriptor> images,
                               Long sweepRate, Long timeout,
-                              AsyncMethodCallback<Host.AsyncClient.start_image_sweep_call> handler)
+                              AsyncMethodCallback<Host.AsyncSSLClient.start_image_sweep_call> handler)
       throws RpcException {
     ensureClient();
 
@@ -742,7 +742,7 @@ public class HostClient {
    */
   @RpcMethod
   public void getDeletedImages(String dataStore,
-                               AsyncMethodCallback<Host.AsyncClient.get_deleted_images_call> handler)
+                               AsyncMethodCallback<Host.AsyncSSLClient.get_deleted_images_call> handler)
       throws RpcException {
     ensureClient();
 
@@ -775,7 +775,7 @@ public class HostClient {
       String imageId,
       String datastore,
       String tmpImagePath,
-      AsyncMethodCallback<Host.AsyncClient.create_image_from_vm_call> handler)
+      AsyncMethodCallback<Host.AsyncSSLClient.create_image_from_vm_call> handler)
       throws InterruptedException, RpcException {
     ensureClient();
     CreateImageFromVmRequest createImageFromVmRequest = new CreateImageFromVmRequest(
@@ -808,7 +808,7 @@ public class HostClient {
       String datastore,
       String tmpImagePath)
       throws InterruptedException, RpcException {
-    SyncHandler<CreateImageFromVmResponse, Host.AsyncClient.create_image_from_vm_call> syncHandler =
+    SyncHandler<CreateImageFromVmResponse, Host.AsyncSSLClient.create_image_from_vm_call> syncHandler =
         new SyncHandler<>();
     createImageFromVm(vmId, imageId, datastore, tmpImagePath, syncHandler);
     syncHandler.await();
@@ -827,7 +827,7 @@ public class HostClient {
    */
   public DeleteDirectoryResponse deleteDirectory(String directoryPath, String dataStore)
       throws InterruptedException, RpcException {
-    SyncHandler<DeleteDirectoryResponse, Host.AsyncClient.delete_directory_call> syncHandler = new SyncHandler<>();
+    SyncHandler<DeleteDirectoryResponse, Host.AsyncSSLClient.delete_directory_call> syncHandler = new SyncHandler<>();
     deleteDirectory(directoryPath, dataStore, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkDeleteDirectoryResponse(syncHandler.getResponse());
@@ -844,7 +844,7 @@ public class HostClient {
    */
   @RpcMethod
   public void deleteDirectory(String directoryPath, String dataStore,
-                              AsyncMethodCallback<Host.AsyncClient.delete_directory_call> handler)
+                              AsyncMethodCallback<Host.AsyncSSLClient.delete_directory_call> handler)
       throws RpcException {
     ensureClient();
     DeleteDirectoryRequest deleteDirectoryRequest = new DeleteDirectoryRequest(dataStore, directoryPath);
@@ -871,7 +871,7 @@ public class HostClient {
    */
   @RpcMethod
   public void deleteVm(String vmId, List<String> diskIdsToDetach,
-                       AsyncMethodCallback<Host.AsyncClient.delete_vm_call> handler)
+                       AsyncMethodCallback<Host.AsyncSSLClient.delete_vm_call> handler)
       throws RpcException {
     ensureClient();
     DeleteVmRequest deleteVmRequest = new DeleteVmRequest(vmId);
@@ -900,7 +900,7 @@ public class HostClient {
   @RpcMethod
   public DeleteVmResponse deleteVm(String vmId, List<String> diskIdsToDetach)
       throws InterruptedException, RpcException {
-    SyncHandler<DeleteVmResponse, Host.AsyncClient.delete_vm_call> syncHandler = new SyncHandler<>();
+    SyncHandler<DeleteVmResponse, Host.AsyncSSLClient.delete_vm_call> syncHandler = new SyncHandler<>();
     deleteVm(vmId, diskIdsToDetach, syncHandler);
     syncHandler.await();
     logger.info("finished delete_vm {}, target {}", vmId, getHostIp());
@@ -919,7 +919,7 @@ public class HostClient {
    */
   @RpcMethod
   public void detachDisks(String vmId, List<String> diskIds,
-                          AsyncMethodCallback<Host.AsyncClient.detach_disks_call> handler)
+                          AsyncMethodCallback<Host.AsyncSSLClient.detach_disks_call> handler)
       throws RpcException {
     ensureClient();
     VmDisksDetachRequest vmDisksDetachRequest = new VmDisksDetachRequest(vmId, diskIds);
@@ -949,7 +949,7 @@ public class HostClient {
   @RpcMethod
   public VmDisksOpResponse detachDisks(String vmId, List<String> diskIds)
       throws InterruptedException, RpcException {
-    SyncHandler<VmDisksOpResponse, Host.AsyncClient.detach_disks_call> syncHandler = new SyncHandler<>();
+    SyncHandler<VmDisksOpResponse, Host.AsyncSSLClient.detach_disks_call> syncHandler = new SyncHandler<>();
     detachDisks(vmId, diskIds, syncHandler);
     syncHandler.await();
     logger.info("finished detach_disks vm {}, disks {}, target {}",
@@ -970,7 +970,7 @@ public class HostClient {
    */
   @RpcMethod
   public void detachISO(String vmId, boolean isDeleteFile,
-                        AsyncMethodCallback<Host.AsyncClient.detach_iso_call> handler)
+                        AsyncMethodCallback<Host.AsyncSSLClient.detach_iso_call> handler)
       throws RpcException {
     ensureClient();
     DetachISORequest detachISORequest = new DetachISORequest(vmId);
@@ -1000,7 +1000,7 @@ public class HostClient {
   @RpcMethod
   public DetachISOResponse detachISO(String vmId, boolean isDeleteFile)
       throws InterruptedException, RpcException {
-    SyncHandler<DetachISOResponse, Host.AsyncClient.detach_iso_call> syncHandler = new SyncHandler<>();
+    SyncHandler<DetachISOResponse, Host.AsyncSSLClient.detach_iso_call> syncHandler = new SyncHandler<>();
     detachISO(vmId, isDeleteFile, syncHandler);
     syncHandler.await();
     logger.info("finished detach_iso vm {}, target {}", vmId, getHostIp());
@@ -1015,7 +1015,7 @@ public class HostClient {
    * @throws RpcException
    */
   @RpcMethod
-  public void getHostConfig(AsyncMethodCallback<Host.AsyncClient.get_host_config_call> handler)
+  public void getHostConfig(AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call> handler)
       throws RpcException {
     ensureClient();
     GetConfigRequest getConfigRequest = new GetConfigRequest();
@@ -1041,7 +1041,7 @@ public class HostClient {
   @RpcMethod
   public GetConfigResponse getHostConfig()
       throws InterruptedException, RpcException {
-    SyncHandler<GetConfigResponse, Host.AsyncClient.get_host_config_call> syncHandler = new SyncHandler<>();
+    SyncHandler<GetConfigResponse, Host.AsyncSSLClient.get_host_config_call> syncHandler = new SyncHandler<>();
     getHostConfig(syncHandler);
     syncHandler.await();
     return ResponseValidator.checkGetConfigResponse(syncHandler.getResponse());
@@ -1057,7 +1057,7 @@ public class HostClient {
    */
   @RpcMethod
   public void getImages(String dataStoreId,
-                        AsyncMethodCallback<Host.AsyncClient.get_images_call> handler)
+                        AsyncMethodCallback<Host.AsyncSSLClient.get_images_call> handler)
       throws RpcException {
     ensureClient();
     GetImagesRequest getImagesRequest = new GetImagesRequest(dataStoreId);
@@ -1084,7 +1084,7 @@ public class HostClient {
   @RpcMethod
   public GetImagesResponse getImages(String dataStoreId)
       throws InterruptedException, RpcException {
-    SyncHandler<GetImagesResponse, Host.AsyncClient.get_images_call> syncHandler = new SyncHandler<>();
+    SyncHandler<GetImagesResponse, Host.AsyncSSLClient.get_images_call> syncHandler = new SyncHandler<>();
     getImages(dataStoreId, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkGetImagesResponse(syncHandler.getResponse());
@@ -1100,7 +1100,7 @@ public class HostClient {
    */
   @RpcMethod
   public void getNfcServiceTicket(String dataStore,
-                                  AsyncMethodCallback<Host.AsyncClient.get_service_ticket_call> handler)
+                                  AsyncMethodCallback<Host.AsyncSSLClient.get_service_ticket_call> handler)
       throws RpcException {
     ensureClient();
     ServiceTicketRequest serviceTicketRequest = new ServiceTicketRequest(ServiceType.NFC);
@@ -1129,7 +1129,7 @@ public class HostClient {
   @RpcMethod
   public ServiceTicketResponse getNfcServiceTicket(String dataStore)
       throws InterruptedException, RpcException {
-    SyncHandler<ServiceTicketResponse, Host.AsyncClient.get_service_ticket_call> syncHandler = new SyncHandler<>();
+    SyncHandler<ServiceTicketResponse, Host.AsyncSSLClient.get_service_ticket_call> syncHandler = new SyncHandler<>();
     getNfcServiceTicket(dataStore, syncHandler);
     syncHandler.await();
     logger.info("finished get_service_ticket dataStore {}, target {}", dataStore, getHostIp());
@@ -1146,7 +1146,7 @@ public class HostClient {
    */
   @RpcMethod
   public void getVmNetworks(String vmId,
-                            AsyncMethodCallback<Host.AsyncClient.get_vm_networks_call> handler)
+                            AsyncMethodCallback<Host.AsyncSSLClient.get_vm_networks_call> handler)
       throws RpcException {
     ensureClient();
     GetVmNetworkRequest getVmNetworkRequest = new GetVmNetworkRequest(vmId);
@@ -1162,7 +1162,7 @@ public class HostClient {
 
   @RpcMethod
   public void getVmMksTicket(String vmId,
-                             AsyncMethodCallback<Host.AsyncClient.get_mks_ticket_call> handler)
+                             AsyncMethodCallback<Host.AsyncSSLClient.get_mks_ticket_call> handler)
       throws RpcException {
     ensureClient();
     MksTicketRequest mksTicketRequest = new MksTicketRequest(vmId);
@@ -1189,7 +1189,7 @@ public class HostClient {
   @RpcMethod
   public GetVmNetworkResponse getVmNetworks(String vmId)
       throws InterruptedException, RpcException {
-    SyncHandler<GetVmNetworkResponse, Host.AsyncClient.get_vm_networks_call> syncHandler = new SyncHandler<>();
+    SyncHandler<GetVmNetworkResponse, Host.AsyncSSLClient.get_vm_networks_call> syncHandler = new SyncHandler<>();
     getVmNetworks(vmId, syncHandler);
     syncHandler.await();
     logger.info("finished get_vm_networks vm {}, target {}", vmId, getHostIp());
@@ -1199,7 +1199,7 @@ public class HostClient {
   @RpcMethod
   public MksTicketResponse getVmMksTicket(String vmId)
       throws InterruptedException, RpcException {
-    SyncHandler<MksTicketResponse, Host.AsyncClient.get_mks_ticket_call> syncHandler = new SyncHandler<>();
+    SyncHandler<MksTicketResponse, Host.AsyncSSLClient.get_mks_ticket_call> syncHandler = new SyncHandler<>();
     getVmMksTicket(vmId, syncHandler);
     syncHandler.await();
     logger.info("finished get_mks_ticket vm {}, target {}", vmId, getHostIp());
@@ -1216,7 +1216,7 @@ public class HostClient {
    */
   @RpcMethod
   public void place(Resource resource,
-                    AsyncMethodCallback<Host.AsyncClient.place_call> handler)
+                    AsyncMethodCallback<Host.AsyncSSLClient.place_call> handler)
       throws RpcException {
     ensureClient();
     PlaceRequest placeRequest = new PlaceRequest(resource);
@@ -1243,7 +1243,7 @@ public class HostClient {
   @RpcMethod
   public PlaceResponse place(Resource resource)
       throws InterruptedException, RpcException {
-    SyncHandler<PlaceResponse, Host.AsyncClient.place_call> syncHandler = new SyncHandler<>();
+    SyncHandler<PlaceResponse, Host.AsyncSSLClient.place_call> syncHandler = new SyncHandler<>();
     place(resource, syncHandler);
     syncHandler.await();
     logger.debug("finished place resource {}, target {}", resource, getHostIp());
@@ -1261,7 +1261,7 @@ public class HostClient {
    */
   @RpcMethod
   public void powerVmOp(String vmId, PowerVmOp op,
-                        AsyncMethodCallback<Host.AsyncClient.power_vm_op_call> handler)
+                        AsyncMethodCallback<Host.AsyncSSLClient.power_vm_op_call> handler)
       throws RpcException {
     ensureClient();
     PowerVmOpRequest powerVmOpRequest = new PowerVmOpRequest(vmId, op);
@@ -1289,7 +1289,7 @@ public class HostClient {
   @RpcMethod
   public PowerVmOpResponse powerVmOp(String vmId, PowerVmOp op)
       throws InterruptedException, RpcException {
-    SyncHandler<PowerVmOpResponse, Host.AsyncClient.power_vm_op_call> syncHandler = new SyncHandler<>();
+    SyncHandler<PowerVmOpResponse, Host.AsyncSSLClient.power_vm_op_call> syncHandler = new SyncHandler<>();
     powerVmOp(vmId, op, syncHandler);
     syncHandler.await();
     logger.info("finished power_vm_op vm {}, target {}", vmId, getHostIp());
@@ -1307,7 +1307,7 @@ public class HostClient {
    */
   @RpcMethod
   public void reserve(Resource resource, Integer generation,
-                      AsyncMethodCallback<Host.AsyncClient.reserve_call> handler)
+                      AsyncMethodCallback<Host.AsyncSSLClient.reserve_call> handler)
       throws RpcException {
     ensureClient();
     ReserveRequest reserveRequest = new ReserveRequest();
@@ -1342,7 +1342,7 @@ public class HostClient {
   @RpcMethod
   public ReserveResponse reserve(Resource resource, Integer generation)
       throws RpcException, InterruptedException {
-    SyncHandler<ReserveResponse, Host.AsyncClient.reserve_call> syncHandler = new SyncHandler<>();
+    SyncHandler<ReserveResponse, Host.AsyncSSLClient.reserve_call> syncHandler = new SyncHandler<>();
     reserve(resource, generation, syncHandler);
     syncHandler.await();
     logger.info("finished reserve resource {}, generation {}, target {}",
@@ -1358,7 +1358,7 @@ public class HostClient {
    * @throws RpcException
    */
   @RpcMethod
-  public void setHostMode(HostMode hostMode, AsyncMethodCallback<Host.AsyncClient.set_host_mode_call> handler)
+  public void setHostMode(HostMode hostMode, AsyncMethodCallback<Host.AsyncSSLClient.set_host_mode_call> handler)
       throws RpcException {
     ensureClient();
     logger.info("set_host_mode_call, target {}", getHostIp());
@@ -1392,12 +1392,12 @@ public class HostClient {
   }
 
   @VisibleForTesting
-  protected Host.AsyncClient getClientProxy() {
+  protected Host.AsyncSSLClient getClientProxy() {
     return clientProxy;
   }
 
   @VisibleForTesting
-  protected void setClientProxy(Host.AsyncClient clientProxy) {
+  protected void setClientProxy(Host.AsyncSSLClient clientProxy) {
     this.clientProxy = clientProxy;
   }
 

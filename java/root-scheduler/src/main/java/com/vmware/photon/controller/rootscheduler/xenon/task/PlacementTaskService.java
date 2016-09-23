@@ -362,9 +362,9 @@ public class PlacementTaskService extends StatefulService {
         // timeout exception when it fails.
         HostClient hostClient = ((HostClientProvider) getHost()).getHostClient();
         hostClient.setIpAndPort(address.getHost(), address.getPort());
-        hostClient.place(resource, new AsyncMethodCallback<Host.AsyncClient.place_call>() {
+        hostClient.place(resource, new AsyncMethodCallback<Host.AsyncSSLClient.place_call>() {
           @Override
-          public void onComplete(Host.AsyncClient.place_call call) {
+          public void onComplete(Host.AsyncSSLClient.place_call call) {
             if (requestId != null) {
               // We have to do more work here than normal: the PlaceResponse
               // doesn't have the request ID and we're in a new thread, so we

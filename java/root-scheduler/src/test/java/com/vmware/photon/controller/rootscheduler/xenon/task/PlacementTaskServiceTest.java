@@ -375,8 +375,8 @@ public class PlacementTaskServiceTest {
       doAnswer((InvocationOnMock invocation) -> {
         Object[] arguments = invocation.getArguments();
         @SuppressWarnings("unchecked")
-        AsyncMethodCallback<Host.AsyncClient.place_call> call =
-            (AsyncMethodCallback<Host.AsyncClient.place_call>) arguments[1];
+        AsyncMethodCallback<Host.AsyncSSLClient.place_call> call =
+            (AsyncMethodCallback<Host.AsyncSSLClient.place_call>) arguments[1];
         call.onError(new Exception());
         return null;
       }).when(client).place(any(), any());
@@ -421,13 +421,13 @@ public class PlacementTaskServiceTest {
       doAnswer((InvocationOnMock invocation) -> {
         Object[] arguments = invocation.getArguments();
         @SuppressWarnings("unchecked")
-        AsyncMethodCallback<Host.AsyncClient.place_call> call =
-            (AsyncMethodCallback<Host.AsyncClient.place_call>) arguments[1];
+        AsyncMethodCallback<Host.AsyncSSLClient.place_call> call =
+            (AsyncMethodCallback<Host.AsyncSSLClient.place_call>) arguments[1];
         if (responses.size() < numResponses) {
           PlaceResponse response = new PlaceResponse(PlaceResultCode.OK);
           response.setScore(new Score(random.nextInt(), random.nextInt()));
           responses.add(response);
-          Host.AsyncClient.place_call placeResponse = mock(Host.AsyncClient.place_call.class);
+          Host.AsyncSSLClient.place_call placeResponse = mock(Host.AsyncSSLClient.place_call.class);
           doReturn(response).when(placeResponse).getResult();
           call.onComplete(placeResponse);
         } else {
@@ -485,12 +485,12 @@ public class PlacementTaskServiceTest {
       doAnswer((InvocationOnMock invocation) -> {
         Object[] arguments = invocation.getArguments();
         @SuppressWarnings("unchecked")
-        AsyncMethodCallback<Host.AsyncClient.place_call> call =
-            (AsyncMethodCallback<Host.AsyncClient.place_call>) arguments[1];
+        AsyncMethodCallback<Host.AsyncSSLClient.place_call> call =
+            (AsyncMethodCallback<Host.AsyncSSLClient.place_call>) arguments[1];
         PlaceResponse response = new PlaceResponse(PlaceResultCode.OK);
         response.setScore(new Score(random.nextInt(), random.nextInt()));
         responses.add(response);
-        Host.AsyncClient.place_call placeResponse = mock(Host.AsyncClient.place_call.class);
+        Host.AsyncSSLClient.place_call placeResponse = mock(Host.AsyncSSLClient.place_call.class);
         doReturn(response).when(placeResponse).getResult();
         call.onComplete(placeResponse);
         return null;
@@ -533,12 +533,12 @@ public class PlacementTaskServiceTest {
       doAnswer((InvocationOnMock invocation) -> {
         Object[] arguments = invocation.getArguments();
         @SuppressWarnings("unchecked")
-        AsyncMethodCallback<Host.AsyncClient.place_call> call =
-            (AsyncMethodCallback<Host.AsyncClient.place_call>) arguments[1];
+        AsyncMethodCallback<Host.AsyncSSLClient.place_call> call =
+            (AsyncMethodCallback<Host.AsyncSSLClient.place_call>) arguments[1];
         PlaceResponse response = new PlaceResponse(PlaceResultCode.OK);
         response.setScore(new Score(random.nextInt(), random.nextInt()));
         responses.add(response);
-        Host.AsyncClient.place_call placeResponse = mock(Host.AsyncClient.place_call.class);
+        Host.AsyncSSLClient.place_call placeResponse = mock(Host.AsyncSSLClient.place_call.class);
         doReturn(response).when(placeResponse).getResult();
         call.onComplete(placeResponse);
         return null;
@@ -583,12 +583,12 @@ public class PlacementTaskServiceTest {
       doAnswer((InvocationOnMock invocation) -> {
         Object[] arguments = invocation.getArguments();
         @SuppressWarnings("unchecked")
-        AsyncMethodCallback<Host.AsyncClient.place_call> call =
-            (AsyncMethodCallback<Host.AsyncClient.place_call>) arguments[1];
+        AsyncMethodCallback<Host.AsyncSSLClient.place_call> call =
+            (AsyncMethodCallback<Host.AsyncSSLClient.place_call>) arguments[1];
         PlaceResponse response = new PlaceResponse(PlaceResultCode.OK);
         response.setScore(new Score(random.nextInt(), random.nextInt()));
         responses.add(response);
-        Host.AsyncClient.place_call placeResponse = mock(Host.AsyncClient.place_call.class);
+        Host.AsyncSSLClient.place_call placeResponse = mock(Host.AsyncSSLClient.place_call.class);
         doReturn(response).when(placeResponse).getResult();
         call.onComplete(placeResponse);
         return null;
