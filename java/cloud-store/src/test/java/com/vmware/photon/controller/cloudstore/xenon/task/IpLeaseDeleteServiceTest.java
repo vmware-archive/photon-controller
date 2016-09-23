@@ -18,9 +18,11 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.OperationLatch;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
@@ -370,6 +372,9 @@ public class IpLeaseDeleteServiceTest {
 
     private void seedTestEnvironment(TestEnvironment env,
                                      int totalIpLeases) throws Throwable {
+
+      startFactories();
+
       DhcpSubnetService.State subnetService = new DhcpSubnetService.State();
       subnetService.documentSelfLink = "subnet-id";
       SubnetUtils subnetUtils = new SubnetUtils("192.168.0.0/16");
@@ -392,6 +397,24 @@ public class IpLeaseDeleteServiceTest {
         env.sendPostAndWaitForReplication(
             IpLeaseService.FACTORY_LINK, state);
       }
+    }
+
+    // Ensure all the factories are fully started before starting the tests.
+    // This avoids a race condition where a factory may not be started on all hosts before
+    // we need it.
+    private void startFactories() throws Throwable {
+      for (ServiceHost host : machine.getHosts()) {
+        startFactory(host, DhcpSubnetService.createFactory(), IpLeaseService.FACTORY_LINK);
+        startFactory(host, IpLeaseService.createFactory(), IpLeaseService.FACTORY_LINK);
+        startFactory(host, IpLeaseDeleteService.createFactory(), IpLeaseService.FACTORY_LINK);
+      }
+    }
+
+    private void startFactory(ServiceHost host, FactoryService factory, String path) throws Throwable {
+      Operation post = Operation.createPost(UriUtils.buildUri(host, path));
+      OperationLatch syncPost = new OperationLatch(post);
+      host.startService(post, factory);
+      syncPost.awaitOperationCompletion();
     }
   }
 
