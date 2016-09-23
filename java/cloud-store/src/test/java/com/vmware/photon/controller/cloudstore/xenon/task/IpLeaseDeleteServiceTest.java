@@ -18,9 +18,11 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.OperationLatch;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
@@ -53,7 +55,7 @@ import java.util.concurrent.TimeUnit;
 public class IpLeaseDeleteServiceTest {
 
   private static final int TEST_PAGE_LIMIT = 100;
-  private static final Logger logger = LoggerFactory.getLogger(DhcpSubnetDeleteServiceTest.class);
+  private static final Logger logger = LoggerFactory.getLogger(IpLeaseDeleteServiceTest.class);
 
   private BasicServiceHost host;
   private IpLeaseDeleteService service;
@@ -306,10 +308,12 @@ public class IpLeaseDeleteServiceTest {
     @Test(dataProvider = "Success")
     public void testSuccess(int totalIpLeases, int hostCount)
         throws Throwable {
+      logger.info("Starting test: totalIpLeases: {}, hostCount: {}", totalIpLeases, hostCount);
       machine = TestEnvironment.create(hostCount);
       seedTestEnvironment(machine, totalIpLeases);
       request.isSelfProgressionDisabled = false;
 
+      logger.info("Deleting {} IP leases", totalIpLeases);
       IpLeaseDeleteService.State response = machine.callServiceAndWaitForState(
           IpLeaseDeleteService.FACTORY_LINK,
           request,
@@ -317,6 +321,7 @@ public class IpLeaseDeleteServiceTest {
           (IpLeaseDeleteService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
 
       if (totalIpLeases == 0) {
+        logger.info("Waiting for DHCP Subnet Services to be removed", totalIpLeases);
         for (ServiceHost host : machine.getHosts()) {
           ServiceHostUtils.waitForServiceState(
               ServiceDocumentQueryResult.class,
@@ -335,6 +340,7 @@ public class IpLeaseDeleteServiceTest {
         }
       }
 
+      logger.info("Waiting for IP Lease Services to be removed", totalIpLeases);
       for (ServiceHost host : machine.getHosts()) {
         ServiceHostUtils.waitForServiceState(
             ServiceDocumentQueryResult.class,
@@ -351,6 +357,7 @@ public class IpLeaseDeleteServiceTest {
             host,
             null);
       }
+      logger.info("Ending test. totalIpLeases: {}, hostCount: {}", totalIpLeases, hostCount);
     }
 
     @DataProvider(name = "Success")
@@ -370,6 +377,9 @@ public class IpLeaseDeleteServiceTest {
 
     private void seedTestEnvironment(TestEnvironment env,
                                      int totalIpLeases) throws Throwable {
+
+      // startFactories();
+
       DhcpSubnetService.State subnetService = new DhcpSubnetService.State();
       subnetService.documentSelfLink = "subnet-id";
       SubnetUtils subnetUtils = new SubnetUtils("192.168.0.0/16");
@@ -392,6 +402,24 @@ public class IpLeaseDeleteServiceTest {
         env.sendPostAndWaitForReplication(
             IpLeaseService.FACTORY_LINK, state);
       }
+    }
+
+    // Ensure all the factories are fully started before starting the tests.
+    // This avoids a race condition where a factory may not be started on all hosts before
+    // we need it.
+    private void startFactories() throws Throwable {
+      for (ServiceHost host : machine.getHosts()) {
+        startFactory(host, DhcpSubnetService.createFactory(), IpLeaseService.FACTORY_LINK);
+        startFactory(host, IpLeaseService.createFactory(), IpLeaseService.FACTORY_LINK);
+        startFactory(host, IpLeaseDeleteService.createFactory(), IpLeaseService.FACTORY_LINK);
+      }
+    }
+
+    private void startFactory(ServiceHost host, FactoryService factory, String path) throws Throwable {
+      Operation post = Operation.createPost(UriUtils.buildUri(host, path));
+      OperationLatch syncPost = new OperationLatch(post);
+      host.startService(post, factory);
+      syncPost.awaitOperationCompletion();
     }
   }
 

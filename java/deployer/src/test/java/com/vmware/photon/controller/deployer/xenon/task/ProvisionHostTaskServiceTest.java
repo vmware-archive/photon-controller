@@ -99,8 +99,6 @@ import java.util.concurrent.Executors;
  */
 public class ProvisionHostTaskServiceTest {
 
-  private final String configFilePath = "/config.yml";
-
   /**
    * Dummy test case to make IntelliJ recognize this as a test class.
    */
