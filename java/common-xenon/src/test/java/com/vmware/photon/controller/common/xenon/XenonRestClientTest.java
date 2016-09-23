@@ -30,7 +30,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.collections.CollectionUtils;
-import org.hamcrest.Matchers;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -228,7 +227,8 @@ public class XenonRestClientTest {
         xenonRestClient.post(ExampleService.FACTORY_LINK, exampleServiceState);
         fail("POST for an existing service should fail");
       } catch (XenonRuntimeException e) {
-        assertThat(e.getMessage(), Matchers.containsString("Service already exists or previously deleted"));
+        // We used to check the text of the message, but it changed. It may change again
+        // Really, we're just happy that it failed as expected, so we swallow the exception
       }
     }
 
