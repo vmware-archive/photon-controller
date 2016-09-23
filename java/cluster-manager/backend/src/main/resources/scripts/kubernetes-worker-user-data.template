@@ -12,6 +12,25 @@ write_files:
     permissions: 0644
     path: /root/setup-kubernetes-worker.sh
   - content: |
+        $CA_CERT
+    owner: root:root
+    permissions: 0644
+    path: /tmp/ca.crt
+  - content: |
+        echo "Copying CA Cert to ca-bundle"
+        if [ -f "/tmp/ca.crt" ]
+          then
+            cat /tmp/ca.crt >> /etc/pki/tls/certs/ca-bundle.crt
+            echo "Copying done"
+            echo "Restarting docker"
+            systemctl restart docker
+            echo "Docker restarted"
+         fi
+         echo "Done"
+    owner: root:root
+    permissions: 0644
+    path: /tmp/copy-ca-cert.sh
+  - content: |
         retry_max="60"
         retry="0"
         while [ "$retry" -lt "$retry_max" ]
@@ -44,5 +63,6 @@ runcmd:
   - rm -f /etc/systemd/network/*.network
   - systemctl stop systemd-networkd
   - sh /root/setup-dhcp.sh >> /var/log/kubernetes-worker.log 2>&1
+  - sh /tmp/copy-ca-cert.sh >> /var/log/kubernetes-worker.log 2>&1
   - sh /tmp/check-docker.sh
   - sh /root/setup-kubernetes-worker.sh >> /var/log/kubernetes-worker.log 2>&1
