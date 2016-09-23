@@ -12,7 +12,8 @@
 module EsxCloud
   class VirtualNetwork
 
-    attr_accessor :id, :name, :description, :state, :routing_type
+    attr_accessor :id, :name, :description, :state, :routing_type, :is_default, :cidr, :low_ip_dynamic,
+                  :high_ip_dynamic, :low_ip_static, :high_ip_static, :reserved_ip_list,
 
     # @param [String] project_id
     # @param [VirtualNetworkCreateSpec] spec
@@ -44,20 +45,9 @@ module EsxCloud
         fail UnexpectedFormat, "Invalid Virtual Network Hash: #{hash}"
       end
 
-      new(hash["id"], hash["name"], hash["description"], hash["state"], hash["routingType"])
-    end
-
-    # @param [String] id
-    # @param [String] name
-    # @param [String] description
-    # @param [String] state
-    # @param [String] routing_type
-    def initialize(id, name, description, state, routing_type)
-      @id = id
-      @name = name
-      @description = description
-      @state = state
-      @routing_type = routing_type
+      new(hash["id"], hash["name"], hash["description"], hash["state"], hash["routingType"], hash["isDefault"],
+          hash["cidr"], hash["lowIpDynamic"], hash["highIpDynamic"], hash["lowIpStatic"], hash["highIpStatic"],
+          hash["reservedIpList"])
     end
 
     # @return [Boolean]
@@ -65,12 +55,47 @@ module EsxCloud
       Config.client.delete_virtual_network(@id)
     end
 
+    # @param [String] id
+    # @param [String] name
+    # @param [String] description
+    # @param [String] state
+    # @param [String] routing_type
+    # @param [String] is_default
+    # @param [String] cidr
+    # @param [String] low_ip_dynamic
+    # @param [String] high_ip_dynamic
+    # @param [String] low_ip_static
+    # @param [String] high_ip_static
+    # @param [Array<String>] reserved_ip_list
+    def initialize(id, name, description, state, routing_type, is_default, cidr, low_ip_dynamic, high_ip_dynamic,
+                   low_ip_static, high_ip_static, reserved_ip_list)
+      @id = id
+      @name = name
+      @description = description
+      @state = state
+      @routing_type = routing_type
+      @is_default = is_default
+      @cidr = cidr
+      @low_ip_dynamic = low_ip_dynamic
+      @high_ip_dynamic = high_ip_dynamic
+      @low_ip_static = low_ip_static
+      @high_ip_static = high_ip_static
+      @reserved_ip_list = reserved_ip_list
+    end
+
     def ==(other)
       @id == other.id &&
-          @name == other.name &&
-          @description = other.description &&
-          @state = state &&
-          @routing_type = other.routing_type
+        @name == other.name &&
+        @description = other.description &&
+        @state == other.state &&
+        @routing_type == other.routing_type &&
+        @is_default == other.is_default &&
+        @cidr == other.cidr &&
+        @low_ip_dynamic == other.low_ip_dynamic &&
+        @high_ip_dynamic == other.high_ip_dynamic &&
+        @low_ip_static == other.low_ip_static &&
+        @high_ip_static == other.high_ip_static &&
+        @reserved_ip_list == other.reserved_ip_list
     end
   end
 end
