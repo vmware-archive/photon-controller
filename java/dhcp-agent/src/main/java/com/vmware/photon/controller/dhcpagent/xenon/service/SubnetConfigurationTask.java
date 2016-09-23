@@ -35,7 +35,7 @@ public class SubnetConfigurationTask extends ServiceDocument {
 
   /**
    * This value represents the ability to control execution of operations
-   * or stage transitions of SubnetIPLeaseService.
+   * or stage transitions of SubnetConfigurationService.
    */
   @DefaultInteger(0)
   @Immutable

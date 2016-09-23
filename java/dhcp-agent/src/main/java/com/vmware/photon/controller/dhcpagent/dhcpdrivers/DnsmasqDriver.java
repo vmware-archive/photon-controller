@@ -172,14 +172,14 @@ public class DnsmasqDriver implements DHCPDriver {
      *
      * @param subnetId
      * @param gateway
-     * @param netmask
+     * @param cidr
      * @return
      * @throws Exception
      */
     public Response createSubnetConfiguration(
         String subnetId,
         String gateway,
-        String netmask) throws Exception {
+        String cidr) throws Exception {
         Response response = new Response();
         response.exitCode = 1;
         response.stdError = "NotImplemented";
