@@ -18,6 +18,8 @@ import com.vmware.photon.controller.api.frontend.auth.fetcher.MultiplexedSecurit
 import com.vmware.photon.controller.api.frontend.auth.fetcher.SecurityGroupFetcher;
 import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.frontend.helpers.JerseyPropertiesDelegate;
+import com.vmware.photon.controller.api.frontend.helpers.JerseySecurityContext;
 import com.vmware.photon.controller.api.frontend.resources.routes.AuthRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.HostResourceRoutes;
@@ -33,6 +35,13 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -190,6 +199,44 @@ public class AuthPolicyProviderTest {
       doReturn(ImmutableSet.of(username)).when(fetcher).fetchSecurityGroups(authorizationObject);
 
       policyProvider.checkAccessPermissions(request, token);
+    }
+
+    @Test
+    public void testStoreTokenGroupsInContainerRequest() throws Throwable {
+      request = buildRequest("", buildHeadersWithToken());
+
+      List<String> tokenSGs = new ArrayList<String>();
+      tokenSGs.add("SG1");
+      tokenSGs.add("SG2");
+      token = AuthTestHelper.generateResourceServerAccessToken(tokenSGs);
+
+      String username = token.getSubject().getValue().replaceAll("^\"|\"$", "");
+      tokenSGs.add(username);
+
+      doReturn(authorizationObject).when(resolver).evaluate(request);
+      doReturn(ImmutableSet.of(username)).when(fetcher).fetchSecurityGroups(authorizationObject);
+
+      policyProvider.checkAccessPermissions(request, token);
+
+      List<String> retrievedSGs = (List<String>) request.getProperty(AuthFilter.REQUEST_TOKENGROUPS_PROPERTY_NAME);
+      assertThat(retrievedSGs, is(tokenSGs));
+    }
+
+    private ContainerRequest buildRequest(String path, MultivaluedMap<String, String> headers)
+        throws URISyntaxException {
+      ContainerRequest containerRequest = new ContainerRequest(new URI(""), new URI(path), null, new
+          JerseySecurityContext(), new JerseyPropertiesDelegate());
+      for (String header : headers.keySet()) {
+        containerRequest.getHeaders().put(header, headers.get(header));
+      }
+      return containerRequest;
+    }
+
+    private MultivaluedMap<String, String> buildHeadersWithToken() {
+      MultivaluedMap<String, String> headers = new MultivaluedHashMap<>();
+      headers.put(AuthFilter.AUTHORIZATION_HEADER, Arrays.asList(AuthFilter.AUTHORIZATION_METHOD + "foo"));
+
+      return headers;
     }
   }
 }

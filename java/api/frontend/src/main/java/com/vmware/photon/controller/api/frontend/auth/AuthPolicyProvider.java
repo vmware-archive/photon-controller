@@ -91,17 +91,6 @@ public class AuthPolicyProvider implements PolicyProvider {
   @Override
   public void checkAccessPermissions(ContainerRequest request, ResourceServerAccessToken token)
       throws ExternalException {
-
-    // Determine request authorization object.
-    TransactionAuthorizationObject transactionAuthorizationObject = this.resolver.evaluate(request);
-
-    // Determine security groups.
-    Set<String> groups = this.fetcher.fetchSecurityGroups(transactionAuthorizationObject);
-    if (groups.contains(SecurityGroupFetcher.EVERYONE)) {
-      // everyone has access to this path
-      return;
-    }
-
     // Extract groups, and remove double quotes from beginning and end of each group name
     List<String> tokenGroups = token.getGroups().stream()
         .map(g -> g.replaceAll("^\"|\"$", ""))
@@ -118,6 +107,20 @@ public class AuthPolicyProvider implements PolicyProvider {
     // we consider it to be a security group of one. This allows the lists of security groups
     // attached to entities (deployments, tenants, projects) to include individual users.
     tokenGroups.add(username);
+
+    // Store set of token groups in the container request so resource layers can filter data based on the
+    // rights of the user
+    request.setProperty(AuthFilter.REQUEST_TOKENGROUPS_PROPERTY_NAME, tokenGroups);
+
+    // Determine request authorization object.
+    TransactionAuthorizationObject transactionAuthorizationObject = this.resolver.evaluate(request);
+
+    // Determine security groups.
+    Set<String> groups = this.fetcher.fetchSecurityGroups(transactionAuthorizationObject);
+    if (groups.contains(SecurityGroupFetcher.EVERYONE)) {
+      // everyone has access to this path
+      return;
+    }
 
     // Make a group copy, the collection is going to be changed.
     Set<String> intersectionGroup = new HashSet<>(groups);

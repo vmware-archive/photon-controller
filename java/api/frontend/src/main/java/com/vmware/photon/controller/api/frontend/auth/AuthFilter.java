@@ -49,6 +49,9 @@ public class AuthFilter implements ContainerRequestFilter {
   // OAuth2.0 Bearer Token: http://self-issued.info/docs/draft-ietf-oauth-v2-bearer.html
   public static final String AUTHORIZATION_METHOD = "Bearer ";
 
+  // Property name of token groups in container request
+  public static final String REQUEST_TOKENGROUPS_PROPERTY_NAME = "tokengroups";
+
   private static final Logger logger = LoggerFactory.getLogger(AuthFilter.class);
 
   private String authServerAddress;
