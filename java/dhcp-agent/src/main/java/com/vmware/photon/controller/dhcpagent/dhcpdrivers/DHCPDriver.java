@@ -40,6 +40,30 @@ public interface DHCPDriver {
     boolean isRunning();
 
     /**
+     * This method creates subnet configuration.
+     *
+     * @param subnetId
+     * @param gateway
+     * @param netmask
+     * @return
+     * @throws Exception
+     */
+    Response createSubnetConfiguration(
+        String subnetId,
+        String gateway,
+        String netmask) throws Exception;
+
+    /**
+     * This method deletes subnet configuration.
+     *
+     * @param subnetId
+     * @return
+     * @throws Exception
+     */
+    Response deleteSubnetConfiguration(
+        String subnetId) throws Exception;
+
+    /**
      * This method update subnet allocation of
      * IP for MAC address.
      *
