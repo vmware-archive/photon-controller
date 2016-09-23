@@ -219,7 +219,7 @@ public class DnsmasqDriver implements DHCPDriver {
         PrintWriter writer = new PrintWriter(newSubnetFilename, "UTF-8");
         writer.println("# Version=" + version);
         for (Map.Entry<String, String> pair : ipAddressToMACAddressMap.entrySet()) {
-            String line = pair.getKey() + " " + pair.getValue() + " " + subnetId;
+            String line = pair.getKey() + "," + pair.getValue() + ",net:" + subnetId;
             writer.println(line);
         }
 
