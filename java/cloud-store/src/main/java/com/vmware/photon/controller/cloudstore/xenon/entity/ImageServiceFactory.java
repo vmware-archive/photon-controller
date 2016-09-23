@@ -19,6 +19,8 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 
+import java.util.UUID;
+
 /**
  * Class ImageServiceFactory is a factory to create a ImageService instances.
  */
@@ -46,5 +48,14 @@ public class ImageServiceFactory extends FactoryService {
   public void handleDelete(Operation delete) {
     ServiceUtils.logWarning(this, "Deleting factory service %s", delete);
     super.handleDelete(delete);
+  }
+
+  /**
+   * Xenon generates a hash for unique identifier, but we need a UUID because ESXi requires a UUID when we create the
+   * image.
+   */
+  @Override
+  protected String buildDefaultChildSelfLink() {
+    return UUID.randomUUID().toString();
   }
 }
