@@ -54,7 +54,7 @@ import java.util.concurrent.TimeUnit;
 public class IpLeaseDeleteServiceTest {
 
   private static final int TEST_PAGE_LIMIT = 100;
-  private static final Logger logger = LoggerFactory.getLogger(DhcpSubnetDeleteServiceTest.class);
+  private static final Logger logger = LoggerFactory.getLogger(IpLeaseDeleteServiceTest.class);
 
   private BasicServiceHost host;
   private IpLeaseDeleteService service;
@@ -306,10 +306,12 @@ public class IpLeaseDeleteServiceTest {
     @Test(dataProvider = "Success")
     public void testSuccess(int totalIpLeases, int hostCount)
         throws Throwable {
+      logger.info("Starting test: totalIpLeases: {}, hostCount: {}", totalIpLeases, hostCount);
       machine = TestEnvironment.create(hostCount);
       seedTestEnvironment(machine, totalIpLeases);
       request.isSelfProgressionDisabled = false;
 
+      logger.info("Deleting {} IP leases", totalIpLeases);
       IpLeaseDeleteService.State response = machine.callServiceAndWaitForState(
           IpLeaseDeleteService.FACTORY_LINK,
           request,
@@ -317,6 +319,7 @@ public class IpLeaseDeleteServiceTest {
           (IpLeaseDeleteService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
 
       if (totalIpLeases == 0) {
+        logger.info("Waiting for DHCP Subnet Services to be removed", totalIpLeases);
         for (ServiceHost host : machine.getHosts()) {
           ServiceHostUtils.waitForServiceState(
               ServiceDocumentQueryResult.class,
@@ -340,12 +343,14 @@ public class IpLeaseDeleteServiceTest {
           .setTermPropertyName(IpLeaseService.State.FIELD_NAME_KIND)
           .setTermMatchValue(Utils.buildKind(IpLeaseService.State.class));
 
+      logger.info("Waiting for IP Lease Services to be removed", totalIpLeases);
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
       machine.waitForQuery(queryTask, qt -> {
         logger.info("Service:[{}] Document Count- Expected [{}], Actual [{}]", IpLeaseService.FACTORY_LINK, 0,
             qt.results.documentCount);
         return qt.results.documentCount == 0;
       });
+      logger.info("Ending test. totalIpLeases: {}, hostCount: {}", totalIpLeases, hostCount);
     }
 
     @DataProvider(name = "Success")

@@ -75,6 +75,7 @@ import com.vmware.photon.controller.nsxclient.models.TransportNode;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeState;
 import com.vmware.photon.controller.nsxclient.models.TransportZone;
 import com.vmware.photon.controller.resource.gen.Datastore;
+import com.vmware.photon.controller.resource.gen.DatastoreType;
 import com.vmware.photon.controller.resource.gen.Network;
 import com.vmware.xenon.common.Service;
 
@@ -371,7 +372,12 @@ public class MockHelper {
           ((AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call>) invocation.getArguments()[0]);
 
       HostConfig hostConfig = new HostConfig();
-      hostConfig.setDatastores(datastoreList.stream().map(Datastore::new).collect(Collectors.toList()));
+      List<Datastore> datastores = datastoreList.stream().map(Datastore::new).collect(Collectors.toList());
+      for (Datastore datastore : datastores) {
+        datastore.setType(DatastoreType.OTHER);
+        datastore.setName(datastore.getId());
+      }
+      hostConfig.setDatastores(datastores);
       hostConfig.setNetworks(networkList.stream().map(Network::new).collect(Collectors.toList()));
       hostConfig.setEsx_version(esxVersion);
 
