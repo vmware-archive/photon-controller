@@ -281,7 +281,7 @@ public class ImageCopyService extends StatefulService {
       @Override
       public void onComplete(Object o) {
         try {
-          CopyImageResponse r = ((Host.AsyncClient.copy_image_call) o).getResult();
+          CopyImageResponse r = ((Host.AsyncSSLClient.copy_image_call) o).getResult();
           ServiceUtils.logInfo(ImageCopyService.this, "CopyImageResponse %s", r);
           switch (r.getResult()) {
             case OK:

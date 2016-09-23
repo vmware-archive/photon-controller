@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 public class ThriftServiceModuleTest {
 
   @Inject
-  private ClientPoolFactory<Echoer.AsyncClient> poolFactory;
+  private ClientPoolFactory<Echoer.AsyncSSLClient> poolFactory;
 
   @Test
   public void testClientPoolFactory() {
@@ -40,7 +40,7 @@ public class ThriftServiceModuleTest {
         .setMaxWaiters(1)
         .setTimeout(10, TimeUnit.SECONDS)
         .setServiceName("Echoer");
-    ClientPool<Echoer.AsyncClient> clientPool = poolFactory.create(new TestServerSet(), clientPoolOptions);
+    ClientPool<Echoer.AsyncSSLClient> clientPool = poolFactory.create(new TestServerSet(), clientPoolOptions);
     assertThat(clientPool.getClass().toString(), is(ClientPoolImpl.class.toString()));
 
     clientPool = poolFactory.create(ImmutableSet.of(new InetSocketAddress("127.0.0.1", 80)), clientPoolOptions);
