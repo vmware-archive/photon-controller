@@ -222,7 +222,7 @@ public class HarborClusterCreateTaskService extends StatefulService {
           @Override
           public void onSuccess(@Nullable String result) {
             Map<String, String> extendedProperties = new HashMap<>(clusterState.extendedProperties);
-            extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CA_CERTIFICATE, result);
+            extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_REGISTRY_CA_CERTIFICATE, result);
             HarborClusterCreateTask desiredState = buildPatch(TaskState.TaskStage.FINISHED, null);
 
             ClusterService.State clusterPatch = new ClusterService.State();

@@ -110,8 +110,8 @@ describe "Harbor cluster-service lifecycle", cluster: true do
     expect(cluster.worker_count).to eq 0
     expect(cluster.state).to eq "READY"
     expect(cluster.extended_properties.size).to eq(7)
-    expect(cluster.extended_properties["ca_certificate"]).to include("BEGIN CERTIFICATE")
-    expect(cluster.extended_properties["ca_certificate"]).to include("END CERTIFICATE")
+    expect(cluster.extended_properties["ca_cert"]).to include("BEGIN CERTIFICATE")
+    expect(cluster.extended_properties["ca_cert"]).to include("END CERTIFICATE")
   end
 
   def validate_ssh(master_ip)

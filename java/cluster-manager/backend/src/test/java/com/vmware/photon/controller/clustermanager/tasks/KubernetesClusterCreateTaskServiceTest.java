@@ -621,7 +621,7 @@ public class KubernetesClusterCreateTaskServiceTest {
           ClusterService.State.class);
 
       assertThat(cluster.clusterState, is(expectedState));
-      assertThat(cluster.extendedProperties.size(), is(13));
+      assertThat(cluster.extendedProperties.size(), is(14));
       assertThat(cluster.extendedProperties.get("cluster_version"), is("v1.3.5"));
     }
 
@@ -705,18 +705,14 @@ public class KubernetesClusterCreateTaskServiceTest {
       cluster.vmNetworkId = "vmNetworkId";
       cluster.workerCount = size;
       cluster.extendedProperties = new HashMap<>();
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "1.1.1.1");
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "2.2.2.2");
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "3.3.3.3");
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "4.4.4.4");
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS, "10.0.0.1,10.0.0.2,10.0.0.3,");
+      cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "100.0.0.1");
       cluster.extendedProperties.put(
-          ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "1.1.1.1");
-      cluster.extendedProperties.put(
-          ClusterManagerConstants.EXTENDED_PROPERTY_DNS, "2.2.2.2");
-      cluster.extendedProperties.put(
-          ClusterManagerConstants.EXTENDED_PROPERTY_GATEWAY, "3.3.3.3");
-      cluster.extendedProperties.put(
-          ClusterManagerConstants.EXTENDED_PROPERTY_NETMASK, "4.4.4.4");
-      cluster.extendedProperties.put(
-          ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS, "10.0.0.1,10.0.0.2,10.0.0.3,");
-      cluster.extendedProperties.put(
-          ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "100.0.0.1");
+          ClusterManagerConstants.EXTENDED_PROPERTY_REGISTRY_CA_CERTIFICATE, "example-ca-cert");
       cluster.documentSelfLink = UUID.randomUUID().toString();
 
       cloudStoreMachine.callServiceAndWaitForState(

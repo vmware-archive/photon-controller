@@ -39,9 +39,11 @@ public class KubernetesWorkerNodeTemplateTest {
   private static final String ETCD_QUORUM_STRING =
       "10.0.0.1,10.0.0.2,10.0.0.3,10.0.0.4";
   private static final String SSH_KEY = "test-key";
+  private static final String CA_CERT = "example-ca-cert";
 
   private Map<String, String> createCloudConfigProperties() {
-    return KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, MASTER_IP, SSH_KEY);
+    return KubernetesWorkerNodeTemplate.createProperties(
+        createEtcdAddresses(), CONTAINER_NETWORK, MASTER_IP, SSH_KEY, CA_CERT);
   }
 
   private List<String> createEtcdAddresses() {
@@ -152,22 +154,22 @@ public class KubernetesWorkerNodeTemplateTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testEmpltyEtcdAddresses() {
-      KubernetesWorkerNodeTemplate.createProperties(new ArrayList<>(), CONTAINER_NETWORK, MASTER_IP, SSH_KEY);
+      KubernetesWorkerNodeTemplate.createProperties(new ArrayList<>(), CONTAINER_NETWORK, MASTER_IP, SSH_KEY, CA_CERT);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullContainerNetwork() {
-      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), null, MASTER_IP, SSH_KEY);
+      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), null, MASTER_IP, SSH_KEY, CA_CERT);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testNullMasterIp() {
-      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, null, SSH_KEY);
+      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, null, SSH_KEY, CA_CERT);
     }
 
     @Test
     public void testNullSshKey() {
-      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, MASTER_IP, null);
+      KubernetesWorkerNodeTemplate.createProperties(createEtcdAddresses(), CONTAINER_NETWORK, MASTER_IP, null, CA_CERT);
     }
   }
 }
