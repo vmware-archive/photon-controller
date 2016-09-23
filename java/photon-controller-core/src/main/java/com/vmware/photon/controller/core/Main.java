@@ -144,7 +144,7 @@ public class Main {
 
     ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig, sslContext);
 
-    if (namespace.get("manual")) {
+    if ((Boolean) namespace.get("manual")) {
       DefaultDeployment.createDefaultDeployment(
           photonControllerConfig.getXenonConfig().getPeerNodes(),
           deployerConfig,
