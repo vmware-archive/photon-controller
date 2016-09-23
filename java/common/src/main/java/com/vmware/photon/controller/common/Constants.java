@@ -36,6 +36,8 @@ public class Constants {
 
   public static final String SCHEDULER_SERVICE_NAME = "root-scheduler";
 
+  public static final String REQUEST_TOKENGROUPS_PROPERTY_NAME = "tokengroups";
+
   public static final int LOADBALANCER_API_HTTP_PORT = 28080;
 
   public static final int LOADBALANCER_API_HTTPS_PORT = 443;

@@ -21,6 +21,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.resources.routes.AuthRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.AvailableRoutes;
+import com.vmware.photon.controller.common.Constants;
 
 import com.google.inject.Inject;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -91,17 +92,6 @@ public class AuthPolicyProvider implements PolicyProvider {
   @Override
   public void checkAccessPermissions(ContainerRequest request, ResourceServerAccessToken token)
       throws ExternalException {
-
-    // Determine request authorization object.
-    TransactionAuthorizationObject transactionAuthorizationObject = this.resolver.evaluate(request);
-
-    // Determine security groups.
-    Set<String> groups = this.fetcher.fetchSecurityGroups(transactionAuthorizationObject);
-    if (groups.contains(SecurityGroupFetcher.EVERYONE)) {
-      // everyone has access to this path
-      return;
-    }
-
     List<String> tokenGroups = token.getGroups().stream()
         .map(g -> g.replaceAll("^\"|\"$", ""))
         .collect(Collectors.toList());
@@ -112,6 +102,19 @@ public class AuthPolicyProvider implements PolicyProvider {
       username = parts[1] + "\\" + parts[0];
     }
     tokenGroups.add(username);
+
+    // Store set of tokenGroups in containerRequest
+    request.setProperty(Constants.REQUEST_TOKENGROUPS_PROPERTY_NAME, tokenGroups);
+
+    // Determine request authorization object.
+    TransactionAuthorizationObject transactionAuthorizationObject = this.resolver.evaluate(request);
+
+    // Determine security groups.
+    Set<String> groups = this.fetcher.fetchSecurityGroups(transactionAuthorizationObject);
+    if (groups.contains(SecurityGroupFetcher.EVERYONE)) {
+      // everyone has access to this path
+      return;
+    }
 
     // Make a group copy, the collection is going to be changed.
     Set<String> intersectionGroup = new HashSet<>(groups);

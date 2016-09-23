@@ -15,29 +15,37 @@ package com.vmware.photon.controller.api.frontend.helpers;
 import org.glassfish.jersey.internal.PropertiesDelegate;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This class provides an implementation of PropertiesDelegate which
  * is needed to create ContainerRequest.
  */
 public class JerseyPropertiesDelegate implements PropertiesDelegate {
+  Map<String, Object> propertiesMap = new HashMap<>();
+
   @Override
   public Object getProperty(String name) {
-    return null;
+    if (propertiesMap.containsKey(name)) {
+      return propertiesMap.get(name);
+    } else {
+      return null;
+    }
   }
 
   @Override
   public Collection<String> getPropertyNames() {
-    return null;
+    return propertiesMap.keySet();
   }
 
   @Override
   public void setProperty(String name, Object object) {
-
+    propertiesMap.put(name, object);
   }
 
   @Override
   public void removeProperty(String name) {
-
+    propertiesMap.remove(name);
   }
 }
