@@ -452,7 +452,9 @@ public class HostService extends StatefulService {
         datastoreState.documentSelfLink = datastore.getId();
         datastoreState.id = datastore.getId();
         datastoreState.name = datastore.getName();
-        datastoreState.type = datastore.getType().toString();
+        if (datastore.getType() != null) {
+          datastoreState.type = datastore.getType().toString();
+        }
         datastoreState.tags = datastore.getTags();
         datastoreState.isImageDatastore = imageDatastores.contains(datastore.getId());
 
