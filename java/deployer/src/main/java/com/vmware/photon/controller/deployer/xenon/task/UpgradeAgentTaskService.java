@@ -260,9 +260,9 @@ public class UpgradeAgentTaskService extends StatefulService {
       AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
       agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
       agentControlClient.upgrade(
-          new AsyncMethodCallback<AgentControl.AsyncClient.upgrade_call>() {
+          new AsyncMethodCallback<AgentControl.AsyncSSLClient.upgrade_call>() {
             @Override
-            public void onComplete(AgentControl.AsyncClient.upgrade_call upgradeCall) {
+            public void onComplete(AgentControl.AsyncSSLClient.upgrade_call upgradeCall) {
               try {
                 AgentControlClient.ResponseValidator.checkUpgradeResponse(upgradeCall.getResult());
                 sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT);
@@ -316,9 +316,9 @@ public class UpgradeAgentTaskService extends StatefulService {
     try {
       AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
       agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
-      agentControlClient.getAgentStatus(new AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>() {
+      agentControlClient.getAgentStatus(new AsyncMethodCallback<AgentControl.AsyncSSLClient.get_agent_status_call>() {
         @Override
-        public void onComplete(AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall) {
+        public void onComplete(AgentControl.AsyncSSLClient.get_agent_status_call getAgentStatusCall) {
           try {
             AgentStatusResponse agentStatusResponse = getAgentStatusCall.getResult();
             AgentControlClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse, hostState.hostAddress);
