@@ -30,7 +30,13 @@ describe "task", management: true do
       expect(tasks.items.size).to eq 1
 
       resTask = EsxCloud::Task.find_task_by_id(tasks.items[0].id)
-      expect(resTask).to eq tasks.items[0]
+      # Do to some oddities in conversion of Dates from Java to Ruby
+      # hashes, sometimes they get rounded. Instead of checking that
+      # the task is equal, we check the attributes
+      expect(resTask.state).to eq tasks.items[0].state
+      expect(resTask.operation).to eq tasks.items[0].operation
+      expect((resTask.start_time - tasks.items[0].start_time).abs()).to be <= 1000
+      expect((resTask.end_time - tasks.items[0].end_time).abs()).to be <= 1000
     end
   end
 

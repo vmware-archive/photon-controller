@@ -292,7 +292,7 @@ public class TenantXenonBackend implements TenantBackend {
 
     xenonClient.delete(TenantServiceFactory.SELF_LINK + "/" + tenantEntity.getId(),
         new TenantService.State());
-    logger.info("Project {} has been cleared", tenantEntity.getId());
+    logger.info("Tenant {} has been deleted", tenantEntity.getId());
 
     tombstoneBackend.create(tenantEntity.getKind(), tenantEntity.getId());
   }
