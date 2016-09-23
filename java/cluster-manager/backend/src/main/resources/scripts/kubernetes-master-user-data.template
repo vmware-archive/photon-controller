@@ -34,6 +34,25 @@ write_files:
     permissions: 0644
     path: /tmp/init-network.sh
   - content: |
+        $CA_CERT
+    owner: root:root
+    permissions: 0644
+    path: /tmp/ca.crt
+  - content: |
+        echo "Copying CA Cert to ca-bundle"
+        if [ -f "/tmp/ca.crt" ]
+          then
+            cat /tmp/ca.crt >> /etc/pki/tls/certs/ca-bundle.crt
+            echo "Copying done"
+            echo "Restarting docker"
+            systemctl restart docker
+            echo "Docker restarted"
+        fi
+        echo "Done"
+    owner: root:root
+    permissions: 0644
+    path: /tmp/copy-ca-cert.sh
+  - content: |
         echo "Starting Kubernetes master"
         export ETCD_IPS=$ETCD_QUORUM
         export FLANNEL_NETWORK=$CONTAINER_NETWORK
@@ -74,6 +93,7 @@ runcmd:
   - source /root/env_variables.txt
   - rm -f /etc/systemd/network/*.network
   - systemctl stop systemd-networkd
-  - sh /tmp/init-network.sh
+  - sh /tmp/init-network.sh >> /var/log/kubernetes-master.log 2>&1
+  - sh /tmp/copy-ca-cert.sh >> /var/log/kubernetes-master.log 2>&1
   - sh /tmp/check-docker.sh
   - sh /root/setup-kubernetes-master.sh >> /var/log/kubernetes-master.log 2>&1
