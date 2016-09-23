@@ -44,14 +44,14 @@ public interface DHCPDriver {
      *
      * @param subnetId
      * @param gateway
-     * @param netmask
+     * @param cidr
      * @return
      * @throws Exception
      */
     Response createSubnetConfiguration(
         String subnetId,
         String gateway,
-        String netmask) throws Exception;
+        String cidr) throws Exception;
 
     /**
      * This method deletes subnet configuration.
