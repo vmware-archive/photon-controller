@@ -73,6 +73,6 @@ echo ${deployment_create_spec_json} > ../tmp/deployment_create_spec.json
 echo "Seeding deployment state"
 docker_curl="docker exec photon-controller-core curl -sS -w \"%{http_code}\" ${DEPLOYMENT_SEED_CURL_OPTS} \
             -H \"Content-type: application/json\" -d @/devbox_data/tmp/deployment_create_spec.json \
-            ${PROTOCOL}://${network_ip}:19000/photon/cloudstore/deployments"
+            ${PROTOCOL}://${network_ip}:19000/photon/cloudstore/deployments | jq"
 vagrant ssh -c "$docker_curl"
 exit 0
