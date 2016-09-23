@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.common.thrift;
 
-import org.apache.thrift.async.TAsyncClient;
+import org.apache.thrift.async.TAsyncSSLClient;
 
 /**
  * Dynamic proxy for async thrift interfaces. Uses a {@link ClientPool} to load balance and
@@ -25,7 +25,7 @@ import org.apache.thrift.async.TAsyncClient;
  *
  * @param <C> async thrift client
  */
-public interface ClientProxy<C extends TAsyncClient> {
+public interface ClientProxy<C extends TAsyncSSLClient> {
 
   /**
    * @return proxy instance
