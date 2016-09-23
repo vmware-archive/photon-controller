@@ -336,4 +336,15 @@ task :clean_vms_on_real_host do
   puts "VMs left on host #{esx_ip}: #{dirty_vms}" if dirty_vms
 end
 
+desc 'Clean vibs on real host'
+task :clean_vibs_on_real_host do
+  esx_ip = EsxCloud::TestHelpers.get_esx_ip
+  esx_username = EsxCloud::TestHelpers.get_esx_username
+  esx_password = EsxCloud::TestHelpers.get_esx_password
+
+  EsxCloud::HostCleaner.uninstall_vib esx_ip, esx_username, esx_password, "photon-controller-agent"
+  EsxCloud::HostCleaner.uninstall_vib esx_ip, esx_username, esx_password, "envoy"
+  EsxCloud::HostCleaner.uninstall_vib esx_ip, esx_username, esx_password, "lightwave-esx"
+end
+
 task default: :esxcloud
