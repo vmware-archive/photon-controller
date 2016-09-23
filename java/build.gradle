@@ -131,6 +131,8 @@ subprojects {
     }.writeTo("$buildDir/pom.xml")
   }
 
+  task allDeps(type: DependencyReportTask) {}
+
   compileJava.dependsOn(checkJavaVersion);
   compileJava.dependsOn(createPom);
 
