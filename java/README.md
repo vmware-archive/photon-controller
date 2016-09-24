@@ -1,5 +1,6 @@
 # Building Java
 
+
 If you will be changing any Java code, then you'll want to build Java and run unit tests in your desktop environment using your favorite IDE. This document will help guide you through that process.
 
 ## Requirements
