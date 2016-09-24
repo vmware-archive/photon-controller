@@ -271,13 +271,13 @@ public class MockHelper {
   }
 
   @SuppressWarnings("unchecked")
-  public static Answer<AsyncMethodCallback<AgentControl.AsyncClient.provision_call>> mockProvisionAgent(
+  public static Answer<AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call>> mockProvisionAgent(
       ProvisionResultCode resultCode) {
 
     return (invocation) -> {
-      AsyncMethodCallback<AgentControl.AsyncClient.provision_call> callback =
-          ((AsyncMethodCallback<AgentControl.AsyncClient.provision_call>) invocation.getArguments()[13]);
-      AgentControl.AsyncClient.provision_call provisionCall = mock(AgentControl.AsyncClient.provision_call.class);
+      AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call> callback =
+          ((AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call>) invocation.getArguments()[13]);
+      AgentControl.AsyncSSLClient.provision_call provisionCall = mock(AgentControl.AsyncSSLClient.provision_call.class);
       ProvisionResponse provisionResponse = new ProvisionResponse(resultCode);
       doReturn(provisionResponse).when(provisionCall).getResult();
       callback.onComplete(provisionCall);
@@ -286,14 +286,14 @@ public class MockHelper {
   }
 
   @SuppressWarnings("unchecked")
-  public static Answer<AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>> mockGetAgentStatus(
+  public static Answer<AsyncMethodCallback<AgentControl.AsyncSSLClient.get_agent_status_call>> mockGetAgentStatus(
       AgentStatusCode agentStatusCode) {
 
     return (invocation) -> {
-      AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call> callback =
-          ((AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>) invocation.getArguments()[0]);
-      AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall =
-          mock(AgentControl.AsyncClient.get_agent_status_call.class);
+      AsyncMethodCallback<AgentControl.AsyncSSLClient.get_agent_status_call> callback =
+          ((AsyncMethodCallback<AgentControl.AsyncSSLClient.get_agent_status_call>) invocation.getArguments()[0]);
+      AgentControl.AsyncSSLClient.get_agent_status_call getAgentStatusCall =
+          mock(AgentControl.AsyncSSLClient.get_agent_status_call.class);
       AgentStatusResponse agentStatusResponse = new AgentStatusResponse(agentStatusCode);
       doReturn(agentStatusResponse).when(getAgentStatusCall).getResult();
       callback.onComplete(getAgentStatusCall);
@@ -363,12 +363,12 @@ public class MockHelper {
   }
 
   @SuppressWarnings("unchecked")
-  public static Answer<AsyncMethodCallback<Host.AsyncClient.get_host_config_call>> mockGetHostConfig(
+  public static Answer<AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call>> mockGetHostConfig(
       List<String> datastoreList, List<String> networkList, String esxVersion) {
 
     return (invocation) -> {
-      AsyncMethodCallback<Host.AsyncClient.get_host_config_call> callback =
-          ((AsyncMethodCallback<Host.AsyncClient.get_host_config_call>) invocation.getArguments()[0]);
+      AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call> callback =
+          ((AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call>) invocation.getArguments()[0]);
 
       HostConfig hostConfig = new HostConfig();
       hostConfig.setDatastores(datastoreList.stream().map(Datastore::new).collect(Collectors.toList()));
@@ -377,7 +377,7 @@ public class MockHelper {
 
       GetConfigResponse getConfigResponse = new GetConfigResponse(GetConfigResultCode.OK);
       getConfigResponse.setHostConfig(hostConfig);
-      Host.AsyncClient.get_host_config_call getHostConfigCall = mock(Host.AsyncClient.get_host_config_call.class);
+      Host.AsyncSSLClient.get_host_config_call getHostConfigCall = mock(Host.AsyncSSLClient.get_host_config_call.class);
       doReturn(getConfigResponse).when(getHostConfigCall).getResult();
       callback.onComplete(getHostConfigCall);
       return null;
@@ -385,15 +385,15 @@ public class MockHelper {
   }
 
   @SuppressWarnings("unchecked")
-  public static Answer<AsyncMethodCallback<Host.AsyncClient.get_host_config_call>> mockGetHostConfig(
+  public static Answer<AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call>> mockGetHostConfig(
       GetConfigResultCode resultCode) {
 
     return (invocation) -> {
-      AsyncMethodCallback<Host.AsyncClient.get_host_config_call> callback =
-          ((AsyncMethodCallback<Host.AsyncClient.get_host_config_call>) invocation.getArguments()[0]);
+      AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call> callback =
+          ((AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call>) invocation.getArguments()[0]);
 
       GetConfigResponse getConfigResponse = new GetConfigResponse(resultCode);
-      Host.AsyncClient.get_host_config_call getHostConfigCall = mock(Host.AsyncClient.get_host_config_call.class);
+      Host.AsyncSSLClient.get_host_config_call getHostConfigCall = mock(Host.AsyncSSLClient.get_host_config_call.class);
       doReturn(getConfigResponse).when(getHostConfigCall).getResult();
       callback.onComplete(getHostConfigCall);
       return null;
