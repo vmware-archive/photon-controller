@@ -106,6 +106,8 @@ import com.google.inject.servlet.RequestScoped;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLContext;
+
 import java.net.InetSocketAddress;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -128,8 +130,10 @@ public class ApiFeModule extends AbstractModule {
   // uses SSL, using the service host becomes easier and efficient instead of sending all traffic between APIFE and
   // Xenon through SSL.
   private ServiceHost serviceHost;
+  private final SSLContext sslContext;
 
-  public ApiFeModule() {
+  public ApiFeModule(SSLContext sslContext) {
+    this.sslContext = sslContext;
   }
 
   public void setConfiguration(ApiFeConfiguration configuration) {
@@ -239,8 +243,8 @@ public class ApiFeModule extends AbstractModule {
         .implement(TaskCommand.class, TaskCommand.class)
         .build(TaskCommandFactory.class));
 
-    install(new ThriftModule());
-    install(new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {
+    install(new ThriftModule(this.sslContext));
+    install(new ThriftServiceModule<>(new TypeLiteral<Host.AsyncSSLClient>() {
     }));
 
     install(new FactoryModuleBuilder()

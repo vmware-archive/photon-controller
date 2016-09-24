@@ -80,7 +80,8 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           hostClientFactory,
           agentControlClientFactory,
           nsxClientFactory,
-          cloudStoreHelper);
+          cloudStoreHelper,
+          null);
 
       ClusterManagerTestServiceGroup clusterManagerTestServiceGroup =
           new ClusterManagerTestServiceGroup(clusterManagerFactory);

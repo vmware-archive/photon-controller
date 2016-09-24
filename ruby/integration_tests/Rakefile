@@ -194,6 +194,7 @@ task :delete_vms_vibs, [:dc_yml] do |t, args|
     EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "photon-controller-agent-ext"
     EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "envoy"
     EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "lightwave-esx"
+    EsxCloud::HostCleaner.clean_ssl_certificates host.address, host.username, host.password
   end
 end
 

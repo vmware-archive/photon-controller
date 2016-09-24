@@ -67,7 +67,7 @@ public class TestHost extends PhotonControllerXenonHost {
                   NsxClientFactory nsxClientFactory,
                   CloudStoreHelper cloudStoreHelper) throws Throwable {
     super(xenonConfig, hostClientFactory, agentControlClientFactory, nsxClientFactory,
-        cloudStoreHelper);
+        cloudStoreHelper, null);
     this.serviceUri = SERVICE_URI;
     this.waitIterationSleep = WAIT_ITERATION_SLEEP;
     this.waitIterationCount = WAIT_ITERATION_COUNT;

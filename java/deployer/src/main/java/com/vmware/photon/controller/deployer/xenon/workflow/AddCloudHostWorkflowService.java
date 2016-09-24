@@ -218,7 +218,30 @@ public class AddCloudHostWorkflowService extends StatefulService {
     );
   }
 
+  private void provisionCloudHost(final State currentState, String deploymentServiceLink) {
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(deploymentServiceLink)
+            .setCompletion(
+                (operation, throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
+
+                  DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+                  try {
+                    provisionCloudHost(currentState, deploymentState);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            )
+    );
+  }
+
   private void provisionCloudHost(final State currentState, DeploymentService.State deploymentService) {
+
     final Service service = this;
 
     FutureCallback<BulkProvisionHostsWorkflowService.State> callback = new

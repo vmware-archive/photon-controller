@@ -1411,9 +1411,9 @@ public class ProvisionHostTaskService extends StatefulService {
 
     try {
       agentControlClient.getAgentStatus(
-          new AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>() {
+          new AsyncMethodCallback<AgentControl.AsyncSSLClient.get_agent_status_call>() {
             @Override
-            public void onComplete(AgentControl.AsyncClient.get_agent_status_call agentStatusCall) {
+            public void onComplete(AgentControl.AsyncSSLClient.get_agent_status_call agentStatusCall) {
               try {
                 AgentStatusResponse response = agentStatusCall.getResult();
                 AgentControlClient.ResponseValidator.checkAgentStatusResponse(response, hostState.hostAddress);
@@ -1541,9 +1541,9 @@ public class ProvisionHostTaskService extends StatefulService {
           ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink),
           ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink),
           deploymentState.ntpEndpoint,
-          new AsyncMethodCallback<AgentControl.AsyncClient.provision_call>() {
+          new AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call>() {
             @Override
-            public void onComplete(AgentControl.AsyncClient.provision_call provisionCall) {
+            public void onComplete(AgentControl.AsyncSSLClient.provision_call provisionCall) {
               try {
                 ProvisionResponse result = provisionCall.getResult();
                 AgentControlClient.ResponseValidator.checkProvisionResponse(result);
@@ -1602,9 +1602,9 @@ public class ProvisionHostTaskService extends StatefulService {
 
     try {
       agentControlClient.getAgentStatus(
-          new AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>() {
+          new AsyncMethodCallback<AgentControl.AsyncSSLClient.get_agent_status_call>() {
             @Override
-            public void onComplete(AgentControl.AsyncClient.get_agent_status_call agentStatusCall) {
+            public void onComplete(AgentControl.AsyncSSLClient.get_agent_status_call agentStatusCall) {
               try {
                 AgentStatusResponse result = agentStatusCall.getResult();
                 AgentControlClient.ResponseValidator.checkAgentStatusResponse(result, hostState.hostAddress);
