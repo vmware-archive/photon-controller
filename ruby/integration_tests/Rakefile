@@ -194,6 +194,7 @@ task :delete_vms_vibs, [:dc_yml] do |t, args|
     EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "photon-controller-agent-ext"
     EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "envoy"
     EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "lightwave-esx"
+    EsxCloud::HostCleaner.clean_ssl_certificates host.address, host.username, host.password
   end
 end
 
@@ -334,6 +335,7 @@ task :clean_vms_on_real_host do
                                                            EsxCloud::TestHelpers.get_esx_username,
                                                            EsxCloud::TestHelpers.get_esx_password)
   puts "VMs left on host #{esx_ip}: #{dirty_vms}" if dirty_vms
+  EsxCloud::HostCleaner.clean_ssl_certificates(esx_ip, EsxCloud::TestHelpers.get_esx_username, EsxCloud::TestHelpers.get_esx_password)
 end
 
 desc 'Clean vibs on real host'

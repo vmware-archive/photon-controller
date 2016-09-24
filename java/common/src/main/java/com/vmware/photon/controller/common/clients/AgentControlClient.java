@@ -51,11 +51,11 @@ import java.util.concurrent.TimeUnit;
 /**
  * Client for Agent's control service.
  * <p>
- * Note that this class is not thread safe, because thrift's TAsyncClient is not thread
+ * Note that this class is not thread safe, because thrift's TAsyncSSLClient is not thread
  * safe and only allows one method call at a time.
  * <p>
  * Instances of AgentControlClient, HostClient and RootSchedulerClient reuses and
- * shares global TAsyncClientManager and ClientProxyExecutor, so it is fairly
+ * shares global TAsyncSSLClientManager and ClientProxyExecutor, so it is fairly
  * cheap to create a new client instance for each use.
  */
 @RpcClient
@@ -74,19 +74,19 @@ public class AgentControlClient {
   private static final long UPGRADE_TIMEOUT_MS = 60000;
   private static final long GET_AGENT_STATUS_TIMEOUT_MS = 60000;
   private static final long PING_TIMEOUT_MS = 5000;
-  private final ClientProxyFactory<AgentControl.AsyncClient> clientProxyFactory;
-  private final ClientPoolFactory<AgentControl.AsyncClient> clientPoolFactory;
+  private final ClientProxyFactory<AgentControl.AsyncSSLClient> clientProxyFactory;
+  private final ClientPoolFactory<AgentControl.AsyncSSLClient> clientPoolFactory;
   /**
    * clientProxy acquires a new client from ClientPool for every thrift call.
    */
-  private AgentControl.AsyncClient clientProxy;
+  private AgentControl.AsyncSSLClient clientProxy;
   private String hostIp;
   private int port;
-  private ClientPool<AgentControl.AsyncClient> clientPool;
+  private ClientPool<AgentControl.AsyncSSLClient> clientPool;
 
   @Inject
-  public AgentControlClient(ClientProxyFactory<AgentControl.AsyncClient> clientProxyFactory,
-                            ClientPoolFactory<AgentControl.AsyncClient> clientPoolFactory) {
+  public AgentControlClient(ClientProxyFactory<AgentControl.AsyncSSLClient> clientProxyFactory,
+                            ClientPoolFactory<AgentControl.AsyncSSLClient> clientPoolFactory) {
     this.clientProxyFactory = clientProxyFactory;
     this.clientPoolFactory = clientPoolFactory;
   }
@@ -138,12 +138,12 @@ public class AgentControlClient {
   }
 
   @VisibleForTesting
-  protected AgentControl.AsyncClient getClientProxy() {
+  protected AgentControl.AsyncSSLClient getClientProxy() {
     return clientProxy;
   }
 
   @VisibleForTesting
-  protected void setClientProxy(AgentControl.AsyncClient clientProxy) {
+  protected void setClientProxy(AgentControl.AsyncSSLClient clientProxy) {
     this.clientProxy = clientProxy;
   }
 
@@ -163,7 +163,7 @@ public class AgentControlClient {
    * @throws RpcException
    */
   @RpcMethod
-  public void ping(AsyncMethodCallback<AgentControl.AsyncClient.ping_call> handler) throws RpcException {
+  public void ping(AsyncMethodCallback<AgentControl.AsyncSSLClient.ping_call> handler) throws RpcException {
     ensureClient();
     PingRequest pingRequest = new PingRequest();
     clientProxy.setTimeout(PING_TIMEOUT_MS);
@@ -182,7 +182,7 @@ public class AgentControlClient {
    */
   @RpcMethod
   public void ping() throws InterruptedException, RpcException {
-    SyncHandler<Object, AgentControl.AsyncClient.ping_call> syncHandler = new SyncHandler<>();
+    SyncHandler<Object, AgentControl.AsyncSSLClient.ping_call> syncHandler = new SyncHandler<>();
     ping(syncHandler);
     syncHandler.await();
   }
@@ -221,7 +221,7 @@ public class AgentControlClient {
       String hostId,
       String deploymentId,
       String ntpEndpoint,
-      AsyncMethodCallback<AgentControl.AsyncClient.provision_call> handler)
+      AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call> handler)
       throws RpcException {
     ensureClient();
 
@@ -286,7 +286,7 @@ public class AgentControlClient {
       String deploymentId,
       String ntpEndpoint)
       throws InterruptedException, RpcException {
-    SyncHandler<ProvisionResponse, AgentControl.AsyncClient.provision_call> syncHandler = new SyncHandler<>();
+    SyncHandler<ProvisionResponse, AgentControl.AsyncSSLClient.provision_call> syncHandler = new SyncHandler<>();
     provision(dataStoreList, imageDataStores, usedForVMs, hostAddress, hostPort,
         memoryOverCommit, loggingEndpoint, logLevel, statsPluginConfig,
         managementOnly, hostId, deploymentId, ntpEndpoint, syncHandler);
@@ -302,7 +302,7 @@ public class AgentControlClient {
    * @throws RpcException
    */
   @RpcMethod
-  public void upgrade(AsyncMethodCallback<AgentControl.AsyncClient.upgrade_call> handler)
+  public void upgrade(AsyncMethodCallback<AgentControl.AsyncSSLClient.upgrade_call> handler)
       throws RpcException {
     ensureClient();
 
@@ -329,7 +329,7 @@ public class AgentControlClient {
   @RpcMethod
   public UpgradeResponse upgrade()
       throws InterruptedException, RpcException {
-    SyncHandler<UpgradeResponse, AgentControl.AsyncClient.upgrade_call> syncHandler = new SyncHandler<>();
+    SyncHandler<UpgradeResponse, AgentControl.AsyncSSLClient.upgrade_call> syncHandler = new SyncHandler<>();
     upgrade(syncHandler);
     syncHandler.await();
     return ResponseValidator.checkUpgradeResponse(syncHandler.getResponse());
@@ -344,7 +344,7 @@ public class AgentControlClient {
    * @throws RpcException
    */
   @RpcMethod
-  public void getAgentStatus(AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call> handler)
+  public void getAgentStatus(AsyncMethodCallback<AgentControl.AsyncSSLClient.get_agent_status_call> handler)
       throws RpcException {
     ensureClient();
     clientProxy.setTimeout(GET_AGENT_STATUS_TIMEOUT_MS);
@@ -369,7 +369,8 @@ public class AgentControlClient {
   @RpcMethod
   public AgentStatusResponse getAgentStatus()
       throws InterruptedException, RpcException {
-    SyncHandler<AgentStatusResponse, AgentControl.AsyncClient.get_agent_status_call> syncHandler = new SyncHandler<>();
+    SyncHandler<AgentStatusResponse, AgentControl.AsyncSSLClient.get_agent_status_call> syncHandler =
+            new SyncHandler<>();
     getAgentStatus(syncHandler);
     syncHandler.await();
     return ResponseValidator.checkAgentStatusResponse(syncHandler.getResponse(), null);
