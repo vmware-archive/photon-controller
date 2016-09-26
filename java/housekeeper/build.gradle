@@ -15,7 +15,6 @@ dependencies {
   compile project(':common-xenon')
   compile project(':common-logging')
   compile project(':cloud-store')
-  compile project(':common-tests')
   compile project(':nsx-client')
   compile project(':api-backend')
 
@@ -31,9 +30,12 @@ dependencies {
       '../../thrift/tracing.thrift',
       '../../thrift/status.thrift')
 
+  testCompile project(':common-tests')
+
   testCompile("org.apache.curator:curator-test:${versions.curator}") {
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     exclude group: 'log4j', module: 'log4j'
+    exclude group: 'io.netty', module: 'netty'
   }
 
   testCompile 'commons-io:commons-io:2.4'

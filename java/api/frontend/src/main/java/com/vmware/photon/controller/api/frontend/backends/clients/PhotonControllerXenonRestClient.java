@@ -24,6 +24,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -49,10 +50,11 @@ public class PhotonControllerXenonRestClient extends XenonRestClient {
 
   @Inject
   public PhotonControllerXenonRestClient(@PhotonControllerServerSet ServerSet serverSet,
-                                 @BackendTaskExecutor ExecutorService executor,
-                                 @ScheduledTaskExecutor ScheduledExecutorService scheduledExecutorService) throws
+                                         @BackendTaskExecutor ExecutorService executor,
+                                         @ScheduledTaskExecutor ScheduledExecutorService scheduledExecutorService,
+                                         ServiceHost serviceHost) throws
       URISyntaxException {
-    super(serverSet, executor, scheduledExecutorService);
+    super(serverSet, executor, scheduledExecutorService, serviceHost);
   }
 
   @Override

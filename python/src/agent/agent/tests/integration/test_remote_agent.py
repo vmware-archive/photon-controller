@@ -329,7 +329,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
                       if ds in datastores]
         self.assertEqual(containsDs, self.get_all_datastores())
         networks = [net.id for net in hostConfig.networks]
-        self.assertEqual(networks, self.vim_client.get_networks())
+        self.assertEqual(networks, [network.name for network in self.vim_client.get_networks()])
         self.assertEqual(hostConfig.address, ServerAddress(host=self.server,
                                                            port=8835))
         self.assertTrue(hostConfig.management_only)

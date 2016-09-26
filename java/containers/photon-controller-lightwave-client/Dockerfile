@@ -28,10 +28,10 @@ RUN sed -i 's/#Storage=auto/Storage=persistent/' /etc/systemd/journald.conf
 RUN tdnf install -y procps-ng; \
     tdnf install -y likewise-open; \
     tdnf install -y boost; \
-    tdnf install -y vmware-lightwave-clients
+    tdnf install -y vmware-lightwave-clients-6.6.0
 
 ENV PATH $PATH:/opt/vmware/bin:/opt/likewise/bin
 
-EXPOSE 22 53/udp 53 88/udp 88 389 636 2012 2014 2020
+EXPOSE 9000 19000
 
 ENTRYPOINT ["/usr/sbin/init"]

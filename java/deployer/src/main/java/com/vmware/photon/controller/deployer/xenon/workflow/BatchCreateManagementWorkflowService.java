@@ -89,6 +89,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
   private static final int WAIT_FOR_CONVERGANCE_DELAY = 100;
   private static final int WAIT_FOR_CONVERGENCE_MAX_RETRIES = 60;
 
+  private static boolean inUnitTests = false;
+
   /**
    * This class defines the state of a {@link BatchCreateManagementWorkflowService} task.
    */
@@ -189,6 +191,10 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
+  }
+
+  public static void setInUnitTests(boolean inUnitTests) {
+    BatchCreateManagementWorkflowService.inUnitTests = inUnitTests;
   }
 
   /**
@@ -388,24 +394,26 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
 
         // Update Quorum on services
         Map<String, List<Pair<String, Integer>>> xenonServiceToIp = mapXenonServices(photonControllerCoreVms);
-        List<Operation> quorumUpdates = getQuroumUpdateOperations(xenonServiceToIp, x -> x);
+        List<Operation> quorumUpdates = getQuroumUpdateOperations(currentState, xenonServiceToIp, x -> x);
         OperationJoin.create(quorumUpdates)
-          .setCompletion((os2, ts2) -> {
-            if (ts2 != null && !ts2.isEmpty()) {
-              failTask(ts2.values());
-              return;
-            }
-            // Wait until services have stabilized
-            List<Operation> nodeGroupStatusChecks = getNodeGroupStateOperations(xenonServiceToIp);
-            checkNodeGroupStatus(nodeGroupStatusChecks, xenonServiceToIp, 0, 0);
-          })
-          .sendWith(BatchCreateManagementWorkflowService.this);
+            .setCompletion((os2, ts2) -> {
+              if (ts2 != null && !ts2.isEmpty()) {
+                failTask(ts2.values());
+                return;
+              }
+
+              // Wait until services have stabilized
+              List<Operation> nodeGroupStatusChecks = getNodeGroupStateOperations(currentState, xenonServiceToIp);
+              checkNodeGroupStatus(currentState, nodeGroupStatusChecks, xenonServiceToIp, 0, 0);
+            })
+            .sendWith(BatchCreateManagementWorkflowService.this);
 
       })
       .sendWith(this);
   }
 
   private void checkNodeGroupStatus(
+      State currentState,
       List<Operation> nodeGroupStatusChecks,
       Map<String, List<Pair<String, Integer>>> xenonServiceToIp,
       int conssecutiveSuccesses,
@@ -419,10 +427,10 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         if (allServicesAvailable(os)) {
           int currentSuccess = conssecutiveSuccesses + 1;
           if (currentSuccess > 30) {
-            resetQuorum(xenonServiceToIp);
+            resetQuorum(currentState, xenonServiceToIp);
           } else {
             getHost().schedule(() -> {
-              checkNodeGroupStatus(nodeGroupStatusChecks, xenonServiceToIp, currentSuccess, tries);
+              checkNodeGroupStatus(currentState, nodeGroupStatusChecks, xenonServiceToIp, currentSuccess, tries);
             }, WAIT_FOR_CONVERGANCE_DELAY, TimeUnit.MILLISECONDS);
           }
         } else {
@@ -433,15 +441,15 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
             return;
           }
           getHost().schedule(() -> {
-            checkNodeGroupStatus(nodeGroupStatusChecks, xenonServiceToIp, 0, currentTry);
+            checkNodeGroupStatus(currentState, nodeGroupStatusChecks, xenonServiceToIp, 0, currentTry);
           }, WAIT_FOR_CONVERGANCE_DELAY, TimeUnit.MILLISECONDS);
         }
       })
       .sendWith(this);
   }
 
-  private void resetQuorum(Map<String, List<Pair<String, Integer>>> xenonServiceToIp) {
-    OperationJoin.create(getQuroumUpdateOperations(xenonServiceToIp, x -> x / 2 + 1))
+  private void resetQuorum(State currentState, Map<String, List<Pair<String, Integer>>> xenonServiceToIp) {
+    OperationJoin.create(getQuroumUpdateOperations(currentState, xenonServiceToIp, x -> x / 2 + 1))
       .setCompletion((os, ts) -> {
         if (ts != null && !ts.isEmpty()) {
           failTask(ts.values());
@@ -483,14 +491,21 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
   }
 
   private List<Operation> getNodeGroupStateOperations(
+      State currentState,
       Map<String, List<Pair<String, Integer>>> xenonServiceToIp) {
+
+    String protocol = "http";
+    if (!BatchCreateManagementWorkflowService.inUnitTests && currentState.isAuthEnabled) {
+      protocol = "https";
+    }
 
     List<Operation> ops = new ArrayList<>();
     for (Entry<String, List<Pair<String, Integer>>> e : xenonServiceToIp.entrySet()) {
       for (Pair<String, Integer> address : e.getValue()) {
         Operation op = Operation
             .createGet(
-                UriUtils.buildUri(address.getFirst(), address.getSecond(), ServiceUriPaths.DEFAULT_NODE_GROUP, null));
+                UriUtils.buildUri(protocol, address.getFirst(), address.getSecond(), ServiceUriPaths
+                    .DEFAULT_NODE_GROUP, null));
         ops.add(op);
       }
     }
@@ -498,8 +513,14 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
   }
 
   private List<Operation> getQuroumUpdateOperations(
+      State currentState,
       Map<String, List<Pair<String, Integer>>> xenonServiceToIp,
       IntUnaryOperator computeQuorum) {
+
+    String protocol = "http";
+    if (!BatchCreateManagementWorkflowService.inUnitTests && currentState.isAuthEnabled) {
+      protocol = "https";
+    }
 
     List<Operation> quorumUpdates = new ArrayList<>();
     for (Entry<String, List<Pair<String, Integer>>> entry : xenonServiceToIp.entrySet()) {
@@ -510,7 +531,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       for (Pair<String, Integer> address : entry.getValue()) {
         quorumUpdates.add(
           Operation.createPatch(
-              UriUtils.buildUri(address.getFirst(), address.getSecond(), ServiceUriPaths.DEFAULT_NODE_GROUP, null))
+              UriUtils.buildUri(protocol, address.getFirst(), address.getSecond(), ServiceUriPaths
+                  .DEFAULT_NODE_GROUP, null))
             .setBody(patch)
         );
       }

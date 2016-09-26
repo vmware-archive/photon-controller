@@ -25,6 +25,9 @@ public class XenonConfig {
   @Range(min = 0, max = 65535)
   private Integer port;
 
+  @Range(min = 0, max = 65535)
+  private Integer securePort;
+
   @NotBlank
   private String bindAddress;
 
@@ -37,12 +40,24 @@ public class XenonConfig {
   @NotEmpty
   private String[] peerNodes;
 
+  private String keyFile;
+
+  private String certificateFile;
+
   public void setPort(int port) {
     this.port = port;
   }
 
   public Integer getPort() {
     return this.port;
+  }
+
+  public void setSecurePort(int securePort) {
+    this.securePort = securePort;
+  }
+
+  public Integer getSecurePort() {
+    return this.securePort;
   }
 
   public void setBindAddress(String bindAddress) {
@@ -67,6 +82,22 @@ public class XenonConfig {
 
   public String getStoragePath() {
     return this.storagePath;
+  }
+
+  public void setKeyFile(String keyFile) {
+    this.keyFile = keyFile;
+  }
+
+  public String getKeyFile() {
+    return this.keyFile;
+  }
+
+  public void setCertificateFile(String certificateFile) {
+    this.certificateFile = certificateFile;
+  }
+
+  public String getCertificateFile() {
+    return this.certificateFile;
   }
 
   public void setPeerNodes(String[] peerNodes) {

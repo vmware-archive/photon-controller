@@ -142,7 +142,7 @@ describe "virtual_network", :virtual_network => true do
     end
   end
 
-  describe "#delete" do
+  describe "#delete", auth_disabled: true do
     it "should delete virtual network successfully when virtual network is READY" do
       network = create_virtual_network(@project.id, spec)
       expect(network.state).to eq "READY"

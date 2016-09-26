@@ -67,6 +67,8 @@ import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
 import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
 import com.vmware.photon.controller.api.frontend.utils.PhysicalNetworkHelper;
 import com.vmware.photon.controller.api.frontend.utils.VirtualNetworkHelper;
+import com.vmware.photon.controller.common.ssl.KeyStoreUtils;
+import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -77,15 +79,20 @@ import com.google.inject.name.Named;
 import com.google.inject.servlet.RequestScoped;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
+import javax.net.ssl.SSLContext;
+
 /**
  * Tests {@link ApiFeModule}.
  */
 public class ApiFeModuleTest {
+
+  private SSLContext sslContext = KeyStoreUtils.acceptAllCerts(KeyStoreUtils.THRIFT_PROTOCOL);
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -251,12 +258,15 @@ public class ApiFeModuleTest {
 
     @BeforeTest
     public void setUp() throws Throwable {
-      ApiFeModule apiFeModule = new ApiFeModule();
+      ApiFeModule apiFeModule = new ApiFeModule(sslContext);
       apiFeModule.setConfiguration(
           ConfigurationUtils.parseConfiguration(
               ApiFeConfigurationTest.class.getResource("/config_valid_image_replication_timeout.yml").getPath()
           )
       );
+
+      BasicServiceHost host = BasicServiceHost.create();
+      apiFeModule.setServiceHost(host);
 
       injector = Guice.createInjector(
           apiFeModule,
@@ -290,7 +300,7 @@ public class ApiFeModuleTest {
 
     @BeforeTest
     public void setUp() throws Throwable {
-      ApiFeModule apiFeModule = new ApiFeModule();
+      ApiFeModule apiFeModule = new ApiFeModule(sslContext);
       apiFeModule.setConfiguration(
           ConfigurationUtils.parseConfiguration(
               ApiFeConfigurationTest.class.getResource("/config.yml").getPath()
@@ -332,12 +342,14 @@ public class ApiFeModuleTest {
      */
     @Test
     public void testXenonBackendInjection() throws Throwable {
-      ApiFeModule apiFeModule = new ApiFeModule();
+      ApiFeModule apiFeModule = new ApiFeModule(sslContext);
       ApiFeConfiguration apiFeConfiguration = ConfigurationUtils.parseConfiguration(
           ApiFeConfigurationTest.class.getResource("/config.yml").getPath()
       );
 
       apiFeModule.setConfiguration(apiFeConfiguration);
+      BasicServiceHost host = BasicServiceHost.create();
+      apiFeModule.setServiceHost(host);
 
       Injector injector = Guice.createInjector(
           apiFeModule,
@@ -391,12 +403,14 @@ public class ApiFeModuleTest {
      */
     @Test
     public void testInjection() throws Throwable {
-      ApiFeModule apiFeModule = new ApiFeModule();
+      ApiFeModule apiFeModule = new ApiFeModule(sslContext);
       ApiFeConfiguration apiFeConfiguration = ConfigurationUtils.parseConfiguration(
           ApiFeConfigurationTest.class.getResource("/config.yml").getPath()
       );
 
       apiFeModule.setConfiguration(apiFeConfiguration);
+      BasicServiceHost host = BasicServiceHost.create();
+      apiFeModule.setServiceHost(host);
 
       Injector injector = Guice.createInjector(
           apiFeModule,
@@ -434,7 +448,7 @@ public class ApiFeModuleTest {
 
     @Test
     public void testPaginationConfigInjected() throws Throwable {
-      ApiFeModule apiFeModule = new ApiFeModule();
+      ApiFeModule apiFeModule = new ApiFeModule(sslContext);
       apiFeModule.setConfiguration(
           ConfigurationUtils.parseConfiguration(ApiFeConfigurationTest.class.getResource("/config.yml").getPath())
       );
@@ -462,7 +476,7 @@ public class ApiFeModuleTest {
 
     @Test
     public void testUsingVirtualNetwork() throws Throwable {
-      ApiFeModule apiFeModule = new ApiFeModule();
+      ApiFeModule apiFeModule = new ApiFeModule(sslContext);
       apiFeModule.setConfiguration(
           ConfigurationUtils.parseConfiguration(ApiFeConfigurationTest.class.getResource("/config.yml").getPath())
       );
@@ -493,12 +507,14 @@ public class ApiFeModuleTest {
      */
     @Test
     public void testPhysicalNetworkHelperInjection() throws Throwable {
-      ApiFeModule apiFeModule = new ApiFeModule();
+      ApiFeModule apiFeModule = new ApiFeModule(sslContext);
       ApiFeConfiguration apiFeConfiguration = ConfigurationUtils.parseConfiguration(
           ApiFeConfigurationTest.class.getResource("/config_sdn_disabled.yml").getPath()
       );
 
       apiFeModule.setConfiguration(apiFeConfiguration);
+      BasicServiceHost host = BasicServiceHost.create();
+      apiFeModule.setServiceHost(host);
 
       Injector injector = Guice.createInjector(
           apiFeModule,
@@ -522,12 +538,14 @@ public class ApiFeModuleTest {
      */
     @Test
     public void testVirtualNetworkHelperInjection() throws Throwable {
-      ApiFeModule apiFeModule = new ApiFeModule();
+      ApiFeModule apiFeModule = new ApiFeModule(sslContext);
       ApiFeConfiguration apiFeConfiguration = ConfigurationUtils.parseConfiguration(
           ApiFeConfigurationTest.class.getResource("/config_sdn_enabled.yml").getPath()
       );
 
       apiFeModule.setConfiguration(apiFeConfiguration);
+      BasicServiceHost host = BasicServiceHost.create();
+      apiFeModule.setServiceHost(host);
 
       Injector injector = Guice.createInjector(
           apiFeModule,

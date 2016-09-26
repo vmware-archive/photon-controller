@@ -1,4 +1,4 @@
-OM vmware/photon-controller-service-base
+FROM vmware/photon-controller-service-base
 
 ENV container=docker
 VOLUME ["/sys/fs/cgroup"]
@@ -28,7 +28,7 @@ RUN tdnf makecache; \
                     apache-tomcat \
                     boost; \
     tdnf install -y likewise-open; \
-    tdnf install -y vmware-lightwave-server; \
+    tdnf install -y vmware-lightwave-server-6.6.0; \
     rm -rf /usr/share/doc/*; \
     rm -rf /usr/share/man/*; \
     rm -rf /usr/include/*; \

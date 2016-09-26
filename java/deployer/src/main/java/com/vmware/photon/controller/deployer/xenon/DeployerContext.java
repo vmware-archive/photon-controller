@@ -120,6 +120,10 @@ public class DeployerContext {
    */
   private final List<String> vibUninstallOrder = new ArrayList<String>();
 
+  private final String keyStorePath;
+
+  private final String keyStorePassword;
+
   @VisibleForTesting
   public DeployerContext() {
     corePoolSize = DeployerDefaults.CORE_POOL_SIZE;
@@ -145,6 +149,8 @@ public class DeployerContext {
     sharedSecret = UUID.randomUUID().toString();
     configDirectory = null;
     enableAuth = false;
+    keyStorePath = null;
+    keyStorePassword = null;
   }
 
   public int getCorePoolSize() {
@@ -245,6 +251,14 @@ public class DeployerContext {
 
   public boolean isAuthEnabled() {
     return enableAuth;
+  }
+
+  public String getKeyStorePath() {
+    return keyStorePath;
+  }
+
+  public String getKeyStorePassword() {
+    return keyStorePassword;
   }
 
   public Collection<DeploymentMigrationInformation> getDeploymentMigrationInformation() {

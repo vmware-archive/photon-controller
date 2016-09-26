@@ -88,6 +88,7 @@ import com.vmware.photon.controller.api.frontend.resources.vm.VmResource;
 import com.vmware.photon.controller.api.frontend.resources.vm.VmTagsResource;
 import com.vmware.photon.controller.common.metrics.GraphiteConfig;
 import com.vmware.photon.controller.swagger.resources.SwaggerJsonListing;
+import com.vmware.xenon.common.ServiceHost;
 
 import com.google.inject.Injector;
 import com.hubspot.dropwizard.guice.GuiceBundle;
@@ -103,6 +104,7 @@ import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
 
+import javax.net.ssl.SSLContext;
 import javax.servlet.DispatcherType;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorFactory;
@@ -129,6 +131,8 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
   private Injector injector;
   private ApiFeModule apiModule;
   private HibernateBundle<ApiFeStaticConfiguration> hibernateBundle;
+  private static ServiceHost xenonHost;
+  private static SSLContext sslContext;
 
   public static void main(String[] args) throws Exception {
     setupApiFeConfigurationForServerCommand(args);
@@ -148,12 +152,21 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     }
   }
 
+  public static void addServiceHost(ServiceHost xenonHost) {
+    ApiFeService.xenonHost = xenonHost;
+  }
+
+  public static void setSSLContext(SSLContext sslContext) {
+    ApiFeService.sslContext = sslContext;
+  }
+
   @Override
   public void initialize(Bootstrap<ApiFeStaticConfiguration> bootstrap) {
     bootstrap.addBundle(new AssetsBundle("/assets", "/api/", "index.html"));
 
-    apiModule = new ApiFeModule();
+    apiModule = new ApiFeModule(sslContext);
     apiModule.setConfiguration(apiFeConfiguration);
+    apiModule.setServiceHost(xenonHost);
 
     GuiceBundle<ApiFeStaticConfiguration> guiceBundle = getGuiceBundle();
     bootstrap.addBundle(guiceBundle);

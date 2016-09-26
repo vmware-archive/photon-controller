@@ -87,6 +87,7 @@ import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.xenon.common.ServiceHost;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
@@ -101,6 +102,8 @@ import com.google.inject.name.Names;
 import com.google.inject.servlet.RequestScoped;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.net.ssl.SSLContext;
 
 import java.net.InetSocketAddress;
 import java.util.UUID;
@@ -117,12 +120,19 @@ import java.util.concurrent.TimeUnit;
 public class ApiFeModule extends AbstractModule {
   private static final Logger logger = LoggerFactory.getLogger(ApiFeModule.class);
   private ApiFeConfiguration configuration;
+  private ServiceHost serviceHost;
+  private final SSLContext sslContext;
 
-  public ApiFeModule() {
+  public ApiFeModule(SSLContext sslContext) {
+    this.sslContext = sslContext;
   }
 
   public void setConfiguration(ApiFeConfiguration configuration) {
     this.configuration = configuration;
+  }
+
+  public void setServiceHost(ServiceHost serviceHost) {
+    this.serviceHost = serviceHost;
   }
 
   @Provides
@@ -148,6 +158,12 @@ public class ApiFeModule extends AbstractModule {
   @Singleton
   public AuthConfig getAuthConfig() {
     return configuration.getAuth();
+  }
+
+  @Provides
+  @Singleton
+  public ServiceHost getServiceHost() {
+    return serviceHost;
   }
 
   @Provides
@@ -218,8 +234,8 @@ public class ApiFeModule extends AbstractModule {
         .implement(TaskCommand.class, TaskCommand.class)
         .build(TaskCommandFactory.class));
 
-    install(new ThriftModule());
-    install(new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {
+    install(new ThriftModule(this.sslContext));
+    install(new ThriftServiceModule<>(new TypeLiteral<Host.AsyncSSLClient>() {
     }));
 
     install(new FactoryModuleBuilder()

@@ -27,6 +27,7 @@ import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceHost;
 
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
@@ -133,14 +134,15 @@ public class ConstraintCheckerPerfTest {
 
   @DataProvider(name = "default")
   public Object[][] createDefault() throws Throwable {
+    ServiceHost host = cloudStoreTestEnvironment.getHosts()[0];
     XenonRestClient xenonRestClient = new XenonRestClient(
             cloudStoreTestEnvironment.getServerSet(),
         Executors.newFixedThreadPool(1),
-        Executors.newScheduledThreadPool(1));
+        Executors.newScheduledThreadPool(1), host);
     CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreTestEnvironment.getServerSet());
     // This tests does tens of thousands of operation. We only log failures, so we can see what's happening.
     xenonRestClient.start();
-    ConstraintChecker cloudStore = new CloudStoreConstraintChecker(cloudStoreHelper);
+    ConstraintChecker cloudStore = new CloudStoreConstraintChecker(cloudStoreHelper, host);
 
     return new Object[][] {
       { cloudStore, 1 },

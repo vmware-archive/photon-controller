@@ -204,9 +204,7 @@ class HostHandler(Host.Iface):
 
         if not self._hypervisor:
             raise HypervisorNotConfigured()
-        networks = self._hypervisor.network_manager.get_networks()
-        vm_network_names = self._hypervisor.network_manager.get_vm_networks()
-        config.networks = [network for network in networks if network.id in vm_network_names]
+        config.networks = self._hypervisor.network_manager.get_networks()
         dm = self._hypervisor.datastore_manager
         config.datastores = dm.get_datastores()
         config.image_datastore_ids = dm.image_datastores()
@@ -356,26 +354,30 @@ class HostHandler(Host.Iface):
         placement_virtual_network = self._get_network_ids_by_type(vm.networks, NetworkInfoType.VIRTUAL_NETWORK)
         if not placement_virtual_network:
             networks = self._hypervisor.network_manager.get_vm_networks()
-            placement_networks = self._get_network_ids_by_type(vm.networks, NetworkInfoType.NETWORK)
-            if placement_networks and networks:
-                host_networks = set(networks)
-
-                if not placement_networks.issubset(host_networks):
-                    intersected_networks = placement_networks & host_networks
-                    missing_networks = placement_networks - intersected_networks
-
-                    return CreateVmResponse(CreateVmResultCode.NETWORK_NOT_FOUND,
-                                            "Unknown non provisioned networks: {0}".format(missing_networks))
-                else:
-                    self._logger.debug("Using the placement networks: {0}".format(placement_networks))
-                    for network_name in placement_networks:
-                        spec.add_nic(network_name)
-            elif networks:
-                # Pick a default network.
-                self._logger.debug("Using the default network: %s" % networks[0])
-                spec.add_nic(networks[0])
+            if not networks:
+                self._logger.warning("Host does not have network, VM %s created without a NIC" % vm.id)
             else:
-                self._logger.warning("VM %s created without a NIC" % vm.id)
+                placement_networks = self._get_network_ids_by_type(vm.networks, NetworkInfoType.NETWORK)
+                if placement_networks:
+                    host_networks = set([network.name for network in networks])
+                    if not placement_networks.issubset(host_networks):
+                        intersected_networks = placement_networks & host_networks
+                        missing_networks = placement_networks - intersected_networks
+                        return CreateVmResponse(CreateVmResultCode.NETWORK_NOT_FOUND,
+                                                "Unknown non provisioned networks: {0}".format(missing_networks))
+                else:
+                    # Pick a default network.
+                    self._logger.debug("Using the default network: %s" % networks[0].name)
+                    placement_networks = [networks[0].name]
+
+                self._logger.debug("Using the placement networks: {0}".format(placement_networks))
+                for network_name in placement_networks:
+                    for network in networks:
+                        if network.name == network_name:
+                            if network.dvs:
+                                spec.add_dvportgroup(network.dvs, network_name)
+                            else:
+                                spec.add_nic(network_name)
 
             self._logger.debug("VM create, done creating nics, vm-id: %s" % vm.id)
 

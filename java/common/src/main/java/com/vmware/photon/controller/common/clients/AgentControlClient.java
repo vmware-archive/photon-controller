@@ -39,46 +39,84 @@ import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Client for Agent's control service.
  * <p>
- * Note that this class is not thread safe, because thrift's TAsyncClient is not thread
+ * Note that this class is not thread safe, because thrift's TAsyncSSLClient is not thread
  * safe and only allows one method call at a time.
  * <p>
  * Instances of AgentControlClient, HostClient and RootSchedulerClient reuses and
- * shares global TAsyncClientManager and ClientProxyExecutor, so it is fairly
+ * shares global TAsyncSSLClientManager and ClientProxyExecutor, so it is fairly
  * cheap to create a new client instance for each use.
  */
 @RpcClient
-public class AgentControlClient extends ThriftClient {
+public class AgentControlClient {
+
+  protected static final ClientPoolOptions CLIENT_POOL_OPTIONS = new ClientPoolOptions()
+      .setMaxClients(1)
+      .setMaxWaiters(100)
+      .setTimeout(30, TimeUnit.SECONDS)
+      .setServiceName("AgentControl");
+  private static final int DEFAULT_PORT_NUMBER = 8835;
+  private static final int MAX_RESERVED_PORT_NUMBER = 1023;
 
   private static final Logger logger = LoggerFactory.getLogger(AgentControlClient.class);
   private static final long PROVISION_TIMEOUT_MS = 60000;
   private static final long UPGRADE_TIMEOUT_MS = 60000;
   private static final long GET_AGENT_STATUS_TIMEOUT_MS = 60000;
   private static final long PING_TIMEOUT_MS = 5000;
-  private final ClientProxyFactory<AgentControl.AsyncClient> clientProxyFactory;
-  private final ClientPoolFactory<AgentControl.AsyncClient> clientPoolFactory;
+  private final ClientProxyFactory<AgentControl.AsyncSSLClient> clientProxyFactory;
+  private final ClientPoolFactory<AgentControl.AsyncSSLClient> clientPoolFactory;
   /**
    * clientProxy acquires a new client from ClientPool for every thrift call.
    */
-  private AgentControl.AsyncClient clientProxy;
-  private ClientPool<AgentControl.AsyncClient> clientPool;
+  private AgentControl.AsyncSSLClient clientProxy;
+  private String hostIp;
+  private int port;
+  private ClientPool<AgentControl.AsyncSSLClient> clientPool;
 
   @Inject
-  public AgentControlClient(ClientProxyFactory<AgentControl.AsyncClient> clientProxyFactory,
-                            ClientPoolFactory<AgentControl.AsyncClient> clientPoolFactory) {
+  public AgentControlClient(ClientProxyFactory<AgentControl.AsyncSSLClient> clientProxyFactory,
+                            ClientPoolFactory<AgentControl.AsyncSSLClient> clientPoolFactory) {
     this.clientProxyFactory = clientProxyFactory;
     this.clientPoolFactory = clientPoolFactory;
   }
 
-  @Override
+  public String getHostIp() {
+    return hostIp;
+  }
+
+  public void setHostIp(String hostIp) {
+    setIpAndPort(hostIp, DEFAULT_PORT_NUMBER);
+  }
+
+  public int getPort() {
+    return port;
+  }
+
+  public void setIpAndPort(String ip, int port) {
+    checkNotNull(ip, "IP can not be null");
+    checkArgument(port > MAX_RESERVED_PORT_NUMBER,
+        "Please set port above %s", MAX_RESERVED_PORT_NUMBER);
+
+    if (ip.equals(this.hostIp) && port == this.port) {
+      return;
+    }
+
+    this.close();
+    this.hostIp = ip;
+    this.port = port;
+  }
+
   public void close() {
     clientProxy = null;
 
@@ -100,26 +138,20 @@ public class AgentControlClient extends ThriftClient {
   }
 
   @VisibleForTesting
-  protected AgentControl.AsyncClient getClientProxy() {
+  protected AgentControl.AsyncSSLClient getClientProxy() {
     return clientProxy;
   }
 
   @VisibleForTesting
-  protected void setClientProxy(AgentControl.AsyncClient clientProxy) {
+  protected void setClientProxy(AgentControl.AsyncSSLClient clientProxy) {
     this.clientProxy = clientProxy;
   }
 
   private void createClientProxyWithIpAndPort() {
     logger.debug("Creating host async client of hostIp {} and port {}", this.getHostIp(), this.getPort());
-    ClientPoolOptions options = new ClientPoolOptions(CLIENT_POOL_OPTIONS);
-    options = options.setServiceName("AgentControl");
-    if (getKeyStorePath() != null) {
-      options.setKeyStorePassword(getKeyStorePath());
-      options.setKeyStorePassword(getKeyStorePassword());
-    }
     this.clientPool = this.clientPoolFactory.create(
         ImmutableSet.of(new InetSocketAddress(this.getHostIp(), this.getPort())),
-        options);
+        CLIENT_POOL_OPTIONS);
     this.clientProxy = clientProxyFactory.create(clientPool).get();
   }
 
@@ -131,7 +163,7 @@ public class AgentControlClient extends ThriftClient {
    * @throws RpcException
    */
   @RpcMethod
-  public void ping(AsyncMethodCallback<AgentControl.AsyncClient.ping_call> handler) throws RpcException {
+  public void ping(AsyncMethodCallback<AgentControl.AsyncSSLClient.ping_call> handler) throws RpcException {
     ensureClient();
     PingRequest pingRequest = new PingRequest();
     clientProxy.setTimeout(PING_TIMEOUT_MS);
@@ -150,7 +182,7 @@ public class AgentControlClient extends ThriftClient {
    */
   @RpcMethod
   public void ping() throws InterruptedException, RpcException {
-    SyncHandler<Object, AgentControl.AsyncClient.ping_call> syncHandler = new SyncHandler<>();
+    SyncHandler<Object, AgentControl.AsyncSSLClient.ping_call> syncHandler = new SyncHandler<>();
     ping(syncHandler);
     syncHandler.await();
   }
@@ -189,7 +221,7 @@ public class AgentControlClient extends ThriftClient {
       String hostId,
       String deploymentId,
       String ntpEndpoint,
-      AsyncMethodCallback<AgentControl.AsyncClient.provision_call> handler)
+      AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call> handler)
       throws RpcException {
     ensureClient();
 
@@ -254,7 +286,7 @@ public class AgentControlClient extends ThriftClient {
       String deploymentId,
       String ntpEndpoint)
       throws InterruptedException, RpcException {
-    SyncHandler<ProvisionResponse, AgentControl.AsyncClient.provision_call> syncHandler = new SyncHandler<>();
+    SyncHandler<ProvisionResponse, AgentControl.AsyncSSLClient.provision_call> syncHandler = new SyncHandler<>();
     provision(dataStoreList, imageDataStores, usedForVMs, hostAddress, hostPort,
         memoryOverCommit, loggingEndpoint, logLevel, statsPluginConfig,
         managementOnly, hostId, deploymentId, ntpEndpoint, syncHandler);
@@ -270,7 +302,7 @@ public class AgentControlClient extends ThriftClient {
    * @throws RpcException
    */
   @RpcMethod
-  public void upgrade(AsyncMethodCallback<AgentControl.AsyncClient.upgrade_call> handler)
+  public void upgrade(AsyncMethodCallback<AgentControl.AsyncSSLClient.upgrade_call> handler)
       throws RpcException {
     ensureClient();
 
@@ -297,7 +329,7 @@ public class AgentControlClient extends ThriftClient {
   @RpcMethod
   public UpgradeResponse upgrade()
       throws InterruptedException, RpcException {
-    SyncHandler<UpgradeResponse, AgentControl.AsyncClient.upgrade_call> syncHandler = new SyncHandler<>();
+    SyncHandler<UpgradeResponse, AgentControl.AsyncSSLClient.upgrade_call> syncHandler = new SyncHandler<>();
     upgrade(syncHandler);
     syncHandler.await();
     return ResponseValidator.checkUpgradeResponse(syncHandler.getResponse());
@@ -312,7 +344,7 @@ public class AgentControlClient extends ThriftClient {
    * @throws RpcException
    */
   @RpcMethod
-  public void getAgentStatus(AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call> handler)
+  public void getAgentStatus(AsyncMethodCallback<AgentControl.AsyncSSLClient.get_agent_status_call> handler)
       throws RpcException {
     ensureClient();
     clientProxy.setTimeout(GET_AGENT_STATUS_TIMEOUT_MS);
@@ -337,7 +369,8 @@ public class AgentControlClient extends ThriftClient {
   @RpcMethod
   public AgentStatusResponse getAgentStatus()
       throws InterruptedException, RpcException {
-    SyncHandler<AgentStatusResponse, AgentControl.AsyncClient.get_agent_status_call> syncHandler = new SyncHandler<>();
+    SyncHandler<AgentStatusResponse, AgentControl.AsyncSSLClient.get_agent_status_call> syncHandler =
+            new SyncHandler<>();
     getAgentStatus(syncHandler);
     syncHandler.await();
     return ResponseValidator.checkAgentStatusResponse(syncHandler.getResponse(), null);

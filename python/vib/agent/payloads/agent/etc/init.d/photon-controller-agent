@@ -42,8 +42,8 @@ configure_rp() {
 
 start() {
   ulimit -p 128
-  PYVER=`python -V 2>&1 | sed 's/^Python \([0-9]\.[0-9]\)\.[0-9]/\1/'`
-  if [ "$PYVER" != "2.7" ] && [ "$PYVER" != "2.6" ]; then
+  PYVER=`python -V 2>&1 | sed 's/^Python \([0-9]\.[0-9]\)\.[0-9]*/\1/'`
+  if [ "$PYVER" != "2.7" ]; then
     echo "Unsupported python version $PYVER" >&2
     return 1
   fi

@@ -268,6 +268,10 @@ class VmConfigSpec(object):
         pass
 
     @abc.abstractmethod
+    def add_dvportgroup(self, dvs, dvportgroup):
+        pass
+
+    @abc.abstractmethod
     def set_extra_config(self, options):
         pass
 

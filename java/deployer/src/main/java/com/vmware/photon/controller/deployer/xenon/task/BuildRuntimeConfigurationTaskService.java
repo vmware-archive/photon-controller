@@ -572,10 +572,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     TaskUtils.sendSelfPatch(this, patchState);
   }
 
-  private String generateReplicaList(List<String> replicaIps, String port) {
-    return replicaIps.stream().sorted().map((ip) -> ip + ":" + port).collect(Collectors.joining(","));
-  }
-
   private String generatePeerNodeList(List<String> peerNodeIps, String port) {
 
     List<PeerNode> peerNodeList = peerNodeIps.stream()
@@ -765,6 +761,8 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
             .setBody(deploymentPatchState));
         break;
       }
+      default:
+        break;
     }
 
     OperationJoin

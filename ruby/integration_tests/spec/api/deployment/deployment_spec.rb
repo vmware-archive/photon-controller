@@ -236,7 +236,7 @@ describe "deployment", management: true do
     end
   end
 
-  describe "#update_image_datastores", go_cli: true do
+  describe "#update_image_datastores", go_cli: true, auth_disabled: true do
     before(:each) do
       @existing_image_datastores = deployment.image_datastores
     end

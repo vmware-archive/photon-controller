@@ -16,11 +16,10 @@ package com.vmware.photon.controller.common.thrift;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import org.apache.thrift.async.TAsyncClient;
-import org.apache.thrift.async.TAsyncClientManager;
+import org.apache.thrift.async.TAsyncSSLClient;
+import org.apache.thrift.async.TAsyncSSLClientManager;
 import org.apache.thrift.protocol.TProtocolFactory;
-import org.apache.thrift.transport.TNonblockingTransport;
-import org.apache.thrift.transport.TTransport;
+import org.apache.thrift.transport.TNonblockingSSLTransport;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -33,17 +32,17 @@ import java.lang.reflect.InvocationTargetException;
  * @param <T> async thrift client type
  */
 @Singleton
-public class TAsyncClientFactory<T extends TAsyncClient> {
-  private final TAsyncClientManager clientManager;
+public class TAsyncSSLClientFactory<T extends TAsyncSSLClient> {
+  private final TAsyncSSLClientManager clientManager;
   private final Constructor<T> constructor;
 
   @SuppressWarnings("unchecked")
   @Inject
-  TAsyncClientFactory(TypeLiteral<T> type, TAsyncClientManager clientManager) {
+  TAsyncSSLClientFactory(TypeLiteral<T> type, TAsyncSSLClientManager clientManager) {
     this.clientManager = clientManager;
     try {
       this.constructor = (Constructor<T>) type.getRawType().getConstructor(
-          TProtocolFactory.class, TAsyncClientManager.class, TNonblockingTransport.class);
+          TProtocolFactory.class, TAsyncSSLClientManager.class, TNonblockingSSLTransport.class);
     } catch (NoSuchMethodException e) {
       throw new RuntimeException(e);
     }
@@ -56,7 +55,7 @@ public class TAsyncClientFactory<T extends TAsyncClient> {
    * @param transport       client transport
    * @return new client
    */
-  public T create(TProtocolFactory protocolFactory, TTransport transport) {
+  public T create(TProtocolFactory protocolFactory, TNonblockingSSLTransport transport) {
     try {
       return constructor.newInstance(protocolFactory, clientManager, transport);
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {

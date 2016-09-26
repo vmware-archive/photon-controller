@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeExceptio
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -53,8 +54,9 @@ public class ApiFeXenonRestClient extends XenonRestClient {
   @Inject
   public ApiFeXenonRestClient(@PhotonControllerServerSet ServerSet serverSet,
                               @BackendTaskExecutor ExecutorService executor,
-                              @ScheduledTaskExecutor ScheduledExecutorService scheduledExecutorService) {
-    super(serverSet, executor, scheduledExecutorService);
+                              @ScheduledTaskExecutor ScheduledExecutorService scheduledExecutorService,
+                              ServiceHost serviceHost) {
+    super(serverSet, executor, scheduledExecutorService, serviceHost);
   }
 
   @Override

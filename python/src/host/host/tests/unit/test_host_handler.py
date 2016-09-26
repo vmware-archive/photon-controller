@@ -101,6 +101,12 @@ def stable_uuid(name):
     return str(uuid.uuid5(uuid.NAMESPACE_DNS, name))
 
 
+class MockPortgroup(object):
+    def __init__(self, name, dvs=None):
+        self.name = name
+        self.dvs = dvs
+
+
 class HostHandlerTestCase(unittest.TestCase):
 
     REGEX_TIME = "^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)*$"
@@ -683,7 +689,8 @@ class HostHandlerTestCase(unittest.TestCase):
         handler.hypervisor.vm_manager.create_vm_spec.reset_mock()
         pm.remove_vm_reservation.reset_mock()
         vm.placement = AgentResourcePlacement(AgentResourcePlacement.VM, "vm_ids", "ds2")
-        handler.hypervisor.network_manager.get_vm_networks.return_value = ["net_2", "net_1"]
+        handler.hypervisor.network_manager.get_vm_networks.return_value = [
+            MockPortgroup("net_2"), MockPortgroup("net_1")]
 
         response = handler.create_vm(req)
         spec = handler.hypervisor.vm_manager.create_vm_spec.return_value
@@ -697,7 +704,8 @@ class HostHandlerTestCase(unittest.TestCase):
         # Test create_vm honors vm.networks information
         # Host has the provisioned networks required by placement_list,
         # should succeed.
-        handler.hypervisor.network_manager.get_vm_networks.return_value = ["net_2", "net_1"]
+        handler.hypervisor.network_manager.get_vm_networks.return_value = [
+            MockPortgroup("net_2"), MockPortgroup("net_1")]
 
         handler.hypervisor.vm_manager.create_vm_spec.reset_mock()
         pm.remove_vm_reservation.reset_mock()
@@ -713,7 +721,8 @@ class HostHandlerTestCase(unittest.TestCase):
 
         # Host does not have the provisioned networks
         # required by placement_list, should fail.
-        handler.hypervisor.network_manager.get_vm_networks.return_value = ["net_1", "net_7"]
+        handler.hypervisor.network_manager.get_vm_networks.return_value = [
+            MockPortgroup("net_1"), MockPortgroup("net_7")]
         pm.remove_vm_reservation.reset_mock()
 
         req = CreateVmRequest(reservation=mock_reservation)
@@ -734,6 +743,42 @@ class HostHandlerTestCase(unittest.TestCase):
         called_virtual_network = handler.hypervisor.vm_manager.attach_virtual_network.call_args_list
         expected_virtual_network = [call(vm.id, 'vnet')]
         assert_that(called_virtual_network == expected_virtual_network, is_(True))
+        pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
+        assert_that(response.result, equal_to(CreateVmResultCode.OK))
+
+    def test_create_vm_on_dvs(self):
+        """Check that we create the vm on the correct datastore"""
+        vm = MagicMock()
+        vm.id = str(uuid.uuid4())
+        vm.networks = [NetworkInfo(NetworkInfoType.NETWORK, "net_0")]
+        vm.project_id = "p1"
+        vm.tenant_id = "t1"
+
+        mock_reservation = MagicMock()
+
+        image_id = stable_uuid('image_id')
+        handler = HostHandler(MagicMock())
+        pm = handler.hypervisor.placement_manager
+        pm.consume_vm_reservation.return_value = vm
+        handler._datastores_for_image = MagicMock()
+        handler.hypervisor.datastore_manager.datastore_type.return_value = DatastoreType.EXT3
+        handler.hypervisor.datastore_manager.image_datastores = MagicMock(return_value=set("ds2"))
+        handler.hypervisor.vm_manager.get_vm_networks = MagicMock()
+        im = handler.hypervisor.image_manager
+        im.get_image_refcount_filename.return_value = os.path.join(self.agent_conf_dir, vm.id)
+        im.get_image_id_from_disks.return_value = image_id
+
+        # Test create_vm honors vm.networks information (distributed virtual switch)
+        # should succeed.
+        handler.hypervisor.network_manager.get_vm_networks.return_value = [MockPortgroup("net_0", "dvs0")]
+
+        handler.hypervisor.vm_manager.create_vm_spec.reset_mock()
+        pm.remove_vm_reservation.reset_mock()
+        spec = handler.hypervisor.vm_manager.create_vm_spec.return_value
+        req = CreateVmRequest(reservation=mock_reservation)
+        response = handler.create_vm(req)
+
+        spec.add_dvportgroup.assert_called_once_with("dvs0", "net_0")
         pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
         assert_that(response.result, equal_to(CreateVmResultCode.OK))
 

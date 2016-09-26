@@ -25,6 +25,7 @@ import com.vmware.xenon.common.UriUtils;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -36,9 +37,7 @@ import java.util.Collections;
  */
 public class SystemConfigTest {
   private TestEnvironment testEnvironment;
-  private DeploymentService service;
   private PhotonControllerXenonHost host;
-  private SystemConfig systemConfig;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -49,21 +48,18 @@ public class SystemConfigTest {
 
   @BeforeMethod
   public void setUp() throws Throwable {
-    service = new DeploymentService();
     testEnvironment = TestEnvironment.create(1);
     host = testEnvironment.getHosts()[0];
     CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(testEnvironment.getServerSet());
     host.setCloudStoreHelper(cloudStoreHelper);
     SystemConfig.destroyInstance();
-    this.systemConfig = SystemConfig.createInstance(host);
+    SystemConfig.createInstance(host);
   }
 
   @AfterMethod
   public void tearDown() throws Throwable {
     testEnvironment.stop();
     testEnvironment = null;
-    service = null;
-    systemConfig = null;
   }
 
   private DeploymentService.State buildState(DeploymentState desiredState) {
@@ -81,36 +77,40 @@ public class SystemConfigTest {
     Operation create = Operation
         .createPost(UriUtils.buildUri(host, DeploymentServiceFactory.SELF_LINK))
         .setBody(startState);
-
     ServiceHostUtils.sendRequestAndWait(host, create, "test");
-    checkForIsPaused(SystemConfig.getInstance(), true);
+
+    assertThat(SystemConfig.getInstance().isPaused(), is(true));
+    assertThat(SystemConfig.getInstance().isBackgroundPaused(), is(true));
   }
 
-  private void checkForIsPaused(SystemConfig systemConfig, boolean isPaused)
-      throws Throwable {
 
-    if (isPaused == systemConfig.isPaused()) {
-      return;
-    }
-    assertThat(systemConfig.isBackgroundPaused(), is(isPaused));
-  }
 
-  @Test
-  public void testPauseBackground() throws Throwable {
-    DeploymentService.State startState = buildState(DeploymentState.BACKGROUND_PAUSED);
+  @Test(dataProvider = "PauseBackground")
+  public void testPauseBackground(DeploymentState state) throws Throwable {
+    DeploymentService.State startState = buildState(state);
     Operation post = Operation
         .createPost(UriUtils.buildUri(host, DeploymentServiceFactory.SELF_LINK))
         .setBody(startState);
-
     ServiceHostUtils.sendRequestAndWait(host, post, "test");
-    checkForIsBackgroundPaused(SystemConfig.getInstance(), true);
+
+    assertThat(SystemConfig.getInstance().isPaused(), is(false));
+    assertThat(SystemConfig.getInstance().isBackgroundPaused(), is(true));
   }
 
-  private void checkForIsBackgroundPaused(SystemConfig systemConfig, boolean isBackgroundPaused)
-      throws Throwable {
-    if (isBackgroundPaused == systemConfig.isBackgroundPaused()) {
-      return;
-    }
-    assertThat(systemConfig.isBackgroundPaused(), is(isBackgroundPaused));
+  @DataProvider(name = "PauseBackground")
+  public Object[][] getPausedBackground() {
+    return new Object[][] {
+        {DeploymentState.CREATING},
+        {DeploymentState.NOT_DEPLOYED},
+        {DeploymentState.DELETED},
+        {DeploymentState.ERROR},
+        {DeploymentState.BACKGROUND_PAUSED}
+    };
+  }
+
+  @Test
+  public void testNoDeploymentObject() throws Throwable {
+    assertThat(SystemConfig.getInstance().isPaused(), is(false));
+    assertThat(SystemConfig.getInstance().isBackgroundPaused(), is(true));
   }
 }

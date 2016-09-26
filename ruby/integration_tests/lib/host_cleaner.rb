@@ -120,7 +120,9 @@ module EsxCloud
         DATASTORE_DIRS_TO_DELETE.each do |folder|
           if datastore.start_with?('vsan')
             rm_cmd = "for dir in `/usr/lib/vmware/osfs/bin/osfs-ls #{datastore_dir} | grep -i #{folder}`; do"\
-                     " for vmdk in `find $dir -name *.vmdk`; do vmkfstools -U #{datastore_dir}$vmdk || true; done"\
+                     " for vmdk in `find #{datastore_dir}$dir/ -name *.vmdk`; do"\
+                     "  if [ #{folder} = 'image' ]; then sed -i '/ddb.deletable = \"false\"/d' $vmdk; fi"\
+                     " && vmkfstools -U $vmdk || true; done"\
                      " && rm -rf #{datastore_dir}$dir/*"\
                      " && (rm -rf #{datastore_dir}$dir/.* || true)"\
                      " && /usr/lib/vmware/osfs/bin/osfs-rmdir #{datastore_dir}$dir;"\
@@ -142,6 +144,13 @@ module EsxCloud
           end
           ssh.exec!("rm -rf /opt/vmware/photon/controller/")
           ssh.exec!("rm -rf /opt/vmware/esxcloud")
+        end
+      end
+
+      def clean_ssl_certificates(server, user_name, password)
+        puts "cleaning ssl certificates on #{server}"
+        Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
+          ssh.exec!("cd /etc/vmware/ssl/; rm non-auth.pem host.pem host.crt host.key host.privkey || true; cd -")
         end
       end
 

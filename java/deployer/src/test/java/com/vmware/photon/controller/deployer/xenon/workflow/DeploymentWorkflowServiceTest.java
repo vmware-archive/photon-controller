@@ -70,6 +70,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -714,6 +715,8 @@ public class DeploymentWorkflowServiceTest {
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(
+          deployerTestConfig.getDeployerContext(), CreateContainersWorkflowService.SCRIPT_NAME, true);
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);

@@ -2,7 +2,12 @@ apply plugin: 'java'
 apply plugin: 'thrift'
 
 dependencies {
-  compile 'org.apache.thrift:libthrift:0.9.3'
+  // custom build thrift jar supporting non-blocking ssl
+  // downloaded from s3 see task below
+  compile files('libthrift-0.9.3-ssl.jar')
+  // now we need to add thrift jar dependencies manually
+  compile 'org.apache.httpcomponents:httpclient:4.4.1'
+  compile 'org.apache.httpcomponents:httpcore:4.4.1'
 
   compile 'com.fasterxml.jackson.core:jackson-core:2.5.1'
   compile 'com.fasterxml.jackson.core:jackson-annotations:2.5.1'
@@ -19,7 +24,9 @@ dependencies {
   compile("org.apache.curator:curator-recipes:${versions.curator}") {
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     exclude group: 'log4j', module: 'log4j'
+    exclude group: 'io.netty', module: 'netty'
   }
+  compile 'io.netty:netty-all:4.1.0.Final'
 
   thrift files('../../../thrift/tracing.thrift',
                '../../../thrift/status.thrift')
@@ -27,6 +34,7 @@ dependencies {
   testCompile("org.apache.curator:curator-test:${versions.curator}") {
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     exclude group: 'log4j', module: 'log4j'
+    exclude group: 'io.netty', module: 'netty'
   }
 
   testCompile "org.hibernate:hibernate-validator:${versions.hibernate_validator}"
@@ -75,3 +83,11 @@ test {
     excludeGroups 'flaky'
   }
 }
+
+task downloadThriftJar(type: Exec) {
+  workingDir "."
+  executable "bash"
+  args "-c", "rm -f libthrift-0.9.3-ssl.jar && wget https://s3.amazonaws.com/photon-platform/artifacts/thrift/non-blocking-ssl/libthrift-0.9.3-ssl.jar"
+}
+
+compileJava.dependsOn downloadThriftJar

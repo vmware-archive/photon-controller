@@ -140,7 +140,7 @@ public class HostServiceTest {
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
       xenonRestClient =
-          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
+          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1), host);
       xenonRestClient.start();
     }
 
@@ -339,7 +339,7 @@ public class HostServiceTest {
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
 
       xenonRestClient =
-          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
+          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1), host);
       xenonRestClient.start();
     }
 
@@ -558,11 +558,11 @@ public class HostServiceTest {
 
       // Return OK response with host config which has datastores.
       GetConfigResponse response = getConfigResponse(true, getHostConfig(true));
-      Host.AsyncClient.get_host_config_call call = mock(Host.AsyncClient.get_host_config_call.class);
+      Host.AsyncSSLClient.get_host_config_call call = mock(Host.AsyncSSLClient.get_host_config_call.class);
       doReturn(response).when(call).getResult();
 
       doAnswer(invocation -> {
-        ((AsyncMethodCallback<Host.AsyncClient.get_host_config_call>) invocation.getArguments()[0]).onComplete(call);
+        ((AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call>) invocation.getArguments()[0]).onComplete(call);
         return null;
       }).when(hostClient).getHostConfig(any(AsyncMethodCallback.class));
 
@@ -626,11 +626,11 @@ public class HostServiceTest {
 
       // Return OK response with host config which has datastores.
       GetConfigResponse response = getConfigResponse(true, getHostConfig(true));
-      Host.AsyncClient.get_host_config_call call = mock(Host.AsyncClient.get_host_config_call.class);
+      Host.AsyncSSLClient.get_host_config_call call = mock(Host.AsyncSSLClient.get_host_config_call.class);
       doReturn(response).when(call).getResult();
 
       doAnswer(invocation -> {
-        ((AsyncMethodCallback<Host.AsyncClient.get_host_config_call>) invocation.getArguments()[0]).onComplete(call);
+        ((AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call>) invocation.getArguments()[0]).onComplete(call);
         return null;
       }).when(hostClient).getHostConfig(any(AsyncMethodCallback.class));
 
@@ -704,11 +704,11 @@ public class HostServiceTest {
 
       // Return ERROR response.
       GetConfigResponse response = getConfigResponse(false, null);
-      Host.AsyncClient.get_host_config_call call = mock(Host.AsyncClient.get_host_config_call.class);
+      Host.AsyncSSLClient.get_host_config_call call = mock(Host.AsyncSSLClient.get_host_config_call.class);
       doReturn(response).when(call).getResult();
 
       doAnswer(invocation -> {
-        ((AsyncMethodCallback<Host.AsyncClient.get_host_config_call>) invocation.getArguments()[0]).onComplete(call);
+        ((AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call>) invocation.getArguments()[0]).onComplete(call);
         return null;
       }).when(hostClient).getHostConfig(any(AsyncMethodCallback.class));
 
@@ -903,7 +903,7 @@ public class HostServiceTest {
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
       xenonRestClient =
-          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
+          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1), host);
       xenonRestClient.start();
 
       testState = TestHelper.getHostServiceStartState();

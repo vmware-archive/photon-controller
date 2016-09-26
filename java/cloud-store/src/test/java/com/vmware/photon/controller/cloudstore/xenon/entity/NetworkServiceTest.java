@@ -99,7 +99,7 @@ public class NetworkServiceTest {
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
       xenonRestClient =
-          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
+          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1), host);
       xenonRestClient.start();
 
       testNetwork = new NetworkService.State();
@@ -342,7 +342,7 @@ public class NetworkServiceTest {
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
       xenonRestClient =
-          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
+          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1), host);
       xenonRestClient.start();
 
       testState = new NetworkService.State();

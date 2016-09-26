@@ -420,7 +420,7 @@ public class DeploymentServiceTest {
           new InetSocketAddress(testEnvironment.getHosts()[0].getPreferredAddress(),
               testEnvironment.getHosts()[0].getPort()));
       xenonRestClient =
-          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
+          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1), host);
       xenonRestClient.start();
 
       testState = buildServiceStartState();

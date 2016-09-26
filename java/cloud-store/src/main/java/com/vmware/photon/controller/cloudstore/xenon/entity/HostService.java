@@ -17,6 +17,7 @@ import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.api.model.AgentState;
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.UsageTag;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteFactoryService;
 import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteService;
 import com.vmware.photon.controller.cloudstore.xenon.upgrade.HostTransformationService;
@@ -262,6 +263,9 @@ public class HostService extends StatefulService {
     if (HostService.inUnitTests) {
       return;
     }
+    if (SystemConfig.getInstance().isBackgroundPaused()) {
+      return;
+    }
     try {
       getHost().schedule(() -> {
         Operation getOperation = Operation.createGet(this, maintenance.getUri().getPath())
@@ -304,9 +308,9 @@ public class HostService extends StatefulService {
     try {
       AgentControlClient agentControlClient = ((AgentControlClientProvider) getHost()).getAgentControlClient();
       agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
-      agentControlClient.ping(new AsyncMethodCallback<AgentControl.AsyncClient.ping_call>() {
+      agentControlClient.ping(new AsyncMethodCallback<AgentControl.AsyncSSLClient.ping_call>() {
         @Override
-        public void onComplete(AgentControl.AsyncClient.ping_call pingCall) {
+        public void onComplete(AgentControl.AsyncSSLClient.ping_call pingCall) {
           updateHostState(maintenance, hostState, AgentState.ACTIVE);
         }
 
@@ -339,9 +343,9 @@ public class HostService extends StatefulService {
       lastHostMetadataUpdateTime = System.currentTimeMillis();
       HostClient hostClient = ((HostClientProvider) getHost()).getHostClient();
       hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
-      hostClient.getHostConfig(new AsyncMethodCallback<Host.AsyncClient.get_host_config_call>() {
+      hostClient.getHostConfig(new AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call>() {
         @Override
-        public void onComplete(Host.AsyncClient.get_host_config_call getHostConfigCall) {
+        public void onComplete(Host.AsyncSSLClient.get_host_config_call getHostConfigCall) {
           try {
             GetConfigResponse response = getHostConfigCall.getResult();
             HostClient.ResponseValidator.checkGetConfigResponse(response);

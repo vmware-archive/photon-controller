@@ -24,19 +24,16 @@ class NetworkManager(object):
         self.logger = logging.getLogger(__name__)
 
     def get_vm_networks(self):
-        """ Return the list of all actual networks on this ESX server. """
+        """ Return the list of VM Networks on this host. """
         return self.vim_client.get_networks()
 
     def get_networks(self):
-        """ This method will call vim_client to get a list of VM networks and
-        translate them into thrift representation.
-        """
-        vm_networks = self.vim_client.get_networks()
-
+        """ Return all networks; translate into thrift representation. """
         networks = []
-        # Add VM networks in network list
-        for network_name in vm_networks:
-            network = Network(network_name, [NetworkType.VM])
+
+        # Add VM networks to network list
+        for portgroup in self.vim_client.get_networks():
+            network = Network(portgroup.name, [NetworkType.VM])
             networks.append(network)
 
         return networks

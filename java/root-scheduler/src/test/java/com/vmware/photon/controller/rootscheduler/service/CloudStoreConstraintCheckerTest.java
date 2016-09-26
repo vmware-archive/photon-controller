@@ -28,6 +28,7 @@ import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
 
 import ch.qos.logback.classic.Level;
@@ -120,22 +121,24 @@ public class CloudStoreConstraintCheckerTest {
 
   private void startCloudstore() throws Throwable {
     this.cloudStoreTestEnvironmentSmall = TestEnvironment.create(SMALL_NUMBER_OF_CS_HOSTS);
+    ServiceHost host = cloudStoreTestEnvironmentSmall.getHosts()[0];
     this.cloudstoreClientSmall =
         new XenonRestClient(cloudStoreTestEnvironmentSmall.getServerSet(),
             Executors.newFixedThreadPool(1),
-            Executors.newScheduledThreadPool(1));
+            Executors.newScheduledThreadPool(1), host);
     this.cloudstoreHelperSmall = new CloudStoreHelper(cloudStoreTestEnvironmentSmall.getServerSet());
     cloudstoreClientSmall.start();
-    this.checkerSmall = new CloudStoreConstraintChecker(cloudstoreHelperSmall);
+    this.checkerSmall = new CloudStoreConstraintChecker(cloudstoreHelperSmall, host);
 
     this.cloudStoreTestEnvironmentLarge = TestEnvironment.create(LARGE_NUMBER_OF_CS_HOSTS);
+    host = cloudStoreTestEnvironmentLarge.getHosts()[0];
     this.cloudstoreClientLarge =
         new XenonRestClient(cloudStoreTestEnvironmentLarge.getServerSet(),
             Executors.newFixedThreadPool(1),
-            Executors.newScheduledThreadPool(1));
+            Executors.newScheduledThreadPool(1), host);
     this.cloudstoreHelperLarge = new CloudStoreHelper(cloudStoreTestEnvironmentLarge.getServerSet());
     cloudstoreClientLarge.start();
-    this.checkerLarge = new CloudStoreConstraintChecker(cloudstoreHelperLarge);
+    this.checkerLarge = new CloudStoreConstraintChecker(cloudstoreHelperLarge, host);
   }
 
   @AfterTest

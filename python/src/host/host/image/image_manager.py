@@ -13,6 +13,7 @@
 import errno
 import json
 import logging
+import re
 
 import time
 
@@ -567,14 +568,55 @@ class ImageManager():
                     os.unlink(marker_pathname)
                     return False
 
-                # Delete image directory
-                self._logger.info("delete_image: removing image directory: %s" % image_dir)
+            # Delete image directory
+            self._logger.info("delete_image: removing image directory: %s" % image_dir)
+            if ds_type == DatastoreType.VSAN:
+                # Special handling on VSAN before deleting an image
+                self._delete_image_on_vsan(datastore_id, image_id)
+            else:
                 self._host_client.delete_file(image_dir)
 
             return True
         except Exception:
             self._logger.exception("delete_image: failed to delete image")
             return False
+
+    # Special handling on VSAN
+    # need to delete vdisk then osfs namespace in separate steps
+    def _delete_image_on_vsan(self, datastore_id, image_id):
+        self._logger.info("_delete_image_on_vsan: datastore_id=%s, image_id=%s" % (datastore_id, image_id))
+
+        # clear ddb.deletable flag in .vmdk file which would otherwise cause
+        # Vmacore::File::PermissionDeniedException (PR 1704935)
+        vmdk_path = os_vmdk_path(datastore_id, image_id, IMAGE_FOLDER_NAME_PREFIX)
+        temp_path = "%s~" % vmdk_path
+        pattern = re.compile("^ddb.deletable = ")
+
+        disk_file = open(vmdk_path)
+        temp_file = open(temp_path, "w+")
+        for line in disk_file:
+            if not pattern.match(line):
+                temp_file.write(line)
+            else:
+                self._logger.info("_delete_image_on_vsan: skip %s" % line)
+        temp_file.close()
+        disk_file.close()
+        os.rename(temp_path, vmdk_path)
+        # delete vdisk
+        self._host_client.delete_file(vmdk_path)
+
+        # delete folder content which would otherwise cause vim.fault.DirectoryNotEmpty (PR 1721520)
+        image_dir = self._image_directory(datastore_id, image_id)
+        for entry in os.listdir(image_dir):
+            if not entry.startswith('.') or entry.endswith(".lck"):
+                self._logger.info("_delete_image_on_vsan: delete %s" % os.path.join(image_dir, entry))
+                entry_full_path = os.path.join(image_dir, entry)
+                if os.path.isdir(entry_full_path):
+                    rm_rf(entry_full_path)
+                else:
+                    os.unlink(entry_full_path)
+        # delete folder (osfs namespace)
+        self._host_client.delete_file(image_dir)
 
     # Read the mod time on a file, returns two values, a boolean which is set to true if the
     # file exists, otherwise set to false and the mod time of the existing file
