@@ -60,6 +60,7 @@ public class KubernetesEtcdNodeTemplate implements NodeTemplate {
     String ipAddress = etcdIps.get(nodeIndex);
     String cidrSignature = new SubnetUtils(ipAddress, netmask).getInfo().getCidrSignature();
     String etcdParameters = createEtcdParameters(etcdIps);
+    String etcdPeerURL = createEtcdPeerUrl(ipAddress);
 
     Map<String, String> parameters = new HashMap();
     parameters.put("$DNS", "DNS=" + dns);
@@ -70,6 +71,7 @@ public class KubernetesEtcdNodeTemplate implements NodeTemplate {
     parameters.put("$ETCD_PORT", Integer.toString(ClusterManagerConstants.Swarm.ETCD_PORT));
     parameters.put("$ETCD_PEER_PORT", Integer.toString(ClusterManagerConstants.Swarm.ETCD_PEER_PORT));
     parameters.put("$SSH_KEY", sshKey);
+    parameters.put("$ETCD_PEER_URL", etcdPeerURL);
 
     FileTemplate template = new FileTemplate();
     template.filePath = Paths.get(scriptDirectory, ETCD_USER_DATA_TEMPLATE).toString();
@@ -112,5 +114,9 @@ public class KubernetesEtcdNodeTemplate implements NodeTemplate {
       }
     }
     return sb.toString();
+  }
+
+  private static String createEtcdPeerUrl(String ip) {
+    return "http://" + ip + ":" + ClusterManagerConstants.Swarm.ETCD_PEER_PORT;
   }
 }
