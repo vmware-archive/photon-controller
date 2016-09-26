@@ -2,6 +2,28 @@ apply plugin: 'idea'
 apply from: 'buildSrc/src/main/groovy/com/vmware/photon/controller/gradle/utils.gradle'
 
 ext {
+  // We get the base version (e.g. 1.1.0) from the VERSION file at the
+  // root of our repository.
+  //
+  // We do not get it from the branch name so that the 'develop' and
+  // 'master' branches have a meaningful version that can be used in a
+  // JAR file's Specification-Version, which must only be numeric.
+  base_version = "head -1 ${rootDir}/../VERSION".execute().text.trim()
+
+  // The short git commit hash
+  git_commit = 'git rev-parse --short HEAD'.execute().text.trim()
+
+  // The full version is the base version plus the short git hash
+  full_version = base_version + "-" + git_commit
+
+  // The name of the branch: develop, 1.1, etc.
+  branch = 'git rev-parse --abbrev-ref HEAD'.execute().text
+
+  // Build timestamp
+  // We don't use the handy -I option because it's not available on
+  // the Mac version of 'date'
+  build_timestamp = 'date -u +"%Y-%m-%dT%H:%M:%SZ"'.execute().text.trim()
+
   versions = [
       curator            : '2.6.0',
       dropwizard         : '0.8.2',
@@ -51,7 +73,7 @@ subprojects {
   apply plugin: 'com.bmuschko.docker-remote-api'
   apply plugin: 'com.bmuschko.vagrant-base'
 
-  version = 'git rev-parse --abbrev-ref HEAD'.execute().text.trim() + "-" + 'git rev-parse --short HEAD'.execute().text.trim()
+  version = base_version
 
   def requiredJavaVersion = JavaVersion.VERSION_1_8;
   sourceCompatibility = requiredJavaVersion

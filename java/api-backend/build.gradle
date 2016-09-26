@@ -24,9 +24,11 @@ jar {
   baseName = 'api-backend'
   manifest {
     attributes 'Specification-Title': 'Photon Controller Management API Backend',
-        'Specification-Version': version,
+        'Specification-Version': base_version,
+        'Implementation-Version': full_version,
+        'Git-Commit': git_commit,
         'Built-By': System.getProperty('user.name'),
-        'Built-Date': new Date(),
+        'Built-Date': build_timestamp,
         'Built-JDK': System.getProperty('java.version'),
         'Built-Gradle': gradle.gradleVersion
   }

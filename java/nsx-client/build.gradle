@@ -23,11 +23,13 @@ jar {
   baseName = 'nsx-client'
   manifest {
     attributes 'Specification-Title': 'NSX Client Library',
-        'Specification-Version': version,
+        'Specification-Version': base_version,
+        'Implementation-Version': full_version,
         'Built-By': System.getProperty('user.name'),
-        'Built-Date': new Date(),
+        'Built-Date': build_timestamp,
         'Built-JDK': System.getProperty('java.version'),
-        'Built-Gradle': gradle.gradleVersion
+        'Built-Gradle': gradle.gradleVersion,
+        'Git-Commit': git_commit
   }
   into("META-INF/maven/$project.group/$project.name") {
       from "$buildDir/pom.xml"

@@ -47,6 +47,7 @@ import com.vmware.photon.controller.api.frontend.resources.host.DeploymentHostsR
 import com.vmware.photon.controller.api.frontend.resources.host.HostResource;
 import com.vmware.photon.controller.api.frontend.resources.image.ImageResource;
 import com.vmware.photon.controller.api.frontend.resources.image.ImagesResource;
+import com.vmware.photon.controller.api.frontend.resources.info.InfoResource;
 import com.vmware.photon.controller.api.frontend.resources.physicalnetwork.SubnetPortGroupsSetResource;
 import com.vmware.photon.controller.api.frontend.resources.physicalnetwork.SubnetResource;
 import com.vmware.photon.controller.api.frontend.resources.physicalnetwork.SubnetsResource;
@@ -247,6 +248,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     resources.add(ImageResource.class);
     resources.add(ImagesResource.class);
     resources.add(ImageTasksResource.class);
+    resources.add(InfoResource.class);
     resources.add(ProjectClustersResource.class);
     resources.add(ProjectDisksResource.class);
     resources.add(ProjectResource.class);

@@ -23,6 +23,19 @@ describe "system" do
     expect(available).to_not be_nil
   end
 
+  it "has info", management: true do
+    info = api_client.get_info
+    expect(info).to_not be nil
+    expect(info.base_version).to_not be nil
+    expect(info.base_version).not_to match(/.*Unknown.*/)
+    expect(info.full_version).to_not be nil
+    expect(info.full_version).not_to match(/.*Unknown.*/)
+    expect(info.git_commit_hash).to_not be nil
+    expect(info.git_commit_hash).not_to match(/.*Unknown.*/)
+    expect(info.network_type).to_not be nil
+  end
+
+
   it "shows system status as ready", management: true do
     system_status = api_client.get_status
     expect(system_status.status).to_not be_nil
