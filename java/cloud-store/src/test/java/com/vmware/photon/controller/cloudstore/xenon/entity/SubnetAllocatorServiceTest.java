@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
+import com.vmware.photon.controller.api.model.ReservedIpType;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.common.IpHelper;
@@ -239,10 +240,10 @@ public class SubnetAllocatorServiceTest {
       assertThat(currentState.ipAllocations, is(notNullValue()));
       assertThat(currentState.ipAllocations.isEmpty(), is(true));
       assertThat(IpHelper.longToIpString(currentState.lowIp), is("192.168.0.0"));
-      assertThat(currentState.reservedIpList.size(), is(SubnetAllocatorService.COUNT_OF_RESERVED_IPS));
-      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(0)), is("192.168.0.1"));
-      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(1)), is("192.168.0.2"));
-      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(2)), is("192.168.0.3"));
+      assertThat(currentState.reservedIpList.size(), is(ReservedIpType.values().length));
+      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(ReservedIpType.GATEWAY)), is("192.168.0.1"));
+      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(ReservedIpType.UNUSED1)), is("192.168.0.2"));
+      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(ReservedIpType.UNUSED2)), is("192.168.0.3"));
       assertThat(IpHelper.longToIpString(currentState.lowIpStatic), is("192.168.0.4"));
       assertThat(IpHelper.longToIpString(currentState.highIpStatic), is("192.168.0.7"));
       assertThat(IpHelper.longToIpString(currentState.lowIpDynamic), is("192.168.0.8"));
@@ -297,10 +298,10 @@ public class SubnetAllocatorServiceTest {
       assertThat(currentState.ipAllocations, is(notNullValue()));
       assertThat(currentState.ipAllocations.isEmpty(), is(true));
       assertThat(IpHelper.longToIpString(currentState.lowIp), is("192.168.0.0"));
-      assertThat(currentState.reservedIpList.size(), is(SubnetAllocatorService.COUNT_OF_RESERVED_IPS));
-      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(0)), is("192.168.0.1"));
-      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(1)), is("192.168.0.2"));
-      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(2)), is("192.168.0.3"));
+      assertThat(currentState.reservedIpList.size(), is(ReservedIpType.values().length));
+      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(ReservedIpType.GATEWAY)), is("192.168.0.1"));
+      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(ReservedIpType.UNUSED1)), is("192.168.0.2"));
+      assertThat(IpHelper.longToIpString(currentState.reservedIpList.get(ReservedIpType.UNUSED2)), is("192.168.0.3"));
       assertThat(IpHelper.longToIpString(currentState.lowIpStatic), is("192.168.0.4"));
       assertThat(IpHelper.longToIpString(currentState.highIpStatic), is("192.168.0.7"));
       assertThat(IpHelper.longToIpString(currentState.lowIpDynamic), is("192.168.0.8"));

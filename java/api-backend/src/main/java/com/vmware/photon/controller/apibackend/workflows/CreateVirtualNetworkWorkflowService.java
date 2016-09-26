@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apibackend.workflows;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.QuotaLineItem;
 import com.vmware.photon.controller.api.model.QuotaUnit;
+import com.vmware.photon.controller.api.model.ReservedIpType;
 import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureRoutingTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalRouterTask;
@@ -48,6 +49,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This class implements a Xenon service representing a workflow to create a virtual network.
@@ -57,10 +59,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
 
   public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/create-virtual-network";
 
-  public static final String DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP = "192.168.0.1";
   public static final String SDN_RESOURCE_TICKET_KEY = "sdn.size";
-
-  public static final int DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP_PREFIX_LEN = 16;
 
   public static FactoryService createFactory() {
     return FactoryService.create(CreateVirtualNetworkWorkflowService.class, CreateVirtualNetworkWorkflowDocument.class);
@@ -312,9 +311,14 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
             patchState.taskServiceEntity.highIpDynamic = convertLongToDottedIp(subnet.highIpDynamic);
             patchState.taskServiceEntity.lowIpStatic = convertLongToDottedIp(subnet.lowIpStatic);
             patchState.taskServiceEntity.highIpStatic = convertLongToDottedIp(subnet.highIpStatic);
-            if (subnet.reservedIpList != null && subnet.reservedIpList.isEmpty()) {
-              for (Long ip : subnet.reservedIpList) {
-                patchState.taskServiceEntity.reservedIpList.add(convertLongToDottedIp(ip));
+            if (subnet.reservedIpList != null && !subnet.reservedIpList.isEmpty()) {
+              if (patchState.taskServiceEntity.reservedIpList == null) {
+                patchState.taskServiceEntity.reservedIpList = new HashMap<>();
+              }
+
+              for (Map.Entry<ReservedIpType, Long> entry : subnet.reservedIpList.entrySet()) {
+                patchState.taskServiceEntity.reservedIpList.put(entry.getKey(),
+                    convertLongToDottedIp(entry.getValue()));
               }
             }
             progress(state, patchState);
@@ -472,10 +476,12 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     configureRoutingTask.dhcpRelayServiceId = state.dhcpRelayServiceId;
     configureRoutingTask.logicalSwitchId = state.taskServiceEntity.logicalSwitchId;
     configureRoutingTask.logicalTier1RouterId = state.taskServiceEntity.logicalRouterId;
-    configureRoutingTask.logicalTier1RouterDownLinkPortIp = DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP;
-    configureRoutingTask.logicalTier1RouterDownLinkPortIpPrefixLen = DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP_PREFIX_LEN;
     configureRoutingTask.logicalTier0RouterId = state.tier0RouterId;
     configureRoutingTask.snatIp = state.snatIp;
+
+    configureRoutingTask.logicalTier1RouterDownLinkPortIp = state.taskServiceEntity.reservedIpList
+        .get(ReservedIpType.GATEWAY);
+    configureRoutingTask.logicalTier1RouterDownLinkPortIpPrefixLen = 32 - (int) (Math.log(state.size) / Math.log(2));
 
     TaskUtils.startTaskAsync(
         this,

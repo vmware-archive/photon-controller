@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
+import com.vmware.photon.controller.api.model.ReservedIpType;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -40,6 +41,7 @@ import org.apache.commons.net.util.SubnetUtils;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -58,8 +60,6 @@ public class SubnetAllocatorService extends StatefulService {
    * in the system which could be at deployment time or later.
    */
   public static final String SINGLETON_LINK = FACTORY_LINK + "/root-subnet";
-
-  public static final int COUNT_OF_RESERVED_IPS = 3;
 
   public static FactoryService createFactory() {
     return FactoryService.create(SubnetAllocatorService.class, SubnetAllocatorService.State.class);
@@ -129,7 +129,8 @@ public class SubnetAllocatorService extends StatefulService {
         throw new IllegalArgumentException("numberOfStaticIpAddresses cannot be null");
       }
 
-      final long minSize = COUNT_OF_RESERVED_IPS + numberOfStaticIpAddresses + 2; //includes network and broadcast IPs
+      // Includes network and broadcast IPs
+      final long minSize = ReservedIpType.values().length + numberOfStaticIpAddresses + 2;
       if (numberOfAllIpAddresses < minSize) {
         throw new IllegalArgumentException(
             "numberOfAllIpAddresses should be at least (COUNT_OF_RESERVED_IPS + numberOfStaticIpAddresses " +
@@ -224,16 +225,19 @@ public class SubnetAllocatorService extends StatefulService {
       subnet.cidr = IpHelper.calculateCidrFromIpV4Range(createdIpv4Range.low, createdIpv4Range.high);
       subnet.lowIp = createdIpv4Range.low;
       subnet.highIp = createdIpv4Range.high;
-      subnet.reservedIpList = new ArrayList<>(COUNT_OF_RESERVED_IPS);
-      for (int i = 0; i < COUNT_OF_RESERVED_IPS; i++) {
-        subnet.reservedIpList.add(i, subnet.lowIp + 1 + i);
+
+      int numReservedIps = ReservedIpType.values().length;
+      subnet.reservedIpList = new HashMap<>(numReservedIps);
+      for (int i = 0; i < numReservedIps; i++) {
+        subnet.reservedIpList.put(ReservedIpType.values()[i], subnet.lowIp + 1 + i);
       }
+
       if (allocateSubnetPatch.numberOfStaticIpAddresses > 0) {
-        subnet.lowIpStatic = subnet.lowIp + 1 + COUNT_OF_RESERVED_IPS;
+        subnet.lowIpStatic = subnet.lowIp + 1 + numReservedIps;
         subnet.highIpStatic = subnet.lowIpStatic + allocateSubnetPatch.numberOfStaticIpAddresses - 1;
         subnet.lowIpDynamic = subnet.highIpStatic + 1;
       } else {
-        subnet.lowIpDynamic = subnet.lowIp + 1 + COUNT_OF_RESERVED_IPS;
+        subnet.lowIpDynamic = subnet.lowIp + 1 + numReservedIps;
       }
 
       subnet.highIpDynamic = subnet.highIp - 1;

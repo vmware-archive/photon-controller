@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
+import com.vmware.photon.controller.api.model.ReservedIpType;
 import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.common.Constants;
@@ -35,7 +36,6 @@ import com.vmware.xenon.common.StatefulService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.List;
 import java.util.Map;
 
 
@@ -185,7 +185,7 @@ public class VirtualNetworkService extends StatefulService {
      * This is a list of IPs reserved for infrastructure use.
      */
     @WriteOnce
-    public List<String> reservedIpList;
+    public Map<ReservedIpType, String> reservedIpList;
 
     /**
      * This is the smallest static IP of the available static IP range.
