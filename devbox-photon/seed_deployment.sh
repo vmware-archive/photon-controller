@@ -37,7 +37,7 @@ deployment_create_spec_json="{ \
    \"imageDataStoreUsedForVMs\" : true, \
    \"imageId\" : \"none\", \
    \"projectId\" : \"none\", \
-   \"virtualNetworkEnabled\" : false, \
+   \"sdnEnabled\" : false, \
    \"documentSelfLink\" : \"test-deployment\""
 
    if [[ $ENABLE_AUTH == "true" ]]; then

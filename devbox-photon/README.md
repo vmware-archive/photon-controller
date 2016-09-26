@@ -34,7 +34,7 @@ We use Gradle for building and provisioning the devbox. From `/java` or `/devbox
 
 This will bring up Vagrant, create one VM (two if ENABLE_AUTH is set to `true`), build all service containers, then start them. Your devbox is now ready.
 
-If devbox is being used as a management VM, we seed a deployment document into Photon Controller for some system properties. These properties can be set from environment variables (see below). From `/devbox-photon`, run:
+If devbox is being used as a management VM, you need to seed a deployment document into Photon Controller for some system properties. These properties can be set from environment variables (see below). From `/devbox-photon`, run:
 
     ./seed_deployment.sh
 
