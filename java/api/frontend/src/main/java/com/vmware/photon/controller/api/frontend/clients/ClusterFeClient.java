@@ -90,6 +90,11 @@ public class ClusterFeClient {
     return task;
   }
 
+  public Task triggerMaintenance(String clusterId) throws ExternalException {
+    TaskEntity taskEntity = clusterBackend.triggerMaintenance(clusterId);
+    return taskBackend.getApiRepresentation(taskEntity);
+  }
+
   public ResourceList<Vm> findVms(String clustertId, Optional<Integer> pageSize) throws ExternalException {
     return clusterBackend.findVms(clustertId, pageSize);
   }

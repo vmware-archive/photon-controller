@@ -60,6 +60,15 @@ module EsxCloud
 
       # @param [String] id
       # @return [Boolean]
+      def trigger_maintenance(id)
+        response = @http_client.post_json("#{CLUSTERS_ROOT}/#{id}/trigger_maintenance", {})
+        check_response("Trigger maintenance for cluster '#{id}'", response, 200)
+
+        true
+      end
+
+      # @param [String] id
+      # @return [Boolean]
       def delete_cluster(id)
         response = @http_client.delete("#{CLUSTERS_ROOT}/#{id}")
         check_response("Delete cluster '#{id}'", response, 201)

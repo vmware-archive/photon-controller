@@ -31,6 +31,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.powermock.api.mockito.PowerMockito.when;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
@@ -48,6 +50,9 @@ public class ClusterResourceTest extends ResourceTest {
 
   private final String clusterRoute =
       UriBuilder.fromPath(ClusterResourceRoutes.CLUSTERS_PATH).build(clusterId).toString();
+  private final String clusterTriggerMaintenanceRoute =
+      UriBuilder.fromPath(ClusterResourceRoutes.CLUSTERS_PATH + ClusterResourceRoutes.CLUSTER_TRIGGER_MAINTENANCE_PATH)
+          .build(clusterId).toString();
   private final String taskRoute =
       UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build(taskId).toString();
 
@@ -100,5 +105,18 @@ public class ClusterResourceTest extends ResourceTest {
     assertThat(t2, is(t1));
     assertThat(new URI(t2.getSelfLink()).isAbsolute(), is(true));
     assertThat(t2.getSelfLink().endsWith(taskRoute), is(true));
+  }
+
+  @Test
+  public void testTriggerMaintenanceCluster() throws Exception {
+    Task task = new Task();
+    task.setId(taskId);
+    when(clusterFeClient.triggerMaintenance(clusterId)).thenReturn(task);
+    Response response = client()
+        .target(clusterTriggerMaintenanceRoute)
+        .request()
+        .post(Entity.entity(null, MediaType.APPLICATION_JSON_TYPE));
+
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 }
