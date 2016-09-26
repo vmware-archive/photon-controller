@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2015 VMware, Inc. All Rights Reserved.
+# Copyright 2016 VMware, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License.  You may obtain a copy of
@@ -24,7 +24,7 @@ function get_config_value ()
   file=$1
 
   # Key to find in the config file.
-  # It would be provided with ':' at the end. Pass 'memoryMb:' to find memroyMB in container.
+  # It would be provided with ':' at the end. Pass 'memoryMb:' to find memoryMB in container.
   key=$2
 
   # Extract the "key: value" from the config file
@@ -190,7 +190,7 @@ then
   while [ $attempts -lt $total_attempts ] && [ $reachable != "true" ]; do
     http_code=$(curl -w "%{http_code}" -s -X GET --insecure https://$LIGHTWAVE_HOSTNAME)
     # The curl returns 000 when it fails to connect to the lightwave server
-    if [ $http_code -eq 000 ]; then
+    if [ $http_code == "000" ]; then
       echo "Lightwave REST server not reachable (attempt $attempts/$total_attempts), will try again."
       attempts=$[$attempts+1]
       sleep 5
