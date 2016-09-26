@@ -35,12 +35,15 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.HarborCluste
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.MesosClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.SwarmClusterCreateTask;
+import com.vmware.photon.controller.clustermanager.tasks.ClusterMaintenanceTaskFactoryService;
+import com.vmware.photon.controller.clustermanager.tasks.ClusterMaintenanceTaskService;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
@@ -205,6 +208,15 @@ public class ClusterManagerClient {
         ServiceUriPaths.CLUSTER_DELETE_TASK_SERVICE, deleteTask);
 
     return operation.getBody(ClusterDeleteTask.class);
+  }
+
+  public void triggerMaintenance(String clusterId) {
+    ClusterMaintenanceTaskService.State patchState = new ClusterMaintenanceTaskService.State();
+    patchState.taskState = new TaskState();
+    patchState.taskState.stage = TaskState.TaskStage.STARTED;
+
+    String uri = ClusterMaintenanceTaskFactoryService.SELF_LINK + "/" + clusterId;
+    Operation operation = xenonClient.patch(uri, patchState);
   }
 
   public ClusterDeleteTask getClusterDeletionStatus(String deletionTaskLink)
