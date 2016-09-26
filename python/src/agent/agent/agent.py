@@ -32,7 +32,6 @@ import threading
 import time
 import traceback
 import os.path
-import ssl
 
 from thrift import TMultiplexedProcessor
 from thrift.protocol import TCompactProtocol
@@ -48,6 +47,9 @@ from common.mode import Mode
 from common.plugin import load_plugins, thrift_services
 from common.service_name import ServiceName
 from common.state import State
+
+SSL_CERT_PATH = "/etc/vmware/ssl/rui.crt"
+SSL_KEY_PATH = "/etc/vmware/ssl/rui.key"
 
 
 class Agent:
@@ -135,28 +137,10 @@ class Agent:
             processor = plugin.service.Processor(handler)
             mux_processor.registerProcessor(plugin.name, processor)
 
-        cert_file = "/etc/vmware/ssl/host.pem"
-        # this file should only be present in the non-auth scenario and init installation
-        cert_file_non_auth = "/etc/vmware/ssl/non-auth.pem"
-        if os.path.isfile(cert_file):
-            transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=cert_file)
-        elif os.path.isfile(cert_file_non_auth):
-            transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=cert_file_non_auth)
-            # disable thrift based cert validation, this exists mainly since python didn't do cert validation
-            # prior to 2.7.9
-            transport.validate = False
-            # disable cert validation on the python level if we are using python 2.7.9 or newer
-            # thanks to https://dnaeon.github.io/disable-python-ssl-verification/
-            try:
-                _create_unverified_https_context = ssl._create_unverified_context
-            except AttributeError:
-                # Legacy Python that doesn't verify HTTPS certificates by default
-                self._logger.info("Legacy Python that doesn't verify HTTPS certificates by default")
-                pass
-            else:
-                # Handle target environment that doesn't support HTTPS verification
-                self._logger.info("Handle target environment that doesn't support HTTPS verification")
-                ssl._create_default_https_context = _create_unverified_https_context
+        if os.path.isfile(SSL_CERT_PATH) and os.path.isfile(SSL_KEY_PATH):
+            transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port,
+                                                    ca_certs=SSL_CERT_PATH,
+                                                    keyfile=SSL_KEY_PATH)
         else:
             transport = TSocket.TServerSocket(port=self._config.host_port)
 
@@ -168,8 +152,7 @@ class Agent:
         self._server = server
 
     def _start_thrift_service(self):
-        self._logger.info("Listening on port %s..."
-                          % self._config.host_port)
+        self._logger.info("Listening on port %s..." % self._config.host_port)
         self._server.serve()
 
     def _signal_handler(self, signum, frame):
