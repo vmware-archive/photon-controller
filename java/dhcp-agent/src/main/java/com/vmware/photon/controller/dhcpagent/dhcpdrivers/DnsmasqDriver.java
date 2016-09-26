@@ -36,7 +36,7 @@ public class DnsmasqDriver implements DHCPDriver {
     private String releaseIPPath = "/script/release-ip.sh";
     private String dhcpStatusPath = "/script/dhcp-status.sh";
     private String dhcpHostFileDir = Constants.DNSMASQ_HOST_DIR_PATH;
-    private String dhcpHostFileCopyDir = "/etc/hosts_copy";
+    private String dhcpHostFileCopyDir = Constants.DNSMASQ_HOST_DIR_PATH + "-copy";
     private String dhcpPidFilePath = Constants.DNSMASQ_PID_PATH;
     private String dhcpReloadCachePath = "/script/dhcp-reload.sh";
 
