@@ -35,6 +35,20 @@ write_files:
     path: /tmp/init-network.sh
 
   - content: |
+        echo "Starting Kubernetes etcd"
+        export ETCD_NODE_ID=$ETCD_ID
+        export ETCD_CLUSTER=$ETCD_PARAMETERS
+        export ETCD_URL=$ETCD_PEER_URL
+        echo "ETCD_NODE_ID ${ETCD_NODE_ID}"
+        echo "ETCD_CLUSTER ${ETCD_CLUSTER}"
+        echo "ETCD_URL ${ETCD_URL}"
+        /root/docker-multinode/etcd.sh
+        echo "done"
+    owner: root:root
+    permissions: 0644
+    path: /root/setup-kubernetes-etcd.sh
+
+  - content: |
         retry_max="60"
         retry="0"
         while [ "$retry" -lt "$retry_max" ]
@@ -68,4 +82,4 @@ runcmd:
   - systemctl stop systemd-networkd
   - sh /tmp/init-network.sh
   - sh /tmp/check-docker.sh
-  - /root/docker-multinode/etcd.sh >> /var/log/start-etcd.log 2>&1
+  - sh /root/setup-kubernetes-etcd.sh >> /var/log/start-etcd.log 2>&1
