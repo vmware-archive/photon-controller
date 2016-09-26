@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
+import com.vmware.photon.controller.api.model.ReservedIpType;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -43,7 +44,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.BitSet;
-import java.util.List;
+import java.util.Map;
 
 /**
  * Used for allocating IPs from a subnet and also to track ownership of a CIDR range by a network.
@@ -486,10 +487,9 @@ public class DhcpSubnetService extends StatefulService {
     public Long highIpDynamic;
 
     /**
-     * This is a list of IPs reserved for infrastructure use e.g. address for DHCP Relay router for the subnet.
-     * We will include the lowIp and highIp in this list. This is calculated only for display purposes for the user.
+     * This is a list of IPs reserved for infrastructure use e.g. address for gateway of a newtwork.
      */
-    public List<Long> reservedIpList;
+    public Map<ReservedIpType, Long> reservedIpList;
 
     /**
      * This is the smallest IP of the range from which IPs will be excluded for allocations to VMs/MACs.

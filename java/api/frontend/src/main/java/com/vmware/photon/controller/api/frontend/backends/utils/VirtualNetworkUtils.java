@@ -17,6 +17,8 @@ import com.vmware.photon.controller.api.model.VirtualSubnet;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 
+import java.util.ArrayList;
+
 /**
  * Utility class related to virtual network.
  */
@@ -40,7 +42,10 @@ public class VirtualNetworkUtils {
     virtualSubnet.setHighIpDynamic(virtualNetworkState.highIpDynamic);
     virtualSubnet.setLowIpStatic(virtualNetworkState.lowIpStatic);
     virtualSubnet.setHighIpStatic(virtualNetworkState.highIpStatic);
-    virtualSubnet.setReservedIpList(virtualNetworkState.reservedIpList);
+
+    if (virtualNetworkState.reservedIpList != null) {
+      virtualSubnet.setReservedIpList(new ArrayList<>(virtualNetworkState.reservedIpList.values()));
+    }
 
     return virtualSubnet;
   }
