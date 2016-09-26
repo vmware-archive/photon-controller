@@ -354,7 +354,8 @@ public class SubnetIPLeaseServiceTest {
          */
         @Test
         public void testSubnetLeaseIPDeleteFailure() throws Throwable {
-            setUpEnvironment(Constants.DNSMASQ_HOST_DIR_PATH);
+            // Setting some invalid path to generate failure case.
+            setUpEnvironment("/etc/hosts");
 
             SubnetIPLeaseTask subnetIPLeaseTask = buildValidState(TaskState.TaskStage.CREATED, false,
                     SubnetIPLeaseTask.SubnetOperation.DELETE);
