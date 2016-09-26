@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidNetw
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidReservedStaticIpSizeException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.model.Project;
+import com.vmware.photon.controller.api.model.ReservedIpType;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.api.model.SubnetState;
@@ -39,6 +40,7 @@ import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.collections.CollectionUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -55,6 +57,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
@@ -92,6 +95,12 @@ public class VirtualNetworkFeClientTest {
     VirtualNetworkService.State virtualNetworkState = new VirtualNetworkService.State();
     virtualNetworkState.name = "virtualNetwork";
     virtualNetworkState.documentSelfLink = VirtualNetworkService.FACTORY_LINK + "/" + networkId;
+
+    virtualNetworkState.reservedIpList = new HashMap<>();
+    virtualNetworkState.reservedIpList.put(ReservedIpType.GATEWAY, "192.168.1.1");
+    virtualNetworkState.reservedIpList.put(ReservedIpType.UNUSED1, "192.168.1.2");
+    virtualNetworkState.reservedIpList.put(ReservedIpType.UNUSED2, "192.168.1.3");
+
     return virtualNetworkState;
   }
 
@@ -177,9 +186,10 @@ public class VirtualNetworkFeClientTest {
 
     doReturn(operation).when(cloudStoreClient).get(virtualNetworkState.documentSelfLink);
 
-
     VirtualSubnet virtualSubnet = frontendClient.get(networkId);
     assertEquals(virtualSubnet.getName(), virtualNetworkState.name);
+    assertTrue(CollectionUtils.isEqualCollection(virtualSubnet.getReservedIpList(),
+        virtualNetworkState.reservedIpList.values()));
   }
 
   @Test
