@@ -29,6 +29,7 @@ require_relative "api_client/task_api"
 require_relative "api_client/cluster_api"
 require_relative "api_client/availability_zone_api"
 require_relative "api_client/available_api"
+require_relative "api_client/info_api"
 require_relative "api_client/virtual_network_api"
 require_relative "api_client/data_store_api"
 
@@ -55,6 +56,7 @@ module EsxCloud
     include EsxCloud::ApiClient::ClusterApi
     include EsxCloud::ApiClient::AvailabilityZoneApi
     include EsxCloud::ApiClient::AvailableApi
+    include EsxCloud::ApiClient::InfoApi
     include EsxCloud::ApiClient::DatastoreApi
 
     attr_accessor :task_tracker, :http_client

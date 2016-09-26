@@ -32,12 +32,13 @@ dependencies {
 
 ext.sharedManifest = manifest {
   attributes 'Specification-Title': 'Photon Controller Core',
-          'Specification-Version': version,
+          'Specification-Version': base_version,
+          'Implementation-Version': full_version,
           'Built-By': System.getProperty('user.name'),
-          'Built-Date': new Date(),
+          'Built-Date': build_timestamp,
           'Built-JDK': System.getProperty('java.version'),
           'Built-Gradle': gradle.gradleVersion,
-          'Git-Commit': "git rev-parse --short HEAD".execute().text.trim()
+          'Git-Commit': git_commit
 }
 
 jar {

@@ -27,6 +27,8 @@ import org.mockito.Mock;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.doReturn;
 
 import javax.ws.rs.core.Response;
@@ -67,7 +69,15 @@ public class InfoResourceTest extends ResourceTest {
 
     Response response = client().target(InfoResourceRoutes.API).request().get();
     assertThat(response.getStatus(), is(200));
-    assertThat(response.readEntity(Info.class).getNetworkType(), is(NetworkType.SOFTWARE_DEFINED));
+    Info info = response.readEntity(Info.class);
+    assertThat(info.getNetworkType(), is(NetworkType.SOFTWARE_DEFINED));
+
+    // Note that the following information comes from our JAR file, which we don't have
+    // during unit tests. Therefore we just make sure they're non-empty. Integration
+    // tests will validate this information.
+    assertThat(info.getBaseVersion(), not(equalTo(null)));
+    assertThat(info.getFullVersion(), not(equalTo(null)));
+    assertThat(info.getGitCommitHash(), not(equalTo(null)));
   }
 
   @Test
