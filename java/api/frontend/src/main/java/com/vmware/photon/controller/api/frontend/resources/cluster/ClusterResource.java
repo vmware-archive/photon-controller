@@ -31,6 +31,7 @@ import org.glassfish.jersey.server.ContainerRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -79,5 +80,20 @@ public class ClusterResource {
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
     return response;
+  }
+
+  @POST
+  @Path(ClusterResourceRoutes.CLUSTER_TRIGGER_MAINTENANCE_PATH)
+  @ApiOperation(value = "Triggers background maintenance for a cluster", response = Task.class)
+  @ApiResponses(value = {
+      @ApiResponse(code = 200, message = "Start a background process to recreate failed VMs in a cluster.")
+  })
+  public Response triggerMaintenance(@Context Request request,
+                         @PathParam("id") String clusterId) throws ExternalException {
+    return generateCustomResponse(
+        Response.Status.OK,
+        clusterFeClient.triggerMaintenance(clusterId),
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
   }
 }

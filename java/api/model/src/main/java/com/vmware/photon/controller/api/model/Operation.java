@@ -174,6 +174,7 @@ public enum Operation {
   DELETE_CLUSTER_UPDATE_CLUSTER_DOCUMENT("DeleteClusterUpdateClusterDocument"),
   DELETE_CLUSTER_DELETE_VMS("DeleteClusterDeleteVms"),
   DELETE_CLUSTER_DOCUMENT("DeleteClusterDocument"),
+  TRIGGER_CLUSTER_MAINTENANCE("TriggerClusterMaintenance"),
 
   GET_NSX_CONFIGURATION("GetNsxConfiguration"),
   CREATE_LOGICAL_SWITCH("CreateLogicalSwitch"),

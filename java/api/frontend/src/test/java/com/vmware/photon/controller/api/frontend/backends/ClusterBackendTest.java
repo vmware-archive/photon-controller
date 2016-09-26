@@ -457,6 +457,65 @@ public class ClusterBackendTest {
   }
 
   /**
+   * Tests for trigger maintenance.
+   */
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class, CommandTestModule.class})
+  public static class TriggerMaintenanceTest {
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+
+    @Inject
+    private TaskBackend taskBackend;
+
+    @Inject
+    private VmXenonBackend vmXenonBackend;
+
+    private ClusterManagerClient clusterManagerClient;
+    private ClusterBackend clusterBackend;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
+      clusterManagerClient = mock(ClusterManagerClient.class);
+      clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmXenonBackend);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testSuccess() throws Throwable {
+      String clusterId = UUID.randomUUID().toString();
+
+      Cluster cluster = buildCluster(clusterId);
+      when(clusterManagerClient.getCluster(clusterId)).thenReturn(cluster);
+
+      TaskEntity taskEntity = clusterBackend.triggerMaintenance(clusterId);
+      Assert.assertNotNull(taskEntity);
+      Assert.assertNotNull(taskEntity.getId());
+      assertEquals(taskEntity.getOperation(), Operation.TRIGGER_CLUSTER_MAINTENANCE);
+    }
+
+    @Test(expectedExceptions = ClusterNotFoundException.class)
+    public void testClusterNotFound() throws Throwable {
+      String clusterId = UUID.randomUUID().toString();
+      when(clusterManagerClient.getCluster(clusterId)).thenThrow(new ClusterNotFoundException(clusterId));
+
+      clusterBackend.triggerMaintenance(clusterId);
+    }
+  }
+
+  /**
    * Tests for the find method.
    */
   @Guice(modules = {XenonBackendTestModule.class, TestModule.class, CommandTestModule.class})

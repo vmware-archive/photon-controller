@@ -137,6 +137,13 @@ public class ClusterBackend {
     return taskEntity;
   }
 
+  public TaskEntity triggerMaintenance(String clusterId) throws ClusterNotFoundException {
+    checkClusterId(clusterId);
+    // Trigger the maintenance operation and return that is has been completed.
+    clusterManagerClient.triggerMaintenance(clusterId);
+    return taskBackend.createCompletedTask(null, Operation.TRIGGER_CLUSTER_MAINTENANCE);
+  }
+
   public ResourceList<Vm> findVms(String clusterId, Optional<Integer> pageSize) throws ExternalException {
     // Get projectId for cluster
     Cluster cluster = clusterManagerClient.getCluster(clusterId);

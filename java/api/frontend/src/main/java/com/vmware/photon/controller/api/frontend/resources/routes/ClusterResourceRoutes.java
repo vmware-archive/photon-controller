@@ -27,4 +27,6 @@ public class ClusterResourceRoutes {
   public static final String PROJECT_CLUSTERS_PATH = "/projects/{id}/clusters";
 
   public static final String CLUSTER_RESIZE_PATH = "/clusters/{id}/resize";
+
+  public static final String CLUSTER_TRIGGER_MAINTENANCE_PATH = "/trigger_maintenance";
 }
