@@ -96,6 +96,7 @@ public class DHCPAgentXenonHostTest {
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               Constants.DNSMASQ_HOST_DIR_PATH,
+              Constants.DNSMASQ_OPTION_DIR_PATH,
               Constants.DNSMASQ_PID_PATH,
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
     }
@@ -146,6 +147,7 @@ public class DHCPAgentXenonHostTest {
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               Constants.DNSMASQ_HOST_DIR_PATH,
+              Constants.DNSMASQ_OPTION_DIR_PATH,
               Constants.DNSMASQ_PID_PATH,
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);
@@ -198,6 +200,7 @@ public class DHCPAgentXenonHostTest {
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               Constants.DNSMASQ_HOST_DIR_PATH,
+              Constants.DNSMASQ_OPTION_DIR_PATH,
               Constants.DNSMASQ_PID_PATH,
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);

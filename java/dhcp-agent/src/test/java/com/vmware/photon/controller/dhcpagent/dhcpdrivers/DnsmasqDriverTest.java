@@ -60,6 +60,7 @@ public class DnsmasqDriverTest {
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
                 DnsmasqDriverTest.class.getResource("/hosts").getPath(),
+                DnsmasqDriverTest.class.getResource("/options").getPath(),
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath());
     }
@@ -140,6 +141,45 @@ public class DnsmasqDriverTest {
             fail("Failed to get file not found exception.");
         } catch (Throwable e) {
         }
+    }
+
+    @Test
+    public void testCreateSubnetConfiguration() {
+      try {
+        setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
+        String gateway = "192.168.1.1";
+        String cidr = "192.168.1.0/8";
+
+        dnsmasqDriver.createSubnetConfiguration("subnet1", gateway, cidr);
+
+        FileReader fileReader = new FileReader(
+            DnsmasqDriverTest.class.getResource("/options").getPath() + "/subnet1");
+        BufferedReader bufferedReader = new BufferedReader(fileReader);
+
+        String line;
+        while ((line = bufferedReader.readLine()) != null) {
+          if (!line.equals("tag:subnet1,3,192.168.1.1,1,192.168.1.0/8")) {
+            fail("Wrong content of the option file: " + line);
+          }
+        }
+      } catch (Throwable e) {
+        fail("Failed with exception: " + e.getMessage());
+      }
+    }
+
+    @Test
+    public void testDeleteSubnetConfiguration() {
+      try {
+        setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
+        dnsmasqDriver.deleteSubnetConfiguration("subnet1");
+
+        File file = new File(DnsmasqDriverTest.class.getResource("/options").getPath() + "/subnet1");
+        if (file.exists() && !file.isDirectory()) {
+          fail("Option file not deleted");
+        }
+      } catch (Throwable e) {
+        fail("Failed with exception: " + e.getMessage());
+      }
     }
 
     @Test

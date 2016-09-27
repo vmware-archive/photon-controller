@@ -128,7 +128,7 @@ public class SubnetConfigurationService extends StatefulService {
       dhcpDriver.createSubnetConfiguration(
           currentState.subnetConfiguration.subnetId,
           currentState.subnetConfiguration.subnetGateway,
-          currentState.subnetConfiguration.subnetNetmask);
+          currentState.subnetConfiguration.subnetCidr);
 
       SubnetConfigurationTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
       if (operation == null) {

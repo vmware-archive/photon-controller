@@ -32,6 +32,7 @@ public class TestHost extends BasicServiceHost {
             TestHost.class.getResource(successScript).getPath(),
             TestHost.class.getResource(successScript).getPath(),
             TestHost.class.getResource("/hosts/subnet1").getPath(),
+            TestHost.class.getResource("/options/subnet1").getPath(),
             TestHost.class.getResource(successScript).getPath(),
             TestHost.class.getResource(successScript).getPath());
 
