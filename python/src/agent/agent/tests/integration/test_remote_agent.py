@@ -13,6 +13,7 @@
 """Agent integration tests via (remote) ESX hypervisor."""
 
 import logging
+import os
 import threading
 import time
 import unittest
@@ -109,9 +110,10 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         """ Utility method to connect to a remote agent """
         max_sleep_time = 32
         sleep_time = 0.1
+        cert_file = os.environ["WORKSPACE"] + "/python/host.pem"
         while sleep_time < max_sleep_time:
             try:
-                client = DirectClient(service, cls, server, 8835)
+                client = DirectClient(service, cls, server, 8835, cert_file=cert_file)
                 client.connect()
                 return client
             except TTransport.TTransportException:

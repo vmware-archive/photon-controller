@@ -53,6 +53,12 @@ make develop
 make vib DEBUG=1
 
 SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+echo "Creating cert for ${ESX_IP}"
+openssl req -subj "/CN=${ESX_IP}/O=VMware Inc./C=US" -new -newkey rsa:1024 -days 1095 -nodes -x509 -keyout host.key -out host.crt
+cat host.crt host.key > host.pem
+sshpass -p "$ESX_PWD" scp $SSH_OPTS host.pem root@${ESX_IP}:/etc/vmware/ssl
+
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'cd /etc/vmware/ssl/; rm non-auth.pem host.pem host.crt host.key host.privkey || true; cd -'
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'rm /tmp/*.vib' || true
 sshpass -p "$ESX_PWD" scp $SSH_OPTS ./dist/photon-controller-agent-*.vib root@$ESX_IP:/tmp
