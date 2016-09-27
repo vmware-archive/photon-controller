@@ -7,6 +7,9 @@ ifdef REMOTE_SERVER
 	TEST_OPTS += --tc=agent_remote_test.server:$(REMOTE_SERVER) -s \
                      --tc agent_remote_stress_test.host:$(REMOTE_SERVER)
 endif
+ifdef SSL_CERT_FILE
+	TEST_OPTS += --tc=agent_remote_test.ssl_cert_file:$(SSL_CERT_FILE)
+endif
 ifdef DATASTORES
 	TEST_OPTS += --tc=agent_remote_test.datastores:$(DATASTORES)
 endif
