@@ -66,6 +66,7 @@ public class StatusServiceTest {
                       StatusServiceTest.class.getResource(successScript).getPath(),
                       StatusServiceTest.class.getResource(successScript).getPath(),
                       Constants.DNSMASQ_HOST_DIR_PATH,
+                      Constants.DNSMASQ_OPTION_DIR_PATH,
                       Constants.DNSMASQ_PID_PATH,
                       StatusServiceTest.class.getResource(successScript).getPath()),
               1,

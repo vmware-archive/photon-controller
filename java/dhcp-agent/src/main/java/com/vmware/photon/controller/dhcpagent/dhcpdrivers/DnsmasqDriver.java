@@ -37,24 +37,33 @@ public class DnsmasqDriver implements DHCPDriver {
     private String dhcpStatusPath = "/script/dhcp-status.sh";
     private String dhcpHostFileDir = Constants.DNSMASQ_HOST_DIR_PATH;
     private String dhcpHostFileCopyDir = Constants.DNSMASQ_HOST_DIR_PATH + "-copy";
+    private String dhcpOptionFileDir = Constants.DNSMASQ_OPTION_DIR_PATH;
+    private String dhcpOptionFileCopyDir = Constants.DNSMASQ_OPTION_DIR_PATH + "-copy";
     private String dhcpPidFilePath = Constants.DNSMASQ_PID_PATH;
     private String dhcpReloadCachePath = "/script/dhcp-reload.sh";
 
     public DnsmasqDriver(String dhcpLeaseFilePath,
             String dhcpReleaseUtilityPath, String releaseIPPath, String dhcpStatusPath,
-            String dhcpHostFileDir, String dhcpPidFilePath, String dhcpReloadCachePath) {
+            String dhcpHostFileDir, String dhcpOptionFileDir, String dhcpPidFilePath,
+            String dhcpReloadCachePath) {
         this.dhcpLeaseFilePath = dhcpLeaseFilePath;
         this.dhcpReleaseUtilityPath = dhcpReleaseUtilityPath;
         this.releaseIPPath = releaseIPPath;
         this.dhcpStatusPath = dhcpStatusPath;
         this.dhcpHostFileDir = dhcpHostFileDir;
-        this.dhcpHostFileCopyDir = dhcpHostFileDir + "_copy";
+        this.dhcpHostFileCopyDir = dhcpHostFileDir + "-copy";
+        this.dhcpOptionFileDir = dhcpOptionFileDir;
+        this.dhcpOptionFileCopyDir = dhcpOptionFileDir + "-copy";
         this.dhcpPidFilePath = dhcpPidFilePath;
         this.dhcpReloadCachePath = dhcpReloadCachePath;
 
-        File directory = new File(String.valueOf(this.dhcpHostFileCopyDir));
-        if (!directory.exists()){
-            directory.mkdir();
+        for (String directory : new String[] {
+            this.dhcpHostFileDir, this.dhcpHostFileCopyDir,
+            this.dhcpOptionFileDir, this.dhcpOptionFileCopyDir}) {
+            File dirFile = new File(directory);
+            if (!dirFile.exists()) {
+                dirFile.mkdir();
+            }
         }
     }
 
@@ -180,10 +189,25 @@ public class DnsmasqDriver implements DHCPDriver {
         String subnetId,
         String gateway,
         String cidr) throws Exception {
-        Response response = new Response();
-        response.exitCode = 1;
-        response.stdError = "NotImplemented";
 
+        String newFileName = dhcpOptionFileCopyDir + "/" + subnetId;
+
+        File newFile = new File(newFileName);
+        if (!newFile.exists()) {
+            newFile.createNewFile();
+        }
+
+        PrintWriter writer = new PrintWriter(newFileName, "UTF-8");
+        writer.println("tag:" + subnetId + ",3," + gateway + ",1," + cidr);
+        writer.close();
+
+        String oldFilename = dhcpOptionFileDir + "/" + subnetId;
+        File oldFile = new File(oldFilename);
+
+        Files.move(newFile.toPath(), oldFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+        Response response = new Response();
+        response.exitCode = 0;
         return response;
     }
 
@@ -196,10 +220,12 @@ public class DnsmasqDriver implements DHCPDriver {
      */
     public Response deleteSubnetConfiguration(
         String subnetId) throws Exception {
-        Response response = new Response();
-        response.exitCode = 1;
-        response.stdError = "NotImplemented";
 
+        Response response = new Response();
+        String filename = dhcpOptionFileDir + "/" + subnetId;
+        File file = new File(filename);
+        Files.deleteIfExists(file.toPath());
+        response.exitCode = 0;
         return response;
     }
 
