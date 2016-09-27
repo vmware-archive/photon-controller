@@ -14,7 +14,7 @@ import logging
 
 from thrift.protocol import TCompactProtocol
 from thrift.protocol import TMultiplexedProtocol
-from thrift.transport import TSocket
+from thrift.transport import TSSLSocket
 from thrift.transport import TTransport
 
 
@@ -43,7 +43,7 @@ class DirectClient(object):
 
     def connect(self):
         """Connect to the HostHandler."""
-        sock = TSocket.TSocket(self._host, self._port)
+        sock = TSSLSocket.TSSLSocket(self._host, self._port)
         if self._client_timeout:
             sock.setTimeout(self._client_timeout * 1000)
         self._transport = TTransport.TFramedTransport(sock)
