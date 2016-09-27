@@ -112,7 +112,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         sleep_time = 0.1
         while sleep_time < max_sleep_time:
             try:
-                client = DirectClient(service, cls, server, 8835)
+                client = DirectClient(service, cls, server, 8835, 10, self.ssl_cert_file, False)
                 client.connect()
                 return client
             except TTransport.TTransportException:
@@ -207,8 +207,8 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         if ("second_iso_file" in config["agent_remote_test"]):
             self._second_remote_iso_file = config["agent_remote_test"]["second_iso_file"]
 
-        server = config["agent_remote_test"]["server"]
-        self.server = server
+        self.server = config["agent_remote_test"]["server"]
+        self.ssl_cert_file = config["agent_remote_test"]["ssl_cert_file"]
 
         self.generation = int(time.time())
 
@@ -304,7 +304,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         transfer_image_request = TransferImageRequest(
             source_image_id=image_id,
             source_datastore_id=datastore.id,
-            destination_host=ServerAddress(host="localhost", port=8835),
+            destination_host=ServerAddress(host=self.server, port=8835),
             destination_datastore_id=datastore.id,
             destination_image_id=image_id_2)
         res = self.host_client.transfer_image(transfer_image_request)
