@@ -60,6 +60,7 @@ public class DnsmasqDriverTest {
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
                 DnsmasqDriverTest.class.getResource("/hosts").getPath(),
+                DnsmasqDriverTest.class.getResource("/options").getPath(),
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath());
     }
@@ -143,6 +144,49 @@ public class DnsmasqDriverTest {
     }
 
     @Test
+    public void testCreateSubnetConfiguration() {
+      try {
+        setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
+        String gateway = "192.168.1.1";
+        String cidr = "192.168.1.0/8";
+
+        dnsmasqDriver.createSubnetConfiguration("subnet1", gateway, cidr);
+
+        FileReader fileReader = new FileReader(
+            DnsmasqDriverTest.class.getResource("/options").getPath() + "/subnet1");
+        BufferedReader bufferedReader = new BufferedReader(fileReader);
+
+        String line;
+        while ((line = bufferedReader.readLine()) != null) {
+          if (!line.equals("tag:subnet1,3,192.168.1.1,1,192.168.1.0/8")) {
+            fail("Wrong content of the option file: " + line);
+          }
+        }
+      } catch (Throwable e) {
+        fail("Failed with exception: " + e.getMessage());
+      }
+    }
+
+    @Test
+    public void testDeleteSubnetConfiguration() {
+      try {
+        setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
+        dnsmasqDriver.deleteSubnetConfiguration("subnet1");
+
+        File file = new File(DnsmasqDriverTest.class.getResource("/options").getPath() + "/subnet1");
+        if (file.exists() && !file.isDirectory()) {
+          fail("Option file not deleted");
+        }
+
+        // We need to create a subnet configuration file so that other tests can have this file when setting
+        // up the dnsmasq driver.
+        dnsmasqDriver.createSubnetConfiguration("subnet1", "192.168.1.1", "192.168.1.0/8");
+      } catch (Throwable e) {
+        fail("Failed with exception: " + e.getMessage());
+      }
+    }
+
+    @Test
     public void testUpdateSubnetIPAllocation() {
         try {
             setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
@@ -189,6 +233,14 @@ public class DnsmasqDriverTest {
             if (hostFile.exists() && !hostFile.isDirectory()) {
                 fail("Host file not deleted found in host file:");
             }
+
+          // We need to create a subnet host file so that other tests can have this file when setting
+          // up the dnsmasq driver.
+          String ipAddress = "192.168.0.2";
+          String macAddress = "08:00:27:d8:7d:8e";
+          Map<String, String> macAddressIPMap = new HashMap<>();
+          macAddressIPMap.put(ipAddress, macAddress);
+          dnsmasqDriver.updateSubnetIPLease("subnet1", macAddressIPMap, 1L);
         } catch (Throwable e) {
             fail(String.format("Failed with exception: %s", e.toString()));
         }

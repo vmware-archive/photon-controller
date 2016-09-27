@@ -39,7 +39,7 @@ public class SubnetConfigurationServiceTest {
   private TestHost testHost;
   private SubnetConfigurationService taskService;
   private final String gateway = "1.2.3.4";
-  private final String netmask = "255.255.255.0";
+  private final String cidr = "1.2.3.4/16";
   private final String subnetId = "subnet1";
 
   /**
@@ -241,7 +241,7 @@ public class SubnetConfigurationServiceTest {
 
     if (subnetOperation == SubnetConfigurationTask.SubnetOperation.CREATE) {
       subnetIPLeaseTask.subnetConfiguration.subnetGateway = gateway;
-      subnetIPLeaseTask.subnetConfiguration.subnetNetmask = netmask;
+      subnetIPLeaseTask.subnetConfiguration.subnetCidr = cidr;
     }
 
     if (stage != null) {

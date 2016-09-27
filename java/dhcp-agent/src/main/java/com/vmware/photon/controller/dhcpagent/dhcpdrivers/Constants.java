@@ -24,6 +24,11 @@ public class Constants {
     public static final String DNSMASQ_HOST_DIR_PATH = "/etc/dhcp-hosts";
 
     /**
+     * Dnsmasq option directory path.
+     */
+    public static final String DNSMASQ_OPTION_DIR_PATH = "/etc/dhcp-options";
+
+    /**
      * The file path for dnsmasq process Id file.
      */
     public static final String DNSMASQ_PID_PATH = "/var/run/dnsmasq.pid";

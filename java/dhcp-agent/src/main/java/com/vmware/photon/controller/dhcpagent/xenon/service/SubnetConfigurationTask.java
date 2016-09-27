@@ -64,9 +64,9 @@ public class SubnetConfigurationTask extends ServiceDocument {
     public String subnetGateway;
 
     /**
-     * The netmask of the subnet.
+     * The cidr of the subnet.
      */
-    public String subnetNetmask;
+    public String subnetCidr;
 
     /**
      * The operation for subnet configuration.
