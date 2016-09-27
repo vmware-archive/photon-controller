@@ -37,18 +37,22 @@ public class DnsmasqDriver implements DHCPDriver {
     private String dhcpStatusPath = "/script/dhcp-status.sh";
     private String dhcpHostFileDir = Constants.DNSMASQ_HOST_DIR_PATH;
     private String dhcpHostFileCopyDir = "/etc/hosts_copy";
+    private String dhcpOptionFileDir = Constants.DNSMASQ_OPTION_DIR_PATH;
+    private String dhcpOptionFileCopyDir = "/tmp/dhcp-options-copy";
     private String dhcpPidFilePath = Constants.DNSMASQ_PID_PATH;
     private String dhcpReloadCachePath = "/script/dhcp-reload.sh";
 
     public DnsmasqDriver(String dhcpLeaseFilePath,
             String dhcpReleaseUtilityPath, String releaseIPPath, String dhcpStatusPath,
-            String dhcpHostFileDir, String dhcpPidFilePath, String dhcpReloadCachePath) {
+            String dhcpHostFileDir, String dhcpOptionFileDir, String dhcpPidFilePath,
+            String dhcpReloadCachePath) {
         this.dhcpLeaseFilePath = dhcpLeaseFilePath;
         this.dhcpReleaseUtilityPath = dhcpReleaseUtilityPath;
         this.releaseIPPath = releaseIPPath;
         this.dhcpStatusPath = dhcpStatusPath;
         this.dhcpHostFileDir = dhcpHostFileDir;
         this.dhcpHostFileCopyDir = dhcpHostFileDir + "_copy";
+        this.dhcpOptionFileDir = dhcpOptionFileDir;
         this.dhcpPidFilePath = dhcpPidFilePath;
         this.dhcpReloadCachePath = dhcpReloadCachePath;
 
@@ -180,10 +184,35 @@ public class DnsmasqDriver implements DHCPDriver {
         String subnetId,
         String gateway,
         String cidr) throws Exception {
-        Response response = new Response();
-        response.exitCode = 1;
-        response.stdError = "NotImplemented";
 
+        String newFileName = dhcpOptionFileCopyDir + "/" + subnetId;
+
+
+        // Create a temporary option file in the copy directory.
+        File newFileDir = new File(dhcpOptionFileCopyDir);
+        File newFile = new File(newFileName);
+
+        if (!newFileDir.exists()) {
+            newFileDir.mkdir();
+        }
+
+        if (!newFile.exists()) {
+            newFile.createNewFile();
+        }
+
+        PrintWriter writer = new PrintWriter(newFileName, "UTF-8");
+        writer.println("tag:" + subnetId + ",3," + gateway + ",1," + cidr);
+        writer.close();
+
+        String oldFilename = dhcpOptionFileDir + "/" + subnetId;
+        File oldFile = new File(oldFilename);
+        Files.move(newFile.toPath(), oldFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+        // Clean up the temporary option file.
+        newFile.delete();
+
+        Response response = new Response();
+        response.exitCode = 0;
         return response;
     }
 
@@ -196,10 +225,12 @@ public class DnsmasqDriver implements DHCPDriver {
      */
     public Response deleteSubnetConfiguration(
         String subnetId) throws Exception {
-        Response response = new Response();
-        response.exitCode = 1;
-        response.stdError = "NotImplemented";
 
+        Response response = new Response();
+        String filename = dhcpOptionFileDir + "/" + subnetId;
+        File file = new File(filename);
+        Files.deleteIfExists(file.toPath());
+        response.exitCode = 0;
         return response;
     }
 

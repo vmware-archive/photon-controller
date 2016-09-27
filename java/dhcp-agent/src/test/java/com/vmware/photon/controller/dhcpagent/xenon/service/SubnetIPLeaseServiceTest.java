@@ -283,6 +283,7 @@ public class SubnetIPLeaseServiceTest {
                     SubnetIPLeaseServiceTest.class.getResource("/scripts/success.sh").getPath(),
                     SubnetIPLeaseServiceTest.class.getResource("/scripts/success.sh").getPath(),
                     hostDirPath,
+                    Constants.DNSMASQ_OPTION_DIR_PATH,
                     hostDirPath,
                     SubnetIPLeaseServiceTest.class.getResource("/scripts/success.sh").getPath());
             testEnvironment = TestEnvironment.create(dnsmasqDriver, 1, listeningExecutorService);
