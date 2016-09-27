@@ -11,11 +11,15 @@
 # under the License.
 
 import logging
+import os
 
 from thrift.protocol import TCompactProtocol
 from thrift.protocol import TMultiplexedProtocol
+from thrift.transport import TSSLSocket
 from thrift.transport import TSocket
 from thrift.transport import TTransport
+
+from agent.agent import SSL_CERT_FILE
 
 
 class DirectClient(object):
@@ -30,7 +34,7 @@ class DirectClient(object):
         client_timeout: if specified, it is set as socket timeout.
     """
     def __init__(self, service_name, client_cls, host, port,
-                 client_timeout=None):
+                 client_timeout=None, cert_file=SSL_CERT_FILE):
         self._logger = logging.getLogger(__name__)
         self._service_name = service_name
         self._client_cls = client_cls
@@ -39,11 +43,18 @@ class DirectClient(object):
         self._transport = None
         self._client = None
         self._client_timeout = client_timeout
+        self._cert_file = cert_file
         self._request_log_level = logging.INFO
 
     def connect(self):
         """Connect to the HostHandler."""
-        sock = TSocket.TSocket(self._host, self._port)
+        if os.path.isfile(SSL_CERT_FILE):
+            self._logger.info("Initialize SSLSocket using %s" % SSL_CERT_FILE)
+            sock = TSSLSocket.TSSLSocket(host=self._host, port=self._port, certfile=self._cert_file)
+        else:
+            self._logger.info("SSL Cert not found, initialize unencrypted socket")
+            sock = TSocket.TSocket(self._host, self._port)
+
         if self._client_timeout:
             sock.setTimeout(self._client_timeout * 1000)
         self._transport = TTransport.TFramedTransport(sock)

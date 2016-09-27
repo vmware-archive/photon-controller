@@ -53,7 +53,14 @@ make develop
 make vib DEBUG=1
 
 SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+echo "Creating cert for ${ESX_IP}"
+openssl req -subj "/CN=${ESX_IP}/O=VMware Inc./C=US" -new -newkey rsa:1024 -days 1095 -nodes -x509 -keyout host.key -out host.crt
+cat host.crt host.key > host.pem
+SSL_CERT_FILE=$PWD/host.pem
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'cd /etc/vmware/ssl/; rm non-auth.pem host.pem host.crt host.key host.privkey || true; cd -'
+sshpass -p "$ESX_PWD" scp $SSH_OPTS host.pem root@${ESX_IP}:/etc/vmware/ssl
+
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'rm /tmp/*.vib' || true
 sshpass -p "$ESX_PWD" scp $SSH_OPTS ./dist/photon-controller-agent-*.vib root@$ESX_IP:/tmp
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP "wget $ENVOY_VIB_URL -P /tmp/"
@@ -80,7 +87,7 @@ ESX_PWD_ESCAPE=$(echo $ESX_PWD | sed 's/\$/$$/g')
 # Save return code from the test run and copy the agent log.
 if [ -n "$SANITY" ]; then
   make -s test -C src/agent VERBOSE_REPORT=1 XUNIT=1 INTEGRATION=1 \
-    REMOTE_SERVER=$ESX_IP DATASTORES=$ESX_DATASTORE \
+    REMOTE_SERVER=$ESX_IP SSL_CERT_FILE=$SSL_CERT_FILE DATASTORES=$ESX_DATASTORE \
     REMOTE_ISO="[$ESX_DATASTORE] $ISO_NAME" \
     DISABLE_HYPERVISOR_LOGGING=1 SANITY=1 \
     || make_return_code=$?
