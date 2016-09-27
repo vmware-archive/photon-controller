@@ -3,7 +3,7 @@ tools=$(readlink -nf $(dirname $0))
 source $tools/common.sh
 
 function usage() {
-  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD VIB_PATH" 1>&2
+  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD VIB_PATH CREATE_CERT LW_DOMAIN LW_ADDRESS LW_PASSWORD" 1>&2
   echo
   echo "Supplied args:"
   echo $*
@@ -19,7 +19,7 @@ lightwave_domain=""
 lightwave_address=""
 lightwave_password=""
 
-if [ "$#" -lt 4 ]
+if [ "$#" -lt 8 ]
 then
   usage $*
 fi
@@ -88,9 +88,6 @@ priv_key_path="${cert_dir}/${priv_key_name}"
 pub_key_path="${cert_dir}/${pub_key_name}"
 host_crt_path="${cert_dir}/${crt_name}"
 host_pem_path="${cert_dir}/${pem_name}"
-esxi_priv_key_path="${host_cert_dir}/${priv_key_name}"
-esxi_pub_key_path="${host_cert_dir}/${pub_key_name}"
-esxi_host_crt_path="${host_cert_dir}/${crt_name}"
 esxi_host_pem_path="${host_cert_dir}/${pem_name}"
 
 function create_certificate() {
@@ -146,9 +143,6 @@ function create_certificate_no_auth() {
     openssl req -subj '/CN=photon-controller.com/O=VMware Inc./C=US' -new -newkey rsa:1024 -days 1095 -nodes -x509 -keyout ${priv_key_path} -out ${host_crt_path}
     cat ${host_crt_path} ${priv_key_path} > ${host_pem_path}
 
-    # Generate pkcs12 keystore
-    openssl pkcs12 -export -in ${host_crt_path} -inkey ${priv_key_path} -out hostkeystore.p12 -name MACHINE_CERT_${host_address} -password pass:${lightwave_password}
-
     # no need to import into keystore since in the non-auth case we accept any cert
   else
     echo "create_certificate_no_auth skipped because ${cert_dir} already exists"
@@ -157,19 +151,13 @@ function create_certificate_no_auth() {
 
 function copy_certificate() {
   echo "Deleting existing cert for ${host_address}"
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm -f "${host_cert_dir}/non-auth.pem"
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm -f "${esxi_host_crt_path}"
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm -f "${esxi_host_pem_path}"
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm -f "${esxi_pub_key_path}"
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm -f "${esxi_priv_key_path}"
 
   # listing /etc/vmware/ssl contents before copying
   echo "listing /etc/vmware/ssl contents before copying"
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls /etc/vmware/ssl
 
-  sshpass -p "$password" scp $SSH_OPTS ${host_crt_path} ${username}@${host_address}:/etc/vmware/ssl
   sshpass -p "$password" scp $SSH_OPTS ${host_pem_path} ${username}@${host_address}:/etc/vmware/ssl
-  sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:/etc/vmware/ssl
 
   # listing /etc/vmware/ssl contents after copying
   echo "listing /etc/vmware/ssl contents after copying"
