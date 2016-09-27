@@ -394,11 +394,11 @@ public class VmXenonBackend implements VmBackend {
   }
 
   @Override
-  public void updateState(VmEntity vmEntity, Map<String, String> networkInfo)
+  public void updateState(VmEntity vmEntity, Map<String, String> vmMacAddressInfo)
           throws VmNotFoundException {
     VmService.State vm = getVmById(vmEntity.getId());
 
-    Iterator it = networkInfo.entrySet().iterator();
+    Iterator it = vmMacAddressInfo.entrySet().iterator();
     while (it.hasNext()) {
       Map.Entry pair = (Map.Entry) it.next();
       if (pair.getKey() == null || pair.getValue() == null) {

@@ -108,7 +108,11 @@ public class VmGetNetworksStepCmd extends StepCommand {
       }
 
       if (timeout != null) {
-        vmBackend.updateState(vm, getNetworksMACAddresses(response));
+        Map<String, String> vmMacAddressInfo = getNetworksMACAddresses(response);
+
+        if (vmMacAddressInfo != null && !vmMacAddressInfo.entrySet().isEmpty()) {
+          vmBackend.updateState(vm, vmMacAddressInfo);
+        }
       }
 
       VmNetworks vmNetworks = toApiRepresentation(response.getNetwork_info());
@@ -223,11 +227,12 @@ public class VmGetNetworksStepCmd extends StepCommand {
   }
 
   private Map<String, String> getNetworksMACAddresses(GetVmNetworkResponse response) {
-    Map<String, String> networkInfo = new HashMap<>();
+    Map<String, String> networkInfo = null;
     if (!response.isSetNetwork_info()) {
       return networkInfo;
     }
 
+    networkInfo = new HashMap<>();
     for (VmNetworkInfo networkConnection : response.getNetwork_info()) {
       if (Strings.isNullOrEmpty(networkConnection.getNetwork())
               || Strings.isNullOrEmpty(networkConnection.getMac_address())) {
