@@ -1571,6 +1571,10 @@ public class VmXenonBackendTest {
 
     @Test
     public void testTombstone() throws Throwable {
+      VirtualNetworkService.State patch = new VirtualNetworkService.State();
+      patch.state = SubnetState.PENDING_DELETE;
+      apiFeXenonRestClient.patch(VirtualNetworkService.FACTORY_LINK + "/" + vm.getNetworks().get(0), patch);
+
       TombstoneEntity tombstone = tombstoneXenonBackend.getByEntityId(vm.getId());
       assertThat(tombstone, nullValue());
       assertThat(getUsage("vm.cost"), is(1.0));
