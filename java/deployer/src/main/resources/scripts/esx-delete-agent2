@@ -36,6 +36,13 @@ function remove() {
   vib_existing=`sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list | grep "$vibname " | wc -l`
   if [ $vib_existing -ne 0 ]
   then
+
+    # This is a workaround for lightwave vib. Currently it cannot be uninstalled since this service is kept running
+    if [[ "$vibname" == *"lightwave"* ]]
+    then
+       if [ -f /etc/init.d/lwsmd ]; then /etc/init.d/lwsmd stop; fi
+    fi
+
     sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n $vibname
     retVal=$?
   fi
