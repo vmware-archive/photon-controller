@@ -20,7 +20,9 @@ import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHelper;
+import com.vmware.photon.controller.apibackend.helpers.mocks.MockSubnetConfigurationService;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.apibackend.utils.TaskStateHelper;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
@@ -36,6 +38,7 @@ import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
+import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
@@ -57,13 +60,19 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 
 import java.lang.reflect.Field;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * This class implements tests for the {@link CreateVirtualNetworkWorkflowService} class.
  */
 public class CreateVirtualNetworkWorkflowServiceTest {
+  private static final TaskStateHelper<CreateVirtualNetworkWorkflowDocument.TaskState.SubStage> taskStateHelper =
+      new TaskStateHelper<>(CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.class);
 
   /**
    * This method is a dummy test case which forces IntelliJ to recognize the
@@ -315,57 +324,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     }
 
     @DataProvider(name = "InvalidStartState")
-    public Object[][] getInvalidStartStateTestData() {
-      return new Object[][]{
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CREATED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CREATED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CREATED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CREATED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER},
-
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED, null},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER},
-
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FINISHED, null},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FINISHED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FINISHED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FINISHED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FINISHED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER},
-
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FAILED, null},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FAILED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FAILED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FAILED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FAILED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER},
-
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CANCELLED, null},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CANCELLED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CANCELLED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CANCELLED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CANCELLED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER}
-      };
+    public Object[][] getInvalidStartStateTestData() throws Throwable {
+      return taskStateHelper.getInvalidStartState();
     }
   }
 
@@ -410,9 +370,10 @@ public class CreateVirtualNetworkWorkflowServiceTest {
      */
     @Test(dataProvider = "ValidStageAndSubStagePatch")
     public void succeedsWithValidStageAndSubStagePatch(
+        TaskState.TaskStage currentStage,
+        CreateVirtualNetworkWorkflowDocument.TaskState.SubStage currentSubStage,
         TaskState.TaskStage patchStage,
-        CreateVirtualNetworkWorkflowDocument.TaskState.SubStage patchSubStage
-    ) throws Throwable {
+        CreateVirtualNetworkWorkflowDocument.TaskState.SubStage patchSubStage) throws Throwable {
 
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -422,6 +383,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               (state) -> TaskState.TaskStage.STARTED == state.taskState.stage &&
                   CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA
                       == state.taskState.subStage);
+
+      if (!(currentStage == TaskState.TaskStage.STARTED &&
+        currentSubStage == CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA)) {
+        testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
+            buildPatch(currentStage, currentSubStage));
+      }
 
       CreateVirtualNetworkWorkflowDocument patchState = buildPatch(patchStage, patchSubStage);
       finalState = testEnvironment.sendPatchAndWait(finalState.documentSelfLink, patchState)
@@ -432,23 +399,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     }
 
     @DataProvider(name = "ValidStageAndSubStagePatch")
-    public Object[][] getValidStageAndSubStagePatch() {
-      return new Object[][]{
-          {TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
-          {TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
-          {TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
-          {TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
-          {TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER},
-
-          {TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.CANCELLED, null},
-      };
+    public Object[][] getValidStageAndSubStagePatch() throws Throwable {
+      return taskStateHelper.getValidPatchState();
     }
 
     /**
@@ -457,11 +409,10 @@ public class CreateVirtualNetworkWorkflowServiceTest {
      */
     @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "InvalidStageAndSubStagePatch")
     public void failsWithInvalidStageAndSubStagePatch(
-        TaskState.TaskStage firstPatchStage,
-        CreateVirtualNetworkWorkflowDocument.TaskState.SubStage firstPatchSubStage,
-        TaskState.TaskStage secondPatchStage,
-        CreateVirtualNetworkWorkflowDocument.TaskState.SubStage secondPatchSubStage)
-        throws Throwable {
+        TaskState.TaskStage currentStage,
+        CreateVirtualNetworkWorkflowDocument.TaskState.SubStage currentSubStage,
+        TaskState.TaskStage patchStage,
+        CreateVirtualNetworkWorkflowDocument.TaskState.SubStage patchSubStage) throws Throwable {
 
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -472,113 +423,20 @@ public class CreateVirtualNetworkWorkflowServiceTest {
                   CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA
                       == state.taskState.subStage);
 
-      CreateVirtualNetworkWorkflowDocument patchState = buildPatch(firstPatchStage, firstPatchSubStage);
-      if (firstPatchStage != TaskState.TaskStage.STARTED ||
-          firstPatchSubStage != CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA) {
-        finalState = testEnvironment.sendPatchAndWait(finalState.documentSelfLink, patchState)
-            .getBody(CreateVirtualNetworkWorkflowDocument.class);
+      if (!(currentStage == TaskState.TaskStage.STARTED &&
+          currentSubStage == CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA)) {
+        testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
+            buildPatch(currentStage, currentSubStage));
       }
 
-      patchState = buildPatch(secondPatchStage, secondPatchSubStage);
+      CreateVirtualNetworkWorkflowDocument patchState = buildPatch(patchStage, patchSubStage);
       testEnvironment.sendPatchAndWait(finalState.documentSelfLink, patchState)
           .getBody(CreateVirtualNetworkWorkflowDocument.class);
     }
 
     @DataProvider(name = "InvalidStageAndSubStagePatch")
-    public Object[][] getInvalidStageAndSubStagePatch()
-        throws Throwable {
-
-      return new Object[][]{
-          {TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE,
-              TaskState.TaskStage.CREATED, null},
-
-          {TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA},
-          {TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
-
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA},
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
-
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA},
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
-
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
-
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
-
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_IP_ADDRESS_SPACE},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
-
-      };
+    public Object[][] getInvalidStageAndSubStagePatch() throws Throwable {
+      return taskStateHelper.getInvalidPatchState();
     }
 
     /**
@@ -636,13 +494,10 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     private static final String SNAT_RULE_ID = "snatRuleId";
 
     private CreateVirtualNetworkWorkflowDocument startState;
-    private DeploymentService.State deploymentStartState;
-    private SubnetAllocatorService.State subnetAllocatorServiceState;
-    private ProjectService.State projectState;
-    private ResourceTicketService.State resourceTicketState;
     private NsxClientFactory nsxClientFactory;
     private NsxClientMock nsxClientMock;
     private TestEnvironment testEnvironment;
+    private Map<Class<? extends Service>, Supplier<FactoryService>> testFactoryServiceMap;
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
@@ -653,40 +508,17 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           new ControlFlags.Builder()
               .build());
 
-      deploymentStartState = ReflectionUtils.buildValidStartState(DeploymentService.State.class);
-      deploymentStartState.sdnEnabled = true;
-      deploymentStartState.networkManagerAddress = NETWORK_MANAGER_ADDRESS;
-      deploymentStartState.networkManagerUsername = NETWORK_MANAGER_USERNAME;
-      deploymentStartState.networkManagerPassword = NETWORK_MANAGER_PASSWORD;
-      deploymentStartState.networkZoneId = NETWORK_ZONE_ID;
-      deploymentStartState.networkTopRouterId = NETWORK_TOP_ROUTER_ID;
-      deploymentStartState.edgeClusterId = NETWORK_EDGE_CLUSTER_ID;
-      deploymentStartState.dhcpRelayServiceId = DHCP_RELAY_SERVICE_ID;
-      deploymentStartState.snatIp = SNAT_IP;
-
-      subnetAllocatorServiceState = new SubnetAllocatorService.State();
-      subnetAllocatorServiceState.rootCidr = "192.168.1.1/24";
-      subnetAllocatorServiceState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
-
-      resourceTicketState = new ResourceTicketService.State();
-      resourceTicketState.name = "resource-ticket-name";
-      resourceTicketState.tenantId = "tenant-id";
-      resourceTicketState.parentId = "parent-id";
-      resourceTicketState.documentSelfLink = "resource-ticket-id";
-      resourceTicketState.limitMap = new HashMap<>();
-      QuotaLineItem costItem = new QuotaLineItem();
-      costItem.setKey(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY);
-      costItem.setValue(20);
-      costItem.setUnit(QuotaUnit.COUNT);
-      resourceTicketState.limitMap.put(costItem.getKey(), costItem);
-
-      projectState = new ProjectService.State();
-      projectState.resourceTicketId = "resource-ticket-id";
-      projectState.name = "project-name";
-      projectState.tenantId = "tenant-id";
-      projectState.documentSelfLink = "project-id";
-
       nsxClientFactory = mock(NsxClientFactory.class);
+
+      testFactoryServiceMap = new HashMap<>();
+      testFactoryServiceMap.put(MockSubnetConfigurationService.class, MockSubnetConfigurationService::createFactory);
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(1)
+          .testFactoryServiceMap(testFactoryServiceMap)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
     }
 
     @AfterMethod
@@ -700,8 +532,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     /**
      * Verifies that the workflow succeeds to create a public virtual network.
      */
-    @Test(dataProvider = "hostCount")
-    public void succeedsToCreatePublicVirtualNetwork(int hostCount) throws Throwable {
+    @Test
+    public void succeedsToCreatePublicVirtualNetwork() throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
           .createLogicalSwitch(true, LOGICAL_SWITCH_ID)
           .getLogicalSwitchState(true, LOGICAL_SWITCH_ID)
@@ -716,35 +548,10 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .nsxClientFactory(nsxClientFactory)
-          .build();
-
-      testEnvironment.callServiceAndWaitForState(
-          DeploymentServiceFactory.SELF_LINK,
-          deploymentStartState,
-          DeploymentService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          ProjectServiceFactory.SELF_LINK,
-          projectState,
-          ProjectService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          ResourceTicketServiceFactory.SELF_LINK,
-          resourceTicketState,
-          ResourceTicketService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          SubnetAllocatorService.FACTORY_LINK,
-          subnetAllocatorServiceState,
-          SubnetAllocatorService.State.class,
-          (state) -> true);
+      startDeploymentService(testEnvironment);
+      startProjectService(testEnvironment);
+      startResourceTicketService(testEnvironment);
+      startSubnetAllocatorService(testEnvironment);
 
       QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
       querySpecification.query = new QueryTask.Query()
@@ -753,6 +560,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
       testEnvironment.waitForQuery(queryTask, qt -> qt.results.documentLinks.size() > 0);
 
+      startState.dhcpAgentPort = testEnvironment.getHosts()[0].getUri().getPort();
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateVirtualNetworkWorkflowService.FACTORY_LINK,
@@ -860,36 +668,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(1)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .nsxClientFactory(nsxClientFactory)
-          .build();
+      startDeploymentService(testEnvironment);
+      startProjectService(testEnvironment);
+      startResourceTicketService(testEnvironment);
+      startSubnetAllocatorService(testEnvironment);
 
-      testEnvironment.callServiceAndWaitForState(
-          DeploymentServiceFactory.SELF_LINK,
-          deploymentStartState,
-          DeploymentService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          ProjectServiceFactory.SELF_LINK,
-          projectState,
-          ProjectService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          ResourceTicketServiceFactory.SELF_LINK,
-          resourceTicketState,
-          ResourceTicketService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          SubnetAllocatorService.FACTORY_LINK,
-          subnetAllocatorServiceState,
-          SubnetAllocatorService.State.class,
-          (state) -> true);
-
+      startState.dhcpAgentPort = testEnvironment.getHosts()[0].getUri().getPort();
       startState.routingType = RoutingType.ISOLATED;
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -979,31 +763,13 @@ public class CreateVirtualNetworkWorkflowServiceTest {
      * and no NSX configuration is cached in the service document. We simulate the failure by not creating
      * a deployment service entity in cloud-store.
      */
-    @Test(dataProvider = "hostCount")
-    public void failsToGetNsxConfiguration(int hostCount) throws Throwable {
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .build();
+    @Test
+    public void failsToGetNsxConfiguration() throws Throwable {
+      startProjectService(testEnvironment);
+      startResourceTicketService(testEnvironment);
+      startSubnetAllocatorService(testEnvironment);
 
-      testEnvironment.callServiceAndWaitForState(
-          ProjectServiceFactory.SELF_LINK,
-          projectState,
-          ProjectService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          ResourceTicketServiceFactory.SELF_LINK,
-          resourceTicketState,
-          ResourceTicketService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          SubnetAllocatorService.FACTORY_LINK,
-          subnetAllocatorServiceState,
-          SubnetAllocatorService.State.class,
-          (state) -> true);
-
+      startState.dhcpAgentPort = testEnvironment.getHosts()[0].getUri().getPort();
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateVirtualNetworkWorkflowService.FACTORY_LINK,
@@ -1022,13 +788,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     /**
      * Verifies that when ALLOCATE_IP_ADDRESS_SPACE sub-stage fails, the workflow will progress to FAILED state.
      */
-    @Test(dataProvider = "hostCount")
-    public void failsToAllocateIpAddressSpace(int hostCount) throws Throwable {
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .build();
-
+    @Test
+    public void failsToAllocateIpAddressSpace() throws Throwable {
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateVirtualNetworkWorkflowService.FACTORY_LINK,
@@ -1051,44 +812,20 @@ public class CreateVirtualNetworkWorkflowServiceTest {
      * and no logical switch ID is cached in the service document. We simulate the failure by failing the
      * NSX API call in the NsxClientMock.
      */
-    @Test(dataProvider = "hostCount")
-    public void failsToCreateLogicalSwitch(int hostCount) throws Throwable {
+    @Test
+    public void failsToCreateLogicalSwitch() throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
           .createLogicalSwitch(false, LOGICAL_SWITCH_ID)
           .getLogicalSwitchState(false, LOGICAL_SWITCH_ID)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .nsxClientFactory(nsxClientFactory)
-          .build();
+      startDeploymentService(testEnvironment);
+      startProjectService(testEnvironment);
+      startResourceTicketService(testEnvironment);
+      startSubnetAllocatorService(testEnvironment);
 
-      testEnvironment.callServiceAndWaitForState(
-          ProjectServiceFactory.SELF_LINK,
-          projectState,
-          ProjectService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          ResourceTicketServiceFactory.SELF_LINK,
-          resourceTicketState,
-          ResourceTicketService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          SubnetAllocatorService.FACTORY_LINK,
-          subnetAllocatorServiceState,
-          SubnetAllocatorService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          DeploymentServiceFactory.SELF_LINK,
-          deploymentStartState,
-          DeploymentService.State.class,
-          (state) -> true);
-
+      startState.dhcpAgentPort = testEnvironment.getHosts()[0].getUri().getPort();
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateVirtualNetworkWorkflowService.FACTORY_LINK,
@@ -1105,8 +842,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
      * and no logical router ID is cached in the service document. We simulate the failure by failing the
      * NSX API call in the NsxClientMock.
      */
-    @Test(dataProvider = "hostCount")
-    public void failsToCreateLogicalRouter(int hostCount) throws Throwable {
+    @Test
+    public void failsToCreateLogicalRouter() throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
           .createLogicalSwitch(true, LOGICAL_SWITCH_ID)
           .getLogicalSwitchState(true, LOGICAL_SWITCH_ID)
@@ -1114,24 +851,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .nsxClientFactory(nsxClientFactory)
-          .build();
+      startDeploymentService(testEnvironment);
+      startProjectService(testEnvironment);
+      startResourceTicketService(testEnvironment);
+      startSubnetAllocatorService(testEnvironment);
 
-      testEnvironment.callServiceAndWaitForState(
-          SubnetAllocatorService.FACTORY_LINK,
-          subnetAllocatorServiceState,
-          SubnetAllocatorService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          DeploymentServiceFactory.SELF_LINK,
-          deploymentStartState,
-          DeploymentService.State.class,
-          (state) -> true);
-
+      startState.dhcpAgentPort = testEnvironment.getHosts()[0].getUri().getPort();
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateVirtualNetworkWorkflowService.FACTORY_LINK,
@@ -1148,8 +873,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
      * and no logical port IDs are cached in the service document. We simulate the failure by failing the
      * NSX API call in the NsxClientMock.
      */
-    @Test(dataProvider = "hostCount")
-    public void failsToSetUpLogicalRouter(int hostCount) throws Throwable {
+    @Test
+    public void failsToSetUpLogicalRouter() throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
           .createLogicalSwitch(true, LOGICAL_SWITCH_ID)
           .getLogicalSwitchState(true, LOGICAL_SWITCH_ID)
@@ -1161,35 +886,13 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .nsxClientFactory(nsxClientFactory)
-          .build();
 
-      testEnvironment.callServiceAndWaitForState(
-          DeploymentServiceFactory.SELF_LINK,
-          deploymentStartState,
-          DeploymentService.State.class,
-          (state) -> true);
+      startDeploymentService(testEnvironment);
+      startProjectService(testEnvironment);
+      startResourceTicketService(testEnvironment);
+      startSubnetAllocatorService(testEnvironment);
 
-      testEnvironment.callServiceAndWaitForState(
-          ProjectServiceFactory.SELF_LINK,
-          projectState,
-          ProjectService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          ResourceTicketServiceFactory.SELF_LINK,
-          resourceTicketState,
-          ResourceTicketService.State.class,
-          (state) -> true);
-      testEnvironment.callServiceAndWaitForState(
-          SubnetAllocatorService.FACTORY_LINK,
-          subnetAllocatorServiceState,
-          SubnetAllocatorService.State.class,
-          (state) -> true);
-
+      startState.dhcpAgentPort = testEnvironment.getHosts()[0].getUri().getPort();
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateVirtualNetworkWorkflowService.FACTORY_LINK,
@@ -1226,12 +929,74 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertThat(actualVirtualNetworkServiceState.tier0RouterDownlinkPortId, nullValue());
     }
 
-    @DataProvider(name = "hostCount")
-    public Object[][] getHostCount() {
-      return new Object[][]{
-          {1},
-          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT}
-      };
+    private void startDeploymentService(TestEnvironment testEnvironment) throws Throwable {
+      DeploymentService.State deploymentStartState =
+          ReflectionUtils.buildValidStartState(DeploymentService.State.class);
+      deploymentStartState.sdnEnabled = true;
+      deploymentStartState.networkManagerAddress = NETWORK_MANAGER_ADDRESS;
+      deploymentStartState.networkManagerUsername = NETWORK_MANAGER_USERNAME;
+      deploymentStartState.networkManagerPassword = NETWORK_MANAGER_PASSWORD;
+      deploymentStartState.networkZoneId = NETWORK_ZONE_ID;
+      deploymentStartState.networkTopRouterId = NETWORK_TOP_ROUTER_ID;
+      deploymentStartState.edgeClusterId = NETWORK_EDGE_CLUSTER_ID;
+      deploymentStartState.dhcpRelayServiceId = DHCP_RELAY_SERVICE_ID;
+      deploymentStartState.snatIp = SNAT_IP;
+
+      URI hostUri = testEnvironment.getHosts()[0].getUri();
+      deploymentStartState.dhcpServers = new ArrayList<>();
+      deploymentStartState.dhcpServers.add(hostUri.getHost());
+
+      testEnvironment.callServiceAndWaitForState(
+          DeploymentServiceFactory.SELF_LINK,
+          deploymentStartState,
+          DeploymentService.State.class,
+          (state) -> true);
+    }
+
+    private void startProjectService(TestEnvironment testEnvironment) throws Throwable {
+      ProjectService.State projectState = new ProjectService.State();
+      projectState.resourceTicketId = "resource-ticket-id";
+      projectState.name = "project-name";
+      projectState.tenantId = "tenant-id";
+      projectState.documentSelfLink = "project-id";
+
+      testEnvironment.callServiceAndWaitForState(
+          ProjectServiceFactory.SELF_LINK,
+          projectState,
+          ProjectService.State.class,
+          (state) -> true);
+    }
+
+    private void startResourceTicketService(TestEnvironment testEnvironment) throws Throwable {
+      ResourceTicketService.State resourceTicketState = new ResourceTicketService.State();
+      resourceTicketState.name = "resource-ticket-name";
+      resourceTicketState.tenantId = "tenant-id";
+      resourceTicketState.parentId = "parent-id";
+      resourceTicketState.documentSelfLink = "resource-ticket-id";
+      resourceTicketState.limitMap = new HashMap<>();
+      QuotaLineItem costItem = new QuotaLineItem();
+      costItem.setKey(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY);
+      costItem.setValue(20);
+      costItem.setUnit(QuotaUnit.COUNT);
+      resourceTicketState.limitMap.put(costItem.getKey(), costItem);
+
+      testEnvironment.callServiceAndWaitForState(
+          ResourceTicketServiceFactory.SELF_LINK,
+          resourceTicketState,
+          ResourceTicketService.State.class,
+          (state) -> true);
+    }
+
+    private void startSubnetAllocatorService(TestEnvironment testEnvironment) throws Throwable {
+      SubnetAllocatorService.State subnetAllocatorServiceState = new SubnetAllocatorService.State();
+      subnetAllocatorServiceState.rootCidr = "192.168.1.1/24";
+      subnetAllocatorServiceState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
+
+      testEnvironment.callServiceAndWaitForState(
+          SubnetAllocatorService.FACTORY_LINK,
+          subnetAllocatorServiceState,
+          SubnetAllocatorService.State.class,
+          (state) -> true);
     }
   }
 }

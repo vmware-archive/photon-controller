@@ -21,6 +21,7 @@ import com.vmware.photon.controller.apibackend.annotations.TaskStateField;
 import com.vmware.photon.controller.apibackend.annotations.TaskStateSubStageField;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -56,7 +57,8 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
       GET_NSX_CONFIGURATION,
       CREATE_LOGICAL_SWITCH,
       CREATE_LOGICAL_ROUTER,
-      SET_UP_LOGICAL_ROUTER
+      SET_UP_LOGICAL_ROUTER,
+      CONFIGURE_DHCP_OPTION
     }
   }
 
@@ -188,6 +190,18 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
    */
   @WriteOnce
   public String snatIp;
+
+  /**
+   * IP address of the DHCP agent.
+   */
+  public String dhcpAgentIp;
+
+  /**
+   * Port of the DHCP agent.
+   * Note that this is mainly for testing purpose. Do not change the default port number in production.
+   */
+  @DefaultInteger(Constants.DHCP_AGENT_PORT)
+  public Integer dhcpAgentPort;
 
   /**
    * The VirtualNetworkService.State object.
