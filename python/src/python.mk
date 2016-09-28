@@ -93,7 +93,7 @@ DEP_DEVELOP_TARGETS := $(patsubst %,dep-develop-%,$(DEPS))
 
 develop: ../../$(DEVELOP)/site-packages $(DEP_DEVELOP_TARGETS) ../../$(DEVELOP)/site-packages/$(NAME).egg-link
 
-../../$(DEVELOP)/site-packages/$(NAME).egg-link: setup.py $(EXTRA_PY_TARGETS)
+../../$(DEVELOP)/site-packages/$(NAME).egg-link:: setup.py $(EXTRA_PY_TARGETS)
 	@echo "$(HEADER)Installing $(DEVELOP) $(NAME) $(NORMAL)"
 	$(PIP_INSTALL) -e .$(EXTRAS)
 
