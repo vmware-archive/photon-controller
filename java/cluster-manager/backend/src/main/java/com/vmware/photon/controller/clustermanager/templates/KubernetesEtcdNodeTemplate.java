@@ -62,6 +62,7 @@ public class KubernetesEtcdNodeTemplate implements NodeTemplate {
     String etcdParameters = createEtcdParameters(etcdIps);
     // This the the URL we advertise to our peers.
     String etcdPeerURL = createEtcdPeerUrl(ipAddress);
+    String etcdAdvertiseURL = createEtcdAdvertiseUrl(ipAddress);
 
     Map<String, String> parameters = new HashMap();
     parameters.put("$DNS", "DNS=" + dns);
@@ -73,6 +74,7 @@ public class KubernetesEtcdNodeTemplate implements NodeTemplate {
     parameters.put("$ETCD_PEER_PORT", Integer.toString(ClusterManagerConstants.Swarm.ETCD_PEER_PORT));
     parameters.put("$SSH_KEY", sshKey);
     parameters.put("$ETCD_PEER_URL", etcdPeerURL);
+    parameters.put("$ETCD_ADVERTISE_URL", etcdAdvertiseURL);
 
     FileTemplate template = new FileTemplate();
     template.filePath = Paths.get(scriptDirectory, ETCD_USER_DATA_TEMPLATE).toString();
@@ -119,5 +121,9 @@ public class KubernetesEtcdNodeTemplate implements NodeTemplate {
 
   private static String createEtcdPeerUrl(String ip) {
     return "http://" + ip + ":" + ClusterManagerConstants.Swarm.ETCD_PEER_PORT;
+  }
+
+  private static String createEtcdAdvertiseUrl(String ip) {
+    return "http://" + ip + ":" + ClusterManagerConstants.Swarm.ETCD_PORT;
   }
 }
