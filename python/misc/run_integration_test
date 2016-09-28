@@ -53,7 +53,7 @@ make develop
 make vib DEBUG=1
 
 SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'cd /etc/vmware/ssl/; rm non-auth.pem host.pem host.crt host.key host.privkey || true; cd -'
+sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'rm /etc/vmware/ssl/rui.pem' || true
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'rm /tmp/*.vib' || true
 sshpass -p "$ESX_PWD" scp $SSH_OPTS ./dist/photon-controller-agent-*.vib root@$ESX_IP:/tmp
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP "wget $ENVOY_VIB_URL -P /tmp/"
