@@ -27,7 +27,7 @@ setup(name='photon.controller.stats',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          'thrift==0.9.3',
+          'thrift==0.9.3.1',
           'photon.controller.common',
           'photon.controller.host',
           'photon.controller.gen.thrift'

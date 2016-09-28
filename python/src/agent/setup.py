@@ -33,7 +33,7 @@ setup(name='photon.controller.agent',
           'photon.controller.pysdk',
           'photon.controller.stats',
           'futures==2.1.5',
-          'thrift==0.9.3',
+          'thrift==0.9.3.1',
       ],
       extras_require={
           'test': [
