@@ -3,7 +3,7 @@ tools=$(readlink -nf $(dirname $0))
 source $tools/common.sh
 
 function usage() {
-  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD VIB_PATH" 1>&2
+  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD VIB_PATH CREATE_CERT LW_DOMAIN LW_ADDRESS LW_PASSWORD" 1>&2
   echo
   echo "Supplied args:"
   echo $*
@@ -19,7 +19,7 @@ lightwave_domain=""
 lightwave_address=""
 lightwave_password=""
 
-if [ "$#" -lt 4 ]
+if [ "$#" -lt 8 ]
 then
   usage $*
 fi
@@ -65,6 +65,7 @@ function install_vib() {
 	    exit 1
 	  fi
 	fi
+  sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} esxcli software vib list
 }
 
 # Add java home and other required binaries to path. We need this here even though we are doing this during container
@@ -72,66 +73,38 @@ function install_vib() {
 export JAVA_HOME="/usr/java/default"
 export PATH=$PATH:$JAVA_HOME/bin:/opt/esxcli:/opt/vmware/bin:/opt/likewise/bin
 
-if [ "$create_cert" == "true" ]
-then
-  cert_dir="./host_cert_${host_address}"
-else
-  cert_dir="./host_cert_no_auth_${host_address}"
-fi
-
 host_cert_dir="/etc/vmware/ssl"
 priv_key_name="rui.key"
-pub_key_name="rui.pubkey"
 crt_name="rui.crt"
 pem_name="rui.pem"
 no_auth_pem_name="no-auth.pem"
-priv_key_path="${cert_dir}/${priv_key_name}"
-pub_key_path="${cert_dir}/${pub_key_name}"
-host_crt_path="${cert_dir}/${crt_name}"
-host_pem_path="${cert_dir}/${pem_name}"
-esxi_priv_key_path="${host_cert_dir}/${priv_key_name}"
-esxi_host_crt_path="${host_cert_dir}/${crt_name}"
 
-function create_certificate() {
+function join_lightwave_domain() {
+  # Join lightwave domain. param 1 means use notify services instead of put node to maintenance mode
+  join_domain_cmd="/usr/lib/vmware/ic-deploy/bin/configure-lightwave.py ${lightwave_address} ${lightwave_domain} ${lightwave_password} 1 ${host_address} '$password'"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $join_domain_cmd
 
-  rm -rf ${cert_dir}
-  mkdir -p ${cert_dir}
+  # Create pem file
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${host_cert_dir}/${no_auth_pem_name}
+  create_pem_cmd="cat ${host_cert_dir}/${priv_key_name} ${host_cert_dir}/${crt_name} > ${host_cert_dir}/${pem_name}"
+  echo $create_pem_cmd
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $create_pem_cmd
 
-  #copying the config file to local directory which is going to be used in the cerficate generation.
-  config_file_path="${cert_dir}/certool.cfg"
-  cp /opt/vmware/share/config/certool.cfg "${config_file_path}"
+  # Listing /etc/vmware/ssl contents after copying
+  echo "listing ${host_cert_dir} contents after copying"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls ${host_cert_dir}
 
-  # Fill in the ip address for generating a host certificate
-  sed -i s/IPAddress.*/"IPAddress = ${host_address}"/ "${config_file_path}"
-
-  # Generate keys if they don't exist
-  if [ ! -f "${priv_key_path}" ] || [ ! -f "${pub_key_path}" ]; then
-    echo "Creating keys for ${host_address}"
-    certool --genkey --privkey="${priv_key_path}" --pubkey="${pub_key_path}" \
-      --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} --server ${lightwave_address}
-  fi
-
-  # Generate certificate if it doesn't exist
-  if [ ! -f "${host_crt_path}" ]; then
-    echo "Creating cert for ${host_address}"
-    certool --gencert --privkey="${priv_key_path}" --cert="${host_crt_path}" \
-      --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} \
-      --server ${lightwave_address} --config "${config_file_path}"
-
-    cat ${host_crt_path} ${priv_key_path} > ${host_pem_path}
-
-    # Generate pkcs12 keystore
-    openssl pkcs12 -export -in ${host_crt_path} -inkey ${priv_key_path} -out hostkeystore.p12 -name MACHINE_CERT_${host_address} \
-      -password pass:${lightwave_password}
-
-    # Convert it into JKS
-    keytool -importkeystore -deststorepass ${lightwave_password} -destkeypass ${lightwave_password} \
-      -destkeystore /keystore.jks -srckeystore hostkeystore.p12 -srcstoretype PKCS12 -srcstorepass ${lightwave_password} \
-      -alias MACHINE_CERT_${host_address}
-  fi
+  # restart photon-controller-agent
+  restart_agent_cmd="if [ -f /etc/init.d/photon-controller-agent ]; then /etc/init.d/photon-controller-agent restart; fi"
+  echo $restart_agent_cmd
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $restart_agent_cmd
 }
 
-function create_certificate_no_auth() {
+function create_and_copy_certificate_no_auth() {
+  cert_dir="./host_cert_no_auth_${host_address}"
+  priv_key_path="${cert_dir}/${priv_key_name}"
+  host_crt_path="${cert_dir}/${crt_name}"
+  host_pem_path="${cert_dir}/${pem_name}"
 
   if [ ! -d "$cert_dir" ]; then
     mkdir -p ${cert_dir}
@@ -142,26 +115,14 @@ function create_certificate_no_auth() {
 
     # no need to import into keystore since in the non-auth case we accept any cert
   else
-    echo "create_certificate_no_auth skipped because ${cert_dir} already exists"
+    echo "Use existing certs at ${cert_dir}"
   fi
-}
-
-function copy_certificate() {
-  # listing /etc/vmware/ssl contents before copying
-  echo "listing ${host_cert_dir} contents before copying"
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls ${host_cert_dir}
 
   sshpass -p "$password" scp $SSH_OPTS ${host_crt_path} ${username}@${host_address}:${host_cert_dir}
   sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:${host_cert_dir}
 
-  if [ "$create_cert" == "true" ]
-  then
-    sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${host_cert_dir}/${no_auth_pem_name}
-    sshpass -p "$password" scp $SSH_OPTS ${host_pem_path} ${username}@${host_address}:${host_cert_dir}/${pem_name}
-  else
-    sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${host_cert_dir}/${pem_name}
-    sshpass -p "$password" scp $SSH_OPTS ${host_pem_path} ${username}@${host_address}:${host_cert_dir}/${no_auth_pem_name}
-  fi
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${host_cert_dir}/${pem_name}
+  sshpass -p "$password" scp $SSH_OPTS ${host_pem_path} ${username}@${host_address}:${host_cert_dir}/${no_auth_pem_name}
 
   # listing /etc/vmware/ssl contents after copying
   echo "listing ${host_cert_dir} contents after copying"
@@ -171,22 +132,20 @@ function copy_certificate() {
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} /bin/services.sh restart
 }
 
-if [[ "$vib_path" == *"photon-controller-agent"* ]]
-then
-  if [ "$create_cert" == "true" ]
-  then
-    create_certificate
-  else
-    # this is the cert generated by default through
-    create_certificate_no_auth
-  fi
-  copy_certificate
-fi
-
 sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} date
-sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} esxcli software vib list
+echo "create_cert=${create_cert}, vib_path=${vib_path}"
+
+if [[ "$vib_path" == *"photon-controller-agent"* ]]; then
+  if [ "$create_cert" != "true" ]; then
+    create_and_copy_certificate_no_auth
+  fi
+fi
 
 install_vib
 
-sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} esxcli software vib list
+if [[ "$vib_path" == *"lightwave"* ]]; then
+  if [ "$create_cert" == "true" ]; then
+    join_lightwave_domain
+  fi
+fi
 sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} date

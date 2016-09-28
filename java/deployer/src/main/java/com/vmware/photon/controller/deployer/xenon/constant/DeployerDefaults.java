@@ -90,7 +90,7 @@ public class DeployerDefaults {
   /**
    * Timeout on running shell scripts.
    */
-  public static final int SCRIPT_TIMEOUT_IN_SECONDS = 600;
+  public static final int SCRIPT_TIMEOUT_IN_SECONDS = 900;
 
   /**
    * Default wait interval which is used when polling for task in the
