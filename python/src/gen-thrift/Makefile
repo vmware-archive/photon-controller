@@ -1,3 +1,4 @@
+DEPS=thrift
 OS := $(shell uname)
 THRIFT=thrift
 THRIFT_GEN=$(THRIFT) -r --gen py:new_style -out .
