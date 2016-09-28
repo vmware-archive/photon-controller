@@ -24,6 +24,6 @@ setup(name='photon.controller.gen.thrift',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          'thrift==0.9.3',
+          'thrift==0.9.3.1',
       ],
       )
