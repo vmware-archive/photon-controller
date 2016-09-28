@@ -38,10 +38,12 @@ write_files:
         echo "Starting Kubernetes etcd"
         export ETCD_NODE_ID=$ETCD_ID
         export ETCD_CLUSTER=$ETCD_PARAMETERS
-        export ETCD_URL=$ETCD_PEER_URL
+        export ETCD_PEER_URL=$ETCD_PEER_URL
+        export ETCD_ADVERTISE_URL=$ETCD_ADVERTISE_URL
         echo "ETCD_NODE_ID ${ETCD_NODE_ID}"
         echo "ETCD_CLUSTER ${ETCD_CLUSTER}"
-        echo "ETCD_URL ${ETCD_URL}"
+        echo "ETCD_PEER_URL ${ETCD_PEER_URL}"
+        echo "ETCD_ADVERTISE_URL ${ETCD_ADVERTISE_URL}"
         /root/docker-multinode/etcd.sh
         echo "done"
     owner: root:root
