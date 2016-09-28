@@ -87,12 +87,15 @@ public class VirtualNetworkHelper implements NetworkHelper {
 
   @Override
   public void tombstone(String networkId) throws ExternalException {
-    // Virtual network
-    DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
-    startState.networkId = networkId;
+    VirtualNetworkService.State entity = findSubnet(networkId);
+    if (SubnetState.PENDING_DELETE.equals(entity.state)) {
+      // Virtual network
+      DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
+      startState.networkId = networkId;
 
-    // Do not wait for the task to finish
-    photonControllerXenonRestClient.post(DeleteVirtualNetworkWorkflowService.FACTORY_LINK, startState);
+      // Do not wait for the task to finish
+      photonControllerXenonRestClient.post(DeleteVirtualNetworkWorkflowService.FACTORY_LINK, startState);
+    }
   }
 
   @Override
