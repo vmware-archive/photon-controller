@@ -48,6 +48,10 @@ public class DeploymentEntity extends BaseEntity {
 
   private String oauthEndpoint;
 
+  private String oauthUiLoginEndpoint;
+
+  private String oauthUiLogoutEndpoint;
+
   private String oauthLoadBalancerEndpoint;
 
   private Integer oauthPort;
@@ -358,6 +362,22 @@ public class DeploymentEntity extends BaseEntity {
     this.migrationProgress = migrationProgress;
   }
 
+  public String getOauthUiLoginEndpoint() {
+    return oauthUiLoginEndpoint;
+  }
+
+  public void setOauthUiLoginEndpoint(String uiLoginEndpoint) {
+    this.oauthUiLoginEndpoint = uiLoginEndpoint;
+  }
+
+  public String getOauthUiLogoutEndpoint() {
+    return oauthUiLogoutEndpoint;
+  }
+
+  public void setOauthUiLogoutEndpoint(String uiLogoutEndpoint) {
+    this.oauthUiLogoutEndpoint = uiLogoutEndpoint;
+  }
+
   @Override
   public Object clone() throws CloneNotSupportedException {
     return super.clone();
@@ -382,6 +402,8 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getOauthTenant(), other.getOauthTenant())
         && Objects.equals(this.getOauthUsername(), other.getOauthUsername())
         && Objects.equals(this.getOauthPassword(), other.getOauthPassword())
+        && Objects.equals(this.getOauthUiLoginEndpoint(), other.getOauthUiLoginEndpoint())
+        && Objects.equals(this.getOauthUiLogoutEndpoint(), other.getOauthUiLogoutEndpoint())
         && ListUtils.isEqualList(this.getOauthSecurityGroups(), other.getOauthSecurityGroups())
         && Objects.equals(this.getSdnEnabled(), other.getSdnEnabled())
         && Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
@@ -419,6 +441,8 @@ public class DeploymentEntity extends BaseEntity {
         .add("oauthPort", this.getOauthPort())
         .add("oauthTenant", this.getOauthTenant())
         .add("oauthSecurityGroups", StringUtils.join(this.getOauthSecurityGroups(), ','))
+        .add("oauthUiLoginEndpoint", this.getOauthUiLoginEndpoint())
+        .add("oauthUiLogoutEndpoint", this.getOauthUiLogoutEndpoint())
         .add("sdnEnabled", this.getSdnEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkZoneId", this.getNetworkZoneId())

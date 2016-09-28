@@ -10,7 +10,8 @@ HOST_IP=$1
 PEER1_IP=$2
 PEER2_IP=$3
 LIGHTWAVE_HOST_IP=$4
-LIGHTWAVE_LOAD_BALANCER_IP=$5
+LOAD_BALANCER_IP=$5
+LIGHTWAVE_LOAD_BALANCER_IP=$LOAD_BALANCER_IP
 NUMBER=$6
 
 LIGHTWAVE_USERNAME=Administrator
@@ -46,6 +47,8 @@ xenon:
 deployer:
   deployer:
     defaultDeploymentEnabled: true
+    loadBalancerEnabled: true
+    loadBalancerAddress: ${LOAD_BALANCER_IP}
     imageDataStoreNames:
     - datastore1
     imageDataStoreUsedForVMs: "True"

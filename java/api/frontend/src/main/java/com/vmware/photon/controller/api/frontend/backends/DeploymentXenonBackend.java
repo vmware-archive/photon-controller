@@ -292,13 +292,15 @@ public class DeploymentXenonBackend implements DeploymentBackend {
 
     AuthInfo authInfo = new AuthInfo();
     authInfo.setEnabled(deploymentEntity.getAuthEnabled());
-    String authInfoEnpoint = deploymentEntity.getOauthLoadBalancerEndpoint();
-    if (authInfoEnpoint == null) {
-      authInfoEnpoint = deploymentEntity.getOauthEndpoint();
+    String authInfoEndpoint = deploymentEntity.getOauthLoadBalancerEndpoint();
+    if (authInfoEndpoint == null) {
+      authInfoEndpoint = deploymentEntity.getOauthEndpoint();
     }
 
-    authInfo.setEndpoint(authInfoEnpoint);
+    authInfo.setEndpoint(authInfoEndpoint);
     authInfo.setTenant(deploymentEntity.getOauthTenant());
+    authInfo.setUiLoginEndpoint(deploymentEntity.getOauthUiLoginEndpoint());
+    authInfo.setUiLogoutEndpoint(deploymentEntity.getOauthUiLogoutEndpoint());
     authInfo.setSecurityGroups(deploymentEntity.getOauthSecurityGroups());
     deployment.setAuth(authInfo);
 
@@ -549,6 +551,8 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     entity.setOauthTenant(deployment.oAuthTenantName);
     entity.setOauthUsername(deployment.oAuthUserName);
     entity.setOauthPassword(deployment.oAuthPassword);
+    entity.setOauthUiLoginEndpoint(deployment.oAuthMgmtUiLoginEndpoint);
+    entity.setOauthUiLogoutEndpoint(deployment.oAuthMgmtUiLogoutEndpoint);
     entity.setOauthSecurityGroups(deployment.oAuthSecurityGroups);
     entity.setSdnEnabled(deployment.sdnEnabled);
     entity.setNetworkManagerAddress(deployment.networkManagerAddress);
