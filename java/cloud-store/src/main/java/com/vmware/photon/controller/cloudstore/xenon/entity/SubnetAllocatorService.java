@@ -243,6 +243,7 @@ public class SubnetAllocatorService extends StatefulService {
       subnet.highIpDynamic = subnet.highIp - 1;
       subnet.subnetId = allocateSubnetPatch.subnetId;
       subnet.documentSelfLink = allocateSubnetPatch.subnetId;
+      subnet.dhcpAgentEndpoint = currentState.dhcpAgentEndpoint;
 
       Operation postOperation = Operation.createPost(this, DhcpSubnetService.FACTORY_LINK)
           .setBody(subnet);
@@ -365,6 +366,12 @@ public class SubnetAllocatorService extends StatefulService {
      */
     @ServiceDocument.PropertyOptions(indexing = ServiceDocumentDescription.PropertyIndexingOption.STORE_ONLY)
     public Collection<IpV4Range> freeList;
+
+    /**
+     * Endpoint for communicating with DHCP agent.
+     * Endpoint includes: IP, port and protocol.
+     */
+    public String dhcpAgentEndpoint;
 
     @Override
     public String toString() {

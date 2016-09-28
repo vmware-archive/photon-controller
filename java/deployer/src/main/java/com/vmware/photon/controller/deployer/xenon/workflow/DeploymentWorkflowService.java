@@ -755,6 +755,11 @@ public class DeploymentWorkflowService extends StatefulService {
     SubnetAllocatorService.State subnetAllocatorServiceState = new SubnetAllocatorService.State();
     subnetAllocatorServiceState.rootCidr = deploymentState.ipRange;
     subnetAllocatorServiceState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
+    subnetAllocatorServiceState.dhcpAgentEndpoint = String.format(
+            "https://%s:%d",
+            // Selecting first index in Dhcp server list since expecting only one entry in this iteration
+            deploymentState.dhcpServers.get(0),
+            Constants.DHCP_AGENT_PORT);
 
     sendRequest(HostUtils.getCloudStoreHelper(this)
         .createPost(SubnetAllocatorService.FACTORY_LINK)
