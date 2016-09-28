@@ -56,7 +56,8 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
       GET_NSX_CONFIGURATION,
       CREATE_LOGICAL_SWITCH,
       CREATE_LOGICAL_ROUTER,
-      SET_UP_LOGICAL_ROUTER
+      SET_UP_LOGICAL_ROUTER,
+      CONFIGURE_DHCP_OPTION
     }
   }
 
@@ -188,6 +189,12 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
    */
   @WriteOnce
   public String snatIp;
+
+  /**
+   * The endpoint of DHCP agent.
+   */
+  @WriteOnce
+  public String dhcpAgentEndpoint;
 
   /**
    * The VirtualNetworkService.State object.
