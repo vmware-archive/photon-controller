@@ -41,9 +41,12 @@ import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
+import com.vmware.photon.controller.dhcpagent.xenon.service.SubnetConfigurationService;
+import com.vmware.photon.controller.dhcpagent.xenon.service.SubnetConfigurationTask;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -185,6 +188,8 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
         case SET_UP_LOGICAL_ROUTER:
           setUpLogicalRouter(state);
           break;
+        case CONFIGURE_DHCP_OPTION:
+          configureDhcpOption(state);
       }
     } catch (Throwable t) {
       fail(state, t);
@@ -321,6 +326,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
                     convertLongToDottedIp(entry.getValue()));
               }
             }
+
             progress(state, patchState);
           } catch (Throwable t) {
             fail(state, t);
@@ -350,6 +356,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
             patchState.edgeClusterId = deploymentState.edgeClusterId;
             patchState.dhcpRelayServiceId = deploymentState.dhcpRelayServiceId;
             patchState.snatIp = deploymentState.snatIp;
+            patchState.dhcpAgentIp = deploymentState.dhcpServers.get(0);
             progress(state, patchState);
           } catch (Throwable t) {
             fail(state, t);
@@ -495,12 +502,21 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           public void onSuccess(ConfigureRoutingTask result) {
             switch (result.taskState.stage) {
               case FINISHED:
-                state.taskServiceEntity.logicalSwitchUplinkPortId = result.logicalSwitchPortId;
-                state.taskServiceEntity.logicalRouterDownlinkPortId = result.logicalTier1RouterDownLinkPort;
-                state.taskServiceEntity.logicalRouterUplinkPortId = result.logicalLinkPortOnTier1Router;
-                state.taskServiceEntity.tier0RouterDownlinkPortId = result.logicalLinkPortOnTier0Router;
-                state.taskServiceEntity.tier0RouterId = state.tier0RouterId;
-                finish(state);
+                try {
+                  CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
+                      TaskState.TaskStage.STARTED,
+                      CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CONFIGURE_DHCP_OPTION);
+                  patchState.taskServiceEntity = state.taskServiceEntity;
+                  patchState.taskServiceEntity.logicalSwitchUplinkPortId = result.logicalSwitchPortId;
+                  patchState.taskServiceEntity.logicalRouterDownlinkPortId = result.logicalTier1RouterDownLinkPort;
+                  patchState.taskServiceEntity.logicalRouterUplinkPortId = result.logicalLinkPortOnTier1Router;
+                  patchState.taskServiceEntity.tier0RouterDownlinkPortId = result.logicalLinkPortOnTier0Router;
+                  patchState.taskServiceEntity.tier0RouterId = state.tier0RouterId;
+
+                  progress(state, patchState);
+                } catch (Throwable t) {
+                  fail(state, t);
+                }
                 break;
               case FAILED:
               case CANCELLED:
@@ -516,6 +532,31 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           }
         }
     );
+  }
+
+  /**
+   * Configures the DHCP agent with subnet information (i.e. gateway, cidr, etc.).
+   */
+  private void configureDhcpOption(CreateVirtualNetworkWorkflowDocument state) {
+    SubnetConfigurationTask subnetConfigurationTask = new SubnetConfigurationTask();
+    subnetConfigurationTask.subnetConfiguration = new SubnetConfigurationTask.SubnetConfiguration();
+    subnetConfigurationTask.subnetConfiguration.subnetId = getVirtualNetworkId(state);
+    subnetConfigurationTask.subnetConfiguration.subnetGateway =
+        state.taskServiceEntity.reservedIpList.get(ReservedIpType.GATEWAY);
+    subnetConfigurationTask.subnetConfiguration.subnetNetmask = state.taskServiceEntity.cidr;
+
+    String dhcpAgentEndpoint = String.format("https://%s:%d", state.dhcpAgentIp, state.dhcpAgentPort);
+    Operation.createPost(UriUtils.buildUri(dhcpAgentEndpoint + SubnetConfigurationService.FACTORY_LINK))
+        .setBody(subnetConfigurationTask)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          finish(state);
+        })
+        .sendWith(this);
   }
 
   /**
