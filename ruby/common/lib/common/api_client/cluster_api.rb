@@ -67,6 +67,15 @@ module EsxCloud
         poll_response(response)
         true
       end
+
+      # @param [String] id
+      # @return [Boolean]
+      def trigger_maintenance(id)
+        response = @http_client.post_json("#{CLUSTERS_ROOT}/#{id}/trigger_maintenance", {})
+        check_response("Trigger maintenance for cluster '#{id}'", response, 200)
+
+        true
+      end
     end
   end
 end

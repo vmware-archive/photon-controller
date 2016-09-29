@@ -86,4 +86,15 @@ describe EsxCloud::ApiClient do
     end
   end
 
+  describe "#trigger_cluster_maintenance" do
+    it "trigger cluster maintenance" do
+      cluster = double(EsxCloud::Cluster)
+      expect(@http_client).to receive(:post_json)
+                                  .with("/clusters/foo/trigger_maintenance", {})
+                                  .and_return(task_done("aaa", "foo"))
+
+      client.trigger_maintenance("foo").should be_true
+    end
+  end
+
 end

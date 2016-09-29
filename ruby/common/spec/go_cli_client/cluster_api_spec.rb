@@ -198,4 +198,11 @@ You can run 'cluster show bar' to see the state of the cluster."
     client.get_cluster_vms(cluster_id).should == vms
   end
 
+  it "triggers maintenance for a Cluster" do
+    cluster_id = double("bar")
+    expect(client).to receive(:run_cli).with("cluster trigger_maintenance '#{cluster_id}'")
+
+    client.trigger_maintenance(cluster_id).should be_true
+  end
+
 end
