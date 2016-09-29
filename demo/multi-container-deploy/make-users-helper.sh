@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/bin/bash -xe
 
 PHOTON_USER=photon
 PHOTON_USER_PASSWORD='Photon123$'

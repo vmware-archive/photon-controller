@@ -139,4 +139,24 @@ public class DeployerDefaults {
    * Default Id of default deployment object.
    */
   public static final String DEFAULT_DEPLOYMENT_ID = "default";
+
+  /**
+   * Management UI login redirect URL template.
+   */
+  public static final String MGMT_UI_LOGIN_REDIRECT_URL_TEMPLATE = "https://%s:4343/oauth_callback.html";
+
+  /**
+   * Management UI logout redirect URL template.
+   */
+  public static final String MGMT_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s:4343/logout_callback";
+
+  /**
+   * Swagger UI login redirect URL template.
+   */
+  public static final String SWAGGER_UI_LOGIN_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
+
+  /**
+   * Swagger UI logout redirect URL template.
+   */
+  public static final String SWAGGER_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
 }
