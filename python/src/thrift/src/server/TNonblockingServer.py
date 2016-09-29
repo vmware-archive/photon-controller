@@ -29,7 +29,8 @@ import socket
 import Queue
 import select
 import struct
-
+import sys
+from collections import deque
 import logging
 logger = logging.getLogger(__name__)
 
@@ -82,10 +83,21 @@ def socket_exception(func):
     def read(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
-        except socket.error:
+        except socket.error as ex:
+            logger.debug('ignoring socket exception', sys.exc_info())
             self.close()
     return read
 
+class Message(object):
+    def __init__(self, offset, len_, header):
+        self.offset = offset
+        self.len = len_
+        self.buffer = None
+        self.is_header = header
+
+    @property
+    def end(self):
+        return self.offset + self.len
 
 class Connection:
     """Basic class is represented connection.
@@ -104,68 +116,56 @@ class Connection:
         self.socket.setblocking(False)
         self.status = WAIT_LEN
         self.len = 0
-        self.message = ''
+        self.received = deque()
+        self._reading = Message(0, 4, True)
+        self._rbuf = b''
+        self._wbuf = b''
         self.lock = threading.Lock()
         self.wake_up = wake_up
-
-    def _read_len(self):
-        """Reads length of request.
-
-        It's a safer alternative to self.socket.recv(4)
-        """
-        read = self.socket.recv(4 - len(self.message))
-        if len(read) == 0:
-            # if we read 0 bytes and self.message is empty, then
-            # the client closed the connection
-            if len(self.message) != 0:
-                logger.error("can't read frame size from socket")
-            self.close()
-            return
-        self.message += read
-        if len(self.message) == 4:
-            self.len, = struct.unpack('!i', self.message)
-            if self.len < 0:
-                logger.error("negative frame size, it seems client "
-                              "doesn't use FramedTransport")
-                self.close()
-            elif self.len == 0:
-                logger.error("empty frame, it's really strange")
-                self.close()
-            else:
-                self.message = ''
-                self.status = WAIT_MESSAGE
 
     @socket_exception
     def read(self):
         """Reads data from stream and switch state."""
         assert self.status in (WAIT_LEN, WAIT_MESSAGE)
-        if self.status == WAIT_LEN:
-            self._read_len()
-            # go back to the main loop here for simplicity instead of
-            # falling through, even though there is a good chance that
-            # the message is already available
-        elif self.status == WAIT_MESSAGE:
-            read = self.socket.recv(self.len - len(self.message))
-            if len(read) == 0:
-                logger.error("can't read frame from socket (get %d of "
-                              "%d bytes)" % (len(self.message), self.len))
+        buf_size = 8192
+        first = True
+        done = False
+        while not done:
+            read = self.socket.recv(buf_size)
+            rlen = len(read)
+            done = rlen < buf_size
+            self._rbuf += read
+            if first and rlen == 0:
+                if self.status != WAIT_LEN or self._rbuf:
+                    logger.error('could not read frame from socket')
                 self.close()
-                return
-            self.message += read
-            if len(self.message) == self.len:
-                self.status = WAIT_PROCESS
+            while len(self._rbuf) >= self._reading.end:
+                if self._reading.is_header:
+                    mlen, = struct.unpack('!i', self._rbuf[:4])
+                    self._reading = Message(self._reading.end, mlen, False)
+                else:
+                    self._reading.buffer = self._rbuf
+                    self.received.append(self._reading)
+                    self._rbuf = self._rbuf[self._reading.end:]
+                    self._reading = Message(0, 4, True)
+            first = False
+        if self.received:
+            self.status = WAIT_PROCESS
+        elif not self._reading.is_header:
+            self.status = WAIT_MESSAGE
+
 
     @socket_exception
     def write(self):
         """Writes data from socket and switch state."""
         assert self.status == SEND_ANSWER
-        sent = self.socket.send(self.message)
-        if sent == len(self.message):
+        sent = self.socket.send(self._wbuf)
+        if sent == len(self._wbuf):
             self.status = WAIT_LEN
-            self.message = ''
+            self._wbuf = b''
             self.len = 0
         else:
-            self.message = self.message[sent:]
+            self._wbuf = self.message[sent:]
 
     @locked
     def ready(self, all_ok, message):
@@ -188,10 +188,10 @@ class Connection:
         self.len = ''
         if len(message) == 0:
             # it was a oneway request, do not write answer
-            self.message = ''
+            self._wbuf = b''
             self.status = WAIT_LEN
         else:
-            self.message = struct.pack('!i', len(message)) + message
+            self._wbuf = struct.pack('!i', len(message)) + message
             self.status = SEND_ANSWER
         self.wake_up()
 
@@ -311,14 +311,18 @@ class TNonblockingServer:
                 # don't care i just need to clean readable flag
                 self._read.recv(1024)
             elif readable == self.socket.handle.fileno():
-                client = self.socket.accept().handle
-                self.clients[client.fileno()] = Connection(client,
-                                                           self.wake_up)
+                try:
+                    client = self.socket.accept().handle
+                    self.clients[client.fileno()] = Connection(client,
+                                                               self.wake_up)
+                except Exception as ex:
+                    logger.debug('error while accepting', sys.exc_info())
             else:
                 connection = self.clients[readable]
                 connection.read()
-                if connection.status == WAIT_PROCESS:
-                    itransport = TTransport.TMemoryBuffer(connection.message)
+                while connection.received:
+                    msg = connection.received.popleft()
+                    itransport = TTransport.TMemoryBuffer(msg.buffer, msg.offset)
                     otransport = TTransport.TMemoryBuffer()
                     iprot = self.in_protocol.getProtocol(itransport)
                     oprot = self.out_protocol.getProtocol(otransport)
