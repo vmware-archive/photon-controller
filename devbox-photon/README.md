@@ -16,7 +16,7 @@ The logs from the Photon Controller services are synced to the host and are loca
 * [VirtualBox](https://www.virtualbox.org/)
 * [Vagrant plugin for Photon OS](https://github.com/vmware/vagrant-guests-photon-controller)
 
-Bringing up devbox also requires that you build the Photon Controller product code locally. Please see the prerequisites for the [Java](java/README.md#requirements) and [Python](python/README.md#pre-requisites) code.
+Bringing up devbox also requires that you build the Photon Controller product code locally. Please see the prerequisites for the [Java](../java/README.md#requirements) and [Python](../python/README.md#pre-requisites) code.
 
 ## Instructions
 
