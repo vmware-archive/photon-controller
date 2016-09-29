@@ -292,7 +292,12 @@ public class DeploymentXenonBackend implements DeploymentBackend {
 
     AuthInfo authInfo = new AuthInfo();
     authInfo.setEnabled(deploymentEntity.getAuthEnabled());
-    authInfo.setEndpoint(deploymentEntity.getOauthEndpoint());
+    String authInfoEnpoint = deploymentEntity.getOauthLoadBalancerEndpoint();
+    if (authInfoEnpoint == null) {
+      authInfoEnpoint = deploymentEntity.getOauthEndpoint();
+    }
+
+    authInfo.setEndpoint(authInfoEnpoint);
     authInfo.setTenant(deploymentEntity.getOauthTenant());
     authInfo.setSecurityGroups(deploymentEntity.getOauthSecurityGroups());
     deployment.setAuth(authInfo);
@@ -539,6 +544,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     entity.setNtpEndpoint(deployment.ntpEndpoint);
     entity.setAuthEnabled(deployment.oAuthEnabled);
     entity.setOauthEndpoint(deployment.oAuthServerAddress);
+    entity.setOauthLoadBalancerEndpoint(deployment.oAuthLoadBalancerAddress);
     entity.setOauthPort(deployment.oAuthServerPort);
     entity.setOauthTenant(deployment.oAuthTenantName);
     entity.setOauthUsername(deployment.oAuthUserName);

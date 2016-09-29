@@ -50,6 +50,7 @@ public class DefaultDeployment {
     startState.oAuthUserName = authConfig.getAuthUserName();
     startState.oAuthPassword = authConfig.getAuthPassword();
     startState.oAuthServerAddress = authConfig.getAuthServerAddress();
+    startState.oAuthLoadBalancerAddress = authConfig.getAuthLoadBalancerAddress();
     startState.oAuthServerPort = authConfig.getAuthServerPort();
     startState.oAuthSwaggerLoginEndpoint = authConfig.getAuthSwaggerLoginEndpoint();
     startState.oAuthSwaggerLogoutEndpoint = authConfig.getAuthSwaggerLogoutEndpoint();

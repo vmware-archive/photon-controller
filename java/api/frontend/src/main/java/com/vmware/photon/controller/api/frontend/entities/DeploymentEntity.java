@@ -48,6 +48,8 @@ public class DeploymentEntity extends BaseEntity {
 
   private String oauthEndpoint;
 
+  private String oauthLoadBalancerEndpoint;
+
   private Integer oauthPort;
 
   private String oauthTenant;
@@ -178,6 +180,14 @@ public class DeploymentEntity extends BaseEntity {
 
   public void setOauthEndpoint(String endpoint) {
     this.oauthEndpoint = endpoint;
+  }
+
+  public String getOauthLoadBalancerEndpoint() {
+    return this.oauthLoadBalancerEndpoint;
+  }
+
+  public void setOauthLoadBalancerEndpoint(String endpoint) {
+    this.oauthLoadBalancerEndpoint = endpoint;
   }
 
   public Integer getOauthPort() {
@@ -367,6 +377,7 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getStatsStoreType(), other.getStatsStoreType())
         && Objects.equals(this.getAuthEnabled(), other.getAuthEnabled())
         && Objects.equals(this.getOauthEndpoint(), other.getOauthEndpoint())
+        && Objects.equals(this.getOauthLoadBalancerEndpoint(), other.getOauthLoadBalancerEndpoint())
         && Objects.equals(this.getOauthPort(), other.getOauthPort())
         && Objects.equals(this.getOauthTenant(), other.getOauthTenant())
         && Objects.equals(this.getOauthUsername(), other.getOauthUsername())
@@ -404,6 +415,7 @@ public class DeploymentEntity extends BaseEntity {
         .add("statsStoreType", this.getStatsStoreType())
         .add("authEnabled", this.getAuthEnabled())
         .add("oauthEndpoint", this.getOauthEndpoint())
+        .add("oauthLoadBalancerEndpoint", this.getOauthLoadBalancerEndpoint())
         .add("oauthPort", this.getOauthPort())
         .add("oauthTenant", this.getOauthTenant())
         .add("oauthSecurityGroups", StringUtils.join(this.getOauthSecurityGroups(), ','))
