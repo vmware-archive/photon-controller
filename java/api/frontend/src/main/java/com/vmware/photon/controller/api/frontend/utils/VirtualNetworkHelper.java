@@ -87,7 +87,15 @@ public class VirtualNetworkHelper implements NetworkHelper {
 
   @Override
   public void tombstone(String networkId) throws ExternalException {
-    VirtualNetworkService.State entity = findSubnet(networkId);
+    VirtualNetworkService.State entity;
+    try {
+      entity = findSubnet(networkId);
+    } catch (NetworkNotFoundException ex) {
+      // swallow the network not found exception since if the network id is wrong
+      // we don't need to do anything for the network
+      return;
+    }
+
     if (SubnetState.PENDING_DELETE.equals(entity.state)) {
       // Virtual network
       DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
