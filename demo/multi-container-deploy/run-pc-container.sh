@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -xe
 
 MEMORY_MB=1024
 
@@ -10,7 +10,9 @@ HOST_IP=$1
 PEER1_IP=$2
 PEER2_IP=$3
 LIGHTWAVE_HOST_IP=$4
-NUMBER=$5
+LOAD_BALANCER_IP=$5
+LIGHTWAVE_LOAD_BALANCER_IP=$LOAD_BALANCER_IP
+NUMBER=$6
 
 LIGHTWAVE_USERNAME=Administrator
 LIGHTWAVE_PASSWORD='Admin!23'
@@ -45,6 +47,8 @@ xenon:
 deployer:
   deployer:
     defaultDeploymentEnabled: true
+    loadBalancerEnabled: true
+    loadBalancerAddress: ${LOAD_BALANCER_IP}
     imageDataStoreNames:
     - datastore1
     imageDataStoreUsedForVMs: "True"
@@ -122,6 +126,7 @@ auth:
   enableAuth: true
   sharedSecret: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
   authServerAddress: ${LIGHTWAVE_HOST_IP}
+  authLoadBalancerAddress: ${LIGHTWAVE_LOAD_BALANCER_IP}
   authServerPort: 443
   authDomain: ${LIGHTWAVE_DOMAIN}
   authUserName: ${LIGHTWAVE_USERNAME}
@@ -129,6 +134,11 @@ auth:
   authSecurityGroups:
     - ${LIGHTWAVE_SECURITY_GROUPS}
 EOF
+
+if [ "$EXPORT_KEYS" -eq "1" ]; then
+  mkdir -p keys
+  EXPORT_OPTS="-v $PWD/keys:/etc/keys/"
+fi
 
 echo "Starting Photon-Controller container #$NUMBER..."
 docker run -d \
@@ -139,6 +149,7 @@ docker run -d \
   --ip=$HOST_IP \
   --entrypoint=/usr/sbin/init \
   -v ${PHOTON_CONTROLLER_CONFIG_DIR}:/etc/photon-controller \
+  $EXPORT_OPTS \
   vmware/photon-controller-lightwave-client
 
 sleep 15

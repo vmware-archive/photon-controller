@@ -171,6 +171,8 @@ then
     http_code=$(curl -w "%{http_code}" -s -X GET --insecure https://$LIGHTWAVE_HOST_ADDRESS)
     # The curl returns 000 when it fails to connect to the lightwave server
     if [ "$http_code" == "000" ]; then
+
+    if [ $http_code -eq 000 ]; then
       echo "Lightwave REST server not reachable (attempt $attempts/$total_attempts), will try again."
       attempts=$[$attempts+1]
       sleep 5
@@ -179,6 +181,7 @@ then
       break
     fi
   done
+
   if [ $attempts -eq $total_attempts ]; then
     echo "Could not connect to Lightwave REST client after $total_attempts attempts"
     exit 1

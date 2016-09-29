@@ -10,6 +10,6 @@ docker rmi vmware/photon-controller-lightwave-client || true
 ./load-images.sh
 ./make-lw-cluster.sh
 ./make-pc-cluster.sh
-./make-deployment.sh
 ./make-users.sh
-./basic-test.sh
+./run-haproxy-container.sh
+./run-ui.sh
