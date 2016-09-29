@@ -18,21 +18,37 @@ import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.StatsStoreType;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.common.auth.AuthClientHandler;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
+import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFutureTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
 
 /**
  * PhotonControllerCore entry point.
  */
 public class DefaultDeployment {
 
-  private static DeploymentService.State buildServiceStartState(DeployerConfig deployerConfig, AuthConfig authConfig) {
+  private static final Logger logger = LoggerFactory.getLogger(DefaultDeployment.class);
+  private String loginURI = null;
+  private String logoutURI = null;
+
+  private DeploymentService.State buildServiceStartState(DeployerConfig deployerConfig, AuthConfig authConfig) {
     DeploymentService.State startState = new DeploymentService.State();
     DeployerContext deploymentContext = deployerConfig.getDeployerContext();
     if (authConfig.getAuthSecurityGroups() != null) {
@@ -50,11 +66,12 @@ public class DefaultDeployment {
     startState.oAuthUserName = authConfig.getAuthUserName();
     startState.oAuthPassword = authConfig.getAuthPassword();
     startState.oAuthServerAddress = authConfig.getAuthServerAddress();
+    startState.oAuthLoadBalancerAddress = authConfig.getAuthLoadBalancerAddress();
     startState.oAuthServerPort = authConfig.getAuthServerPort();
     startState.oAuthSwaggerLoginEndpoint = authConfig.getAuthSwaggerLoginEndpoint();
     startState.oAuthSwaggerLogoutEndpoint = authConfig.getAuthSwaggerLogoutEndpoint();
-    startState.oAuthMgmtUiLoginEndpoint = authConfig.getAuthMgmtUiLoginEndpoint();
-    startState.oAuthMgmtUiLogoutEndpoint = authConfig.getAuthMgmtUiLogoutEndpoint();
+    startState.oAuthMgmtUiLoginEndpoint = loginURI;
+    startState.oAuthMgmtUiLogoutEndpoint = logoutURI;
     startState.sdnEnabled = deploymentContext.getSdnEnabled();
     startState.networkManagerAddress = deploymentContext.getNetworkManagerAddress();
     startState.networkManagerUsername = deploymentContext.getNetworkManagerUsername();
@@ -79,10 +96,9 @@ public class DefaultDeployment {
     return startState;
   }
 
-  public static void createDefaultDeployment(String[] peerNodes,
-                                              DeployerConfig deployerConfig,
-                                              AuthConfig authConfig,
-                                              ServiceHost xenonHost) throws Throwable {
+  public void createDefaultDeployment(DeployerConfig deployerConfig,
+                                      AuthConfig authConfig,
+                                      ServiceHost xenonHost) throws Throwable {
 
     xenonHost.registerForServiceAvailability((Operation operation, Throwable throwable) -> {
 
@@ -100,5 +116,87 @@ public class DefaultDeployment {
 
       xenonHost.sendRequest(op);
     }, DeploymentServiceFactory.SELF_LINK);
+  }
+
+  /**
+   * Create default deployment after registering the client to Lotus, and producing the URL to access it.
+   */
+  public void createDefaultDeployment(final ServiceHost host,
+                                      final AuthConfig authConfig,
+                                      final DeployerConfig deployerConfig,
+                                      final String lbIpAddress) throws Throwable {
+
+
+
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) host).getDeployer();
+    AuthHelperFactory authHelperFactory = deployerServiceGroup.getAuthHelperFactory();
+    final AuthHelper authHelper = authHelperFactory.create();
+
+    logger.info("Starting a thread to register client %s at %s:%s using user %s on tenant %s.",
+        lbIpAddress,
+        authConfig.getAuthServerAddress(),
+        authConfig.getAuthServerPort(),
+        authConfig.getAuthUserName(),
+        authConfig.getAuthDomain());
+
+    //
+    // Lightwave requires login name to be in format "domain/user"
+    //
+    ListenableFutureTask futureTask = ListenableFutureTask.create(new Callable() {
+      @Override
+      public Object call() throws Exception {
+        return authHelper.getResourceLoginUri(
+            authConfig.getAuthDomain(),
+            authConfig.getAuthDomain() + "\\" + authConfig.getAuthUserName(),
+            authConfig.getAuthPassword(),
+            authConfig.getAuthServerAddress(),
+            authConfig.getAuthServerPort(),
+            String.format(DeployerDefaults.MGMT_UI_LOGIN_REDIRECT_URL_TEMPLATE, lbIpAddress),
+            String.format(DeployerDefaults.MGMT_UI_LOGOUT_REDIRECT_URL_TEMPLATE, lbIpAddress));
+      }
+    });
+
+    deployerServiceGroup.getListeningExecutorService().submit(futureTask);
+
+    FutureCallback<AuthClientHandler.ImplicitClient> futureCallback =
+        new FutureCallback<AuthClientHandler.ImplicitClient>() {
+          @Override
+          public void onSuccess(AuthClientHandler.ImplicitClient result) {
+            loginURI = result.loginURI;
+            logoutURI = result.logoutURI;
+            if (authConfig.getAuthLoadBalancerAddress() != null) {
+              loginURI = loginURI.replaceAll(
+                  authConfig.getAuthServerAddress(), authConfig.getAuthLoadBalancerAddress());
+              logoutURI = logoutURI.replaceAll(
+                  authConfig.getAuthServerAddress(), authConfig.getAuthLoadBalancerAddress());
+            }
+
+            try {
+              createDefaultDeployment(
+                  deployerConfig,
+                  authConfig,
+                  host);
+            } catch (Throwable throwable) {
+              throw new RuntimeException(throwable);
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            logger.error(t.getMessage());
+
+            try {
+              createDefaultDeployment(
+                  deployerConfig,
+                  authConfig,
+                  host);
+            } catch (Throwable throwable) {
+              throw new RuntimeException(throwable);
+            }
+          }
+        };
+
+    Futures.addCallback(futureTask, futureCallback);
   }
 }
