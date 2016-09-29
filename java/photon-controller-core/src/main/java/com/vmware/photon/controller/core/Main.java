@@ -146,11 +146,17 @@ public class Main {
     ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig, sslContext);
 
     if (deployerConfig.getDeployerContext().getDefaultDeploymentEnabled()) {
-      DefaultDeployment.createDefaultDeployment(
-          photonControllerConfig.getXenonConfig().getPeerNodes(),
-          deployerConfig,
+      DefaultDeployment defaultDeployment = new DefaultDeployment();
+      String loadbalancer = deployerConfig.getDeployerContext().getLoadBalancerAddress();
+      if (loadbalancer == null) {
+        loadbalancer = photonControllerConfig.getXenonConfig().getRegistrationAddress();
+      }
+
+      defaultDeployment.createDefaultDeployment(
+          xenonHost,
           authConfig,
-          xenonHost);
+          deployerConfig,
+          loadbalancer);
     }
 
     // This approach can be simplified once the apife container is gone, but for the time being

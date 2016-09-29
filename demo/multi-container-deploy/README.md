@@ -25,13 +25,14 @@ the Lightwave nodes and creates a auth-enabled deployment.
 ## Running the scripts
 Following steps are for Linux with Docker. For Macbook you need to first prepare using `docker-machine` as mentioned at the end of this section.
 
-1. Load docker images by running `./load-images.sh`
-2. Create LW cluster by running `./make-lw-cluster.sh`
-3. Create PC cluster by running `./make-pc-cluster.sh`
-4. Create PC deployment by running `./make-deployment.sh`
-5. Create demo users and groups by running `./make-users.sh`
-6. Run basic sanity test `./basic-test.sh`
-7. Destroy the environment using `./delete-pc-cluster.ssh` and then `./delete-lw-cluster.sh`
+1. Create three docker host VMs using `./make-vms.sh` or use `docker-machine create -d vmwarefusion default` to create one VM that will host all the containers being created.
+2. Load docker images of Photon-Contorller and Lightwave by running `./load-images.sh`
+3. Create LW cluster by running `./make-lw-cluster.sh`
+4. Start Load Balancer by runnig `./run-haproxy-container.sh`
+5. Create PC cluster by running `./make-pc-cluster.sh`
+6. Create demo users and groups by running `./make-users.sh`
+7. Deploy UI container by running `./make-ui-container.sh`
+8. Go to https://load-balancer-ip:4343 to login to Photon-Controlelr UI.
 
 For running above scripts in *MacBook* you would need to have `docker-machine` and `virtualbox` installed.
 Use following steps to prepare your MacBook to run the scripts listed above.
