@@ -73,21 +73,20 @@ public class DefaultDeploymentTest {
       peers.add(host.getUri().toString());
     }
 
-    DefaultDeployment.createDefaultDeployment(
-        peers.toArray(new String[peers.size()]),
+    DefaultDeployment defaultDeployment = new DefaultDeployment();
+
+    defaultDeployment.createDefaultDeployment(
         photonControllereConfig.getDeployerConfig(),
         photonControllereConfig.getAuth(),
         testEnvironment.getHosts()[0]);
 
     // Other host might create the default deployment as well with same name. Xenon should converge them as one.
-    DefaultDeployment.createDefaultDeployment(
-        peers.toArray(new String[peers.size()]),
+    defaultDeployment.createDefaultDeployment(
         photonControllereConfig.getDeployerConfig(),
         photonControllereConfig.getAuth(),
         testEnvironment.getHosts()[1]);
 
-    DefaultDeployment.createDefaultDeployment(
-        peers.toArray(new String[peers.size()]),
+    defaultDeployment.createDefaultDeployment(
         photonControllereConfig.getDeployerConfig(),
         photonControllereConfig.getAuth(),
         testEnvironment.getHosts()[2]);

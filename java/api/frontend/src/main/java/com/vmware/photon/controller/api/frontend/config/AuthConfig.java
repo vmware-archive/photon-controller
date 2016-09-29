@@ -33,6 +33,11 @@ public class AuthConfig {
   private String authServerAddress;
 
   /**
+   * This value represents the auth server's load balancer address.
+   */
+  private String authLoadBalancerAddress;
+
+  /**
    * This value represents the OAuth server port.
    */
   private Integer authServerPort;
@@ -166,5 +171,13 @@ public class AuthConfig {
 
   public void setAuthSecurityGroups(List<String> authSecurityGroups) {
     this.authSecurityGroups = authSecurityGroups;
+  }
+
+  public String getAuthLoadBalancerAddress() {
+    return authLoadBalancerAddress;
+  }
+
+  public void setAuthLoadBalancerAddress(String authLoadBalancerAddress) {
+    this.authLoadBalancerAddress = authLoadBalancerAddress;
   }
 }
