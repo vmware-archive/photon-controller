@@ -97,6 +97,9 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
 
       resize_cluster(cluster, N_WORKERS, expected_etcd_count)
 
+      puts "Test that cluster background maintenance will restore deleted VMs"
+      validate_trigger_maintenance(ENV["KUBERNETES_MASTER_IP"], N_WORKERS, cluster)
+
       puts "Test that a single tenant can have multiple clusters"
       # Cluster 2 uses SWARM_ETCD_1_IP for master and MESOS_ZK_1_IP for etcd
       kube2_master_ip = ENV["SWARM_ETCD_1_IP"]
@@ -171,6 +174,54 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
     # and create new ones. Thus, the entry for node_info would be at least at big
     # for the expected_node_count.
     expect(total_node_count.to_i).to be > expected_node_count - 1
+  end
+
+  # Removes a worker VM and check that trigger maintenance can recreate deleted VMs
+  def validate_trigger_maintenance(master_ip, total_worker_count, cluster)
+    vm = get_random_worker_vm(cluster)
+    puts "Stopping random Kubernetes worker node: #{vm.name}"
+    vm.stop!
+    vm.delete
+    wait_for_kube_worker_count(master_ip, total_worker_count - 1, 5, 120)
+    client.trigger_maintenance(cluster.id)
+    wait_for_kube_worker_count(master_ip, total_worker_count, 5, 120)
+  end
+
+  # Waits for the Kubernetes API to report the number of active worker nodes to be target_worker_count
+  def wait_for_kube_worker_count(master_ip, target_worker_count, retry_interval, retry_count)
+    puts "Waiting for Kubernetes client to report available worker count #{target_worker_count}"
+    worker_count = get_active_worker_node_count(master_ip)
+
+    until worker_count == target_worker_count || retry_count == 0 do
+      sleep retry_interval
+      worker_count = get_active_worker_node_count(master_ip)
+      retry_count -= 1
+    end
+
+    fail("Kubernetes at #{master_ip} failed to report #{target_worker_count} workers in time") if retry_count == 0
+  end
+
+  # Returns the number of active worker nodes reported by the Kubernetes API
+  def get_active_worker_node_count(master_ip)
+    kube_end_point = "http://" + master_ip + ":8080"
+    http_helper=EsxCloud::HttpClient.new(kube_end_point)
+    response = http_helper.get("/api/v1/nodes")
+    expect(response.code).to be 200
+    worker_node_count = 0
+
+    JSON.parse(response.body)['items'].each do |item|
+      # Check that the node is a worker
+      if item['metadata']['labels']['vm-hostname'].start_with?("worker")
+        conditions = item['status']['conditions']
+        conditions.each do |condition|
+          # Check that the node is ready
+          if condition['type'] == "Ready" && condition['status'] == "True"
+            worker_node_count += 1
+          end
+        end
+      end
+    end
+    return worker_node_count
   end
 
   # This function validate that our cluster manager api is working properly
@@ -260,6 +311,18 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
         "ssh_key" => public_key_contents
     }
     return props
+  end
+
+  # Gets a worker vm from the specified cluster
+  # Returns a VM
+  def get_random_worker_vm(cluster)
+    client.get_cluster_vms(cluster.id).items.each do |vm|
+      if vm.name.start_with?("worker")
+         return vm
+      end
+    end
+
+    fail("No worker vms found for cluster #{cluster.id}")
   end
 
 end

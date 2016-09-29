@@ -77,6 +77,13 @@ module EsxCloud
         true
       end
 
+      # @param [String] id
+      # @return [Boolean]
+      def trigger_maintenance(id)
+        run_cli("cluster trigger_maintenance '#{id}'")
+        true
+      end
+
       private
 
       def get_cluster_from_response(result)
