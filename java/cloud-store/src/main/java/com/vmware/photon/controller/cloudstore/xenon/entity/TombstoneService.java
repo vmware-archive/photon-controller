@@ -29,7 +29,17 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 
 /**
- * Class TombstoneService is used for data persistence of resource tombstones.
+ * A tombstone is created whenever we delete an object (e.g. a VM) with associated tasks.
+ *
+ * Our goal is for tasks to live for the lifetime of the object they affect (e.g. the power-on task for a VM), so people
+ * can see what happened to the object. Therefore we can't just delete tasks when they complete, nor can we use Xenon's
+ * document expiration to remove them at a fixed time after they complete.
+ *
+ * What we actually do is delete the tasks some time after the object is deleted. To do this, we need to know that the
+ * object was deleted. That's what the tombstone is for: it marks that an object was deleted, and indicates that its
+ * associated tasks should be removed.
+ *
+ * The TombstoneCleanerService does the cleanup.
  */
 public class TombstoneService extends StatefulService {
 
