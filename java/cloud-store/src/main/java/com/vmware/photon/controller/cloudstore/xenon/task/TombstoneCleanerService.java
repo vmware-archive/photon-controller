@@ -48,7 +48,22 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Class implementing service to remove stale tombstones and associated tasks from the cloud store.
+ * The TombstoneCleanerService is responsible for deleting tasks associated with objects.
+ *
+ * Our goal is for tasks to live for the lifetime of the object they affect (e.g. the power-on task for a VM), so people
+ * can see what happened to the object. Therefore we can't just delete tasks when they complete, nor can we use Xenon's
+ * document expiration to remove them at a fixed time after they complete.
+ *
+ * What we actually do is delete the tasks some time after the object is deleted. To do this, we need to know that the
+ * object was deleted. That's what the tombstone is for: it marks that an object was deleted, and indicates that its
+ * associated tasks should be removed.
+ *
+ * The TombstoneCleanerService finds all tombstones that are older than some given time (by default, five hours, but see
+ * DEFAULT_TASK_EXPIRATION_AGE_MILLIS in TombstoneCleanerTriggerBuilder), then delete the tasks that are associated with
+ * the object indicated within the tombstone
+ *
+ * The TombstoneCleanerService keeps the tasks for five hours so that audits can be done or problems debugged after the
+ * object has been deleted.
  */
 public class TombstoneCleanerService extends StatefulService {
   public TombstoneCleanerService() {
