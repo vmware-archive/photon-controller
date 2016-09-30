@@ -28,6 +28,7 @@ import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import org.apache.commons.net.util.SubnetUtils;
 import org.hamcrest.Matchers;
@@ -334,22 +335,17 @@ public class IpLeaseDeleteServiceTest {
         }
       }
 
-      for (ServiceHost host : machine.getHosts()) {
-        ServiceHostUtils.waitForServiceState(
-            ServiceDocumentQueryResult.class,
-            IpLeaseService.FACTORY_LINK,
-            (ServiceDocumentQueryResult result) -> {
-              logger.info(
-                  "Host:[{}] Service:[{}] Document Count- Expected [{}], Actual [{}]",
-                  host.getUri(),
-                  IpLeaseService.FACTORY_LINK,
-                  0,
-                  result.documentCount);
-              return result.documentCount == 0;
-            },
-            host,
-            null);
-      }
+      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+      querySpecification.query = new QueryTask.Query()
+          .setTermPropertyName(IpLeaseService.State.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(IpLeaseService.State.class));
+
+      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
+      machine.waitForQuery(queryTask, qt -> {
+        logger.info("Service:[{}] Document Count- Expected [{}], Actual [{}]", IpLeaseService.FACTORY_LINK, 0,
+            qt.results.documentCount);
+        return qt.results.documentCount == 0;
+      });
     }
 
     @DataProvider(name = "Success")
