@@ -65,6 +65,47 @@ describe "virtual_network", :virtual_network => true do
       expect(networks.size).to eq 2
     end
 
+    xit "should reacquire ip address successfully" do
+      spec = EsxCloud::VirtualNetworkCreateSpec.new(virtual_network_name, "virtual network", "ROUTED", 8, 2)
+      network = create_virtual_network(@project.id, spec)
+      expect(network.name).to eq virtual_network_name
+      expect(network.state).to eq "READY"
+      expect(network.id).to_not be_nil
+
+      vm = create_vm(@project, { networks: [network.id] })
+      vm.start!
+
+      network_connections = client.get_vm_networks(vm.id).network_connections
+      acquired_ip = nil
+      network_connections.each do |nc|
+        if nc.network == network.id
+          acquired_ip = nc.ip_address
+          break
+        end
+      end
+      expect(acquired_ip).to_not be_nil
+
+      vm.stop!
+      vm.delete
+
+      vm = create_vm(@project, { networks: [network.id] })
+      vm.start!
+
+      network_connections = client.get_vm_networks(vm.id).network_connections
+      reacquired_ip = nil
+      network_connections.each do |nc|
+        if nc.network == network.id
+          reacquired_ip = nc.ip_address
+          break
+        end
+      end
+      expect(reacquired_ip).to_not be_nil
+      expect(reacquired_ip).to eq acquired_ip
+
+      vm.stop!
+      vm.delete
+    end
+
     it "should fail to create virtual network when name is not specified" do
       spec.name = nil
       begin
