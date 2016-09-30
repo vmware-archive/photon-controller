@@ -13,12 +13,19 @@
 
 package com.vmware.photon.controller.api.client;
 
+import com.vmware.identity.openidconnect.client.OIDCTokens;
+import com.vmware.photon.controller.common.auth.AuthException;
+import com.vmware.photon.controller.common.auth.AuthOIDCClient;
+import com.vmware.photon.controller.common.auth.AuthTokenHandler;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -64,8 +71,11 @@ public class RestClient {
   private final CloseableHttpAsyncClient asyncClient;
   private final String target;
   private String sharedSecret;
-
-  // For testing only
+  private String userName;
+  private String password;
+  private OIDCTokens oidcTokens;
+  private HttpUriRequest request = null;
+    // For testing only
   private HttpClient mockHttpClient;
 
   /**
@@ -99,6 +109,32 @@ public class RestClient {
     this.sharedSecret = sharedSecret;
   }
 
+  public RestClient(String target,
+                    CloseableHttpAsyncClient asyncClient,
+                    String sharedSecret,
+                    String userName,
+                    String password) {
+    if (null == asyncClient) {
+        throw new IllegalArgumentException("Client cannot be null");
+    }
+    if (null == target) {
+        throw new IllegalArgumentException("Target cannot be null");
+    }
+    if (null == sharedSecret) {
+        throw new IllegalArgumentException("SharedSecret cannot be null");
+    }
+    if (null == userName) {
+        throw new IllegalArgumentException("Username cannot be null");
+    }
+    if (null == password) {
+        throw new IllegalArgumentException("Password cannot be null");
+    }
+    this.password = password;
+    this.userName = userName;
+    this.target = target;
+    this.asyncClient = asyncClient;
+    this.sharedSecret = sharedSecret;
+  }
   public RestClient(String target, CloseableHttpAsyncClient asyncClient, HttpClient mockHttpClient) {
     this.target = target;
     this.asyncClient = asyncClient;
@@ -116,10 +152,21 @@ public class RestClient {
   public HttpResponse perform(final Method method, final String path, final HttpEntity payload)
       throws IOException {
     try {
-      return performAsync(method, path, payload, null /* callback */).get();
+      HttpResponse response = performAsync(method, path, payload, null /* callback */).get();
+      int statusCode = response.getStatusLine().getStatusCode();
+      if (statusCode == HttpStatus.SC_UNAUTHORIZED) {
+        AuthTokenHandler authTokenHandler;
+        AuthOIDCClient authOIDCClient = new AuthOIDCClient("authserveraddress", 8000, "tenant");
+        authTokenHandler = authOIDCClient.getTokenHandler();
+        oidcTokens = getToken(userName, password, authTokenHandler);
+        perform(method, path, payload);
+      }
+      return response;
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     } catch (ExecutionException e) {
+      throw new RuntimeException(e);
+    } catch (AuthException e) {
       throw new RuntimeException(e);
     }
   }
@@ -139,39 +186,78 @@ public class RestClient {
     return asyncClient.execute(request, new BasicHttpContext(), responseHandler);
   }
 
+//  private OIDCTokens getRefreshToken(RefreshToken refreshToken, AuthTokenHandler authTokenHandler) {
+//    OIDCTokens token = null;
+//      try {
+//          token = authTokenHandler.getAuthTokensByRefreshToken(refreshToken);
+//      } catch (AuthException e) {
+//          e.printStackTrace();
+//      }
+//      return token;
+//  }
+
+  private OIDCTokens getToken(String userName, String password, AuthTokenHandler authTokenHandler) {
+    OIDCTokens token = null;
+    try {
+        token = authTokenHandler.getAuthTokensByPassword(userName, password);
+    } catch (AuthException e) {
+        e.printStackTrace();
+    }
+    return token;
+  }
 
   private HttpUriRequest createHttpRequest(final Method method, final String path, final HttpEntity payload) throws
       IOException {
     String uri = target + path;
-    HttpUriRequest request = null;
-
-    switch (method.name().toLowerCase()) {
+    HttpUriRequest localrequest = null;
+//    AuthTokenHandler authTokenHandler;
+//      try {
+//         AuthOIDCClient authOIDCClient = new AuthOIDCClient("authserveraddress", 8000, "tenant");
+//         authTokenHandler =  authOIDCClient.getTokenHandler();
+//         if (userName != null && password != null) {
+//           if (oidcTokens == null) {
+//             oidcTokens = getToken(userName, password, authTokenHandler);
+//           }
+//         }
+//      } catch (Exception e) {
+//          e.printStackTrace();
+//      }
+      switch (method.name().toLowerCase()) {
       case "get":
-        request = new HttpGet(uri);
+        localrequest = new HttpGet(uri);
         break;
 
       case "put":
-        request = new HttpPut(uri);
-        ((HttpPut) request).setEntity(payload);
+        localrequest = new HttpPut(uri);
+        ((HttpPut) localrequest).setEntity(payload);
         break;
 
       case "post":
-        request = new HttpPost(uri);
-        ((HttpPost) request).setEntity(payload);
+        localrequest = new HttpPost(uri);
+        ((HttpPost) localrequest).setEntity(payload);
         break;
 
       case "delete":
-        request = new HttpDelete(uri);
+        localrequest = new HttpDelete(uri);
         break;
 
       default:
         throw new RuntimeException("Unknown method: " + method);
     }
-
-    request = addAuthHeader(request);
+    if (userName != null && password != null) {
+      localrequest = addAuthHeader(localrequest, oidcTokens);
+      request = localrequest;
+      return request;
+    }
+    localrequest = addAuthHeader(localrequest);
+    request = localrequest;
     return request;
   }
 
+  protected HttpUriRequest addAuthHeader(HttpUriRequest request, OIDCTokens tokens) {
+      request.addHeader(AUTHORIZATION_HEADER, AUTHORIZATION_METHOD + tokens);
+      return request;
+  }
   @VisibleForTesting
   protected HttpUriRequest addAuthHeader(HttpUriRequest request) {
     if (sharedSecret != null) {
@@ -182,7 +268,6 @@ public class RestClient {
 
   public void checkResponse(HttpResponse httpResponse, int expected) {
     int statusCode = httpResponse.getStatusLine().getStatusCode();
-
     if (statusCode != expected) {
       StringBuilder msg = new StringBuilder();
       msg.append("HTTP request failed with: ");
