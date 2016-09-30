@@ -151,6 +151,24 @@ To enable authentication in Photon Controller services, a Lightwave STS must be 
 * `PHOTON_SWAGGER_LOGIN_URL` - registered login URL for the client at the Lightwave server
 * `PHOTON_SWAGGER_LOGOUT_URL` - registered logout URL for the client at the Lightwave server
 
+### Using devbox with NSX for virtual network
+To enable virtual network in Photon Controller, some NSX parameters are needed to provision each host added to the devbox. The parameters are set in the deployment document in cloud-store. To enable virtual network define the following environment variables before running ./seed_deployment.sh:
+
+* `ENABLE_NSX` - set to `true` to enable virtual network, do not set or set to `false` to disable it
+* `NETWORK_MANAGER_ADDRESS` - address of the NSX manager
+* `NETWORK_MANAGER_USERNAME` - username of the NSX manager
+* `NETWORK_MANAGER_PASSWORD` - password of the NSX manager
+* `NETWORK_TOP_ROUTER_ID` - ID of the NSX tier-0 router
+* `NETWORK_ZONE_ID` - ID of the NSX transport zone
+* `NETWORK_EDGE_CLUSTER_ID` - ID of the NSX Edge Cluster
+* `NETWORK_DHCP_RELAY_PROFILE_ID` - ID of the NSX DHCP relay profile
+* `NETWORK_DHCP_RELAY_SERVICE_ID` - ID of the NSX DHCP relay service
+* `NETWORK_IP_RANGE` - range of the global private IP pool
+* `NETWORK_EXTERNAL_IP_START` - start IP of the global external IP pool
+* `NETWORK_EXTERNAL_IP_END` - end IP of the global external IP pool
+* `NETWORK_SNAT_IP` - SNAT IP used by NSX
+* `NETWORK_DHCP_SERVER` - address of the DHCP server
+
 ### Using devbox with a real ESX host
 By default devbox uses an internal Photon Controller Agent, which mimics the ESX operations. To use with an actual ESX host, set the following environment variables before starting devbox:
 

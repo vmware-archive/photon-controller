@@ -37,7 +37,6 @@ deployment_create_spec_json="{ \
    \"imageDataStoreUsedForVMs\" : true, \
    \"imageId\" : \"none\", \
    \"projectId\" : \"none\", \
-   \"sdnEnabled\" : false, \
    \"documentSelfLink\" : \"test-deployment\""
 
    if [[ $ENABLE_AUTH == "true" ]]; then
@@ -65,6 +64,25 @@ deployment_create_spec_json="{ \
    else
       deployment_create_spec_json+=", \
       \"statsEnabled\" : false"
+   fi
+   if [[ $ENABLE_NSX == "true" ]]; then
+      deployment_create_spec_json+=", \
+      \"networkManagerAddress\" : \"${NETWORK_MANAGER_ADDRESS}\", \
+      \"networkManagerUsername\" : \"${NETWORK_MANAGER_USERNAME}\", \
+      \"networkManagerPassword\" : \"${NETWORK_MANAGER_PASSWORD}\", \
+      \"networkTopRouterId\" : \"${NETWORK_TOP_ROUTER_ID}\", \
+      \"networkZoneId\" : \"${NETWORK_ZONE_ID}\", \
+      \"edgeClusterId\" : \"${NETWORK_EDGE_CLUSTER_ID}\", \
+      \"dhcpRelayProfileId\": \"${NETWORK_DHCP_RELAY_PROFILE_ID}\", \
+      \"dhcpRelayServiceId\": \"${NETWORK_DHCP_RELAY_SERVICE_ID}\", \
+      \"ipRange\" : \"${NETWORK_IP_RANGE}\", \
+      \"floatingIpRange\" : {\"start\" : \"${NETWORK_EXTERNAL_IP_START}\", \"end\" : \"${NETWORK_EXTERNAL_IP_END}\"}, \
+      \"snatIp\": \"${NETWORK_SNAT_IP}\", \
+      \"dhcpServers\" : [\"${NETWORK_DHCP_SERVER}\"], \
+      \"sdnEnabled\" : true"
+   else
+      deployment_create_spec_json+=", \
+      \"sdnEnabled\" : false"
    fi
 deployment_create_spec_json+="}"
 
