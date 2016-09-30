@@ -44,7 +44,7 @@ describe "virtual_network_lifecyle", :virtual_network => true do
     network.delete
   end
 
-  it "Creates two virtual networks, two VMs and then delete them" do
+  xit "Creates two virtual networks, two VMs and then delete them" do
     network1 = create_network(spec)
     network2 = create_network(spec)
 
