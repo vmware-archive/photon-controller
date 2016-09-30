@@ -161,8 +161,7 @@ public class IpLeaseDeleteServiceTest {
       state.stage = TaskState.TaskStage.CREATED;
 
       return new Object[][]{
-          {"taskState", state},
-          {"isSelfProgressionDisabled", false},
+          {"taskState", state}
       };
     }
 

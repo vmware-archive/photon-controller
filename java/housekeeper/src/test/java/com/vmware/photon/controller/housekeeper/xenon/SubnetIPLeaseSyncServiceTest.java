@@ -169,8 +169,7 @@ public class SubnetIPLeaseSyncServiceTest {
       state.stage = TaskState.TaskStage.CREATED;
 
       return new Object[][]{
-          {"taskState", state},
-          {"isSelfProgressionDisabled", false},
+          {"taskState", state}
       };
     }
 

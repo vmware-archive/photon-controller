@@ -20,7 +20,6 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
-import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.xenon.common.FactoryService;
@@ -407,7 +406,6 @@ public class DhcpSubnetDeleteService extends StatefulService {
     /**
      * Flag that controls if we should self patch to make forward progress.
      */
-    @DefaultBoolean(value = false)
-    public Boolean isSelfProgressionDisabled;
+    public boolean isSelfProgressionDisabled;
   }
 }

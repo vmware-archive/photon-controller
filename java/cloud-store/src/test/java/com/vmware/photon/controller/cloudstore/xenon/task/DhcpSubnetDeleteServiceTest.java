@@ -164,7 +164,6 @@ public class DhcpSubnetDeleteServiceTest {
 
       return new Object[][]{
           {"taskState", state},
-          {"isSelfProgressionDisabled", false},
       };
     }
 

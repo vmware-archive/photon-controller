@@ -158,7 +158,6 @@ public class IpLeaseCleanerServiceTest {
 
       return new Object[][]{
           {"taskState", state},
-          {"isSelfProgressionDisabled", false},
       };
     }
 
