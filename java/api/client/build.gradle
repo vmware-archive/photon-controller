@@ -2,7 +2,8 @@ apply plugin: 'java'
 
 dependencies {
   compile(project(':api:model'))
-
+//  compile(project(':api:frontend'))
+  compile(project(':common-auth'))
   compile 'org.apache.httpcomponents:httpclient:4.3.3'
   compile 'org.apache.httpcomponents:httpasyncclient:4.0.1'
   compile 'org.apache.commons:commons-lang3:3.1'
