@@ -13,7 +13,12 @@
 
 package com.vmware.photon.controller.api.client;
 
+import com.vmware.identity.openidconnect.client.OIDCClient;
+import com.vmware.identity.openidconnect.client.OIDCTokens;
+import com.vmware.photon.controller.common.auth.AuthTokenHandler;
+
 import com.google.common.collect.ImmutableMap;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -28,10 +33,14 @@ import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.MultipartEntity;
+
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
+
 import org.apache.http.protocol.BasicHttpContext;
+
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 import org.testng.annotations.Test;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -49,11 +58,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+
 /**
  * Tests {@link RestClient}.
  */
+
 public class RestClientTest {
-  final String endpoint = "http://1.1.1.1";
+  final String endpoint = "http://127.0.0.1";
   final String path = "/v1/foo";
   final String uri = String.format("%s%s", endpoint, path);
 
@@ -61,13 +72,19 @@ public class RestClientTest {
   private HttpClient mockHttpClient;
   private RestClient restClient;
   private FutureCallback<HttpResponse> mockCallback;
+  private OIDCClient oidcClient;
+  private AuthTokenHandler mockAuthTokenHandler;
+  @Mock private RestClient mockRestClient;
 
-  private ArgumentCaptor<HttpUriRequest> setup(RestClient.Method method, StringEntity payload) {
+  private void initializationSetUp() {
     mockAsyncHttpClient = mock(CloseableHttpAsyncClient.class);
     mockHttpClient = mock(HttpClient.class);
     restClient = new RestClient(endpoint, mockAsyncHttpClient, mockHttpClient);
     mockCallback = mock(FutureCallback.class);
-
+    mockAuthTokenHandler = mock(AuthTokenHandler.class);
+  }
+  private ArgumentCaptor<HttpUriRequest> setup(RestClient.Method method, StringEntity payload) {
+    initializationSetUp();
     try {
       restClient.performAsync(method, path, payload, mockCallback);
     } catch (IOException e) {
@@ -97,6 +114,15 @@ public class RestClientTest {
     assertNotNull(request);
     assertTrue(request.getMethod().equalsIgnoreCase(RestClient.Method.GET.toString()));
     assertEquals(request.getURI().toString(), uri);
+  }
+
+  @Test
+  public void testPerformGetToken() throws Exception{
+    initializationSetUp();
+    OIDCTokens token = restClient.getToken("username", "password", mockAuthTokenHandler);
+
+    assertEquals(null , token);
+    verify(mockAuthTokenHandler).getAuthTokensByPassword(any(String.class), any(String.class));
   }
 
   @Test
@@ -175,6 +201,16 @@ public class RestClientTest {
     when(statusLine.getStatusCode()).thenReturn(404);
 
     restClient.checkResponse(httpResponse, 404);
+  }
+
+  @Test
+  public void testAddAuthHeaderWithToken() {
+    OIDCTokens token = null;
+    RestClient restClient = new RestClient(endpoint, HttpAsyncClients.createDefault(), "username", "password");
+    HttpUriRequest request = new HttpGet(endpoint + path);
+    request = restClient.addAuthHeader(request , token);
+    assertEquals(request.getHeaders(RestClient.AUTHORIZATION_HEADER)[0].toString(), RestClient.AUTHORIZATION_HEADER +
+            ": " + RestClient.AUTHORIZATION_METHOD + "null");
   }
 
   @Test
