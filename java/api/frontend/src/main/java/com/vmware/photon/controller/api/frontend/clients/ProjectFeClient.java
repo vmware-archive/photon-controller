@@ -15,6 +15,7 @@ package com.vmware.photon.controller.api.frontend.clients;
 
 import com.vmware.photon.controller.api.frontend.backends.ProjectBackend;
 import com.vmware.photon.controller.api.frontend.backends.TaskBackend;
+import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Project;
@@ -36,11 +37,13 @@ public class ProjectFeClient {
 
   private final ProjectBackend projectBackend;
   private final TaskBackend taskBackend;
+  private final AuthConfig authConfig;
 
   @Inject
-  public ProjectFeClient(ProjectBackend projectBackend, TaskBackend taskBackend) {
+  public ProjectFeClient(ProjectBackend projectBackend, TaskBackend taskBackend, AuthConfig authConfig) {
     this.projectBackend = projectBackend;
     this.taskBackend = taskBackend;
+    this.authConfig = authConfig;
   }
 
   public Project get(String id) throws ExternalException {
@@ -49,6 +52,18 @@ public class ProjectFeClient {
 
   public ResourceList<Project> find(String tenantId, Optional<String> name, Optional<Integer> pageSize)
       throws ExternalException {
+    return projectBackend.filter(tenantId, name, pageSize);
+  }
+
+  public ResourceList<Project> find(String tenantId, Optional<String> name, Optional<Integer> pageSize,
+                                    List<String> tokenGroups, String defaultAdminGroup)
+      throws ExternalException {
+    if (authConfig.isAuthEnabled()) {
+      if (tokenGroups == null || !tokenGroups.contains(defaultAdminGroup)) {
+        return projectBackend.filter(tenantId, name, pageSize, tokenGroups);
+      }
+    }
+
     return projectBackend.filter(tenantId, name, pageSize);
   }
 

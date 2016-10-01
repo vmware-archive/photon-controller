@@ -222,6 +222,20 @@ public class AuthPolicyProviderTest {
       assertThat(retrievedSGs, is(tokenSGs));
     }
 
+    @Test
+    public void testStoreDefaultAdminGroupInContainerRequest() throws Throwable {
+      request = buildRequest("", buildHeadersWithToken());
+
+      String username = token.getSubject().getValue().replaceAll("^\"|\"$", "");
+      doReturn(authorizationObject).when(resolver).evaluate(request);
+      doReturn(ImmutableSet.of(username)).when(fetcher).fetchSecurityGroups(authorizationObject);
+
+      policyProvider.checkAccessPermissions(request, token);
+
+      String defaultAdminGroup = (String) request.getProperty(AuthFilter.DEFAULT_ADMIN_GROUP_PROPERTY_NAME);
+      assertThat(defaultAdminGroup, is(config.getTenant() + AuthPolicyProvider.DEFAULT_ADMIN_GROUP_NAME));
+    }
+
     private ContainerRequest buildRequest(String path, MultivaluedMap<String, String> headers)
         throws URISyntaxException {
       ContainerRequest containerRequest = new ContainerRequest(new URI(""), new URI(path), null, new

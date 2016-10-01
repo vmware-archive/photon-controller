@@ -112,6 +112,10 @@ public class AuthPolicyProvider implements PolicyProvider {
     // rights of the user
     request.setProperty(AuthFilter.REQUEST_TOKENGROUPS_PROPERTY_NAME, tokenGroups);
 
+    // Store default admin group in the container request for resource layer data filter,
+    // since the default admin group is not stored in cloudstore document
+    request.setProperty(AuthFilter.DEFAULT_ADMIN_GROUP_PROPERTY_NAME, this.defaultAdminGroup);
+
     // Determine request authorization object.
     TransactionAuthorizationObject transactionAuthorizationObject = this.resolver.evaluate(request);
 

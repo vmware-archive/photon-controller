@@ -52,6 +52,9 @@ public class AuthFilter implements ContainerRequestFilter {
   // Property name of token groups in container request
   public static final String REQUEST_TOKENGROUPS_PROPERTY_NAME = "tokengroups";
 
+  // Property name of default admin group
+  public static final String DEFAULT_ADMIN_GROUP_PROPERTY_NAME = "defaultAdminGroup";
+
   private static final Logger logger = LoggerFactory.getLogger(AuthFilter.class);
 
   private String authServerAddress;

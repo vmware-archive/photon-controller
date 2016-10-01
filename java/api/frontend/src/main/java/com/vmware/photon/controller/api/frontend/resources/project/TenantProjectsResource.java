@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api.frontend.resources.project;
 
+import com.vmware.photon.controller.api.frontend.auth.AuthFilter;
 import com.vmware.photon.controller.api.frontend.clients.ProjectFeClient;
 import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
@@ -49,6 +50,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+
+import java.util.List;
 
 /**
  * This resource is for project related API under a tenant.
@@ -100,7 +103,12 @@ public class TenantProjectsResource {
       resourceList = projectFeClient.getProjectsPage(pageLink.get());
     } else {
       Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
-      resourceList = projectFeClient.find(tenantId, name, adjustedPageSize);
+      List<String> tokenGroups = (List<String>) ((ContainerRequest) request).getProperty(
+          AuthFilter.REQUEST_TOKENGROUPS_PROPERTY_NAME);
+      String defaultAdminGroup = (String) ((ContainerRequest) request).getProperty(
+          AuthFilter.DEFAULT_ADMIN_GROUP_PROPERTY_NAME);
+
+      resourceList = projectFeClient.find(tenantId, name, adjustedPageSize, tokenGroups, defaultAdminGroup);
     }
 
     String apiRoute = UriBuilder.fromPath(TenantResourceRoutes.TENANT_PROJECTS_PATH).build(tenantId).toString();
