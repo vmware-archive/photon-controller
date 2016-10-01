@@ -15,6 +15,7 @@ Source1:    photon-controller.service
 Requires:        gawk
 Requires:        openjre >= 1.8
 Requires:        openjdk >= 1.8
+Requires:        vmware-lightwave-clients >= 1.0.0
 
 %define install_dir /usr/lib/esxcloud/photon-controller-core
 %define config_jq_filter '.[0] * .[1].dynamicParameters | with_entries(select (.key != "DEPLOYMENT_ID"))'
