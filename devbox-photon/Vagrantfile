@@ -724,12 +724,14 @@ EOM
     # Extracting out the base file from url and loading the image
     docker load -i `basename #{ENV['UI_CONTAINER_URL']}`
 
+    # When using the devbox, we tell the UI to talk directly to the
+    # API and we don't use the load balancer: it avoids an unnecessary
+    # hop, since we only have one host
     docker run \
       -p 20000:80 \
-      -e LOAD_BALANCER_IP="#{ENV['PUBLIC_NETWORK_IP']}" \
-      -e LOAD_BALANCER_API_PORT="28080" \
-      -e LOAD_BALANCER_HTTPS_PORT="9213" \
-      -e ENABLE_AUTH="false" \
+      -p 20001:443 \
+      -e API_ORIGIN=http://"#{ENV['PUBLIC_NETWORK_IP']}":9000 \
+      -e HTTPS_PORT=20001 \
       -d --name management-ui \
       esxcloud/management_ui
     EOS
