@@ -15,6 +15,7 @@ Source1:    photon-controller.service
 Requires:        gawk
 Requires:        openjre >= 1.8
 Requires:        openjdk >= 1.8
+Requires:        vmware-lightwave-clients >= 1.0.0
 
 %define install_dir /usr/lib/esxcloud/photon-controller-core
 %define config_jq_filter '.[0] * .[1].dynamicParameters | with_entries(select (.key != "DEPLOYMENT_ID"))'
@@ -45,6 +46,7 @@ install -vdm 755 %{buildroot}/var/esxcloud/packages
 install -vdm 755 %{buildroot}%{install_dir}/configuration/photon-controller-core
 
 cp /usr/src/photon/SOURCES/photon-controller.service %{buildroot}/usr/lib/systemd/system/
+cp /usr/src/photon/SOURCES/photon-controller-firewall.service %{buildroot}/usr/lib/systemd/system/
 cp /usr/src/photon/SOURCES/*.vib %{buildroot}/var/esxcloud/packages
 cd configuration
 jq -s %{config_jq_filter} ./installer.json ./photon-controller-core_release.json > %{content_file}
@@ -66,6 +68,7 @@ ln -sf %{install_dir}/configuration/run.sh  %{buildroot}/usr/bin/run.sh
 ln -sf %{install_dir}/configuration %{buildroot}/etc/esxcloud
 ln -sf %{install_dir}/configuration %{buildroot}/etc/esxcloud-deployer/configurations
 ln -sf /usr/lib/systemd/system/photon-controller.service %{buildroot}/etc/systemd/system/multi-user.target.wants/photon-controller.service
+ln -sf /usr/lib/systemd/system/photon-controller-firewall.service %{buildroot}/etc/systemd/system/multi-user.target.wants/photon-controller-firewall.service
 
 %files
 %defattr(-,root,root)
@@ -76,5 +79,7 @@ ln -sf /usr/lib/systemd/system/photon-controller.service %{buildroot}/etc/system
 /usr/bin/run.sh
 /usr/bin/photon-controller-core
 /usr/lib/systemd/system/photon-controller.service
+/usr/lib/systemd/system/photon-controller-firewall.service
 /etc/systemd/system/multi-user.target.wants/photon-controller.service
+/etc/systemd/system/multi-user.target.wants/photon-controller-firewall.service
 %dir /etc/systemd/system/photon-controller.service.d/
