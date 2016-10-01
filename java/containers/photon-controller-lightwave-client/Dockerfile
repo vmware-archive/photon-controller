@@ -4,9 +4,6 @@ ENV container=docker
 
 VOLUME ["/sys/fs/cgroup"]
 
-ADD *.rpm /tmp/
-RUN find /tmp -iname "*.rpm" | xargs rpm -Uvh
-
 # Install systemd
 # we need systemd to run lightwave client (which runs few other processes) and photon controller in the same container
 RUN tdnf makecache; \
@@ -29,6 +26,9 @@ RUN tdnf install -y procps-ng; \
     tdnf install -y likewise-open; \
     tdnf install -y boost; \
     tdnf install -y vmware-lightwave-clients-6.6.0
+
+ADD *.rpm /tmp/
+RUN find /tmp -iname "*.rpm" | xargs rpm -Uvh
 
 ENV PATH $PATH:/opt/vmware/bin:/opt/likewise/bin
 

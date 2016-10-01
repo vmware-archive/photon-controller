@@ -92,4 +92,4 @@ docker run -i --rm \
   --net=host \
   -v "${ROOT}"/artifacts/build/RPMS/x86_64:/rpms \
   vmware/photon-controller-rpm-builder \
-  bash -c 'ls /rpms/photon-controller*.rpm | xargs rpm -Uvh && [ -d /usr/lib/esxcloud/photon-controller-core ]'
+  bash -c 'tdnf install -y vmware-lightwave-clients;ls /rpms/photon-controller*.rpm | xargs rpm -Uvh && [ -d /usr/lib/esxcloud/photon-controller-core ]'
