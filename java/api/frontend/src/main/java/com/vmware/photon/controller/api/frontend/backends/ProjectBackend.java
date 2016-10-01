@@ -33,6 +33,10 @@ public interface ProjectBackend {
   ResourceList<Project> filter(String tenantId, Optional<String> name, Optional<Integer> pageSize)
       throws ExternalException;
 
+  ResourceList<Project> filter(String tenantId, Optional<String> name, Optional<Integer> pageSize,
+                               List<String> tokenGroups)
+      throws ExternalException;
+
   Project getApiRepresentation(String id) throws ExternalException;
 
   TaskEntity createProject(String tenantId, ProjectCreateSpec project) throws ExternalException;

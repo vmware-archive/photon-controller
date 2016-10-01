@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.model.SecurityGroup;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -26,15 +25,24 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.services.common.QueryTask;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
  * Class ProjectService is used for data persistence of entity lock.
  */
 public class ProjectService extends StatefulService {
+
+  public static final String FIELD_NAME_SECURITY_GROUPS = "securityGroups";
+  public static final String SECURITY_GROUPS_KEY =
+      QueryTask.QuerySpecification.buildCollectionItemName(FIELD_NAME_SECURITY_GROUPS);
+  public static final String SECURITY_GROUPS_NAME_KEY =
+      QueryTask.QuerySpecification.buildCompositeFieldName(SECURITY_GROUPS_KEY, SecurityGroup.FIELD_NAME);
 
   public ProjectService() {
     super(State.class);
@@ -99,6 +107,37 @@ public class ProjectService extends StatefulService {
   }
 
   /**
+   * Data object for SecurityGroup Item.
+   */
+  public static class SecurityGroup {
+    public static final String FIELD_NAME = "name";
+
+    public String name;
+    public boolean inherited;
+
+    public SecurityGroup() {
+    }
+
+    public SecurityGroup(String name, boolean inherited) {
+      this.name = name;
+      this.inherited = inherited;
+    }
+
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      SecurityGroup other = (SecurityGroup) o;
+      return Objects.equals(this.name, other.name)
+          && this.inherited == other.inherited;
+    }
+  }
+
+  /**
    * Durable service state data. Class encapsulating the data for Project.
    */
   @MigrateDuringUpgrade(transformationServicePath = MigrationUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
@@ -122,6 +161,7 @@ public class ProjectService extends StatefulService {
 
     public String resourceTicketId;
 
+    @PropertyOptions(indexing = ServiceDocumentDescription.PropertyIndexingOption.EXPAND)
     public List<SecurityGroup> securityGroups;
   }
 }

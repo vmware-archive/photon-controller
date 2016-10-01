@@ -32,6 +32,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.ResourceTic
 import com.vmware.photon.controller.api.frontend.exceptions.external.SecurityGroupsAlreadyInheritedException;
 import com.vmware.photon.controller.api.frontend.utils.PaginationUtils;
 import com.vmware.photon.controller.api.frontend.utils.SecurityGroupUtils;
+import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ProjectCreateSpec;
@@ -58,6 +59,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -77,6 +80,7 @@ public class ProjectXenonBackend implements ProjectBackend {
   private final VmBackend vmBackend;
   private final DiskBackend diskBackend;
   private final TombstoneBackend tombstoneBackend;
+  private final DeploymentBackend deploymentBackend;
   private final boolean useVirtualNetwork;
 
   @Inject
@@ -88,6 +92,7 @@ public class ProjectXenonBackend implements ProjectBackend {
       VmBackend vmBackend,
       DiskBackend diskBackend,
       TombstoneBackend tombstoneBackend,
+      DeploymentBackend deploymentBackend,
       @Named("useVirtualNetwork") Boolean useVirtualNetwork) {
     this.xenonClient = xenonClient;
     this.taskBackend = taskBackend;
@@ -96,6 +101,7 @@ public class ProjectXenonBackend implements ProjectBackend {
     this.vmBackend = vmBackend;
     this.diskBackend = diskBackend;
     this.tombstoneBackend = tombstoneBackend;
+    this.deploymentBackend = deploymentBackend;
     this.useVirtualNetwork = useVirtualNetwork;
     this.xenonClient.start();
   }
@@ -106,6 +112,35 @@ public class ProjectXenonBackend implements ProjectBackend {
     tenantBackend.findById(tenantId);
 
     ResourceList<ProjectService.State> projectDocuments = findByTenantIdAndName(tenantId, name, pageSize);
+    return toProjectList(projectDocuments);
+  }
+
+  @Override
+  public ResourceList<Project> filter(String tenantId, Optional<String> name, Optional<Integer> pageSize,
+                                      List<String> tokenGroups) throws
+      ExternalException {
+    tenantBackend.findById(tenantId);
+
+    // get if auth is enabled
+    List<Deployment> deploymentList = deploymentBackend.getAll();
+    checkState(deploymentList.size() > 0, "Must have one or more deployments to list projects under tenant");
+    Deployment deployment = deploymentList.get(0);
+    boolean authEnabled = deployment.getAuth().getEnabled();
+
+    // if auth enabled, filter project list to contain projects user has access to
+    if (authEnabled){
+      logger.info("Auth enabled. Filter projects according to token groups {}", tokenGroups);
+
+      // tokenGroups empty meaning user has no permission
+      if (tokenGroups == null || tokenGroups.isEmpty()) {
+        ResourceList<ProjectService.State> projectDocuments = PaginationUtils.xenonQueryResultToResourceList(
+            ProjectService.State.class, new ServiceDocumentQueryResult());
+        return toProjectList(projectDocuments);
+      }
+    }
+
+    ResourceList<ProjectService.State> projectDocuments = findByTenantIdAndNameAndSGs(tenantId, name, pageSize,
+        tokenGroups);
     return toProjectList(projectDocuments);
   }
 
@@ -167,7 +202,7 @@ public class ProjectXenonBackend implements ProjectBackend {
   @Override
   public void replaceSecurityGroups(String id, List<SecurityGroup> securityGroups) throws ExternalException {
     ProjectService.State patch = new ProjectService.State();
-    patch.securityGroups = securityGroups;
+    patch.securityGroups = fromAPIRepresentation(securityGroups);
 
     try {
       xenonClient.patch(ProjectServiceFactory.SELF_LINK + "/" + id, patch);
@@ -217,8 +252,8 @@ public class ProjectXenonBackend implements ProjectBackend {
           sg -> new SecurityGroup(sg, false)).collect(Collectors.toList());
     }
     List<String> tenantSecurityGroups = getTenantSecurityGroupNames(tenantEntity.getSecurityGroups());
-    state.securityGroups =
-        SecurityGroupUtils.mergeParentSecurityGroups(selfSecurityGroups, tenantSecurityGroups).getLeft();
+    state.securityGroups = fromAPIRepresentation(
+        SecurityGroupUtils.mergeParentSecurityGroups(selfSecurityGroups, tenantSecurityGroups).getLeft());
 
     ResourceTicketReservation reservation = projectCreateSpec.getResourceTicket();
 
@@ -237,7 +272,7 @@ public class ProjectXenonBackend implements ProjectBackend {
     projectEntity.setName(projectCreateSpec.getName());
     projectEntity.setTenantId(tenantId);
     projectEntity.setResourceTicketId(projectTicket.getId());
-    projectEntity.setSecurityGroups(SecurityGroupUtils.fromApiRepresentation(createdState.securityGroups));
+    projectEntity.setSecurityGroups(toSecurityGroupEntityList(createdState.securityGroups));
     logger.info("Project {} has been created", projectEntity.getId());
 
     return projectEntity;
@@ -259,6 +294,22 @@ public class ProjectXenonBackend implements ProjectBackend {
     }
   }
 
+  private SecurityGroupEntity toSecurityGroupEntity(ProjectService.SecurityGroup group) {
+    return new SecurityGroupEntity(group.name, group.inherited);
+  }
+
+  private List<SecurityGroupEntity> toSecurityGroupEntityList(List<ProjectService.SecurityGroup> securityGroups) {
+    return securityGroups.stream().map(sg -> toSecurityGroupEntity(sg)).collect(Collectors.toList());
+  }
+
+  private ProjectService.SecurityGroup fromAPIRepresentation(SecurityGroup group) {
+    return new ProjectService.SecurityGroup(group.getName(), group.isInherited());
+  }
+
+  private List<ProjectService.SecurityGroup> fromAPIRepresentation(List<SecurityGroup> securityGroups) {
+    return securityGroups.stream().map(sg -> fromAPIRepresentation(sg)).collect(Collectors.toList());
+  }
+
   private ProjectEntity toProjectEntity(ProjectService.State state) {
     String id = ServiceUtils.getIDFromDocumentSelfLink(state.documentSelfLink);
     ProjectEntity projectEntity = new ProjectEntity();
@@ -270,8 +321,8 @@ public class ProjectXenonBackend implements ProjectBackend {
 
     if (null != state.securityGroups) {
       List<SecurityGroupEntity> securityGroups = new ArrayList<>();
-      for (SecurityGroup group : state.securityGroups) {
-        securityGroups.add(new SecurityGroupEntity(group.getName(), group.isInherited()));
+      for (ProjectService.SecurityGroup group : state.securityGroups) {
+        securityGroups.add(toSecurityGroupEntity(group));
       }
       projectEntity.setSecurityGroups(securityGroups);
     }
@@ -392,6 +443,29 @@ public class ProjectXenonBackend implements ProjectBackend {
 
     ServiceDocumentQueryResult queryResult = xenonClient.queryDocuments(ProjectService.State.class,
         termsBuilder.build(), pageSize, true);
+    return PaginationUtils.xenonQueryResultToResourceList(ProjectService.State.class, queryResult);
+  }
+
+  private ResourceList<ProjectService.State> findByTenantIdAndNameAndSGs(String tenantId,
+                                                                         Optional<String> name,
+                                                                         Optional<Integer> pageSize,
+                                                                         List<String> tokenGroups)
+      throws ExternalException {
+
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+
+    termsBuilder.put("tenantId", tenantId);
+    if (name.isPresent()) {
+      termsBuilder.put("name", name.get());
+    }
+
+    final ImmutableMap.Builder<String, List<String>> inClauseTermsBuilder = new ImmutableMap.Builder<>();
+    if (tokenGroups != null && !tokenGroups.isEmpty()) {
+      inClauseTermsBuilder.put(ProjectService.SECURITY_GROUPS_NAME_KEY, tokenGroups);
+    }
+
+    ServiceDocumentQueryResult queryResult = xenonClient.queryDocuments(ProjectService.State.class,
+        termsBuilder.build(), inClauseTermsBuilder.build(), pageSize, true, true);
     return PaginationUtils.xenonQueryResultToResourceList(ProjectService.State.class, queryResult);
   }
 
