@@ -205,6 +205,23 @@ public class ApiFeXenonRestClient extends XenonRestClient {
   }
 
   @Override
+  public <T extends ServiceDocument> ServiceDocumentQueryResult queryDocuments(Class<T> documentType,
+                                                                               ImmutableMap<String, String> terms,
+                                                                               ImmutableMap<String,
+                                                                                   List<String>> inClauseTerms,
+                                                                               Optional<Integer> pageSize,
+                                                                               boolean expandContent,
+                                                                               boolean broadCast) {
+    try {
+      return super.queryDocuments(documentType, terms, inClauseTerms, pageSize, expandContent, broadCast);
+    } catch (DocumentNotFoundException | BadRequestException e) {
+      throw new XenonRuntimeException(e);
+    } catch (TimeoutException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
   public ServiceDocumentQueryResult queryDocumentPage(String pageLink) throws DocumentNotFoundException {
 
     try {

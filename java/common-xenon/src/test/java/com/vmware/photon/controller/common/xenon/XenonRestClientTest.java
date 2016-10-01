@@ -700,6 +700,54 @@ public class XenonRestClientTest {
     }
 
     @Test
+    public void testQueryOfCreatedDocumentWithInClauseTerms() throws Throwable {
+      Map<String, ExampleService.ExampleServiceState> exampleServiceStateMap = new HashMap<>();
+      List<Set<String>> tagSets = Arrays.asList(
+          new HashSet(Arrays.asList(new String[] {})),
+          new HashSet(Arrays.asList(new String[] { "tag3", "tag4" })),
+          new HashSet(Arrays.asList(new String[] { "tag1" })),
+          new HashSet(Arrays.asList(new String[] { "tag2", "tag3" })),
+          new HashSet(Arrays.asList(new String[] { "tag1", "tag2", "tag3" }))
+      );
+      for (int i = 0; i < 5; i++) {
+        ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
+        exampleServiceState.name = "test" + i;
+        exampleServiceState.tags = tagSets.get(i);
+        String documentSelfLink = createDocument(exampleServiceState);
+
+        exampleServiceStateMap.put(documentSelfLink, exampleServiceState);
+      }
+
+      // test null inClauseTerms
+      ServiceDocumentQueryResult result = xenonRestClient.queryDocuments(
+          ExampleService.ExampleServiceState.class, null, null, Optional.<Integer>absent(), true, true);
+      assertThat(result.documentCount, is(5L));
+
+      // test empty collection in inClauseTerms
+      ImmutableMap.Builder<String, List<String>> termsBuilder = new ImmutableMap.Builder<String, List<String>>();
+      termsBuilder.put(QueryTask.QuerySpecification.buildCollectionItemName("tags"), Arrays.asList(new String[]{}));
+
+      result = xenonRestClient.queryDocuments(
+          ExampleService.ExampleServiceState.class, null, termsBuilder.build(), Optional.<Integer>absent(), true, true);
+      assertThat(result.documentCount, is(0L));
+
+      // test non-empty collection in inClauseTerms
+      termsBuilder = new ImmutableMap.Builder<String, List<String>>();
+      termsBuilder.put(QueryTask.QuerySpecification.buildCollectionItemName("tags"),
+          Arrays.asList(new String[]{"tag1", "tag2"}));
+
+      result = xenonRestClient.queryDocuments(
+          ExampleService.ExampleServiceState.class, null, termsBuilder.build(), Optional.<Integer>absent(), true, true);
+      assertThat(result.documentCount, is(3L));
+
+      Set<String> actualDocumentNames = result.documents.values().stream()
+          .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
+          .collect(Collectors.toSet());
+      Set<String> expectedDocumentNames = new HashSet(Arrays.asList(new String[] {"test2", "test3", "test4" }));
+      assertThat(CollectionUtils.isEqualCollection(actualDocumentNames, expectedDocumentNames), is(true));
+    }
+
+    @Test
     public void testQueryWhenNoDocumentsExist() throws Throwable {
       List<ExampleService.ExampleServiceState> documentList = xenonRestClient.queryDocuments(
           ExampleService.ExampleServiceState.class, null);

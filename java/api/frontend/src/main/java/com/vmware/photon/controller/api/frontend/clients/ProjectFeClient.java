@@ -52,6 +52,12 @@ public class ProjectFeClient {
     return projectBackend.filter(tenantId, name, pageSize);
   }
 
+  public ResourceList<Project> find(String tenantId, Optional<String> name, Optional<Integer> pageSize,
+                                    List<String> tokenGroups)
+      throws ExternalException {
+    return projectBackend.filter(tenantId, name, pageSize, tokenGroups);
+  }
+
   public Task create(String tenantId, ProjectCreateSpec project) throws ExternalException {
     TaskEntity taskEntity = projectBackend.createProject(tenantId, project);
     Task task = taskBackend.getApiRepresentation(taskEntity);
