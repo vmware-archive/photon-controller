@@ -25,6 +25,7 @@ import com.vmware.photon.controller.api.frontend.entities.TenantEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ProjectNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.TenantNotFoundException;
+import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ProjectCreateSpec;
 import com.vmware.photon.controller.api.model.ProjectTicket;
@@ -33,8 +34,8 @@ import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.api.model.ResourceTicketReservation;
-import com.vmware.photon.controller.api.model.SecurityGroup;
 import com.vmware.photon.controller.api.model.TenantCreateSpec;
+import com.vmware.photon.controller.api.model.builders.AuthConfigurationSpecBuilder;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
@@ -59,6 +60,7 @@ import static org.testng.AssertJUnit.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -267,6 +269,9 @@ public class ProjectXenonBackendTest {
     @Inject
     private TenantBackend tenantBackend;
 
+    @Inject
+    private DeploymentBackend deploymentBackend;
+
     private String tenantId;
     private ProjectCreateSpec spec1;
     private ProjectCreateSpec spec2;
@@ -338,6 +343,11 @@ public class ProjectXenonBackendTest {
 
     @Test
     public void testFilterProject() throws Exception {
+      DeploymentCreateSpec deploymentSpec = new DeploymentCreateSpec();
+      deploymentSpec.setAuth(new AuthConfigurationSpecBuilder().enabled(false).build());
+      deploymentSpec.setImageDatastores(Collections.singleton("dummy-image-data-store-name"));
+      deploymentBackend.prepareCreateDeployment(deploymentSpec);
+
       TaskEntity taskEntity = projectBackend.createProject(tenantId, spec1);
       assertThat(taskEntity.getId(), notNullValue());
       assertThat(taskEntity.getEntityKind(), is("project"));
@@ -360,6 +370,52 @@ public class ProjectXenonBackendTest {
       tenantProjectList.add(resourceList.getItems().get(0).getName());
 
       assertThat(CollectionUtils.isEqualCollection(tenantProjectList, ImmutableSet.of("p1", "p2")), is(true));
+    }
+
+    @Test
+    public void testFilterProjectWithSecurityGroups() throws Exception {
+      DeploymentCreateSpec deploymentSpec = new DeploymentCreateSpec();
+      deploymentSpec.setAuth(new AuthConfigurationSpecBuilder()
+          .enabled(true)
+          .securityGroups(Arrays.asList(new String[]{"securityGroup1", "securityGroup2"}))
+          .build());
+      deploymentSpec.setImageDatastores(Collections.singleton("dummy-image-data-store-name"));
+      deploymentBackend.prepareCreateDeployment(deploymentSpec);
+
+      spec1.setSecurityGroups(Arrays.asList(new String[]{ "sg1" }));
+      spec2.setSecurityGroups(Arrays.asList(new String[]{ "sg2", "sg3" }));
+
+      TaskEntity taskEntity = projectBackend.createProject(tenantId, spec1);
+      assertThat(taskEntity.getId(), notNullValue());
+      assertThat(taskEntity.getEntityKind(), is("project"));
+      projectBackend.createProject(tenantId, spec2);
+
+      // test empty tokenGroup returns empty project list
+      ResourceList<Project> projectList = projectBackend.filter(tenantId, Optional.of(spec1.getName()),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      assertThat(projectList.getItems().size(), is(0));
+
+      // test non-overlapping tokenGroup returns empty project list
+      projectList = projectBackend.filter(tenantId, Optional.of(spec1.getName()),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), Arrays.asList(new String[] { "sg2" }));
+      assertThat(projectList.getItems().size(), is(0));
+
+      // test overlapping tokenGroup returns expected project list
+      projectList = projectBackend.filter(tenantId, Optional.of(spec1.getName()),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), Arrays.asList(new String[] { "sg1" }));
+      assertThat(projectList.getItems().size(), is(1));
+
+      projectList = projectBackend.filter(tenantId, Optional.<String>absent(),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), Arrays.asList(new String[] { "sg1" }));
+      assertThat(projectList.getItems().size(), is(1));
+
+      projectList = projectBackend.filter(tenantId, Optional.of(spec1.getName()),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), Arrays.asList(new String[] { "sg1", "sg2" }));
+      assertThat(projectList.getItems().size(), is(1));
+
+      projectList = projectBackend.filter(tenantId, Optional.<String>absent(),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), Arrays.asList(new String[] { "sg1", "sg2" }));
+      assertThat(projectList.getItems().size(), is(2));
     }
 
     @Test
@@ -576,8 +632,8 @@ public class ProjectXenonBackendTest {
     @Test
     public void testUpdateSecurityGroupsWarning() throws Exception, DocumentNotFoundException {
       ProjectService.State patch = new ProjectService.State();
-      patch.securityGroups = new ArrayList<SecurityGroup>();
-      patch.securityGroups.add(new SecurityGroup("adminGroup1", true));
+      patch.securityGroups = new ArrayList<ProjectService.SecurityGroup>();
+      patch.securityGroups.add(new ProjectService.SecurityGroup("adminGroup1", true));
 
       xenonClient.patch(ProjectServiceFactory.SELF_LINK + "/" + projectId, patch);
 

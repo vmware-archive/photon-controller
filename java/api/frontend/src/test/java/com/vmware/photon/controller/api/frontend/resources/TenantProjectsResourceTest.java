@@ -157,13 +157,13 @@ public class TenantProjectsResourceTest extends ResourceTest {
 
   @Test(dataProvider = "pageSizes")
   public void testGetProjects(Optional<Integer> pageSize, List<Project> expectedProjects) throws Exception {
-    when(projectFeClient.find(tenantId, Optional.absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
-        .thenReturn(new ResourceList<>(ImmutableList.of(p1, p2)));
-    when(projectFeClient.find(tenantId, Optional.absent(), Optional.of(1)))
+    when(projectFeClient.find(tenantId, Optional.absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE),
+        null)).thenReturn(new ResourceList<>(ImmutableList.of(p1, p2)));
+    when(projectFeClient.find(tenantId, Optional.absent(), Optional.of(1), null))
         .thenReturn(new ResourceList<>(ImmutableList.of(p1), UUID.randomUUID().toString(), null));
-    when(projectFeClient.find(tenantId, Optional.absent(), Optional.of(2)))
+    when(projectFeClient.find(tenantId, Optional.absent(), Optional.of(2), null))
         .thenReturn(new ResourceList<>(ImmutableList.of(p1, p2)));
-    when(projectFeClient.find(tenantId, Optional.absent(), Optional.of(3)))
+    when(projectFeClient.find(tenantId, Optional.absent(), Optional.of(3), null))
         .thenReturn(new ResourceList<Project>(Collections.emptyList()));
 
     Response response = getProjects(Optional.<String>absent(), pageSize, Optional.absent());
@@ -202,8 +202,8 @@ public class TenantProjectsResourceTest extends ResourceTest {
 
   @Test
   public void testGetProjectsPageByName() throws Exception {
-    when(projectFeClient.find(tenantId, Optional.of("p1name"), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
-        .thenReturn(new ResourceList<>(ImmutableList.of(p1)));
+    when(projectFeClient.find(tenantId, Optional.of("p1name"), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE),
+        null)).thenReturn(new ResourceList<>(ImmutableList.of(p1)));
 
     Response response = getProjects(Optional.of("p1name"), Optional.absent(), Optional.absent());
 
