@@ -377,12 +377,26 @@ public class XenonRestClient implements XenonClient {
     return queryDocuments(documentType, terms, pageSize, expandContent, true);
   }
 
+  @Override
+  public <T extends ServiceDocument> ServiceDocumentQueryResult queryDocuments(Class<T> documentType,
+                                                                               ImmutableMap<String, String> terms,
+                                                                               Optional<Integer> pageSize,
+                                                                               boolean expandContent,
+                                                                               boolean broadCast)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+    return queryDocuments(documentType, terms, null, pageSize, expandContent, true);
+  }
+
   /**
-   * Executes a Xenon query which queries for documents of type T. The query terms are optional. The pageSize is also
-   * optional. If it is not provided, the complete document will be retrieved.
+   * Executes a Xenon query which queries for documents of type T. The query terms are optional.
+   * The query inClauseTerms are optional. If it is null or empty, no inClauseTerms will be added.
+   * However, if a key in inClauseTerms is provided but value is empty list, an inClauseTerm with empty match values
+   * will be added, which means that none of the documents will be retrieved.
+   * The pageSize is also optional. If it is not provided, the complete document will be retrieved.
    *
    * @param documentType
    * @param terms
+   * @param inClauseTerms
    * @param pageSize
    * @param expandContent
    * @param broadCast
@@ -396,6 +410,8 @@ public class XenonRestClient implements XenonClient {
   @Override
   public <T extends ServiceDocument> ServiceDocumentQueryResult queryDocuments(Class<T> documentType,
                                                                                ImmutableMap<String, String> terms,
+                                                                               ImmutableMap<String,
+                                                                                   List<String>> inClauseTerms,
                                                                                Optional<Integer> pageSize,
                                                                                boolean expandContent,
                                                                                boolean broadCast)
@@ -415,6 +431,14 @@ public class XenonRestClient implements XenonClient {
     }
     if (pageSize.isPresent()) {
       spec.resultLimit = pageSize.get();
+    }
+
+    if (inClauseTerms != null && !inClauseTerms.isEmpty()) {
+      QueryTask.Query.Builder queryBuilder = QueryTask.Query.Builder.create();
+      for (String key : inClauseTerms.keySet()) {
+        queryBuilder.addInClause(key, inClauseTerms.get(key));
+      }
+      spec.query.addBooleanClause(queryBuilder.build());
     }
 
     // Indirect call. Xenon will not return the results. Instead the service URI
