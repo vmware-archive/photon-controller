@@ -7,7 +7,7 @@ set -x -e
 # and 'photon-controller-core-v0.9.1.rpm' for v0.9.1 branch.
 BRANCH=${GERRIT_BRANCH:-`git rev-parse --abbrev-ref HEAD`}
 COMMIT=`git rev-parse --short HEAD`
-VERSION=${BRANCH}
+VERSION=1.0.1
 
 # An increasing number is needed for release number part of RPM. This is used for updating
 # from old RPM to new RPM within same version by tdnf/yum. To autmoate incrementing the
@@ -39,7 +39,6 @@ cd "${TEMP_DIR}"
 FILENAME=`find "${ROOT}${TAR_PATH}" -iname "${TAR_PREFIX}*.tar"`
 tar -xf "${FILENAME}"
 
-VERSION=`echo $VERSION | tr "-" "_"`
 RPM_DIR="${RPM_PREFIX}-${VERSION}"
 mv ${TAR_PREFIX}* "${RPM_DIR}"
 tar -czf "${SOURCES_DIR}/${RPM_DIR}.tar" "${RPM_DIR}"
