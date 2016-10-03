@@ -118,6 +118,31 @@ describe "resource ticket", management: true do
     end
   end
 
+  xit "should fail on virtual network quota exceeded" do
+    limits = [create_limit("sdn.size", 8, "COUNT")]
+    spec = EsxCloud::VirtualNetworkCreateSpec.new(random_name("network-"), "virtual network", "ROUTED", 8, 2)
+
+    resource_ticket = @tenant.create_resource_ticket(:name => random_name("rt-"), :limits => limits)
+    @project = @tenant.create_project(:name => random_name("project-"), :resource_ticket_name => resource_ticket.name,
+                                      :limits => [create_subdivide_limit(100.0)])
+
+    network = create_network(spec)
+
+    begin
+      create_network(spec)
+
+      fail("Creating virtual networks with more than allowed private IP count limit should fail")
+    rescue EsxCloud::ApiError => e
+      e.response_code.should == 400
+      e.errors.size.should == 1
+      e.errors[0].code.should == "QuotaError"
+    rescue EsxCloud::CliError => e
+      e.output.should match("QuotaError")
+    ensure
+      network.delete
+    end
+  end
+
   it "should fail on vm.cpu quota exceeded" do
     cost = get_vm_flavor_cost_key(vm_flavor.name, "vm.cpu")
     limit_value = cost[:value] * 0.9
