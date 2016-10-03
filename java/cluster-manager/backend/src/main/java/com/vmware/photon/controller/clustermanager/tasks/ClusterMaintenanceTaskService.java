@@ -40,8 +40,6 @@ import com.google.common.util.concurrent.FutureCallback;
 
 import javax.annotation.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -114,7 +112,7 @@ public class ClusterMaintenanceTaskService extends StatefulService {
           break;
       }
     } catch (Throwable e) {
-      failTask(e);
+      failTask(currentState, e);
     }
   }
 
@@ -124,39 +122,35 @@ public class ClusterMaintenanceTaskService extends StatefulService {
     if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
       if (patchState.taskState.stage == TaskState.TaskStage.FINISHED) {
         // The previous maintenance task succeeded. We need to reset the retry counter.
-        ServiceUtils.logInfo(this, "Not run maintenance because patching the task from %s to %s",
-            currentState.taskState.stage.toString(),
-            patchState.taskState.stage.toString());
+        ServiceUtils.logInfo(this, "Not running maintenance for cluster %s because patching the task from %s to %s",
+            clusterId, currentState.taskState.stage.toString(), patchState.taskState.stage.toString());
         patchState.retryCount = 0;
-        patchState.errors = new ArrayList<>();
+        patchState.error = null;
 
         maintenanceOperation = MaintenanceOperation.SKIP;
       } else if (patchState.taskState.stage == TaskState.TaskStage.FAILED) {
         // The previous maintenance task failed. We need to record the error message and determine
         // whether we want to retry.
-        patchState.errors = currentState.errors == null ?
-            new ArrayList<>() : currentState.errors;
         if (patchState.taskState.failure != null) {
-          patchState.errors.add(patchState.taskState.failure.message);
+          patchState.error = patchState.taskState.failure.message;
         } else {
-          patchState.errors.add("Missing failure message");
+          patchState.error = "Missing failure message";
         }
-
+        ServiceUtils.logWarning(this, "Cluster maintenance %d for cluster %s failed because: %s", currentState
+            .maintenanceIteration, clusterId, patchState.error);
         if (currentState.retryCount < currentState.maxRetryCount) {
           // We still have retry available. Increase the retry counter by one.
-          ServiceUtils.logInfo(this, "Retry maintenance because current retry count is %d",
-              currentState.retryCount);
-
+          ServiceUtils.logWarning(this, "Cluster maintenance %d will retry maintenance for cluster %s because current" +
+                  " retry count is %d", currentState.maintenanceIteration, clusterId, currentState.retryCount);
           patchState.retryCount = currentState.retryCount + 1;
           patchState.taskState.stage = TaskState.TaskStage.STARTED;
 
           maintenanceOperation = MaintenanceOperation.RETRY;
         } else {
           // We have used all retries. Fail the maintenance task and set the cluster to ERROR state.
-          ServiceUtils.logInfo(this, "Not retry maintenance because maximum retries have been reached");
-          for (String error : patchState.errors) {
-            ServiceUtils.logInfo(this, error);
-          }
+          ServiceUtils.logSevere(this, "Cluster Maintenance %d failed with maximum maintenance retries reached for " +
+                  "cluster %s is set to ERROR state: %s", currentState.maintenanceIteration,
+              clusterId, patchState.error);
 
           ClusterService.State clusterPatchState = new ClusterService.State();
           clusterPatchState.clusterState = ClusterState.ERROR;
@@ -170,7 +164,8 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                         if (null != throwable) {
                           // Ignore the failure. Otherwise if we fail the maintenance task we may end up
                           // in a dead loop.
-                          ServiceUtils.logSevere(this, "Failed to patch cluster to ERROR: %s", throwable.toString());
+                          ServiceUtils.logSevere(this, "Failed to patch cluster %s to ERROR: %s", clusterId,
+                              throwable.toString());
                         }
                       }
                   ));
@@ -180,7 +175,7 @@ public class ClusterMaintenanceTaskService extends StatefulService {
       } else if (patchState.taskState.stage == TaskState.TaskStage.CANCELLED) {
         // The previous maintenance task was cancelled. We don't want to run maintenance task but we want
         // to set the cluster to ERROR state.
-        ServiceUtils.logInfo(this, "Not retry maintenance because maintenance was cancelled");
+        ServiceUtils.logInfo(this, "Maintenance for cluster %s was cancelled, not retrying", clusterId);
 
         ClusterService.State clusterPatchState = new ClusterService.State();
         clusterPatchState.clusterState = ClusterState.ERROR;
@@ -194,7 +189,8 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                       if (null != throwable) {
                         // Ignore the failure. Otherwise if we fail the maintenance task we may end up
                         // in a dead loop.
-                        ServiceUtils.logSevere(this, "Failed to patch cluster to ERROR: %s", throwable.toString());
+                        ServiceUtils.logSevere(this, "Failed to patch cluster %s to ERROR: %s", clusterId,
+                            throwable.toString());
                       }
                     }
                 ));
@@ -204,14 +200,16 @@ public class ClusterMaintenanceTaskService extends StatefulService {
     } else {
       if (patchState.taskState.stage == TaskState.TaskStage.STARTED) {
         // The maintenance task was not started, and now we patch it to start.
-        ServiceUtils.logInfo(this, "Run maintenance because patching the task from %s to %s",
+        ServiceUtils.logInfo(this, "Running maintenance %d for cluster %s because patching the task from %s to %s",
+            currentState.maintenanceIteration, clusterId,
             currentState.taskState.stage.toString(),
             patchState.taskState.stage.toString());
 
         maintenanceOperation = MaintenanceOperation.RUN;
       } else {
         // The maintenance task was not started, and it is not patched to start.
-        ServiceUtils.logInfo(this, "Not run maintenance because patching the task from %s to %s",
+        ServiceUtils.logInfo(this, "Not running maintenance for cluster %s because patching the task from %s to %s",
+            clusterId,
             currentState.taskState.stage.toString(),
             patchState.taskState.stage.toString());
 
@@ -235,7 +233,7 @@ public class ClusterMaintenanceTaskService extends StatefulService {
       maintenance.complete();
 
       // Send a self-patch to kick-off cluster maintenance.
-      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED, null));
+      TaskUtils.sendSelfPatch(this, buildPatch(null, TaskState.TaskStage.STARTED, null));
 
     } catch (Throwable e) {
       ServiceUtils.logSevere(this, "Maintenance trigger failed with the failure: %s", e.toString());
@@ -246,7 +244,8 @@ public class ClusterMaintenanceTaskService extends StatefulService {
    * Starts processing maintenance request for a single cluster.
    */
   private void startMaintenance(State currentState, String clusterId) {
-    ServiceUtils.logInfo(this, "Starting maintenance for clusterId: %s", clusterId);
+    ServiceUtils.logInfo(this, "Starting maintenance %d for cluster: %s", currentState.maintenanceIteration,
+        clusterId);
 
     sendRequest(
         HostUtils.getCloudStoreHelper(this)
@@ -264,7 +263,7 @@ public class ClusterMaintenanceTaskService extends StatefulService {
 
                       return;
                     }
-                    failTask(t);
+                    failTask(currentState, t);
                     return;
                   }
 
@@ -278,20 +277,20 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                         break;
 
                       case PENDING_DELETE:
-                        deleteCluster(clusterId);
+                        deleteCluster(currentState, clusterId);
                         break;
 
                       case ERROR:
-                        TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null));
+                        TaskUtils.sendSelfPatch(this, buildPatch(currentState, TaskState.TaskStage.FINISHED, null));
                         break;
 
                       default:
-                        failTask(new IllegalStateException(String.format(
+                        failTask(currentState, new IllegalStateException(String.format(
                             "Unknown clusterState. ClusterId: %s. ClusterState: %s", clusterId, cluster.clusterState)));
                         break;
                     }
                   } catch (Throwable e) {
-                    failTask(e);
+                    failTask(currentState, e);
                   }
                 }
             ));
@@ -319,7 +318,7 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                 IllegalStateException cancelled = new IllegalStateException(String.format(
                     "GarbageInspectionTaskService was canceled. %s", result.documentSelfLink));
                 TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this,
-                    buildPatch(TaskState.TaskStage.CANCELLED, cancelled));
+                    buildPatch(currentState, TaskState.TaskStage.CANCELLED, cancelled));
                 break;
               case FAILED:
                 IllegalStateException failed = new IllegalStateException(String.format(
@@ -327,14 +326,14 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                     result.taskState.failure.message,
                     result.documentSelfLink));
                 TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this,
-                    buildPatch(TaskState.TaskStage.FAILED, failed));
+                    buildPatch(currentState, TaskState.TaskStage.FAILED, failed));
                 break;
             }
           }
 
           @Override
           public void onFailure(Throwable t) {
-            failTask(t);
+            failTask(currentState, t);
           }
         });
   }
@@ -361,7 +360,7 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                 IllegalStateException cancelled = new IllegalStateException(String.format(
                     "GarbageCollectionTaskService was canceled. %s", result.documentSelfLink));
                 TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this,
-                    buildPatch(TaskState.TaskStage.CANCELLED, cancelled));
+                    buildPatch(currentState, TaskState.TaskStage.CANCELLED, cancelled));
                 break;
               case FAILED:
                 IllegalStateException failed = new IllegalStateException(String.format(
@@ -369,14 +368,14 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                     result.taskState.failure.message,
                     result.documentSelfLink));
                 TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this,
-                    buildPatch(TaskState.TaskStage.FAILED, failed));
+                    buildPatch(currentState, TaskState.TaskStage.FAILED, failed));
                 break;
             }
           }
 
           @Override
           public void onFailure(Throwable t) {
-            failTask(t);
+            failTask(currentState, t);
           }
         });
   }
@@ -400,13 +399,13 @@ public class ClusterMaintenanceTaskService extends StatefulService {
               case FINISHED:
                 ClusterService.State clusterPatch = new ClusterService.State();
                 clusterPatch.clusterState = ClusterState.READY;
-                updateStates(clusterId, clusterPatch, buildPatch(TaskState.TaskStage.FINISHED, null));
+                updateStates(clusterId, clusterPatch, buildPatch(currentState, TaskState.TaskStage.FINISHED, null));
                 break;
               case CANCELLED:
                 IllegalStateException cancelled = new IllegalStateException(String.format(
                     "ClusterExpandTaskService was canceled. %s", result.documentSelfLink));
                 TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this,
-                    buildPatch(TaskState.TaskStage.CANCELLED, cancelled));
+                    buildPatch(currentState, TaskState.TaskStage.CANCELLED, cancelled));
                 break;
               case FAILED:
                 IllegalStateException failed = new IllegalStateException(String.format(
@@ -414,19 +413,19 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                     result.taskState.failure.message,
                     result.documentSelfLink));
                 TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this,
-                    buildPatch(TaskState.TaskStage.FAILED, failed));
+                    buildPatch(currentState, TaskState.TaskStage.FAILED, failed));
                 break;
             }
           }
 
           @Override
           public void onFailure(Throwable t) {
-            failTask(t);
+            failTask(currentState, t);
           }
         });
   }
 
-  private void deleteCluster(String clusterId) {
+  private void deleteCluster(State currentState, String clusterId) {
 
     FutureCallback<ClusterDeleteTask> callback = new FutureCallback<ClusterDeleteTask>() {
       @Override
@@ -434,13 +433,13 @@ public class ClusterMaintenanceTaskService extends StatefulService {
         switch (result.taskState.stage) {
           case FINISHED:
             TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this,
-                buildPatch(TaskState.TaskStage.FINISHED, null));
+                buildPatch(currentState, TaskState.TaskStage.FINISHED, null));
             break;
           case CANCELLED:
             IllegalStateException cancelled = new IllegalStateException(String.format(
                 "ClusterDeleteTaskService was canceled. %s", result.documentSelfLink));
             TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this,
-                buildPatch(TaskState.TaskStage.CANCELLED, cancelled));
+                buildPatch(currentState, TaskState.TaskStage.CANCELLED, cancelled));
             break;
           case FAILED:
             IllegalStateException failed = new IllegalStateException(String.format(
@@ -448,14 +447,14 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                 result.taskState.failure.message,
                 result.documentSelfLink));
             TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this,
-                buildPatch(TaskState.TaskStage.FAILED, failed));
+                buildPatch(currentState, TaskState.TaskStage.FAILED, failed));
             break;
         }
       }
 
       @Override
       public void onFailure(Throwable t) {
-        failTask(t);
+        failTask(currentState, t);
       }
     };
 
@@ -492,10 +491,11 @@ public class ClusterMaintenanceTaskService extends StatefulService {
     }
   }
 
-  private void failTask(Throwable t) {
+  private void failTask(State currentState, Throwable t) {
     ServiceUtils.logSevere(
-        this, "Cluster Maintenance failed. SelfLink: %s. Error: %s", getSelfLink(), t.toString());
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, t));
+        this, "Cluster Maintenance %d, failed. SelfLink: %s. Error: %s", currentState.maintenanceIteration,
+        getSelfLink(), t.toString());
+    TaskUtils.sendSelfPatch(this, buildPatch(currentState, TaskState.TaskStage.FAILED, t));
   }
 
   private void updateStates(String clusterId,
@@ -511,7 +511,8 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                   if (null != throwable) {
                     // Ignore the failure. Otherwise if we fail the maintenance task may end up
                     // in a dead loop.
-                    ServiceUtils.logSevere(this, "Failed to patch cluster to READY: %s", throwable.toString());
+                    ServiceUtils.logSevere(this, "Failed to patch cluster %s to READY: %s", clusterId,
+                        throwable.toString());
                   }
 
                   TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this, patch);
@@ -520,8 +521,11 @@ public class ClusterMaintenanceTaskService extends StatefulService {
   }
 
 
-  private State buildPatch(TaskState.TaskStage patchStage, @Nullable Throwable t) {
+  private State buildPatch(State currentState, TaskState.TaskStage patchStage, @Nullable Throwable t) {
     State patchState = new State();
+    if (currentState != null) {
+      patchState.maintenanceIteration = currentState.maintenanceIteration + 1;
+    }
     patchState.taskState = new TaskState();
     patchState.taskState.stage = patchStage;
     patchState.taskState.failure = (null != t) ? Utils.toServiceErrorResponse(t) : null;
@@ -546,9 +550,9 @@ public class ClusterMaintenanceTaskService extends StatefulService {
     public TaskState taskState;
 
     /**
-     * This value represents a list of errors that the maintenance task has encountered.
+     * This value represents an error that the maintenance task has encountered.
      */
-    public List<String> errors;
+    public String error;
 
     /**
      * The threshold for each expansion batch.
@@ -578,6 +582,13 @@ public class ClusterMaintenanceTaskService extends StatefulService {
      */
     @DefaultInteger(value = ClusterManagerConstants.DEFAULT_MAINTENANCE_RETRY_INTERVAL_SECOND)
     public Integer retryIntervalSecond;
+
+    /**
+     * This value represents the number of times the maintenance task has been triggered. It will
+     * increment by one for each maintenance task.
+     */
+    @DefaultInteger(value = 0)
+    public Integer maintenanceIteration;
   }
 
   /**
