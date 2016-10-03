@@ -78,7 +78,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
 import org.apache.commons.io.FileUtils;
 import org.apache.thrift.async.AsyncMethodCallback;
-
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -245,7 +244,7 @@ public class ProvisionHostTaskService extends StatefulService {
      * This value represents the maximum number of polling iterations which should be attempted
      * while waiting for the agent to become ready after VIB installation.
      */
-    @DefaultInteger(value = 60)
+    @DefaultInteger(value = 120)
     @Immutable
     public Integer agentStartMaxPollCount;
 
@@ -1026,13 +1025,13 @@ public class ProvisionHostTaskService extends StatefulService {
 
   private void processRemoveVibSubStage(HostService.State hostState, State currentState) {
     HostUtils.getListeningExecutorService(this).submit(
-      VibUtils.removeVibs(hostState,  this, (e) ->{
-        if (e != null) {
-          failTask(e);
-          return;
-        }
-        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
-      })
+        VibUtils.removeVibs(hostState, this, (e) -> {
+          if (e != null) {
+            failTask(e);
+            return;
+          }
+          sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
+        })
     );
   }
 
