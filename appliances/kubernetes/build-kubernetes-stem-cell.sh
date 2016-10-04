@@ -15,7 +15,7 @@ export SOURCE_OVA=${SCRIPT_DIR}/../photon-ova/build/photon-ova-virtualbox.ova
 export FORCE_REBUILD_PHOTON=0
 
 if [ ! -n "${KUBERNETES_VERSION}" ]; then
-  export KUBERNETES_VERSION=1.3.6
+  export KUBERNETES_VERSION=1.4.1
 fi
 
 while [ $# -gt 0 ]; do
@@ -50,8 +50,9 @@ fi
 # Checkout kube-deploy/docker-multinode. This is the script that is
 # used to start Kubernetes on the VMs.  We're using a custom version
 # that allows us to run etcd on a node other than the master.
+
 rm -rf kube-deploy
-git clone https://github.com/vmware/kube-deploy.git
+git clone https://github.com/vmware/kube-deploy
 cd kube-deploy; git checkout pc-1.1; cd ..
 
 # Run the Packer build, but first clean up previous build artifacts
