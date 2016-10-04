@@ -80,6 +80,7 @@ import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -1103,12 +1104,12 @@ public class DeploymentWorkflowService extends StatefulService {
         factory += "/";
       }
 
-      CopyStateTaskService.State startState = MiscUtils.createCopyStateStartState(
-          sourceServers,
-          destinationServers,
-          factory,
-          factory);
-      startState.destinationProtocol = destinationProtocol;
+      CopyStateTaskService.State startState = new CopyStateTaskService.State();
+      startState.sourceURIs = Collections.singletonList(getHost().getUri());
+      startState.sourceFactoryLink = factory;
+      startState.destinationURI = UriUtils.buildUri(destinationProtocol, managementVms.get(0).ipAddress,
+          managementVms.get(0).deployerXenonPort, null, null);
+      startState.destinationFactoryLink = factory;
 
       TaskUtils.startTaskAsync(
           this,
