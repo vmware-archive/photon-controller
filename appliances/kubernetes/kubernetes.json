@@ -29,6 +29,11 @@
     },
     {
       "type": "file",
+      "source": "vmware-custom-addon.tar",
+      "destination": "/root/vmware-custom-addon.tar"
+    },
+    {
+      "type": "file",
       "source": "build-scripts",
       "destination": "/tmp/scripts"
     },

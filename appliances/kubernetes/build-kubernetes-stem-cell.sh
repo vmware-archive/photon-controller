@@ -15,7 +15,7 @@ export SOURCE_OVA=${SCRIPT_DIR}/../photon-ova/build/photon-ova-virtualbox.ova
 export FORCE_REBUILD_PHOTON=0
 
 if [ ! -n "${KUBERNETES_VERSION}" ]; then
-  export KUBERNETES_VERSION=1.3.6
+  export KUBERNETES_VERSION=1.4.0
 fi
 
 while [ $# -gt 0 ]; do
@@ -47,12 +47,29 @@ else
   echo "Photon OVA exists, no need to rebuild"
 fi
 
+# Checkout kubernetes/kubernetes. We need this to modify the
+# addons manager container.
+#rm -rf kubernetes
+#git clone https://github.com/kubernetes/kubernetes
+#mkdir -p ${SCRIPT_DIR}/tmp
+#cd kubernetes; git checkout v1.4.0;
+#sed -i.back 's/\[ -z "${token_found}" \]/[ -z "${token_found}" ] || (echo "${token_found}" | grep -iq "error")/' cluster/addons/addon-manager/kube-addons.sh
+#sed -i.back 's/gcr.io\/google-containers\/kube-addon-manager/vmware-custom\/addons/' cluster/addons/addon-manager/Makefile
+#sed -i.back "s#\$(shell mktemp -d)#${SCRIPT_DIR}/tmp#" cluster/addons/addon-manager/Makefile
+#sed -i.back 's/sed -i /sed -i.back /' cluster/addons/addon-manager/Makefile
+#
+#cd cluster/addons/addon-manager/
+#make build
+docker save -o ${SCRIPT_DIR}/vmware-custom-addon.tar vmware-custom/addons-amd64:v5.1
+#cd ${SCRIPT_DIR}
+
 # Checkout kube-deploy/docker-multinode. This is the script that is
 # used to start Kubernetes on the VMs.  We're using a custom version
 # that allows us to run etcd on a node other than the master.
-rm -rf kube-deploy
-git clone https://github.com/vmware/kube-deploy.git
-cd kube-deploy; git checkout pc-1.1; cd ..
+
+#rm -rf kube-deploy
+#git clone https://github.com/vmware/kube-deploy
+#cd kube-deploy; git checkout pc-1.1; cd ..
 
 # Run the Packer build, but first clean up previous build artifacts
 mkdir -p ./build
