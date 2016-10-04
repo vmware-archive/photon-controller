@@ -14,61 +14,27 @@
 package com.vmware.photon.controller.deployer.xenon.util;
 
 import com.vmware.photon.controller.api.client.ApiClient;
-import com.vmware.photon.controller.api.client.resource.VmRestApi;
-import com.vmware.photon.controller.api.model.NetworkConnection;
-import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.UsageTag;
-import com.vmware.photon.controller.api.model.Vm;
-import com.vmware.photon.controller.api.model.VmNetworks;
-import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
-import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
-import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
-import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
-import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
-import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
-import com.google.common.base.Strings;
 import com.google.common.util.concurrent.FutureCallback;
-import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
  * This class implements miscellaneous utility functions.
  */
 public class MiscUtils {
-  public static String generateReplicaList(List<String> replicaIps, String port) {
-    StringBuilder builder = new StringBuilder();
-
-    for (int i = 0; i < replicaIps.size(); i++) {
-      if (builder.indexOf(replicaIps.get(i)) < 0) {
-        builder.append(replicaIps.get(i)).append(":").append(port);
-        if (i != replicaIps.size() - 1) {
-          builder.append(",");
-        }
-      }
-    }
-    return builder.toString();
-  }
 
   public static String getSelfLink(Class<?> factoryClass) {
     try {
@@ -78,131 +44,6 @@ public class MiscUtils {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-  }
-
-  public static CopyStateTaskService.State createCopyStateStartState(
-      Set<InetSocketAddress> localServers,
-      Set<InetSocketAddress> remoteServers,
-      String destinationFactoryLink,
-      String sourceFactoryLink,
-      int portAdjustment) {
-    InetSocketAddress remote = ServiceUtils.selectRandomItem(remoteServers);
-    CopyStateTaskService.State startState = new CopyStateTaskService.State();
-    startState.sourceServers = new HashSet<>();
-    for (InetSocketAddress localServer : localServers) {
-      startState.sourceServers.add(new Pair<>(localServer.getAddress().getHostAddress(),
-          new Integer(localServer.getPort() + portAdjustment)));
-    }
-    startState.destinationIp = remote.getAddress().getHostAddress();
-    startState.destinationPort = remote.getPort() + portAdjustment;
-    startState.factoryLink = destinationFactoryLink;
-    if (sourceFactoryLink != null) {
-      startState.sourceFactoryLink = sourceFactoryLink;
-    } else {
-      startState.sourceFactoryLink = startState.factoryLink;
-    }
-    startState.documentSelfLink = UUID.randomUUID().toString() + startState.factoryLink;
-    return startState;
-  }
-
-  public static CopyStateTaskService.State createCopyStateStartState(
-      Set<InetSocketAddress> localServers,
-      Set<InetSocketAddress> remoteServers,
-      String destinationFactoryLink,
-      String sourceFactoryLink) {
-    return createCopyStateStartState(localServers, remoteServers, destinationFactoryLink, sourceFactoryLink, 0);
-  }
-
-  public static void getZookeeperQuorumFromSourceSystem(Service service, String loadBalancerAddress,
-                                                        String deploymentId, Integer taskPollDelay,
-                                                        FutureCallback<List<String>> callback)
-      throws Throwable {
-    ApiClient sourceClient = HostUtils.getApiClient(service, loadBalancerAddress);
-    // Find the zookeeper vm
-    sourceClient.getDeploymentApi().getAllDeploymentVmsAsync(deploymentId,
-        new FutureCallback<ResourceList<Vm>>() {
-          @Override
-          public void onSuccess(@Nullable ResourceList<Vm> result) {
-            if (result == null || result.getItems().size() == 0) {
-              callback.onFailure(new IllegalStateException("No zookeeper vm"));
-              return;
-            }
-
-            Vm zookeeperVm = null;
-            for (Vm vm : result.getItems()) {
-              if (vm.getMetadata().containsValue("Zookeeper")) {
-                ServiceUtils.logInfo(service, "Found zookeeper vm");
-                zookeeperVm = vm;
-                break;
-              }
-            }
-
-            checkState(zookeeperVm != null);
-
-            ServiceUtils.logInfo(service, "Querying zookeeper vm network");
-
-            // Query its networks
-            try {
-              getVmNetworks(service, sourceClient, zookeeperVm.getId(), taskPollDelay, callback);
-            } catch (IOException e) {
-              callback.onFailure(e);
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            callback.onFailure(t);
-          }
-        });
-  }
-
-  private static void getVmNetworks(Service service, ApiClient client, String vmId, Integer taskPollDelay,
-                                    FutureCallback<List<String>> callback) throws IOException {
-    client.getVmApi().getNetworksAsync(vmId, new FutureCallback<Task>() {
-      @Override
-      public void onSuccess(@Nullable Task task) {
-        try {
-          ApiUtils.pollTaskAsync(task, client, service, taskPollDelay,
-              new FutureCallback<Task>() {
-                @Override
-                public void onSuccess(@Nullable Task task) {
-                  try {
-                    VmNetworks vmNetworks = VmRestApi.parseVmNetworksFromTask(task);
-
-                    checkState(vmNetworks.getNetworkConnections() != null);
-                    List<String> result = new ArrayList<>();
-                    // Get only the non-docker ips. For docker Ips, network is null
-                    Set<NetworkConnection> connections = vmNetworks.getNetworkConnections();
-                    for (NetworkConnection networkConnection : connections) {
-                      if (!Strings.isNullOrEmpty(networkConnection.getNetwork())
-                          && !Strings.isNullOrEmpty(networkConnection.getIpAddress())) {
-                        result.add(networkConnection.getIpAddress());
-                      }
-                    }
-                    ServiceUtils.logInfo(service, "Found " + result.size() + " vm ips");
-                    checkState(result.size() > 0);
-                    callback.onSuccess(result);
-                    return;
-                  } catch (Throwable t) {
-                    callback.onFailure(t);
-                  }
-                }
-
-                @Override
-                public void onFailure(Throwable throwable) {
-                  callback.onFailure(throwable);
-                }
-              });
-        } catch (Throwable t) {
-          callback.onFailure(t);
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable throwable) {
-        callback.onFailure(throwable);
-      }
-    });
   }
 
   /**
@@ -237,51 +78,6 @@ public class MiscUtils {
     }
 
     return querySpecification;
-  }
-
-  public static void updateDeploymentState(Service service, DeploymentService.State deploymentServiceState, Operation
-      .CompletionHandler completionHandler) {
-
-    if (deploymentServiceState.documentSelfLink != null) {
-      updateDeploymentState(service, deploymentServiceState.documentSelfLink, deploymentServiceState,
-          completionHandler);
-      return;
-    }
-
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(DeploymentService.State.class));
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query = kindClause;
-
-    service.sendRequest(
-        ((PhotonControllerXenonHost) service.getHost()).getCloudStoreHelper()
-            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-            .setBody(QueryTask.create(querySpecification).setDirect(true))
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (failure != null) {
-                    completionHandler.handle(completedOp, failure);
-                  } else {
-                    Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(completedOp);
-                    QueryTaskUtils.logQueryResults(service, documentLinks);
-                    checkState(documentLinks.size() == 1);
-                    updateDeploymentState(service, documentLinks.iterator().next(), deploymentServiceState,
-                        completionHandler);
-                  }
-                }
-            ));
-  }
-
-  public static void updateDeploymentState(Service service, String deploymentServiceLink, DeploymentService.State
-      deploymentServiceState, Operation.CompletionHandler completionHandler) {
-
-    HostUtils.getCloudStoreHelper(service)
-        .createPatch(deploymentServiceLink)
-        .setBody(deploymentServiceState)
-        .setCompletion(completionHandler)
-        .sendWith(service);
   }
 
   private static float getManagementVmHostRatio(HostService.State hostState) {
@@ -330,7 +126,7 @@ public class MiscUtils {
   }
 
   private static void scheduleGetTaskCall(final Service service, final Integer taskPollDelay, final String taskId,
-                                   final FutureCallback<Task> callback) {
+                                          final FutureCallback<Task> callback) {
 
     Runnable runnable = new Runnable() {
       @Override
@@ -434,7 +230,7 @@ public class MiscUtils {
   }
 
   private static void deleteVm(Service service, final ApiClient client, final String vmId,
-                        final FutureCallback<Task> callback) {
+                               final FutureCallback<Task> callback) {
     ServiceUtils.logInfo(service, "Delete vms..");
     try {
       client.getVmApi().deleteAsync(vmId, callback);

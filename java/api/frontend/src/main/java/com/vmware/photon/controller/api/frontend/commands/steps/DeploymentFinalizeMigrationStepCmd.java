@@ -40,13 +40,13 @@ public class DeploymentFinalizeMigrationStepCmd extends StepCommand {
 
   private final DeploymentBackend deploymentBackend;
   private DeploymentEntity destinationDeploymentEntity;
-  private String sourceLoadbalancerAddress;
+  private String sourceNodeGroupReference;
 
   public DeploymentFinalizeMigrationStepCmd(TaskCommand taskCommand, StepBackend stepBackend, StepEntity step,
                                             DeploymentBackend deploymentBackend) {
     super(taskCommand, stepBackend, step);
     this.deploymentBackend = deploymentBackend;
-    this.sourceLoadbalancerAddress = (String) step.getTransientResource(SOURCE_ADDRESS_RESOURCE_KEY);
+    this.sourceNodeGroupReference = (String) step.getTransientResource(SOURCE_ADDRESS_RESOURCE_KEY);
   }
 
   @Override
@@ -59,7 +59,7 @@ public class DeploymentFinalizeMigrationStepCmd extends StepCommand {
     // call deployer
     logger.info("Calling finalize deployment migration {}", deploymentEntityList);
     FinalizeDeploymentMigrationWorkflowService.State serviceDocument = taskCommand.getDeployerXenonClient()
-        .finalizeMigrateDeployment(sourceLoadbalancerAddress, destinationDeploymentEntity.getId());
+        .finalizeMigrateDeployment(sourceNodeGroupReference, destinationDeploymentEntity.getId());
     // pass remoteTaskId to XenonTaskStatusStepCmd
     for (StepEntity nextStep : taskCommand.getTask().getSteps()) {
       nextStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
@@ -90,7 +90,7 @@ public class DeploymentFinalizeMigrationStepCmd extends StepCommand {
   }
 
   @VisibleForTesting
-  protected void setSourceLoadbalancerAddress(String sourceLoadbalancerAddress) {
-    this.sourceLoadbalancerAddress = sourceLoadbalancerAddress;
+  protected void setSourceNodeGroupReference(String sourceNodeGroupReference) {
+    this.sourceNodeGroupReference = sourceNodeGroupReference;
   }
 }

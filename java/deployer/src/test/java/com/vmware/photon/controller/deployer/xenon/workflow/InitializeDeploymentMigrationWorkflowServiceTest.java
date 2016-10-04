@@ -32,6 +32,7 @@ import com.vmware.photon.controller.api.model.VmNetworks;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
@@ -84,6 +85,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -119,7 +121,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
     InitializeDeploymentMigrationWorkflowService.State startState =
         new InitializeDeploymentMigrationWorkflowService.State();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-    startState.sourceLoadBalancerAddress = "lbLink1";
+    startState.sourceNodeGroupReference = UriUtils.buildUri("http://127.0.0.1:1234/core/node-groups/default");
     startState.destinationDeploymentId = "deployment1";
     startState.taskPollDelay = 1;
 
@@ -132,10 +134,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
         switch (startSubStage) {
           case CONTINOUS_MIGRATE_DATA:
           case UPLOAD_VIBS:
-            startState.sourceZookeeperQuorum = "quorum";
-            // fall through
-          case PAUSE_DESTINATION_SYSTEM:
-            startState.sourceDeploymentId = "deployment1";
+            startState.sourceURIs = Collections.singletonList(UriUtils.buildUri("http://127.0.0.1:1234"));
             break;
         }
       }
@@ -162,10 +161,6 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
       switch (patchSubStage) {
         case CONTINOUS_MIGRATE_DATA:
         case UPLOAD_VIBS:
-          patchState.sourceZookeeperQuorum = "quorum";
-          break;
-        case PAUSE_DESTINATION_SYSTEM:
-          patchState.sourceDeploymentId = "deployment1";
           break;
       }
     }
@@ -247,14 +242,17 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
 
     @DataProvider(name = "ValidStartStages")
     public Object[][] getValidStartStages() {
-      return new Object[][] { { null, null }, { TaskState.TaskStage.CREATED, null },
-          { TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_DESTINATION_SYSTEM },
-          { TaskState.TaskStage.STARTED, InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS },
-          { TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.CONTINOUS_MIGRATE_DATA },
-          { TaskState.TaskStage.FINISHED, null }, { TaskState.TaskStage.FAILED, null },
-          { TaskState.TaskStage.CANCELLED, null }, };
+      return new Object[][]{
+          {null, null},
+          {TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED,
+              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS},
+          {TaskState.TaskStage.STARTED,
+              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.CONTINOUS_MIGRATE_DATA},
+          {TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.CANCELLED, null},
+      };
     }
 
     @Test(dataProvider = "TransitionalStartStages")
@@ -269,13 +267,17 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
       assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.STARTED));
       assertThat(
           serviceState.taskState.subStage,
-          is(InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_DESTINATION_SYSTEM));
+          is(InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS));
     }
 
     @DataProvider(name = "TransitionalStartStages")
     public Object[][] getTransitionalStartStages() {
-      return new Object[][] { { null, null }, { TaskState.TaskStage.CREATED, null }, { TaskState.TaskStage.STARTED,
-          InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_DESTINATION_SYSTEM }, };
+      return new Object[][]{
+          {null, null},
+          {TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED,
+              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS},
+      };
     }
 
     @Test(dataProvider = "TerminalStartStages")
@@ -295,8 +297,11 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
 
     @DataProvider(name = "TerminalStartStages")
     public Object[][] getTerminalStartStages() {
-      return new Object[][] { { TaskState.TaskStage.FINISHED, null }, { TaskState.TaskStage.FAILED, null },
-          { TaskState.TaskStage.CANCELLED, null }, };
+      return new Object[][]{
+          {TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.CANCELLED, null},
+      };
     }
 
     @Test(dataProvider = "RequiredFieldNames", expectedExceptions = XenonRuntimeException.class)
@@ -378,38 +383,8 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
 
     @DataProvider(name = "ValidStageUpdates")
     public Object[][] getValidStageUpdates() {
-      return new Object[][] {
-          { TaskState.TaskStage.CREATED, null, TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_DESTINATION_SYSTEM },
-          { TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_DESTINATION_SYSTEM,
-              TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS },
-          { TaskState.TaskStage.STARTED, InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS,
-              TaskState.TaskStage.FINISHED, null },
-          { TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.CONTINOUS_MIGRATE_DATA,
-              TaskState.TaskStage.FINISHED, null },
-
-          { TaskState.TaskStage.CREATED, null, TaskState.TaskStage.FAILED, null },
-          { TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_DESTINATION_SYSTEM,
-              TaskState.TaskStage.FAILED, null },
-          { TaskState.TaskStage.STARTED, InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS,
-              TaskState.TaskStage.FAILED, null },
-          { TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.CONTINOUS_MIGRATE_DATA,
-              TaskState.TaskStage.FAILED, null },
-
-          { TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CANCELLED, null },
-          { TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_DESTINATION_SYSTEM,
-              TaskState.TaskStage.CANCELLED, null },
-          { TaskState.TaskStage.STARTED, InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS,
-              TaskState.TaskStage.CANCELLED, null },
-          { TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.CONTINOUS_MIGRATE_DATA,
-              TaskState.TaskStage.CANCELLED, null }, };
+      return TestHelper.getValidStageTransitions(
+          InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.class);
     }
 
     @Test(dataProvider = "InvalidStageUpdates", expectedExceptions = XenonRuntimeException.class)
@@ -432,54 +407,8 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
 
     @DataProvider(name = "InvalidStageUpdates")
     public Object[][] getInvalidStageUpdates() {
-      return new Object[][] { { TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CREATED, null },
-
-          { TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_DESTINATION_SYSTEM,
-              TaskState.TaskStage.CREATED, null },
-
-          { TaskState.TaskStage.STARTED, InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS,
-              TaskState.TaskStage.CREATED, null },
-          { TaskState.TaskStage.STARTED, InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS,
-              TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_DESTINATION_SYSTEM },
-          { TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.CONTINOUS_MIGRATE_DATA,
-              TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS },
-
-          { TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.CREATED, null },
-          { TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_DESTINATION_SYSTEM },
-          { TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS },
-          { TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.CONTINOUS_MIGRATE_DATA },
-          { TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FINISHED, null },
-          { TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FAILED, null },
-          { TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.CANCELLED, null },
-
-          { TaskState.TaskStage.FAILED, null, TaskState.TaskStage.CREATED, null },
-          { TaskState.TaskStage.FAILED, null, TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_DESTINATION_SYSTEM },
-          { TaskState.TaskStage.FAILED, null, TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS },
-          { TaskState.TaskStage.FAILED, null, TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.CONTINOUS_MIGRATE_DATA },
-          { TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FINISHED, null },
-          { TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FAILED, null },
-          { TaskState.TaskStage.FAILED, null, TaskState.TaskStage.CANCELLED, null },
-
-          { TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CREATED, null },
-          { TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_DESTINATION_SYSTEM },
-          { TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS },
-          { TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.CONTINOUS_MIGRATE_DATA },
-          { TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.FINISHED, null },
-          { TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.FAILED, null },
-          { TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CANCELLED, null }, };
+      return TestHelper.getInvalidStageTransitions(
+          InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.class);
     }
 
     @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = XenonRuntimeException.class)
@@ -492,13 +421,15 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
 
       InitializeDeploymentMigrationWorkflowService.State patchState = buildValidPatchState(
           TaskState.TaskStage.STARTED,
-          InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_DESTINATION_SYSTEM);
+          InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS);
 
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);
       if (declaredField.getType() == Integer.class) {
         declaredField.set(patchState, new Integer(0));
       } else if (declaredField.getType() == Set.class) {
         declaredField.set(patchState, new HashSet<>());
+      } else if (declaredField.getType() == URI.class) {
+        declaredField.set(patchState, new URI("http://localhost"));
       } else {
         declaredField.set(patchState, declaredField.getType().newInstance());
       }
@@ -616,8 +547,8 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
       doReturn(
           Collections
               .singleton(new InetSocketAddress("127.0.0.1", sourceEnvironment.getHosts()[0].getState().httpPort)))
-                  .when(zkBuilder)
-                  .getServers(Matchers.startsWith("127.0.0.1:2181"), eq("cloudstore"));
+          .when(zkBuilder)
+          .getServers(Matchers.startsWith("127.0.0.1:2181"), eq("cloudstore"));
 
 
       doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1",
@@ -625,8 +556,9 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
           .when(zkBuilder)
           .getServers(eq(quorum), eq("cloudstore"));
 
-      ServiceHost sourceHost = sourceEnvironment.getHosts()[0];
-      startState.sourceLoadBalancerAddress = sourceHost.getPublicUri().toString();
+      ServiceHost sourceHost = sourceCloudStore.getHosts()[0];
+      startState.sourceNodeGroupReference = UriUtils.buildUri(sourceHost, ServiceUriPaths.DEFAULT_NODE_GROUP);
+      startState.sourceURIs = null;
 
       TestHelper.createHostService(sourceCloudStore, Collections.singleton(UsageTag.MGMT.name()));
       TestHelper.createHostService(sourceCloudStore, Collections.singleton(UsageTag.CLOUD.name()));
@@ -634,7 +566,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
       startState.destinationDeploymentId = ServiceUtils.getIDFromDocumentSelfLink(deploymentService.documentSelfLink);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private void mockApiClient(boolean isSuccess) throws Throwable {
 
       ApiClient apiClient = mock(RestApiClient.class);
@@ -738,27 +670,13 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
       TestHelper.assertTaskStateFinished(finalState.taskState);
     }
 
-    @Test
-    public void testAPIFEDeploymentApiFailure() throws Throwable {
-      createTestEnvironment();
-      mockApiClient(false);
-
-      InitializeDeploymentMigrationWorkflowService.State finalState = destinationEnvironment.callServiceAndWaitForState(
-          InitializeDeploymentMigrationWorkflowFactoryService.SELF_LINK,
-          startState,
-          InitializeDeploymentMigrationWorkflowService.State.class,
-          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(
-          finalState.taskState.stage,
-          is(InitializeDeploymentMigrationWorkflowService.TaskState.TaskStage.FAILED));
-    }
-
-    @Test
+    @Test(enabled = false)
     public void testSourceEnvironmentStoppedFailure() throws Throwable {
       createTestEnvironment();
       sourceEnvironment.stop();
       sourceEnvironment = null;
+      sourceCloudStore.stop();
+      sourceCloudStore = null;
 
       InitializeDeploymentMigrationWorkflowService.State finalState = destinationEnvironment.callServiceAndWaitForState(
           InitializeDeploymentMigrationWorkflowFactoryService.SELF_LINK,

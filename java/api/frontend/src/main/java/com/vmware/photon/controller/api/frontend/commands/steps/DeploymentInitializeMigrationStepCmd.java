@@ -41,13 +41,13 @@ public class DeploymentInitializeMigrationStepCmd extends StepCommand {
 
   private final DeploymentBackend deploymentBackend;
   private DeploymentEntity destinationDeploymentEntity;
-  private String sourceLoadbalancerAddress;
+  private String sourceNodeGroupReference;
 
   public DeploymentInitializeMigrationStepCmd(TaskCommand taskCommand, StepBackend stepBackend, StepEntity step,
                                               DeploymentBackend deploymentBackend) {
     super(taskCommand, stepBackend, step);
     this.deploymentBackend = deploymentBackend;
-    this.sourceLoadbalancerAddress = (String) step.getTransientResource(SOURCE_ADDRESS_RESOURCE_KEY);
+    this.sourceNodeGroupReference = (String) step.getTransientResource(SOURCE_ADDRESS_RESOURCE_KEY);
   }
 
   @Override
@@ -60,7 +60,7 @@ public class DeploymentInitializeMigrationStepCmd extends StepCommand {
     // call deployer
     logger.info("Calling initialize deployment migration {}", deploymentEntityList);
     InitializeDeploymentMigrationWorkflowService.State serviceDocument = taskCommand.getDeployerXenonClient()
-        .initializeMigrateDeployment(sourceLoadbalancerAddress, destinationDeploymentEntity.getId());
+        .initializeMigrateDeployment(sourceNodeGroupReference, destinationDeploymentEntity.getId());
     // pass remoteTaskId to XenonTaskStatusStepCmd
     for (StepEntity nextStep : taskCommand.getTask().getSteps()) {
       nextStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
@@ -91,7 +91,7 @@ public class DeploymentInitializeMigrationStepCmd extends StepCommand {
   }
 
   @VisibleForTesting
-  protected void setSourceLoadbalancerAddress(String sourceLoadbalancerAddress) {
-    this.sourceLoadbalancerAddress = sourceLoadbalancerAddress;
+  protected void setSourceNodeGroupReference(String sourceNodeGroupReference) {
+    this.sourceNodeGroupReference = sourceNodeGroupReference;
   }
 }

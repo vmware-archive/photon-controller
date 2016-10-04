@@ -350,7 +350,7 @@ public class DeploymentFeClientTest {
     @Test
     public void testInitializeMigrationTaskIsCreated() throws Throwable {
       InitializeMigrationOperation op = new InitializeMigrationOperation();
-      op.setSourceLoadBalancerAddress("sourceAddress");
+      op.setSourceNodeGroupReference("sourceAddress");
 
       String deploymentId = "deployment-id";
       TaskEntity taskEntity = new TaskEntity();
@@ -370,7 +370,7 @@ public class DeploymentFeClientTest {
     @Test
     public void testFinalizeMigrationTaskIsCreated() throws Throwable {
       FinalizeMigrationOperation op = new FinalizeMigrationOperation();
-      op.setSourceLoadBalancerAddress("address");
+      op.setSourceNodeGroupReference("address");
 
       String deploymentId = "deployment-id";
       TaskEntity taskEntity = new TaskEntity();
