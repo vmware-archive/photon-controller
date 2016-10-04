@@ -17,7 +17,6 @@ import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.ResourceList;
-import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
@@ -110,7 +109,6 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
      * This enum represents the possible sub-states for this task.
      */
     public enum SubStage {
-      PAUSE_DESTINATION_SYSTEM,
       UPLOAD_VIBS,
       CONTINOUS_MIGRATE_DATA,
     }
@@ -163,12 +161,6 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
      * This value represents the the DeploymentId on source.
      */
     @WriteOnce
-    public String sourceDeploymentId;
-
-    /**
-     * This value represents the the DeploymentId on source.
-     */
-    @WriteOnce
     public String sourceZookeeperQuorum;
   }
 
@@ -192,7 +184,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
     if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
-      startState.taskState.subStage = TaskState.SubStage.PAUSE_DESTINATION_SYSTEM;
+      startState.taskState.subStage = TaskState.SubStage.UPLOAD_VIBS;
     }
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -267,9 +259,6 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
    */
   private void processStartedState(State currentState) throws Throwable {
     switch (currentState.taskState.subStage) {
-      case PAUSE_DESTINATION_SYSTEM:
-        pauseDestinationSystem(currentState);
-        break;
       case UPLOAD_VIBS:
         migrateHostEntities(currentState);
         break;
@@ -292,27 +281,6 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
             UriUtils.buildUri(
                 getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS), ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(QueryTask.create(querySpecification).setDirect(true));
-  }
-
-  private void pauseDestinationSystem(final State currentState) {
-    ApiClient destinationClient = HostUtils.getApiClient(this);
-
-    FutureCallback<Task> pauseCallback = new TaskFailingCallback<Task>(this) {
-      @Override
-      public void onSuccess(@Nullable Task result) {
-        try {
-          sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
-        } catch (Throwable throwable) {
-          failTask(throwable);
-        }
-      }
-    };
-
-    try {
-      destinationClient.getDeploymentApi().pauseSystemAsync(currentState.destinationDeploymentId, pauseCallback);
-    } catch (IOException e) {
-      failTask(e);
-    }
   }
 
   private QueryTask.QuerySpecification buildHostQuerySpecification() {
@@ -664,12 +632,10 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
           public void onSuccess(@Nullable List<String> ipAddresses) {
             String zookeeperQuorum = MiscUtils.generateReplicaList(ipAddresses, Integer.toString(Constants
                 .ZOOKEEPER_PORT));
-
             ServiceUtils.logInfo(InitializeDeploymentMigrationWorkflowService.this,
                 "Set Zookeeper quorum %s", zookeeperQuorum);
             State patchState = buildPatch(currentState.taskState.stage, currentState.taskState.subStage, null);
             patchState.sourceZookeeperQuorum = zookeeperQuorum;
-            patchState.sourceDeploymentId = sourceDeploymentId;
             TaskUtils.sendSelfPatch(InitializeDeploymentMigrationWorkflowService.this, patchState);
           }
         });
@@ -699,10 +665,6 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
       currentState.sourceZookeeperQuorum = patchState.sourceZookeeperQuorum;
     }
 
-    if (null != patchState.sourceDeploymentId) {
-      currentState.sourceDeploymentId = patchState.sourceDeploymentId;
-    }
-
     return currentState;
   }
 
@@ -714,11 +676,8 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
     if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
       switch (currentState.taskState.subStage) {
-        case PAUSE_DESTINATION_SYSTEM:
-          break;
         case CONTINOUS_MIGRATE_DATA:
         case UPLOAD_VIBS:
-          checkState(null != currentState.sourceDeploymentId);
           break;
         default:
           throw new IllegalStateException("Unknown task sub-stage: " + currentState.taskState.subStage);
