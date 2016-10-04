@@ -27,7 +27,6 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultLong;
 import com.vmware.photon.controller.common.xenon.validation.DefaultString;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.xenon.util.Pair;
 import com.vmware.xenon.common.NodeSelectorService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationSequence;
@@ -42,10 +41,10 @@ import com.vmware.xenon.services.common.QueryTask;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.net.URI;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -75,33 +74,21 @@ public class CopyStateTriggerTaskService extends StatefulService {
   public static class State extends ServiceDocument {
     public ExecutionState executionState;
 
-    @Immutable
     @NotNull
-    public Set<Pair<String, Integer>> sourceServers;
-
     @Immutable
-    @DefaultString(value = "http")
-    public String sourceProtocol;
+    public List<URI> sourceURIs;
 
-    @Immutable
     @NotNull
-    public String destinationIp;
-
     @Immutable
-    @NotNull
-    public Integer destinationPort;
-
-    @Immutable
-    @DefaultString(value = "http")
-    public String destinationProtocol;
-
-    @Immutable
-    @NotNull
-    public String factoryLink;
-
-    @Immutable
-    @NotNull
     public String sourceFactoryLink;
+
+    @NotNull
+    @Immutable
+    public URI destinationURI;
+
+    @NotNull
+    @Immutable
+    public String destinationFactoryLink;
 
     @Immutable
     @DefaultString(value = "taskState.stage")
@@ -150,8 +137,8 @@ public class CopyStateTriggerTaskService extends StatefulService {
     if (state.executionState == null) {
       state.executionState = ExecutionState.RUNNING;
     }
-    if (!state.factoryLink.endsWith("/")) {
-      state.factoryLink += "/";
+    if (!state.destinationFactoryLink.endsWith("/")) {
+      state.destinationFactoryLink += "/";
     }
     if (!state.sourceFactoryLink.endsWith("/")) {
       state.sourceFactoryLink += "/";
@@ -312,15 +299,12 @@ public class CopyStateTriggerTaskService extends StatefulService {
 
   private CopyStateTaskService.State buildCopyStateStartState(State currentState, long lastestUpdateTime) {
     CopyStateTaskService.State state = new CopyStateTaskService.State();
-    state.destinationIp = currentState.destinationIp;
-    state.destinationPort = currentState.destinationPort;
-    state.destinationProtocol = currentState.destinationProtocol;
-    state.factoryLink = currentState.factoryLink;
+    state.sourceURIs = currentState.sourceURIs;
+    state.sourceFactoryLink = currentState.sourceFactoryLink;
+    state.destinationURI = currentState.destinationURI;
+    state.destinationFactoryLink = currentState.destinationFactoryLink;
     state.queryDocumentsChangedSinceEpoc = lastestUpdateTime;
     state.queryResultLimit = currentState.queryResultLimit;
-    state.sourceFactoryLink = currentState.sourceFactoryLink;
-    state.sourceServers = currentState.sourceServers;
-    state.sourceProtocol = currentState.sourceProtocol;
     state.taskStateFieldName = currentState.taskStateFieldName;
     state.performHostTransformation = currentState.performHostTransformation;
     return state;
@@ -355,7 +339,7 @@ public class CopyStateTriggerTaskService extends StatefulService {
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query.addBooleanClause(typeClause);
     querySpecification.query.addBooleanClause(
-        buildTermQuery(CopyStateTaskService.State.FIELD_NAME_FACTORY_LINK, currentState.factoryLink));
+        buildTermQuery(CopyStateTaskService.State.FIELD_NAME_FACTORY_LINK, currentState.destinationFactoryLink));
     querySpecification.query.addBooleanClause(
         buildTermQuery(CopyStateTaskService.State.FIELD_NAME_SOURCE_FACTORY_LINK, currentState.sourceFactoryLink));
     querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
