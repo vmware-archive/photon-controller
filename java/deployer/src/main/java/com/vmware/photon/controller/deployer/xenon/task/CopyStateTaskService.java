@@ -36,7 +36,6 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
-import com.vmware.photon.controller.deployer.xenon.util.Pair;
 import com.vmware.xenon.common.AuthenticationUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
@@ -60,15 +59,14 @@ import java.net.URI;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class moves Xenon state between two Xenon clusters.
@@ -86,7 +84,7 @@ public class CopyStateTaskService extends StatefulService {
   public static class State extends ServiceDocument {
 
     public static final String FIELD_NAME_SOURCE_FACTORY_LINK = "sourceFactoryLink";
-    public static final String FIELD_NAME_FACTORY_LINK = "factoryLink";
+    public static final String FIELD_NAME_FACTORY_LINK = "destinationFactoryLink";
     public static final String FIELD_NAME_SOURCE_PROTOCOL = "sourceProtocol";
     public static final String FIELD_NAME_DESTINATION_PROTOCOL = "destinationProtocol";
     public static final String FIELD_NAME_DESTINATION_PORT = "destinationPort";
@@ -95,34 +93,25 @@ public class CopyStateTaskService extends StatefulService {
     @DefaultTaskState(value = TaskState.TaskStage.CREATED)
     public TaskState taskState;
 
+    @DefaultInteger(value = 0)
     @Immutable
+    public Integer controlFlags;
+
     @NotNull
-    public Set<Pair<String, Integer>> sourceServers;
-
     @Immutable
-    @DefaultString(value = "http")
-    public String sourceProtocol;
+    public List<URI> sourceURIs;
 
-    @Immutable
     @NotNull
-    public String destinationIp;
-
     @Immutable
-    @NotNull
-    public Integer destinationPort;
-
-    @Immutable
-    @DefaultString(value = "http")
-    public String destinationProtocol;
-
-    // Destination factory link
-    @Immutable
-    @NotNull
-    public String factoryLink;
-
-    @Immutable
-    @NotNull
     public String sourceFactoryLink;
+
+    @NotNull
+    @Immutable
+    public URI destinationURI;
+
+    @Immutable
+    @NotNull
+    public String destinationFactoryLink;
 
     @Immutable
     @DefaultString(value = "taskState.stage")
@@ -132,9 +121,6 @@ public class CopyStateTaskService extends StatefulService {
     @DefaultInteger(value = 500)
     public Integer queryResultLimit;
 
-    @Immutable
-    @DefaultInteger(value = 0)
-    public Integer controlFlags;
 
     @WriteOnce
     public String destinationServiceClassName;
@@ -165,8 +151,8 @@ public class CopyStateTaskService extends StatefulService {
     InitializationUtils.initialize(startState);
     validateState(startState);
 
-    if (!startState.factoryLink.endsWith("/")) {
-      startState.factoryLink += "/";
+    if (!startState.destinationFactoryLink.endsWith("/")) {
+      startState.destinationFactoryLink += "/";
     }
 
     if (!startState.sourceFactoryLink.endsWith("/")) {
@@ -221,8 +207,7 @@ public class CopyStateTaskService extends StatefulService {
       return;
     }
     try {
-      LinkedBlockingQueue<Pair<String, Integer>> queue = new LinkedBlockingQueue<>(currentState.sourceServers);
-      retrieveDocuments(currentState, queue, currentState.queryDocumentsChangedSinceEpoc);
+      retrieveDocuments(currentState, currentState.queryDocumentsChangedSinceEpoc);
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(patchOperation)) {
@@ -231,35 +216,52 @@ public class CopyStateTaskService extends StatefulService {
     }
   }
 
-  private void retrieveDocuments(
-      final State currentState,
-      Queue<Pair<String, Integer>> sourceServers,
-      long lastUpdateQueryTime) {
+  private void retrieveDocuments(State currentState, long lastUpdateQueryTime) {
 
-    OperationJoin.create(
-        currentState.sourceServers.stream()
-            .map(pair -> {
-              Operation op = Operation
-                  .createPost(buildQueryURI(currentState, pair))
-                  .setBody(retrieveDocumentsQuery(currentState));
-              AuthenticationUtils.addSystemUserAuthcontext(op, getSystemAuthorizationContext());
-              return op;
-            })
-    ).setCompletion((os, ts) -> {
-      if (ts != null && !ts.isEmpty()) {
-        failTask(ts);
-        return;
-      }
-      Map<URI, String> nextPageLinks = os.values().stream()
-          .filter(o -> o.getBody(QueryTask.class).results.nextPageLink != null)
-          .map(o -> {
-            QueryTask qt = o.getBody(QueryTask.class);
-            URI uri = convertToBaseUri(currentState, o);
-            return new AbstractMap.SimpleEntry<>(uri, qt.results.nextPageLink);
-          }).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-      continueWithNextPage(nextPageLinks, currentState, lastUpdateQueryTime);
-    })
+    Stream<Operation> queryOps = currentState.sourceURIs.stream().map((sourceURI) -> {
+      Operation queryOp = Operation
+          .createPost(UriUtils.buildUri(sourceURI, ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
+          .setBody(retrieveDocumentsQuery(currentState));
+      AuthenticationUtils.addSystemUserAuthcontext(queryOp, getSystemAuthorizationContext());
+      return queryOp;
+    });
+
+    OperationJoin
+        .create(queryOps)
+        .setCompletion((ops, exs) -> {
+          try {
+            if (exs != null && !exs.isEmpty()) {
+              failTask(exs);
+            } else {
+              processQueryOps(currentState, ops.values(), lastUpdateQueryTime);
+            }
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
         .sendWith(this);
+  }
+
+  private void processQueryOps(State currentState, Collection<Operation> queryOps, long lastUpdateQueryTime) {
+
+    Map<URI, String> nextPageLinks = queryOps.stream()
+        .filter((queryOp) -> queryOp.getBody(QueryTask.class).results.nextPageLink != null)
+        .map((queryOp) -> {
+          QueryTask queryTask = queryOp.getBody(QueryTask.class);
+          URI uri = extractBaseURI(queryOp);
+          return new AbstractMap.SimpleEntry<>(uri, queryTask.results.nextPageLink);
+        })
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    continueWithNextPage(nextPageLinks, currentState, lastUpdateQueryTime);
+  }
+
+  private URI extractBaseURI(Operation op) {
+    return extractBaseURI(op.getUri());
+  }
+
+  private URI extractBaseURI(URI uri) {
+    return UriUtils.buildUri(uri.getScheme(), uri.getHost(), uri.getPort(), null, null);
   }
 
   private void continueWithNextPage(
@@ -300,7 +302,7 @@ public class CopyStateTaskService extends StatefulService {
           Map<URI, ServiceDocumentQueryResult> results = os.values().stream()
               .map(o -> {
                 QueryTask qt = o.getBody(QueryTask.class);
-                return new AbstractMap.SimpleEntry<>(convertToBaseUri(currentState, o), qt.results);
+                return new AbstractMap.SimpleEntry<>(extractBaseURI(o), qt.results);
               })
               .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
           storeDocuments(currentState, results, lastUpdateQueryTime);
@@ -321,7 +323,8 @@ public class CopyStateTaskService extends StatefulService {
       return;
     }
 
-    URI destinationFactoryURI = buildDestinationFactoryURI(currentState);
+    URI destinationFactoryURI = UriUtils.buildUri(currentState.destinationURI,
+        currentState.destinationFactoryLink);
 
     List<Object> ownerSelectedResults = new ArrayList<>();
     for (ServiceDocumentQueryResult result : results.values()) {
@@ -408,10 +411,10 @@ public class CopyStateTaskService extends StatefulService {
           .setUri(uri)
           .setBody(documentWithRenamedFields)
           .forceRemote()
-              // PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE is a workaround needed
-              // because Xenon 0.7.0 does not allow POST to a previously deleted service
-              // we will need to implement an alternative solution using idempotent posts so that this workaround can
-              // be removed https://www.pivotaltracker.com/story/show/114425679
+          // PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE is a workaround needed
+          // because Xenon 0.7.0 does not allow POST to a previously deleted service
+          // we will need to implement an alternative solution using idempotent posts so that this workaround can
+          // be removed https://www.pivotaltracker.com/story/show/114425679
           .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE)
           .setReferer(uri);
       return postOp;
@@ -419,12 +422,6 @@ public class CopyStateTaskService extends StatefulService {
       failTask(ex);
       throw new RuntimeException(ex);
     }
-  }
-
-  private URI convertToBaseUri(final State currentState, Operation o) {
-    URI full = o.getUri();
-    URI uri = UriUtils.buildUri(currentState.sourceProtocol, full.getHost(), full.getPort(), null, null);
-    return uri;
   }
 
   private String findDestinationServiceClassName(State currentState) {
@@ -435,7 +432,7 @@ public class CopyStateTaskService extends StatefulService {
         if (!factoryServiceLink.endsWith("/")) {
           factoryServiceLink += "/";
         }
-        if (factoryServiceLink.equals(currentState.factoryLink)) {
+        if (factoryServiceLink.equals(currentState.destinationFactoryLink)) {
           FactoryService factoryInstance = (FactoryService) factoryService.newInstance();
 
           Service instance = factoryInstance.createServiceInstance();
@@ -518,24 +515,6 @@ public class CopyStateTaskService extends StatefulService {
       selfLink = selfLink.replaceFirst(factoryPath, "");
     }
     return selfLink;
-  }
-
-  private URI buildQueryURI(State currentState, Pair<String, Integer> sourceServer) {
-    return UriUtils.buildUri(
-        currentState.sourceProtocol,
-        sourceServer.getFirst(),
-        sourceServer.getSecond(),
-        ServiceUriPaths.CORE_LOCAL_QUERY_TASKS,
-        null);
-  }
-
-  private URI buildDestinationFactoryURI(State currentState) {
-    return UriUtils.buildUri(
-        currentState.destinationProtocol,
-        currentState.destinationIp,
-        currentState.destinationPort,
-        currentState.factoryLink,
-        null);
   }
 
   private QueryTask.Query buildWildCardQuery(String property, String value) {
