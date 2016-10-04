@@ -168,10 +168,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           case REINSTALL_AGENTS:
           case UPGRADE_AGENTS:
           case MIGRATE_FINAL:
-          case RESUME_DESTINATION_SYSTEM:
-            // fall through
-          case PAUSE_SOURCE_SYSTEM:
-            startState.sourceDeploymentId = "deployment2";
             startState.sourceZookeeperQuorum = "127.0.0.1";
             break;
         }
@@ -196,16 +192,12 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
     if (TaskState.TaskStage.STARTED == stage) {
       switch (patchSubStage) {
-        case PAUSE_SOURCE_SYSTEM:
-          patchState.sourceDeploymentId = "deployment2";
+        case STOP_MIGRATE_TASKS:
           patchState.sourceZookeeperQuorum = "127.0.0.1";
           break;
-        case RESUME_DESTINATION_SYSTEM:
         case MIGRATE_FINAL:
         case REINSTALL_AGENTS:
         case UPGRADE_AGENTS:
-          // fall through
-        case STOP_MIGRATE_TASKS:
           break;
       }
     }
@@ -287,8 +279,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           {null, null},
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_SOURCE_SYSTEM},
-          {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS},
           {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
@@ -296,8 +286,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS},
           {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
@@ -315,8 +303,8 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           testHost.getServiceState(FinalizeDeploymentMigrationWorkflowService.State.class);
 
       assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(serviceState.taskState.subStage, is(FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage
-          .PAUSE_SOURCE_SYSTEM));
+      assertThat(serviceState.taskState.subStage,
+          is(FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS));
     }
 
     @DataProvider(name = "TransitionalStartStages")
@@ -325,7 +313,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           {null, null},
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_SOURCE_SYSTEM},
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS},
       };
     }
 
@@ -470,76 +458,8 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
     @DataProvider(name = "ValidStageUpdates")
     public Object[][] getValidStageUpdates() {
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_SOURCE_SYSTEM},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_SOURCE_SYSTEM,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM,
-              TaskState.TaskStage.FINISHED, null},
-
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_SOURCE_SYSTEM,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM,
-              TaskState.TaskStage.FAILED, null},
-
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_SOURCE_SYSTEM,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL,
-              TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM,
-              TaskState.TaskStage.CANCELLED, null},
-      };
+      return TestHelper.getValidStageTransitions(
+          FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.class);
     }
 
 
@@ -564,135 +484,8 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
     @DataProvider(name = "InvalidStageUpdates")
     public Object[][] getInvalidStageUpdates() {
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.CREATED, null},
-
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_SOURCE_SYSTEM,
-              TaskState.TaskStage.CREATED, null},
-
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_SOURCE_SYSTEM},
-
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS},
-
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL},
-
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
-
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS},
-
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_SOURCE_SYSTEM},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_SOURCE_SYSTEM},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_SOURCE_SYSTEM},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.CANCELLED, null},
-      };
+      return TestHelper.getInvalidStageTransitions(
+          FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.class);
     }
 
 
@@ -702,7 +495,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       serviceCreated = true;
 
       FinalizeDeploymentMigrationWorkflowService.State patchState = buildValidPatchState(TaskState.TaskStage.STARTED,
-          FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.PAUSE_SOURCE_SYSTEM);
+          FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS);
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);
       declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
 
