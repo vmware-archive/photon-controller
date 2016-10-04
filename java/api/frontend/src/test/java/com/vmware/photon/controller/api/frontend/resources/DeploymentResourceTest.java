@@ -173,7 +173,7 @@ public class DeploymentResourceTest extends ResourceTest {
   @Test
   public void testInitializeDeploymentMigration() throws Exception {
     InitializeMigrationOperation op = new InitializeMigrationOperation();
-    op.setSourceLoadBalancerAddress("address");
+    op.setSourceNodeGroupReference("address");
 
     Task task = new Task();
     task.setId(taskId);
@@ -200,7 +200,7 @@ public class DeploymentResourceTest extends ResourceTest {
   @Test
   public void testFinalizeDeploymentMigration() throws Exception {
     FinalizeMigrationOperation op = new FinalizeMigrationOperation();
-    op.setSourceLoadBalancerAddress("address");
+    op.setSourceNodeGroupReference("address");
 
     Task task = new Task();
     task.setId(taskId);
@@ -387,6 +387,7 @@ public class DeploymentResourceTest extends ResourceTest {
 
   @Test
   public void testUpdateImageDatastores() throws Exception {
+
     Task task = new Task();
     task.setId(taskId);
     doReturn(task).when(feClient).setImageDatastores(eq(deploymentId), anyListOf(String.class));
@@ -465,9 +466,9 @@ public class DeploymentResourceTest extends ResourceTest {
   private String buildConfig(String key, String value) {
     StringBuilder builder = new StringBuilder();
     if (key == null || key.isEmpty()) {
-        builder.append("{}");
+      builder.append("{}");
     } else {
-        builder.append("{\"" + key + "\":\"" + value + "\"}");
+      builder.append("{\"" + key + "\":\"" + value + "\"}");
     }
 
     return builder.toString();

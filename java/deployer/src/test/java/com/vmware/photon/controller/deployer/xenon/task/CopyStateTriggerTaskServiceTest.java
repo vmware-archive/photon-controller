@@ -23,13 +23,13 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerFactoryService;
-import com.vmware.photon.controller.deployer.xenon.util.Pair;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.ServiceStats;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.TaskState.TaskStage;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
@@ -45,10 +45,12 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class implements tests for the {@link CopyStateTriggerTaskService} class.
@@ -261,23 +263,19 @@ public class CopyStateTriggerTaskServiceTest {
       startState.taskState = new TaskState();
       startState.taskState.stage = stage;
       startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-      startState.destinationPort = 4321;
-      startState.destinationIp = "127.0.0.1";
-      startState.sourceServers = new HashSet<>();
-      startState.sourceServers.add(new Pair<>("127.0.0.1", new Integer(1234)));
-      startState.factoryLink = "fake";
+      startState.sourceURIs = Collections.singletonList(UriUtils.buildUri("http://127.0.0.1:1234"));
       startState.sourceFactoryLink = "fake";
+      startState.destinationURI = UriUtils.buildUri("http://127.0.0.1:4321");
+      startState.destinationFactoryLink = "fake";
       return startState;
     }
 
     private void startClusters() throws Throwable {
       sourceCluster = new TestEnvironment.Builder().hostCount(1).build();
       destinationCluster = new TestEnvironment.Builder().hostCount(1).build();
-      startState.destinationPort = destinationCluster.getHosts()[0].getPort();
-      startState.sourceServers = new HashSet<>();
-      for (ServiceHost h : sourceCluster.getHosts()) {
-        startState.sourceServers.add(new Pair<>(h.getPreferredAddress(), h.getPort()));
-      }
+      startState.destinationURI = (destinationCluster.getHosts()[0]).getUri();
+      startState.sourceURIs = Stream.of(sourceCluster.getHosts())
+          .map((host) -> host.getUri()).collect(Collectors.toList());
     }
 
     private QueryTask generateQueryCopyStateTaskQuery() {
@@ -294,24 +292,19 @@ public class CopyStateTriggerTaskServiceTest {
     private boolean copyStateHasCorrectValues(
         CopyStateTaskService.State state,
         CopyStateTriggerTaskService.State startState) {
-      return state.destinationIp.equals(startState.destinationIp)
-          && state.destinationPort.equals(startState.destinationPort)
-          && state.destinationProtocol.equals(startState.destinationProtocol)
-          && state.sourceServers.equals(startState.sourceServers)
-          && state.sourceProtocol.equals(startState.sourceProtocol)
-          && state.factoryLink.equals(startState.factoryLink)
-          && state.sourceFactoryLink.equals(startState.sourceFactoryLink);
+      return state.sourceURIs.equals(startState.sourceURIs)
+          && state.sourceFactoryLink.equals(startState.sourceFactoryLink)
+          && state.destinationURI.equals(startState.destinationURI)
+          && state.destinationFactoryLink.equals(startState.destinationFactoryLink);
     }
   }
 
   private CopyStateTriggerTaskService.State buildValidStartState() {
     CopyStateTriggerTaskService.State state = new CopyStateTriggerTaskService.State();
-    state.sourceServers = new HashSet<>();
-    state.sourceServers.add(new Pair<>("0.0.0.0", 1234));
+    state.sourceURIs = Collections.singletonList(UriUtils.buildUri("http://127.0.0.1:1234"));
     state.sourceFactoryLink = ContainerFactoryService.SELF_LINK;
-    state.destinationIp = "0.0.0.0";
-    state.factoryLink = ContainerFactoryService.SELF_LINK;
-    state.destinationPort = 1234;
+    state.destinationURI = UriUtils.buildUri("http://127.0.0.1:4321");
+    state.destinationFactoryLink = ContainerFactoryService.SELF_LINK;
     state.enableMaintenance = true;
     state.maintenanceIntervalMicros = TimeUnit.MILLISECONDS.toMicros(50);
     return state;
@@ -322,12 +315,10 @@ public class CopyStateTriggerTaskServiceTest {
     startState.taskState = new TaskState();
     startState.taskState.stage = stage;
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-    startState.sourceServers = new HashSet<>();
-    startState.sourceServers.add(new Pair<>("127.0.0.1", new Integer(1234)));
-    startState.destinationPort = 4321;
-    startState.destinationIp = "127.0.0.1";
-    startState.factoryLink = ContainerFactoryService.SELF_LINK;
+    startState.sourceURIs = Collections.singletonList(UriUtils.buildUri("http://127.0.0.1:1234"));
     startState.sourceFactoryLink = ContainerFactoryService.SELF_LINK;
+    startState.destinationURI = UriUtils.buildUri("http://127.0.0.1:4321");
+    startState.destinationFactoryLink = ContainerFactoryService.SELF_LINK;
     return startState;
   }
 }
