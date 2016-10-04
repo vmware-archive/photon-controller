@@ -33,17 +33,17 @@ import java.util.Objects;
 public class FinalizeMigrationOperation {
 
   @JsonProperty
-  @ApiModelProperty(value = "This property specifies the source load balancer address.", required = true)
+  @ApiModelProperty(value = "This property specifies the source node group.", required = true)
   @NotNull
   @Size(min = 1)
-  private String sourceLoadBalancerAddress;
+  private String sourceNodeGroupReference;
 
-  public String getSourceLoadBalancerAddress() {
-    return sourceLoadBalancerAddress;
+  public String getSourceNodeGroupReference() {
+    return sourceNodeGroupReference;
   }
 
-  public void setSourceLoadBalancerAddress(String sourceLoadBalancerAddress) {
-    this.sourceLoadBalancerAddress = sourceLoadBalancerAddress;
+  public void setSourceNodeGroupReference(String sourceNodeGroupReference) {
+    this.sourceNodeGroupReference = sourceNodeGroupReference;
   }
 
   @Override
@@ -57,18 +57,18 @@ public class FinalizeMigrationOperation {
 
     FinalizeMigrationOperation other = (FinalizeMigrationOperation) o;
 
-    return Objects.equals(sourceLoadBalancerAddress, other.sourceLoadBalancerAddress);
+    return Objects.equals(sourceNodeGroupReference, other.sourceNodeGroupReference);
   }
 
   @Override
   public int hashCode() {
-        return Objects.hash(sourceLoadBalancerAddress);
-    }
+    return Objects.hash(sourceNodeGroupReference);
+  }
 
   @Override
   public String toString() {
     return toStringHelper(this)
-        .add("sourceLoadBalancerAddress", sourceLoadBalancerAddress)
+        .add("sourceNodeGroupReference", sourceNodeGroupReference)
         .toString();
   }
 }

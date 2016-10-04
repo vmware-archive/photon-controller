@@ -47,7 +47,6 @@ import com.vmware.photon.controller.deployer.xenon.task.AllocateClusterManagerRe
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
-import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
 import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.photon.controller.nsxclient.datatypes.LogicalServiceResourceType;
 import com.vmware.photon.controller.nsxclient.datatypes.ServiceProfileResourceType;
@@ -71,6 +70,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -80,6 +80,7 @@ import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -1103,12 +1104,12 @@ public class DeploymentWorkflowService extends StatefulService {
         factory += "/";
       }
 
-      CopyStateTaskService.State startState = MiscUtils.createCopyStateStartState(
-          sourceServers,
-          destinationServers,
-          factory,
-          factory);
-      startState.destinationProtocol = destinationProtocol;
+      CopyStateTaskService.State startState = new CopyStateTaskService.State();
+      startState.sourceURIs = Collections.singletonList(getHost().getUri());
+      startState.sourceFactoryLink = factory;
+      startState.destinationURI = UriUtils.buildUri(destinationProtocol, managementVms.get(0).ipAddress,
+          managementVms.get(0).deployerXenonPort, null, null);
+      startState.destinationFactoryLink = factory;
 
       TaskUtils.startTaskAsync(
           this,
