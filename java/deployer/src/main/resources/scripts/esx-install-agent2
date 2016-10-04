@@ -164,8 +164,8 @@ function copy_certificate() {
   echo "listing /etc/vmware/ssl contents after copying"
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls /etc/vmware/ssl
 
-  # restart hostd to load new cert
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} /etc/init.d/hostd restart
+  # restart all services to load new cert
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} /bin/services.sh restart
 }
 
 if [[ "$vib_path" == *"photon-controller-agent"* ]]
