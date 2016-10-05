@@ -14,6 +14,9 @@
 package com.vmware.photon.controller.common.clients;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
+import com.vmware.photon.controller.agent.gen.AgentControl.AsyncSSLClient.get_agent_status_call;
+import com.vmware.photon.controller.agent.gen.AgentControl.AsyncSSLClient.ping_call;
+import com.vmware.photon.controller.agent.gen.AgentControl.AsyncSSLClient.provision_call;
 import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.AgentStatusResponse;
 import com.vmware.photon.controller.agent.gen.PingRequest;
@@ -100,6 +103,7 @@ public class AgentControlClientTest {
     }
   }
 
+  @SuppressWarnings("unchecked")
   private void setUp() {
     agentControlClient = spy(new AgentControlClient(
         mock(ClientProxyFactory.class), mock(ClientPoolFactory.class)));
@@ -261,18 +265,21 @@ public class AgentControlClientTest {
       agentControlClient = null;
     }
 
-    private Answer getAnswer(final AgentControl.AsyncSSLClient.provision_call provisionCall) {
-      return new Answer() {
+    private Answer<?> getAnswer(final AgentControl.AsyncSSLClient.provision_call provisionCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call> handler =
+              (AsyncMethodCallback<provision_call>) args[1];
           handler.onComplete(provisionCall);
           return null;
         }
       };
     }
 
+    @SuppressWarnings("unchecked")
     public void testSuccess() throws Exception {
       ProvisionResponse provisionResponse = new ProvisionResponse();
       provisionResponse.setResult(ProvisionResultCode.OK);
@@ -398,13 +405,15 @@ public class AgentControlClientTest {
       agentControlClient = null;
     }
 
-    private Answer getAnswer(final AgentControl.AsyncSSLClient.get_agent_status_call getAgentStatusCall) {
-      return new Answer() {
+    private Answer<?> getAnswer(final AgentControl.AsyncSSLClient.get_agent_status_call getAgentStatusCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
           AsyncMethodCallback<AgentControl.AsyncSSLClient.get_agent_status_call> handler
-            = (AsyncMethodCallback) args[0];
+ =
+              (AsyncMethodCallback<get_agent_status_call>) args[0];
           handler.onComplete(getAgentStatusCall);
           return null;
         }
@@ -523,10 +532,11 @@ public class AgentControlClientTest {
       agentControlClient = null;
     }
 
-    private Answer getAnswer(final AgentControl.AsyncSSLClient.ping_call pingCall) {
+    @SuppressWarnings("unchecked")
+    private Answer<?> getAnswer(final AgentControl.AsyncSSLClient.ping_call pingCall) {
       return invocation -> {
         Object[] args = invocation.getArguments();
-        AsyncMethodCallback<AgentControl.AsyncSSLClient.ping_call> handler = (AsyncMethodCallback) args[1];
+        AsyncMethodCallback<AgentControl.AsyncSSLClient.ping_call> handler = (AsyncMethodCallback<ping_call>) args[1];
         handler.onComplete(pingCall);
         return null;
       };
