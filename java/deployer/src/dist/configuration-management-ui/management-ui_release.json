@@ -14,6 +14,6 @@
   "volumeBindings": {
   },
   "dynamicParameters": {
-    "MGMT_UI_HTTPS_PORT_ON_LB" : 4343
+    "HTTPS_PORT" : 20001
   }
 }

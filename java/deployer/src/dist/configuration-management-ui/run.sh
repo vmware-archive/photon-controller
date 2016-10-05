@@ -10,12 +10,11 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
 # specific language governing permissions and limitations under the License.
 
-export LOAD_BALANCER_IP="{{{APIFE_IP}}}"
-export LOAD_BALANCER_API_PORT="{{{APIFE_PORT}}}"
-export LOAD_BALANCER_HTTPS_PORT="{{{MGMT_UI_HTTPS_PORT_ON_LB}}}";
+export API_ORIGIN="http://{{{APIFE_IP}}}:{{{APIFE_PORT}}}"
 
 if [ -n "$ENABLE_AUTH" -a "$ENABLE_AUTH" == "true" ]
 then
+  export API_ORIGIN="https://{{{APIFE_IP}}}:{{{APIFE_PORT}}}"
   export LOGINREDIRECTENDPOINT="$MGMT_UI_LOGIN_URL"
   export LOGOUTREDIRECTENDPOINT="$MGMT_UI_LOGOUT_URL"
 fi
