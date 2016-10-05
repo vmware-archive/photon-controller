@@ -174,7 +174,7 @@ public class DeploymentResourceTest extends ResourceTest {
   @Test
   public void testInitializeDeploymentMigration() throws Exception {
     InitializeMigrationOperation op = new InitializeMigrationOperation();
-    op.setSourceLoadBalancerAddress("address");
+    op.setSourceNodeGroupReference("address");
 
     Task task = new Task();
     task.setId(taskId);
@@ -201,7 +201,7 @@ public class DeploymentResourceTest extends ResourceTest {
   @Test
   public void testFinalizeDeploymentMigration() throws Exception {
     FinalizeMigrationOperation op = new FinalizeMigrationOperation();
-    op.setSourceLoadBalancerAddress("address");
+    op.setSourceNodeGroupReference("address");
 
     Task task = new Task();
     task.setId(taskId);
@@ -390,7 +390,7 @@ public class DeploymentResourceTest extends ResourceTest {
   public void testConfigureDhcp() throws Exception {
     String uri = UriBuilder
         .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
-          DeploymentResourceRoutes.ENABLE_DHCP_ACTION)
+            DeploymentResourceRoutes.ENABLE_DHCP_ACTION)
         .build(deploymentId)
         .toString();
 
@@ -441,9 +441,9 @@ public class DeploymentResourceTest extends ResourceTest {
   private String buildConfig(String key, String value) {
     StringBuilder builder = new StringBuilder();
     if (key == null || key.isEmpty()) {
-        builder.append("{}");
+      builder.append("{}");
     } else {
-        builder.append("{\"" + key + "\":\"" + value + "\"}");
+      builder.append("{\"" + key + "\":\"" + value + "\"}");
     }
 
     return builder.toString();

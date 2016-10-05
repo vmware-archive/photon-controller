@@ -343,7 +343,7 @@ public class DeploymentXenonBackendTest {
     }
 
     @Test
-    public void testFailedDeployOnManagementHostNotCreated() throws Throwable{
+    public void testFailedDeployOnManagementHostNotCreated() throws Throwable {
       doReturn(true).when(deploymentBackendSpy).isNoManagementHost(Optional.absent());
 
       try {
@@ -764,13 +764,13 @@ public class DeploymentXenonBackendTest {
 
     @DataProvider(name = "NotReadyState")
     private Object[][] getNotReadyStateData() {
-      return new Object[][] {
-          { DeploymentState.CREATING },
-          { DeploymentState.NOT_DEPLOYED },
-          { DeploymentState.ERROR },
-          { DeploymentState.DELETED },
-          { DeploymentState.BACKGROUND_PAUSED },
-          { DeploymentState.PAUSED }
+      return new Object[][]{
+          {DeploymentState.CREATING},
+          {DeploymentState.NOT_DEPLOYED},
+          {DeploymentState.ERROR},
+          {DeploymentState.DELETED},
+          {DeploymentState.BACKGROUND_PAUSED},
+          {DeploymentState.PAUSED}
       };
     }
 
@@ -1147,7 +1147,7 @@ public class DeploymentXenonBackendTest {
     @Test
     public void testInitializeMigrateDeploymentSuccess() throws Throwable {
       InitializeMigrationOperation op = new InitializeMigrationOperation();
-      op.setSourceLoadBalancerAddress(host2.getPreferredAddress());
+      op.setSourceNodeGroupReference(host2.getPreferredAddress());
 
       TaskEntity taskEntity = deploymentBackend.prepareInitializeMigrateDeployment(op, entity
           .getId());
@@ -1172,7 +1172,7 @@ public class DeploymentXenonBackendTest {
     @Test
     public void testFinalizeMigrateDeploymentSuccess() throws Throwable {
       FinalizeMigrationOperation op = new FinalizeMigrationOperation();
-      op.setSourceLoadBalancerAddress(host2.getPreferredAddress());
+      op.setSourceNodeGroupReference(host2.getPreferredAddress());
 
       TaskEntity taskEntity = deploymentBackend.prepareFinalizeMigrateDeployment(op, entity
           .getId());

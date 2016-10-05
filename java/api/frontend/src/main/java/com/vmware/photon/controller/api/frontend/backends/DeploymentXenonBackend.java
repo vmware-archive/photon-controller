@@ -142,7 +142,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
   }
 
   @Override
-  public TaskEntity prepareInitializeMigrateDeployment(InitializeMigrationOperation  initializeMigrationOperation,
+  public TaskEntity prepareInitializeMigrateDeployment(InitializeMigrationOperation initializeMigrationOperation,
                                                        String destinationDeploymentId) throws ExternalException {
     DeploymentEntity deploymentEntity = findById(destinationDeploymentId);
     EntityStateValidator.validateOperationState(deploymentEntity, deploymentEntity.getState(),
@@ -150,7 +150,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
 
     logger.info("Initialize migrate  {}", deploymentEntity);
     TaskEntity taskEntity = createInitializeMigrateDeploymentTask(
-            initializeMigrationOperation.getSourceLoadBalancerAddress(), deploymentEntity);
+        initializeMigrationOperation.getSourceNodeGroupReference(), deploymentEntity);
     taskEntity.getToBeLockedEntities().add(deploymentEntity);
     return taskEntity;
   }
@@ -164,7 +164,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
 
     logger.info("Finalize migrate  {}", deploymentEntity);
     TaskEntity taskEntity = createFinalizeMigrateDeploymentTask(
-        finalizeMigrationOperation.getSourceLoadBalancerAddress(), deploymentEntity);
+        finalizeMigrationOperation.getSourceNodeGroupReference(), deploymentEntity);
     taskEntity.getToBeLockedEntities().add(deploymentEntity);
     return taskEntity;
   }
@@ -593,7 +593,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     return taskEntity;
   }
 
-  private TaskEntity createInitializeMigrateDeploymentTask(String sourceLoadbalancerAddress,
+  private TaskEntity createInitializeMigrateDeploymentTask(String sourceNodeGroupReference,
                                                            DeploymentEntity deploymentEntity) throws ExternalException {
     TaskEntity taskEntity = this.taskBackend.createQueuedTask(deploymentEntity,
         Operation.INITIALIZE_MIGRATE_DEPLOYMENT);
@@ -602,13 +602,13 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     StepEntity initiateStep = taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.SCHEDULE_INITIALIZE_MIGRATE_DEPLOYMENT);
     initiateStep.createOrUpdateTransientResource(DeploymentInitializeMigrationStepCmd.SOURCE_ADDRESS_RESOURCE_KEY,
-        sourceLoadbalancerAddress);
+        sourceNodeGroupReference);
     this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.PERFORM_INITIALIZE_MIGRATE_DEPLOYMENT);
     return taskEntity;
   }
 
-  private TaskEntity createFinalizeMigrateDeploymentTask(String sourceLoadbalancerAddress,
+  private TaskEntity createFinalizeMigrateDeploymentTask(String sourceNodeGroupReference,
                                                          DeploymentEntity deploymentEntity) throws ExternalException {
     TaskEntity taskEntity = this.taskBackend.createQueuedTask(deploymentEntity,
         Operation.FINALIZE_MIGRATE_DEPLOYMENT);
@@ -617,7 +617,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     StepEntity initiateStep = taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.SCHEDULE_FINALIZE_MIGRATE_DEPLOYMENT);
     initiateStep.createOrUpdateTransientResource(DeploymentInitializeMigrationStepCmd.SOURCE_ADDRESS_RESOURCE_KEY,
-        sourceLoadbalancerAddress);
+        sourceNodeGroupReference);
     this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.PERFORM_FINALIZE_MIGRATE_DEPLOYMENT);
     return taskEntity;
@@ -658,7 +658,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
   }
 
   private void validateDeploy() throws ExternalException {
-    if (isNoManagementHost(Optional.absent())){
+    if (isNoManagementHost(Optional.absent())) {
       throw new NoManagementHostException("No management hosts are found for deployment");
     }
   }
@@ -667,7 +667,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
   public boolean isNoManagementHost(Optional optional) {
     ResourceList<Host> hostList = null;
     hostList = this.hostBackend.filterByUsage(UsageTag.MGMT, optional);
-    if (hostList == null || 0 == hostList.getItems().size()){
+    if (hostList == null || 0 == hostList.getItems().size()) {
       return true;
     }
     return false;

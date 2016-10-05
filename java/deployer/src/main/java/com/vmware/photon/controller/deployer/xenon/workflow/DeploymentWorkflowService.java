@@ -42,7 +42,6 @@ import com.vmware.photon.controller.deployer.xenon.task.AllocateClusterManagerRe
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
-import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
@@ -64,6 +63,7 @@ import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -196,7 +196,7 @@ public class DeploymentWorkflowService extends StatefulService {
     }
 
     if (null == startState.managementVmImageFile) {
-      startState.managementVmImageFile =  DeployerConfig.getManagementImageFile();
+      startState.managementVmImageFile = DeployerConfig.getManagementImageFile();
     }
 
     if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
@@ -631,44 +631,44 @@ public class DeploymentWorkflowService extends StatefulService {
     // get all container
     Operation queryContainersOp = buildBroadcastKindQuery(ContainerService.State.class);
     // get all container templates
-    Operation queryTemplatesOp =  buildBroadcastKindQuery(ContainerTemplateService.State.class);
+    Operation queryTemplatesOp = buildBroadcastKindQuery(ContainerTemplateService.State.class);
     // get all vms
     Operation queryVmsOp = buildBroadcastKindQuery(VmService.State.class);
 
     OperationJoin.create(queryContainersOp, queryTemplatesOp, queryVmsOp)
-      .setCompletion((os, ts) -> {
-        if (ts != null && !ts.isEmpty()) {
-          failTask(ts.values());
-          return;
-        }
-        List<ContainerService.State> containers = QueryTaskUtils
-            .getBroadcastQueryDocuments(ContainerService.State.class, os.get(queryContainersOp.getId()));
-        List<ContainerTemplateService.State> templates = QueryTaskUtils
-            .getBroadcastQueryDocuments(ContainerTemplateService.State.class, os.get(queryTemplatesOp.getId()));
-        List<VmService.State> vms = QueryTaskUtils
-            .getBroadcastQueryDocuments(VmService.State.class, os.get(queryVmsOp.getId()));
+        .setCompletion((os, ts) -> {
+          if (ts != null && !ts.isEmpty()) {
+            failTask(ts.values());
+            return;
+          }
+          List<ContainerService.State> containers = QueryTaskUtils
+              .getBroadcastQueryDocuments(ContainerService.State.class, os.get(queryContainersOp.getId()));
+          List<ContainerTemplateService.State> templates = QueryTaskUtils
+              .getBroadcastQueryDocuments(ContainerTemplateService.State.class, os.get(queryTemplatesOp.getId()));
+          List<VmService.State> vms = QueryTaskUtils
+              .getBroadcastQueryDocuments(VmService.State.class, os.get(queryVmsOp.getId()));
 
-        String templateLink = templates.stream()
-            .filter(template -> template.name.equals(ContainersConfig.ContainerType.PhotonControllerCore.name()))
-            .findFirst().get().documentSelfLink;
-        List<String> vmServiceLinks = containers.stream()
-            .filter(container -> container.containerTemplateServiceLink.equals(templateLink))
-            .map(container -> container.vmServiceLink)
-            .collect(Collectors.toList());
-        List<VmService.State> photonControllerCoreVms = vms.stream()
-            .filter(vm -> vmServiceLinks.contains(vm.documentSelfLink))
-            .collect(Collectors.toList());
+          String templateLink = templates.stream()
+              .filter(template -> template.name.equals(ContainersConfig.ContainerType.PhotonControllerCore.name()))
+              .findFirst().get().documentSelfLink;
+          List<String> vmServiceLinks = containers.stream()
+              .filter(container -> container.containerTemplateServiceLink.equals(templateLink))
+              .map(container -> container.vmServiceLink)
+              .collect(Collectors.toList());
+          List<VmService.State> photonControllerCoreVms = vms.stream()
+              .filter(vm -> vmServiceLinks.contains(vm.documentSelfLink))
+              .collect(Collectors.toList());
 
-        migrateData(currentState, photonControllerCoreVms, destinationProtocol);
-      })
-      .sendWith(this);
+          migrateData(currentState, photonControllerCoreVms, destinationProtocol);
+        })
+        .sendWith(this);
   }
 
   private void migrateData(State currentState,
                            List<VmService.State> managementVms,
                            final String destinationProtocol) {
     Collection<DeploymentMigrationInformation> migrationInformation
-      = HostUtils.getDeployerContext(this).getDeploymentMigrationInformation();
+        = HostUtils.getDeployerContext(this).getDeploymentMigrationInformation();
 
     final AtomicInteger latch = new AtomicInteger(migrationInformation.size());
     final List<Throwable> errors = new BlockingArrayQueue<>();
@@ -689,12 +689,12 @@ public class DeploymentWorkflowService extends StatefulService {
         factory += "/";
       }
 
-      CopyStateTaskService.State startState = MiscUtils.createCopyStateStartState(
-          sourceServers,
-          destinationServers,
-          factory,
-          factory);
-      startState.destinationProtocol = destinationProtocol;
+      CopyStateTaskService.State startState = new CopyStateTaskService.State();
+      startState.sourceURIs = Collections.singletonList(getHost().getUri());
+      startState.sourceFactoryLink = factory;
+      startState.destinationURI = UriUtils.buildUri(destinationProtocol, managementVms.get(0).ipAddress,
+          managementVms.get(0).deployerXenonPort, null, null);
+      startState.destinationFactoryLink = factory;
 
       TaskUtils.startTaskAsync(
           this,
@@ -869,13 +869,14 @@ public class DeploymentWorkflowService extends StatefulService {
     QueryTask.Query query = QueryTask.Query.Builder.create().addKindFieldClause(type)
         .build();
     return Operation
-      .createPost(UriUtils.buildBroadcastRequestUri(
-          UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS), ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-      .setBody(QueryTask.Builder
-          .createDirectTask()
-          .addOptions(EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
-          .setQuery(query)
-          .build());
+        .createPost(UriUtils.buildBroadcastRequestUri(
+            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+        .setBody(QueryTask.Builder
+            .createDirectTask()
+            .addOptions(EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+            .setQuery(query)
+            .build());
   }
 
   /**

@@ -13,14 +13,10 @@
 
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
-import com.vmware.photon.controller.api.client.ApiClient;
-import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.HostState;
-import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
-import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
@@ -29,7 +25,6 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
-import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.UpgradeInformation;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
@@ -38,7 +33,6 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VibService;
@@ -54,8 +48,6 @@ import com.vmware.photon.controller.deployer.xenon.task.MigrationStatusUpdateTri
 import com.vmware.photon.controller.deployer.xenon.task.UploadVibTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.UploadVibTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
-import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
-import com.vmware.photon.controller.deployer.xenon.util.Pair;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Operation.CompletionHandler;
 import com.vmware.xenon.common.OperationJoin;
@@ -65,26 +57,23 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState.TaskStage;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupService;
+import com.vmware.xenon.services.common.NodeState;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.Query;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -144,11 +133,19 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     public Integer taskPollDelay;
 
     /**
-     * This value represents the link to the source management plane in the form of http://address:port.
+     * This value represents a reference to the node group to use as the source of the migration
+     * operation. This is a URI with form {protocol}://{address}:{port}/core/node-groups/{id} where
+     * the ID is usually "default".
      */
     @NotNull
     @Immutable
-    public String sourceLoadBalancerAddress;
+    public URI sourceNodeGroupReference;
+
+    /**
+     * This value represents the base URI of the nodes in the source node group.
+     */
+    @WriteOnce
+    public List<URI> sourceURIs;
 
     /**
      * This value represents the id of the destination deployment.
@@ -156,12 +153,6 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     @NotNull
     @Immutable
     public String destinationDeploymentId;
-
-    /**
-     * This value represents the the DeploymentId on source.
-     */
-    @WriteOnce
-    public String sourceZookeeperQuorum;
   }
 
   public InitializeDeploymentMigrationWorkflowService() {
@@ -219,7 +210,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        if (currentState.sourceZookeeperQuorum == null) {
+        if (currentState.sourceURIs == null) {
           populateCurrentState(currentState);
           return;
         }
@@ -230,26 +221,37 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     }
   }
 
-  private void populateCurrentState(State currentState) throws Throwable {
-    final InitializeDeploymentMigrationWorkflowService service = this;
-    try {
-      getDeployment(currentState, currentState.sourceLoadBalancerAddress,
-          new TaskFailingCallback<ResourceList<Deployment>>(service) {
+  private void populateCurrentState(State currentState) {
 
-            @Override
-            public void onSuccess(ResourceList<Deployment> result) {
-              checkState(result != null && result.getItems().size() == 1);
-              final String sourceDeploymentId = result.getItems().get(0).getId();
-              try {
-                getZookeeperQuorumFromSourceSystem(currentState, sourceDeploymentId);
-              } catch (Throwable t) {
-                failTask(t);
-              }
+    sendRequest(Operation
+        .createGet(currentState.sourceNodeGroupReference)
+        .setCompletion((o, e) -> {
+          try {
+            if (e != null) {
+              failTask(e);
+            } else {
+              processNodeGroupState(currentState, o.getBody(NodeGroupService.NodeGroupState.class));
             }
-          });
-    } catch (Throwable t) {
-      failTask(t);
-    }
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        }));
+  }
+
+  private void processNodeGroupState(State currentState, NodeGroupService.NodeGroupState nodeGroupState) {
+    List<URI> sourceURIs = nodeGroupState.nodes.values().stream()
+        .map(this::extractBaseURI).collect(Collectors.toList());
+    State patchState = buildPatch(currentState.taskState.stage, currentState.taskState.subStage, null);
+    patchState.sourceURIs = sourceURIs;
+    TaskUtils.sendSelfPatch(this, patchState);
+  }
+
+  private URI extractBaseURI(NodeState nodeState) {
+    return extractBaseURI(nodeState.groupReference);
+  }
+
+  private URI extractBaseURI(URI uri) {
+    return UriUtils.buildUri(uri.getScheme(), uri.getHost(), uri.getPort(), null, null);
   }
 
   /**
@@ -299,62 +301,56 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
   }
 
   private void migrateHostEntities(State currentState) throws Throwable {
-    // run instances of copy state for host migration
+
     List<UpgradeInformation> hostUpgradeInformation = HostUtils.getDeployerContext(this)
         .getUpgradeInformation().stream()
         .filter(e -> e.destinationFactoryServicePath.equals(HostServiceFactory.SELF_LINK))
         .collect(Collectors.toList());
 
-    Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> m = new HashMap<>();
-    DeployerServiceGroup deployerServiceGroup =
-        (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
-    ZookeeperClient zookeeperClient = deployerServiceGroup.getZookeeperServerSetFactoryBuilder().create();
+    Stream<Operation> copyStateTaskStartOps = hostUpgradeInformation.stream().map((upgradeInfo) -> {
+      String sourceFactoryLink = upgradeInfo.sourceFactoryServicePath;
+      if (!sourceFactoryLink.endsWith("/")) {
+        sourceFactoryLink += "/";
+      }
 
-    OperationJoin.create(
-        hostUpgradeInformation.stream()
-            .map(entry -> {
-              if (!m.containsKey(entry.zookeeperServerSet)) {
-                Set<InetSocketAddress> destinationServers = new HashSet<InetSocketAddress>();
-                destinationServers.add(new InetSocketAddress(getHost().getPreferredAddress(), getHost().getPort()));
+      CopyStateTaskService.State startState = new CopyStateTaskService.State();
+      startState.sourceURIs = currentState.sourceURIs;
+      startState.sourceFactoryLink = sourceFactoryLink;
+      startState.destinationURI = getHost().getUri();
+      startState.destinationFactoryLink = upgradeInfo.destinationFactoryServicePath;
+      startState.performHostTransformation = true;
+      return Operation.createPost(this, CopyStateTaskFactoryService.SELF_LINK).setBody(startState);
+    });
 
-                Set<InetSocketAddress> sourceServers
-                    = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, entry.zookeeperServerSet);
-
-                m.put(entry.zookeeperServerSet, new Pair<>(sourceServers, destinationServers));
-              }
-
-              String sourceFactory = entry.sourceFactoryServicePath;
-              if (!sourceFactory.endsWith("/")) {
-                sourceFactory += "/";
-              }
-              CopyStateTaskService.State startState
-                  = MiscUtils.createCopyStateStartState(
-                  m.get(entry.zookeeperServerSet).getFirst(),
-                  m.get(entry.zookeeperServerSet).getSecond(),
-                  entry.destinationFactoryServicePath, sourceFactory);
-              startState.performHostTransformation = Boolean.TRUE;
-              return Operation
-                  .createPost(this, CopyStateTaskFactoryService.SELF_LINK)
-                  .setBody(startState);
-            }).collect(Collectors.toList()))
-        .setCompletion((es, ts) -> {
-          if (ts != null && !ts.isEmpty()) {
-            failTask(ts.values());
-            return;
+    OperationJoin
+        .create(copyStateTaskStartOps)
+        .setCompletion((ops, exs) -> {
+          try {
+            if (exs != null && !exs.isEmpty()) {
+              failTask(exs.values());
+            } else {
+              processCopyStateTasks(currentState);
+            }
+          } catch (Throwable t) {
+            failTask(t);
           }
-          waitUntilCopyStateTasksFinished((operation, throwable) -> {
-            if (throwable != null) {
-              failTask(throwable);
-              return;
-            }
-            try {
-              deleteOldTasks(currentState);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }, currentState);
         })
         .sendWith(this);
+  }
+
+  private void processCopyStateTasks(State currentState) {
+
+    waitUntilCopyStateTasksFinished((o, e) -> {
+      try {
+        if (e != null) {
+          failTask(e);
+        } else {
+          deleteOldTasks(currentState);
+        }
+      } catch (Throwable t) {
+        failTask(t);
+      }
+    }, currentState);
   }
 
   private void deleteOldTasks(final State currentState) {
@@ -543,44 +539,20 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
   }
 
   private OperationJoin createStartMigrationOperations(State currentState) {
-    Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> m = new HashMap<>();
-    DeployerServiceGroup deployerServiceGroup =
-        (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
-    ZookeeperClient zookeeperClient = deployerServiceGroup.getZookeeperServerSetFactoryBuilder().create();
 
-    return OperationJoin.create(
-        HostUtils.getDeployerContext(this).getUpgradeInformation().stream()
-            .map(entry -> {
-              if (!m.containsKey(entry.zookeeperServerSet)) {
-                Set<InetSocketAddress> destinationServers = new HashSet<InetSocketAddress>();
-                destinationServers.add(new InetSocketAddress(getHost().getPreferredAddress(), getHost().getPort()));
+    Stream<Operation> copyStateTriggerTaskStartOps = HostUtils.getDeployerContext(this)
+        .getUpgradeInformation().stream().map((upgradeInfo) -> {
+          CopyStateTriggerTaskService.State startState = new CopyStateTriggerTaskService.State();
+          startState.executionState = ExecutionState.RUNNING;
+          startState.sourceURIs = currentState.sourceURIs;
+          startState.sourceFactoryLink = upgradeInfo.sourceFactoryServicePath;
+          startState.destinationURI = getHost().getUri();
+          startState.destinationFactoryLink = upgradeInfo.destinationFactoryServicePath;
+          startState.performHostTransformation = true;
+          return Operation.createPost(this, CopyStateTriggerTaskFactoryService.SELF_LINK).setBody(startState);
+        });
 
-                Set<InetSocketAddress> sourceServers
-                    = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, entry.zookeeperServerSet);
-
-                m.put(entry.zookeeperServerSet, new Pair<>(sourceServers, destinationServers));
-              }
-
-              String destinationFactoryLink = entry.destinationFactoryServicePath;
-              String sourceFactoryLink = entry.sourceFactoryServicePath;
-
-              InetSocketAddress remote = ServiceUtils.selectRandomItem(m.get(entry.zookeeperServerSet).getSecond());
-              CopyStateTriggerTaskService.State startState = new CopyStateTriggerTaskService.State();
-              startState.sourceServers = new HashSet<>();
-              for (InetSocketAddress sourceServer : m.get(entry.zookeeperServerSet).getFirst()) {
-                startState.sourceServers.add(new Pair<>(sourceServer.getHostName(), sourceServer.getPort()));
-              }
-              startState.destinationIp = remote.getAddress().getHostAddress();
-              startState.destinationPort = remote.getPort();
-              startState.factoryLink = destinationFactoryLink;
-              startState.sourceFactoryLink = sourceFactoryLink;
-              startState.documentSelfLink = UUID.randomUUID().toString() + startState.factoryLink;
-              startState.executionState = ExecutionState.RUNNING;
-              startState.performHostTransformation = Boolean.TRUE;
-              return Operation
-                  .createPost(this, CopyStateTriggerTaskFactoryService.SELF_LINK)
-                  .setBody(startState);
-            }).collect(Collectors.toList()));
+    return OperationJoin.create(copyStateTriggerTaskStartOps);
   }
 
   private void waitUntilCopyStateTasksFinished(CompletionHandler handler, State currentState) {
@@ -622,38 +594,6 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
         .setBody(queryTask);
   }
 
-  private void getZookeeperQuorumFromSourceSystem(
-      State currentState,
-      String sourceDeploymentId)
-      throws Throwable {
-    MiscUtils.getZookeeperQuorumFromSourceSystem(this, currentState.sourceLoadBalancerAddress,
-        sourceDeploymentId, currentState.taskPollDelay, new TaskFailingCallback<List<String>>(this) {
-          @Override
-          public void onSuccess(@Nullable List<String> ipAddresses) {
-            String zookeeperQuorum = MiscUtils.generateReplicaList(ipAddresses, Integer.toString(Constants
-                .ZOOKEEPER_PORT));
-            ServiceUtils.logInfo(InitializeDeploymentMigrationWorkflowService.this,
-                "Set Zookeeper quorum %s", zookeeperQuorum);
-            State patchState = buildPatch(currentState.taskState.stage, currentState.taskState.subStage, null);
-            patchState.sourceZookeeperQuorum = zookeeperQuorum;
-            TaskUtils.sendSelfPatch(InitializeDeploymentMigrationWorkflowService.this, patchState);
-          }
-        });
-  }
-
-  private void getDeployment(final State currentState,
-                             String endpoint,
-                             FutureCallback<ResourceList<Deployment>> callback)
-      throws IOException {
-    ApiClient client = null;
-    if (endpoint != null) {
-      client = HostUtils.getApiClient(this, endpoint);
-    } else {
-      client = HostUtils.getApiClient(this);
-    }
-    client.getDeploymentApi().listAllAsync(callback);
-  }
-
   private State applyPatch(State currentState, State patchState) {
     if (patchState.taskState.stage != currentState.taskState.stage
         || patchState.taskState.subStage != currentState.taskState.subStage) {
@@ -661,8 +601,8 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
       currentState.taskState = patchState.taskState;
     }
 
-    if (null != patchState.sourceZookeeperQuorum) {
-      currentState.sourceZookeeperQuorum = patchState.sourceZookeeperQuorum;
+    if (patchState.sourceURIs != null) {
+      currentState.sourceURIs = patchState.sourceURIs;
     }
 
     return currentState;
@@ -736,24 +676,9 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     patchState.taskState = new TaskState();
     patchState.taskState.stage = patchStage;
     patchState.taskState.subStage = patchSubStage;
-
     if (null != t) {
       patchState.taskState.failure = Utils.toServiceErrorResponse(t);
     }
-
     return patchState;
-  }
-
-  private abstract static class TaskFailingCallback<T> implements FutureCallback<T> {
-    private InitializeDeploymentMigrationWorkflowService service;
-
-    public TaskFailingCallback(InitializeDeploymentMigrationWorkflowService service) {
-      this.service = service;
-    }
-
-    @Override
-    public void onFailure(Throwable t) {
-      service.failTask(t);
-    }
   }
 }
