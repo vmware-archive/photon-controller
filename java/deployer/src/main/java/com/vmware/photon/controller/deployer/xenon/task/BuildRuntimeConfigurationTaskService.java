@@ -526,6 +526,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
                   vmIpAddresses.iterator().next()));
           return;
         }
+      // We fall through on purpose to get the other parameters.
       case ManagementUi:
         if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_COMMON_LOAD_BALANCER_IP)) {
           getIpsForContainerType(ContainersConfig.ContainerType.LoadBalancer,
