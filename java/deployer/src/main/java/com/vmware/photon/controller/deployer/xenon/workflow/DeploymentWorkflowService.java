@@ -756,7 +756,7 @@ public class DeploymentWorkflowService extends StatefulService {
     subnetAllocatorServiceState.rootCidr = deploymentState.ipRange;
     subnetAllocatorServiceState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
     subnetAllocatorServiceState.dhcpAgentEndpoint = String.format(
-            "https://%s:%d",
+            "http://%s:%d",
             // Selecting first index in Dhcp server list since expecting only one entry in this iteration
             deploymentState.dhcpServers.get(0),
             Constants.DHCP_AGENT_PORT);
@@ -1012,7 +1012,7 @@ public class DeploymentWorkflowService extends StatefulService {
     state.isFloatingIpSubnet = true;
     state.documentSelfLink = DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK;
     state.subnetId = ServiceUtils.getIDFromDocumentSelfLink(state.documentSelfLink);
-    state.dhcpAgentEndpoint = String.format("https://%s:%d", dhcpAgentIP, Constants.DHCP_AGENT_PORT);
+    state.dhcpAgentEndpoint = String.format("http://%s:%d", dhcpAgentIP, Constants.DHCP_AGENT_PORT);
 
     return state;
   }

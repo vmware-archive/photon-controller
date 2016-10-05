@@ -36,14 +36,6 @@ jvm_mem=$(({{{memoryMb}}}/2))
 
 export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC {{{JAVA_DEBUG}}}"
 
-keyFile="/etc/keys/machine.privkey"
-mkdir -p /etc/keys
-
-if [ ! -f keyFile ]
-then
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/keys/machine.privkey -out /etc/keys/machine.crt -subj "/C=US/ST=WA/L=Bellevue/O=Vmware/OU=Photon" -extensions v3_req
-fi
-
 #
 # Start service
 #
