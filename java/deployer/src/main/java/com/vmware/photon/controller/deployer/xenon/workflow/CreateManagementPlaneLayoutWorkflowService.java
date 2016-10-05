@@ -275,14 +275,14 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
 
   private void createContainerTemplates(State currentState) {
     Operation.createGet(this, currentState.deploymentServiceLink)
-      .setCompletion((o, e) -> {
-        if (e != null) {
-          failTask(e);
-          return;
-        }
-        createContainerTemplates(currentState, o.getBody(DeploymentService.State.class));
-      })
-      .sendWith(this);
+        .setCompletion((o, e) -> {
+          if (e != null) {
+            failTask(e);
+            return;
+          }
+          createContainerTemplates(currentState, o.getBody(DeploymentService.State.class));
+        })
+        .sendWith(this);
   }
 
   private void createContainerTemplates(State currentState, DeploymentService.State deploymentState) {
@@ -291,7 +291,7 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
           .create(HostUtils.getContainersConfig(this).getContainerSpecs().values().stream()
               .filter(spec -> currentState.isLoadbalancerEnabled
                   || !spec.getType().equals(ContainersConfig.ContainerType.LoadBalancer.name()))
-              .filter(spec -> (currentState.isAuthEnabled && deploymentState.oAuthServerAddress != null)
+              .filter(spec -> (currentState.isAuthEnabled && deploymentState.oAuthServerAddress == null)
                   || !spec.getType().equals(ContainersConfig.ContainerType.Lightwave.name()))
               .map(spec -> buildTemplateStartState(spec))
               .map(templateStartState -> Operation.createPost(this, ContainerTemplateFactoryService.SELF_LINK)
