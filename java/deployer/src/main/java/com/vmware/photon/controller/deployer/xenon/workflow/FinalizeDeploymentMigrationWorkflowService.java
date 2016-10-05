@@ -13,15 +13,12 @@
 
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
-import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.HostState;
-import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.clustermanager.utils.ExceptionUtils;
-import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -31,7 +28,6 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
-import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
@@ -39,8 +35,6 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTriggerTaskService;
@@ -49,7 +43,6 @@ import com.vmware.photon.controller.deployer.xenon.task.UpgradeAgentTaskFactoryS
 import com.vmware.photon.controller.deployer.xenon.task.UpgradeAgentTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
-import com.vmware.photon.controller.deployer.xenon.util.Pair;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Operation.CompletionHandler;
 import com.vmware.xenon.common.OperationJoin;
@@ -59,6 +52,8 @@ import com.vmware.xenon.common.TaskState.TaskStage;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.NodeGroupService;
+import com.vmware.xenon.services.common.NodeState;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.Query;
 
@@ -68,11 +63,10 @@ import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -81,6 +75,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class implements a Xenon micro-service which performs the task of
@@ -138,11 +133,19 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     public Integer taskPollDelay;
 
     /**
-     * This value represents the link to the source management plane in the form of http://address:port.
+     * This value represents a reference to the node group to use as the source of the migration
+     * operation. This is a URI with form {protocol}://{address}:{port}/core/node-groups/{id} where
+     * the ID is usually "default".
      */
     @NotNull
     @Immutable
-    public String sourceLoadBalancerAddress;
+    public URI sourceNodeGroupReference;
+
+    /**
+     * This value represents the base URI of the nodes in the source node group.
+     */
+    @WriteOnce
+    public List<URI> sourceURIs;
 
     /**
      * This value represents the the DeploymentId on destination.
@@ -150,12 +153,6 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     @NotNull
     @Immutable
     public String destinationDeploymentId;
-
-    /**
-     * This value represents zookeeper quorum of the source system.
-     */
-    @WriteOnce
-    public String sourceZookeeperQuorum;
   }
 
   public FinalizeDeploymentMigrationWorkflowService() {
@@ -212,7 +209,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        if (currentState.sourceZookeeperQuorum == null) {
+        if (currentState.sourceURIs == null) {
           populateCurrentState(currentState);
           return;
         }
@@ -225,54 +222,35 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
 
   private void populateCurrentState(State currentState) throws Throwable {
 
-    HostUtils.getApiClient(this, currentState.sourceLoadBalancerAddress)
-        .getDeploymentApi()
-        .listAllAsync(new FutureCallback<ResourceList<Deployment>>() {
-          @Override
-          public void onSuccess(@Nullable ResourceList<Deployment> deploymentResourceList) {
-            try {
-              checkState(deploymentResourceList != null);
-              checkState(deploymentResourceList.getItems().size() == 1);
-              String sourceDeploymentId = deploymentResourceList.getItems().get(0).getId();
-              getZookeeperQuorumFromSourceSystem(currentState, sourceDeploymentId);
-            } catch (Throwable t) {
-              failTask(t);
+    sendRequest(Operation
+        .createGet(currentState.sourceNodeGroupReference)
+        .setCompletion((o, e) -> {
+          try {
+            if (e != null) {
+              failTask(e);
+            } else {
+              processNodeGroupState(currentState, o.getBody(NodeGroupService.NodeGroupState.class));
             }
+          } catch (Throwable t) {
+            failTask(t);
           }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            failTask(throwable);
-          }
-        });
+        }));
   }
 
-  private void getZookeeperQuorumFromSourceSystem(State currentState, String sourceDeploymentId) throws Throwable {
+  private void processNodeGroupState(State currentState, NodeGroupService.NodeGroupState nodeGroupState) {
+    List<URI> sourceURIs = nodeGroupState.nodes.values().stream()
+        .map(this::extractBaseURI).collect(Collectors.toList());
+    State patchState = buildPatch(currentState.taskState.stage, currentState.taskState.subStage, null);
+    patchState.sourceURIs = sourceURIs;
+    TaskUtils.sendSelfPatch(this, patchState);
+  }
 
-    MiscUtils.getZookeeperQuorumFromSourceSystem(this, currentState.sourceLoadBalancerAddress,
-        sourceDeploymentId, currentState.taskPollDelay,
-        new FutureCallback<List<String>>() {
-          @Override
-          public void onSuccess(@Nullable List<String> strings) {
-            try {
-              checkState(strings != null && !strings.isEmpty());
-              String zookeeperQuorum = MiscUtils.generateReplicaList(strings,
-                  Integer.toString(Constants.ZOOKEEPER_PORT));
-              ServiceUtils.logInfo(FinalizeDeploymentMigrationWorkflowService.this,
-                  "Set Zookeeper quorum %s", zookeeperQuorum);
-              State patchState = buildPatch(currentState.taskState.stage, currentState.taskState.subStage, null);
-              patchState.sourceZookeeperQuorum = zookeeperQuorum;
-              TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
+  private URI extractBaseURI(NodeState nodeState) {
+    return extractBaseURI(nodeState.groupReference);
+  }
 
-          @Override
-          public void onFailure(Throwable throwable) {
-            failTask(throwable);
-          }
-        });
+  private URI extractBaseURI(URI uri) {
+    return UriUtils.buildUri(uri.getScheme(), uri.getHost(), uri.getPort(), null, null);
   }
 
   /**
@@ -679,58 +657,54 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
   }
 
   private void migrateFinal(State currentState, Map<String, Long> lastUpdateTimes) {
-    Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> m = new HashMap<>();
-    DeployerServiceGroup deployerServiceGroup =
-        (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
-    ZookeeperClient zookeeperClient = deployerServiceGroup.getZookeeperServerSetFactoryBuilder().create();
 
-    OperationJoin.create(
-        HostUtils.getDeployerContext(this).getUpgradeInformation().stream()
-            .map(entry -> {
-              if (!m.containsKey(entry.zookeeperServerSet)) {
-                Set<InetSocketAddress> destinationServers = new HashSet<InetSocketAddress>();
-                destinationServers.add(new InetSocketAddress(getHost().getPreferredAddress(), getHost().getPort()));
-
-                Set<InetSocketAddress> sourceServers
-                    = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, entry.zookeeperServerSet);
-
-                m.put(entry.zookeeperServerSet, new Pair<>(sourceServers, destinationServers));
-              }
-
-              String sourceFactory = entry.sourceFactoryServicePath;
-              if (!sourceFactory.endsWith("/")) {
-                sourceFactory += "/";
-              }
-
-              CopyStateTaskService.State startState
-                  = MiscUtils.createCopyStateStartState(
-                  m.get(entry.zookeeperServerSet).getFirst(),
-                  m.get(entry.zookeeperServerSet).getSecond(),
-                  entry.destinationFactoryServicePath, sourceFactory);
-              startState.queryDocumentsChangedSinceEpoc = lastUpdateTimes.getOrDefault(sourceFactory, 0L);
-              startState.sourceServers = new HashSet<>();
-              for (InetSocketAddress sourceServer : m.get(entry.zookeeperServerSet).getFirst()) {
-                startState.sourceServers.add(new Pair<>(sourceServer.getHostName(), sourceServer.getPort()));
-              }
-              startState.performHostTransformation = Boolean.TRUE;
-              return Operation
-                  .createPost(this, CopyStateTaskFactoryService.SELF_LINK)
-                  .setBody(startState);
-            }).collect(Collectors.toList()))
-        .setCompletion((es, ts) -> {
-          if (ts != null && !ts.isEmpty()) {
-            failTask(ts.values());
-            return;
+    Stream<Operation> copyStateTaskStartOps = HostUtils.getDeployerContext(this)
+        .getUpgradeInformation().stream().map((upgradeInfo) -> {
+          String sourceFactory = upgradeInfo.sourceFactoryServicePath;
+          if (!sourceFactory.endsWith("/")) {
+            sourceFactory += "/";
           }
-          waitUntilCopyStateTasksFinished((operation, throwable) -> {
-            if (throwable != null) {
-              failTask(throwable);
-              return;
+
+          CopyStateTaskService.State startState = new CopyStateTaskService.State();
+          startState.sourceURIs = currentState.sourceURIs;
+          startState.sourceFactoryLink = sourceFactory;
+          startState.destinationURI = getHost().getUri();
+          startState.destinationFactoryLink = upgradeInfo.destinationFactoryServicePath;
+          startState.queryDocumentsChangedSinceEpoc = lastUpdateTimes.getOrDefault(sourceFactory, 0L);
+          startState.performHostTransformation = true;
+          startState.documentSelfLink = sourceFactory.replace("/", "_");
+          return Operation.createPost(this, CopyStateTaskFactoryService.SELF_LINK).setBody(startState);
+        });
+
+    OperationJoin
+        .create(copyStateTaskStartOps)
+        .setCompletion((ops, exs) -> {
+          try {
+            if (exs != null && !exs.isEmpty()) {
+              failTask(exs.values());
+            } else {
+              processCopyStateTasks(currentState);
             }
-            stopMigrationUpdateService(currentState);
-          }, currentState);
+          } catch (Throwable t) {
+            failTask(t);
+          }
         })
         .sendWith(this);
+  }
+
+  private void processCopyStateTasks(State currentState) {
+
+    waitUntilCopyStateTasksFinished((o, e) -> {
+      try {
+        if (e != null) {
+          failTask(e);
+        } else {
+          stopMigrationUpdateService(currentState);
+        }
+      } catch (Throwable t) {
+        failTask(t);
+      }
+    }, currentState);
   }
 
   //
