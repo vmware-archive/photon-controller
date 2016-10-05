@@ -8,7 +8,7 @@
   "ENABLE_AUTH": "false",
   "REGISTRATION_ADDRESS": "0.0.0.0",
   "SYSLOG_ENDPOINT": "SYSLOG_ENDPOINT",
-  "MGMT_UI_HTTPS_PORT_ON_LB": "4343",
+  "HTTPS_PORT": "20001",
   "diskGb": "8",
   "cpuCount": "1"
 }
