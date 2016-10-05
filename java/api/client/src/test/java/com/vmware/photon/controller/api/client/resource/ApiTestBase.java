@@ -48,11 +48,12 @@ public class ApiTestBase {
   public static final int COUNTDOWNLATCH_AWAIT_TIMEOUT = 10;
   public static final int ARGUMENT_INDEX_TWO = 2;
 
+  @SuppressWarnings("unchecked")
   public final void setupMocks(String serializedResponse, int responseCode) throws IOException {
     this.asyncHttpClient = mock(CloseableHttpAsyncClient.class);
     this.httpClient = mock(HttpClient.class);
 
-    doAnswer(new Answer() {
+    doAnswer(new Answer<Object>() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
         return null;
@@ -114,12 +115,13 @@ public class ApiTestBase {
         );
   }
 
+  @SuppressWarnings("unchecked")
   public final void setupMocksForPagination(String serializedResponse, String serializedResponseForNextPage,
                                             String nextPageLink, int responseCode) throws IOException {
     this.asyncHttpClient = mock(CloseableHttpAsyncClient.class);
     this.httpClient = mock(HttpClient.class);
 
-    doAnswer(new Answer() {
+    doAnswer(new Answer<Object>() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
         return null;
@@ -234,12 +236,13 @@ public class ApiTestBase {
         );
   }
 
+  @SuppressWarnings("unchecked")
   public final void setupMocksToThrow(final Exception exceptionToThrow) throws IOException {
     this.asyncHttpClient = mock(CloseableHttpAsyncClient.class);
     this.httpClient = mock(HttpClient.class);
     this.restClient = new RestClient("http://1.1.1.1", this.asyncHttpClient, httpClient);
 
-    doAnswer(new Answer() {
+    doAnswer(new Answer<Object>() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
         return null;

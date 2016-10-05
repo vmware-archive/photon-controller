@@ -97,10 +97,6 @@ public class AllocateDhcpVmResourcesTaskServiceTest {
     return state;
   }
 
-  private AllocateDhcpVmResourcesTaskService.State buildValidPatchState() {
-    return buildValidPatchState(TaskState.TaskStage.STARTED, null);
-  }
-
   private AllocateDhcpVmResourcesTaskService.State buildValidPatchState(
       TaskState.TaskStage stage,
       AllocateDhcpVmResourcesTaskService.TaskState.SubStage subStage) {
@@ -621,9 +617,10 @@ public class AllocateDhcpVmResourcesTaskServiceTest {
       TestHelper.createContainerService(machine, containerState);
     }
 
+    @SuppressWarnings("unchecked")
     private void mockCreateFlavor(boolean isSuccess) throws Throwable {
       if (isSuccess) {
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByCreateFlavor);
