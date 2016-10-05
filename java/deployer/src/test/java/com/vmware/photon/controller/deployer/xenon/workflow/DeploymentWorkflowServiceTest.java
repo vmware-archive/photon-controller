@@ -70,7 +70,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -894,7 +893,7 @@ public class DeploymentWorkflowServiceTest {
               assertThat(state.oAuthServerAddress.equals("127.0.0.1"), is(true));
               assertThat(state.oAuthServerPort, is(443));
             } else {
-              assertThat(state.oAuthServerAddress, is("OAUTH_ENDPOINT"));
+              assertThat(state.oAuthServerAddress, nullValue());
               assertThat(state.oAuthServerPort, is(500));
             }
             assertThat(state.syslogEndpoint, is("SYSLOG_ENDPOINT"));
