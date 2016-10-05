@@ -99,7 +99,12 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
 
       puts "Test that cluster background maintenance will restore deleted VMs"
       validate_trigger_maintenance(ENV["KUBERNETES_MASTER_IP"], N_WORKERS, cluster)
+    rescue => e
+      EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
+      fail "KUBERNETES cluster integration Test failed. Error: #{e.message}"
+    end
 
+    begin
       puts "Test that a single tenant can have multiple clusters"
       # Cluster 2 uses SWARM_ETCD_1_IP for master and MESOS_ZK_1_IP for etcd
       kube2_master_ip = ENV["SWARM_ETCD_1_IP"]
@@ -150,8 +155,8 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
 
       delete_cluster(cluster)
 
-    rescue EsxCloud::Error => e
-      EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
+    rescue => e
+      EsxCloud::ClusterHelper.show_logs(@seeder2.project, client)
       fail "KUBERNETES cluster integration Test failed. Error: #{e.message}"
     end
   end
