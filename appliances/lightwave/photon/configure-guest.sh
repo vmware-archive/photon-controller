@@ -169,6 +169,7 @@ function configure_lightwave() {
   # restart lightwave to pick up new config
   systemctl start lwsmd
   /opt/vmware/bin/configure-lightwave-server --config-file /etc/photon/config/lightwave-server-instance.cfg
+  /opt/vmware/bin/configure-identity-server
   rm -rf /etc/photon/config/lightwave-server-instance.cfg
 }
 
