@@ -90,6 +90,7 @@ class AgentControlHandler(AgentControl.Iface):
         """
         Get the current status of the agent
         """
+        self._logger.info("AgentControlHandler.get_agent_status")
         agent_config = common.services.get(ServiceName.AGENT_CONFIG)
         if agent_config.reboot_required:
             # agent needs to reboot after provisioning
