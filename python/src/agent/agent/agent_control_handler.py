@@ -86,6 +86,8 @@ class AgentControlHandler(AgentControl.Iface):
 
         return UpgradeResponse(UpgradeResultCode.OK)
 
+    @log_request
+    @error_handler(AgentStatusResponse, AgentStatusCode)
     def get_agent_status(self):
         """
         Get the current status of the agent
