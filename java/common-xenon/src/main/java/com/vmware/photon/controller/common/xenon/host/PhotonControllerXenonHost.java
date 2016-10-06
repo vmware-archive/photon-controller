@@ -158,6 +158,19 @@ public class PhotonControllerXenonHost
       return hostClientFactory.create();
     }
 
+
+    @Override
+    public AgentControlClient getAgentControlClient() {
+      // The request ID is in the Xenon thread context
+      // We need to put it in the MDC for use by calling agent Thrift
+      String requestId = UtilsHelper.getThreadContextId();
+      if (requestId != null) {
+        LoggingUtils.setRequestId(requestId);
+      }
+
+      return this.agentControlClientFactory.create();
+    }
+
     /**
      * This method starts the default Xenon core services and the services associated to any of the
      * registered Xenon service groups.  All service groups that want to be active in this Xenon host
@@ -225,11 +238,6 @@ public class PhotonControllerXenonHost
     @Override
     public Class[] getFactoryServices() {
         return FACTORY_SERVICES;
-    }
-
-    @Override
-    public AgentControlClient getAgentControlClient() {
-        return this.agentControlClientFactory.create();
     }
 
     @Override
