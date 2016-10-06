@@ -49,17 +49,30 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
+import org.apache.commons.lang.StringUtils;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 /**
  * This class implements a Xenon micro-service that registers a client to lotus.
  */
 public class RegisterAuthClientTaskService extends StatefulService {
+
+  public static final String CORRELATION_ID = "correlation_id";
+  public static final String SCOPE = "scope";
+  public static final String STATE = "state";
+  public static final String NONCE = "nonce";
+  public static final String ID_TOKEN_HINT = "id_token_hint";
+  public static final String ID_GROUPS = "id_groups";
 
   /**
    * Class defines the state of the AuthClientRegsitrationService.
@@ -467,10 +480,15 @@ public class RegisterAuthClientTaskService extends StatefulService {
         new FutureCallback<AuthClientHandler.ImplicitClient>() {
           @Override
           public void onSuccess(AuthClientHandler.ImplicitClient result) {
-            State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-            patchState.loginUrl = result.loginURI;
-            patchState.logoutUrl = result.logoutURI;
-            TaskUtils.sendSelfPatch(RegisterAuthClientTaskService.this, patchState);
+            try {
+              State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+              patchState.loginUrl = parseURL(result.loginURI, new String[] {CORRELATION_ID, STATE, NONCE});
+              patchState.logoutUrl = parseURL(result.logoutURI, new String[] {CORRELATION_ID, STATE,
+                  NONCE, ID_TOKEN_HINT});
+              TaskUtils.sendSelfPatch(RegisterAuthClientTaskService.this, patchState);
+            } catch (URISyntaxException e) {
+              failTask(e);
+            }
           }
 
           @Override
@@ -480,5 +498,47 @@ public class RegisterAuthClientTaskService extends StatefulService {
         };
 
     Futures.addCallback(futureTask, futureCallback);
+  }
+
+  /**
+   * This method modifies a URI by removing a set of query parameters from the URI and editing the scope parameter to
+   * include ID_GROUPS. The parameters that are removed are session related and will be set by the UI as needed.
+   */
+  private String parseURL(String url, String[] removeParams) throws URISyntaxException {
+    if (StringUtils.isBlank(url)) {
+      return url;
+    }
+
+    // Get the query parameters from the URL and return if empty
+    URI uri = new URI(url);
+    String urlQuery = uri.getQuery();
+    if (StringUtils.isBlank(urlQuery)) {
+      return url;
+    }
+
+    // Remove the query parameters specified in removeParams
+    List<String> queryParams = Arrays.asList(urlQuery.split("&"));
+    queryParams = queryParams.stream().filter(param -> {
+      for (String removeParam : removeParams) {
+        if (param.startsWith(removeParam + "=")) {
+          return false;
+        }
+      }
+      return true;
+    }).collect(Collectors.toList());
+
+    // Edit the SCOPE query parameter to add ID_GROUPS to it
+    for (String parameter : queryParams) {
+      if (parameter.startsWith(SCOPE + "=")) {
+        queryParams.set(queryParams.indexOf(parameter), parameter + "+" + ID_GROUPS);
+      }
+    }
+
+    // Append the modified query parameters to the base URL and return the new URL
+    String baseUrl = url.split("\\?")[0];
+    if (queryParams.size() > 0) {
+      baseUrl = baseUrl + "?" + StringUtils.join(queryParams, "&");
+    }
+    return baseUrl;
   }
 }

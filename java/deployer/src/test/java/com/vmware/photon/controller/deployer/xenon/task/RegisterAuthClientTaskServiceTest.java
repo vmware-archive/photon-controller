@@ -338,7 +338,9 @@ public class RegisterAuthClientTaskServiceTest {
       deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath());
       TestHelper.setContainersConfig(deployerTestConfig);
-      implicitClient = new AuthClientHandler.ImplicitClient("client", "http://login", "http://logout");
+      implicitClient = new AuthClientHandler.ImplicitClient("client",
+          "https://10.0.0.0/pc?scope=a&response_type=b&correlation_id=c&redirect_uri=https://0.0.0.0/callback.hmtl",
+          "https://10.0.0.0/pc?id_token_hint=a&correlation_id=b&state=c&redirect_uri=https://0.0.0.0/callback.html");
     }
 
     @BeforeMethod
@@ -401,8 +403,10 @@ public class RegisterAuthClientTaskServiceTest {
           (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
-      assertThat(finalState.loginUrl, is("http://login"));
-      assertThat(finalState.logoutUrl, is("http://logout"));
+      assertThat(finalState.loginUrl,
+          is("https://10.0.0.0/pc?scope=a+id_groups&response_type=b&redirect_uri=https://0.0.0.0/callback.hmtl"));
+      assertThat(finalState.logoutUrl,
+          is("https://10.0.0.0/pc?redirect_uri=https://0.0.0.0/callback.html"));
     }
 
     @Test
