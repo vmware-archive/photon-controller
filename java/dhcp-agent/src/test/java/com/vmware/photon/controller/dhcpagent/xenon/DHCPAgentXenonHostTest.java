@@ -94,7 +94,6 @@ public class DHCPAgentXenonHostTest {
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
               Constants.DHCP_RELEASE_PATH,
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               Constants.DNSMASQ_HOST_DIR_PATH,
               Constants.DNSMASQ_OPTION_DIR_PATH,
               Constants.DNSMASQ_PID_PATH,
@@ -144,7 +143,6 @@ public class DHCPAgentXenonHostTest {
       injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
               Constants.DHCP_RELEASE_PATH,
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               Constants.DNSMASQ_HOST_DIR_PATH,
               Constants.DNSMASQ_OPTION_DIR_PATH,
@@ -197,7 +195,6 @@ public class DHCPAgentXenonHostTest {
       injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
               Constants.DHCP_RELEASE_PATH,
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
               Constants.DNSMASQ_HOST_DIR_PATH,
               Constants.DNSMASQ_OPTION_DIR_PATH,

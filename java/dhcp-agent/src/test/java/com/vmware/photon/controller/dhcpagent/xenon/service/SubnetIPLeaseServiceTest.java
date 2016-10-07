@@ -281,7 +281,6 @@ public class SubnetIPLeaseServiceTest {
             dnsmasqDriver = new DnsmasqDriver(SubnetIPLeaseServiceTest.class.getResource("/dnsmasq.leases").getPath(),
                     Constants.DHCP_RELEASE_PATH,
                     SubnetIPLeaseServiceTest.class.getResource("/scripts/success.sh").getPath(),
-                    SubnetIPLeaseServiceTest.class.getResource("/scripts/success.sh").getPath(),
                     hostDirPath,
                     Constants.DNSMASQ_OPTION_DIR_PATH,
                     hostDirPath,

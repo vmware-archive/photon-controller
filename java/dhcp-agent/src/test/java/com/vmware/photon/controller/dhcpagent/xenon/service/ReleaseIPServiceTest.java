@@ -294,7 +294,6 @@ public class ReleaseIPServiceTest {
             dnsmasqDriver = new DnsmasqDriver(ReleaseIPServiceTest.class.getResource("/dnsmasq.leases").getPath(),
                     Constants.DHCP_RELEASE_PATH,
                     ReleaseIPServiceTest.class.getResource(scriptPath).getPath(),
-                    ReleaseIPServiceTest.class.getResource(scriptPath).getPath(),
                     Constants.DNSMASQ_HOST_DIR_PATH,
                     Constants.DNSMASQ_OPTION_DIR_PATH,
                     Constants.DNSMASQ_PID_PATH,
