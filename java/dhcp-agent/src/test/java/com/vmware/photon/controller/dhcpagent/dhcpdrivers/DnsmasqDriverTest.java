@@ -94,22 +94,6 @@ public class DnsmasqDriverTest {
     }
 
     @Test
-    public void testDHCPStatusSuccess() {
-        setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
-
-        boolean status = dnsmasqDriver.isRunning();
-        assertThat(status, is(true));
-    }
-
-    @Test
-    public void testDHCPStatusFailure() {
-        setUpDriver(failureScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
-
-        boolean status = dnsmasqDriver.isRunning();
-        assertThat(status, is(false));
-    }
-
-    @Test
     public void testFindIPSuccess() {
         try {
             setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
