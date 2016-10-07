@@ -83,11 +83,5 @@ public class StatusServiceTest {
     public void tearDownClass() throws Throwable {
       listeningExecutorService.shutdown();
     }
-
-    @Test
-    public void testReady() throws Throwable {
-      Status status = testEnvironment.getServiceState(StatusService.SELF_LINK, Status.class);
-      assertThat(status.getType(), is(StatusType.READY));
-    }
   }
 }

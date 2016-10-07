@@ -138,7 +138,7 @@ public class DnsmasqDriver implements DHCPDriver {
     public boolean isRunning() {
         boolean response = false;
         try {
-            String command = dhcpStatusPath + " dnsmasq.service";
+            String command = "systemctl is-active dnsmasq.service";
             Process p = Runtime.getRuntime().exec(command);
             boolean result = p.waitFor(Constants.TIMEOUT, TimeUnit.SECONDS);
 
