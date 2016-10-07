@@ -23,12 +23,15 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.mock;
 
 /**
  * Test {@link DHCPAgentModule}.
  */
 public class DHCPAgentModuleTest {
   private static final String successScript = "/scripts/success.sh";
+
+  private static DnsmasqDriver dnsmasqDriver;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -45,15 +48,8 @@ public class DHCPAgentModuleTest {
 
     @BeforeMethod
     public void setUp() throws BadConfigException {
-      injector = TestHelper.createInjector("/config.yml", new DnsmasqDriver(
-              DHCPAgentModuleTest.class.getResource("/dnsmasq.leases").getPath(),
-              Constants.DHCP_RELEASE_PATH,
-              DHCPAgentModuleTest.class.getResource(successScript).getPath(),
-              DHCPAgentModuleTest.class.getResource(successScript).getPath(),
-              Constants.DNSMASQ_HOST_DIR_PATH,
-              Constants.DNSMASQ_OPTION_DIR_PATH,
-              Constants.DNSMASQ_PID_PATH,
-              DHCPAgentModuleTest.class.getResource(successScript).getPath()));
+      dnsmasqDriver = mock(DnsmasqDriver.class);
+      injector = TestHelper.createInjector("/config.yml", dnsmasqDriver);
     }
 
     @Test
