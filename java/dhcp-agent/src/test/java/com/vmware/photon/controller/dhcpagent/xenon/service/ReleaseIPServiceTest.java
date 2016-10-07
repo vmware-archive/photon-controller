@@ -17,7 +17,6 @@ import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfig;
-import com.vmware.photon.controller.dhcpagent.dhcpdrivers.Constants;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestHost;
@@ -41,6 +40,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.mockito.Mockito.mock;
 import static org.testng.Assert.fail;
 
 import java.io.IOException;
@@ -291,14 +291,7 @@ public class ReleaseIPServiceTest {
         }
 
         public void setUpEnvironment(String scriptPath) throws Throwable {
-            dnsmasqDriver = new DnsmasqDriver(ReleaseIPServiceTest.class.getResource("/dnsmasq.leases").getPath(),
-                    Constants.DHCP_RELEASE_PATH,
-                    ReleaseIPServiceTest.class.getResource(scriptPath).getPath(),
-                    ReleaseIPServiceTest.class.getResource(scriptPath).getPath(),
-                    Constants.DNSMASQ_HOST_DIR_PATH,
-                    Constants.DNSMASQ_OPTION_DIR_PATH,
-                    Constants.DNSMASQ_PID_PATH,
-                    ReleaseIPServiceTest.class.getResource(scriptPath).getPath());
+            dnsmasqDriver = mock(DnsmasqDriver.class);
             testEnvironment = TestEnvironment.create(dnsmasqDriver, 1, listeningExecutorService);
         }
 

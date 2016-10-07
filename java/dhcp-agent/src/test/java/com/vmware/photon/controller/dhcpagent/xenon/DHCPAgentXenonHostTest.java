@@ -18,7 +18,6 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfig;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfigTest;
-import com.vmware.photon.controller.dhcpagent.dhcpdrivers.Constants;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.dhcpagent.xenon.service.StatusService;
@@ -37,6 +36,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
@@ -80,6 +80,8 @@ public class DHCPAgentXenonHostTest {
    */
   public class InitializationTest {
 
+    private DnsmasqDriver dnsmasqDriver;
+
     @BeforeClass
     public void setUpClass() throws IOException, BadConfigException {
       DHCPAgentConfig config = ConfigBuilder.build(DHCPAgentConfig.class,
@@ -90,15 +92,8 @@ public class DHCPAgentXenonHostTest {
 
     @BeforeMethod
     public void setUp() throws Exception {
-      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
-              DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
-              Constants.DHCP_RELEASE_PATH,
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
-              Constants.DNSMASQ_HOST_DIR_PATH,
-              Constants.DNSMASQ_OPTION_DIR_PATH,
-              Constants.DNSMASQ_PID_PATH,
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
+      dnsmasqDriver = mock(DnsmasqDriver.class);
+      injector = TestHelper.createInjector("/config.yml", dnsmasqDriver);
     }
 
     @AfterMethod
@@ -139,17 +134,13 @@ public class DHCPAgentXenonHostTest {
    * Tests for the start method.
    */
   public class StartTest {
+
+    private DnsmasqDriver dnsmasqDriver;
+
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
-              DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
-              Constants.DHCP_RELEASE_PATH,
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
-              Constants.DNSMASQ_HOST_DIR_PATH,
-              Constants.DNSMASQ_OPTION_DIR_PATH,
-              Constants.DNSMASQ_PID_PATH,
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
+      dnsmasqDriver = mock(DnsmasqDriver.class);
+      injector = TestHelper.createInjector(configFilePath, dnsmasqDriver);
       host = injector.getInstance(DHCPAgentXenonHost.class);
     }
 
@@ -192,17 +183,12 @@ public class DHCPAgentXenonHostTest {
    */
   public class IsReadyTest {
 
+    private DnsmasqDriver dnsmasqDriver;
+    
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
-              DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
-              Constants.DHCP_RELEASE_PATH,
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
-              Constants.DNSMASQ_HOST_DIR_PATH,
-              Constants.DNSMASQ_OPTION_DIR_PATH,
-              Constants.DNSMASQ_PID_PATH,
-              DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
+      dnsmasqDriver = mock(DnsmasqDriver.class);
+      injector = TestHelper.createInjector(configFilePath, dnsmasqDriver);
       host = injector.getInstance(DHCPAgentXenonHost.class);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
