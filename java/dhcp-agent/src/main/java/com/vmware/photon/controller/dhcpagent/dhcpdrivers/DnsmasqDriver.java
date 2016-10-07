@@ -34,7 +34,6 @@ public class DnsmasqDriver implements DHCPDriver {
     private String dhcpLeaseFilePath = "/var/lib/misc/dnsmasq.leases";
     private String dhcpReleaseUtilityPath = Constants.DHCP_RELEASE_PATH;
     private String releaseIPPath = "/script/release-ip.sh";
-    private String dhcpStatusPath = "/script/dhcp-status.sh";
     private String dhcpHostFileDir = Constants.DNSMASQ_HOST_DIR_PATH;
     private String dhcpHostFileCopyDir = Constants.DNSMASQ_HOST_DIR_PATH + "-copy";
     private String dhcpOptionFileDir = Constants.DNSMASQ_OPTION_DIR_PATH;
@@ -43,13 +42,12 @@ public class DnsmasqDriver implements DHCPDriver {
     private String dhcpReloadCachePath = "/script/dhcp-reload.sh";
 
     public DnsmasqDriver(String dhcpLeaseFilePath,
-            String dhcpReleaseUtilityPath, String releaseIPPath, String dhcpStatusPath,
+            String dhcpReleaseUtilityPath, String releaseIPPath,
             String dhcpHostFileDir, String dhcpOptionFileDir, String dhcpPidFilePath,
             String dhcpReloadCachePath) {
         this.dhcpLeaseFilePath = dhcpLeaseFilePath;
         this.dhcpReleaseUtilityPath = dhcpReleaseUtilityPath;
         this.releaseIPPath = releaseIPPath;
-        this.dhcpStatusPath = dhcpStatusPath;
         this.dhcpHostFileDir = dhcpHostFileDir;
         this.dhcpHostFileCopyDir = dhcpHostFileDir + "-copy";
         this.dhcpOptionFileDir = dhcpOptionFileDir;
@@ -138,7 +136,7 @@ public class DnsmasqDriver implements DHCPDriver {
     public boolean isRunning() {
         boolean response = false;
         try {
-            String command = dhcpStatusPath + " dnsmasq.service";
+            String command = "systemctl is-active dnsmasq.service";
             Process p = Runtime.getRuntime().exec(command);
             boolean result = p.waitFor(Constants.TIMEOUT, TimeUnit.SECONDS);
 
