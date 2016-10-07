@@ -30,7 +30,6 @@ public class TestHost extends BasicServiceHost {
     private DHCPDriver dhcpDriver = new DnsmasqDriver(TestHost.class.getResource("/dnsmasq.leases").getPath(),
             Constants.DHCP_RELEASE_PATH,
             TestHost.class.getResource(successScript).getPath(),
-            TestHost.class.getResource(successScript).getPath(),
             TestHost.class.getResource("/hosts/subnet1").getPath(),
             TestHost.class.getResource("/options/subnet1").getPath(),
             TestHost.class.getResource(successScript).getPath(),

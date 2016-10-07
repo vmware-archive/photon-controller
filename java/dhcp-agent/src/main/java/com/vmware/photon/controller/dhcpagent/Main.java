@@ -52,7 +52,6 @@ public class Main {
     DnsmasqDriver dnsmasqDriver = new DnsmasqDriver("/var/lib/misc/dnsmasq.leases",
             Constants.DHCP_RELEASE_PATH,
             DnsmasqDriver.class.getResource("/scripts/release-ip.sh").getPath(),
-            DnsmasqDriver.class.getResource("/scripts/dhcp-status.sh").getPath(),
             Constants.DNSMASQ_HOST_DIR_PATH,
             Constants.DNSMASQ_OPTION_DIR_PATH,
             Constants.DNSMASQ_PID_PATH,
