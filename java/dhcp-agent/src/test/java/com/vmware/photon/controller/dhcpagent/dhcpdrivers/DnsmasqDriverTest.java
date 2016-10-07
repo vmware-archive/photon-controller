@@ -58,7 +58,6 @@ public class DnsmasqDriverTest {
                 leaseFilePath,
                 Constants.DHCP_RELEASE_PATH,
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
-                DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
                 DnsmasqDriverTest.class.getResource("/hosts").getPath(),
                 DnsmasqDriverTest.class.getResource("/options").getPath(),
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
@@ -91,22 +90,6 @@ public class DnsmasqDriverTest {
 
         assertThat(response.exitCode, is(113));
         assertThat(response.stdError, is("error"));
-    }
-
-    @Test
-    public void testDHCPStatusSuccess() {
-        setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
-
-        boolean status = dnsmasqDriver.isRunning();
-        assertThat(status, is(true));
-    }
-
-    @Test
-    public void testDHCPStatusFailure() {
-        setUpDriver(failureScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
-
-        boolean status = dnsmasqDriver.isRunning();
-        assertThat(status, is(false));
     }
 
     @Test

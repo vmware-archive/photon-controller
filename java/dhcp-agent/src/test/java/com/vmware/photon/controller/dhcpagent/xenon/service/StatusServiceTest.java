@@ -13,8 +13,7 @@
 
 package com.vmware.photon.controller.dhcpagent.xenon.service;
 
-import com.vmware.photon.controller.dhcpagent.dhcpdrivers.Constants;
-import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DHCPDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
@@ -29,6 +28,8 @@ import org.testng.annotations.Test;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 import java.util.concurrent.Executors;
 
@@ -36,8 +37,6 @@ import java.util.concurrent.Executors;
  * Tests {@link StatusService}.
  */
 public class StatusServiceTest {
-
-  private ListeningExecutorService listeningExecutorService;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -55,22 +54,13 @@ public class StatusServiceTest {
 
     private ListeningExecutorService listeningExecutorService;
 
-    private static final String successScript = "/scripts/success.sh";
+    private DHCPDriver dhcpDriver;
 
     @BeforeMethod
     public void setUp() throws Throwable {
+      dhcpDriver = mock(DHCPDriver.class);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-      testEnvironment = TestEnvironment.create(
-              new DnsmasqDriver(StatusServiceTest.class.getResource("/dnsmasq.leases").getPath(),
-                      Constants.DHCP_RELEASE_PATH,
-                      StatusServiceTest.class.getResource(successScript).getPath(),
-                      StatusServiceTest.class.getResource(successScript).getPath(),
-                      Constants.DNSMASQ_HOST_DIR_PATH,
-                      Constants.DNSMASQ_OPTION_DIR_PATH,
-                      Constants.DNSMASQ_PID_PATH,
-                      StatusServiceTest.class.getResource(successScript).getPath()),
-              1,
-              listeningExecutorService);
+      testEnvironment = TestEnvironment.create(dhcpDriver , 1, listeningExecutorService);
     }
 
     @AfterMethod
@@ -86,7 +76,10 @@ public class StatusServiceTest {
 
     @Test
     public void testReady() throws Throwable {
+      doReturn(true).when(dhcpDriver).isRunning();
+
       Status status = testEnvironment.getServiceState(StatusService.SELF_LINK, Status.class);
+
       assertThat(status.getType(), is(StatusType.READY));
     }
   }
