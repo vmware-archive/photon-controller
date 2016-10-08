@@ -65,7 +65,6 @@ public class SubnetConfigurationService extends StatefulService {
     SubnetConfigurationTask startState = startOperation.getBody(SubnetConfigurationTask.class);
     InitializationUtils.initialize(startState);
     validateState(startState);
-    startOperation.setBody(startState).complete();
 
     if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
@@ -75,6 +74,8 @@ public class SubnetConfigurationService extends StatefulService {
       startState.documentExpirationTimeMicros =
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
     }
+
+    startOperation.setBody(startState).complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {

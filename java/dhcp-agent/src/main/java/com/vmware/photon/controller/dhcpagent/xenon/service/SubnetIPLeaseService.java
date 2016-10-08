@@ -66,7 +66,6 @@ public class SubnetIPLeaseService extends StatefulService {
         SubnetIPLeaseTask startState = startOperation.getBody(SubnetIPLeaseTask.class);
         InitializationUtils.initialize(startState);
         validateState(startState);
-        startOperation.setBody(startState).complete();
 
         if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
             startState.taskState.stage = TaskState.TaskStage.STARTED;
@@ -76,6 +75,8 @@ public class SubnetIPLeaseService extends StatefulService {
             startState.documentExpirationTimeMicros =
                     ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
         }
+
+        startOperation.setBody(startState).complete();
 
         try {
             if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
