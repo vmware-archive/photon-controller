@@ -66,6 +66,7 @@ public class SubnetIPLeaseService extends StatefulService {
         SubnetIPLeaseTask startState = startOperation.getBody(SubnetIPLeaseTask.class);
         InitializationUtils.initialize(startState);
         validateState(startState);
+        startOperation.setBody(startState).complete();
 
         if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
             startState.taskState.stage = TaskState.TaskStage.STARTED;
@@ -79,7 +80,6 @@ public class SubnetIPLeaseService extends StatefulService {
         try {
             if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
                 ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
-                startOperation.setBody(startState).complete();
                 return;
             }
 
@@ -158,11 +158,7 @@ public class SubnetIPLeaseService extends StatefulService {
                 patchState = buildPatch(TaskState.TaskStage.FAILED, null);
             }
 
-            if (operation == null) {
-                TaskUtils.sendSelfPatch(this, patchState);
-            } else {
-                operation.setBody(patchState).complete();
-            }
+            TaskUtils.sendSelfPatch(this, patchState);
 
         } catch (Throwable ex) {
             SubnetIPLeaseTask patchState = buildPatch(TaskState.TaskStage.FAILED, null);
@@ -189,11 +185,8 @@ public class SubnetIPLeaseService extends StatefulService {
                 patchState = buildPatch(TaskState.TaskStage.FAILED, null);
             }
 
-            if (operation == null) {
-                TaskUtils.sendSelfPatch(this, patchState);
-            } else {
-                operation.setBody(patchState).complete();
-            }
+            TaskUtils.sendSelfPatch(this, patchState);
+
         } catch (Throwable ex) {
             SubnetIPLeaseTask patchState = buildPatch(TaskState.TaskStage.FAILED, null);
             failTask(patchState, ex, operation);
