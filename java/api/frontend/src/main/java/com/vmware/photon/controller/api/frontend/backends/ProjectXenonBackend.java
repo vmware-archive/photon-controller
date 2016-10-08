@@ -77,7 +77,6 @@ public class ProjectXenonBackend implements ProjectBackend {
   private final VmBackend vmBackend;
   private final DiskBackend diskBackend;
   private final TombstoneBackend tombstoneBackend;
-  private final DeploymentBackend deploymentBackend;
   private final boolean useVirtualNetwork;
 
   @Inject
@@ -89,7 +88,6 @@ public class ProjectXenonBackend implements ProjectBackend {
       VmBackend vmBackend,
       DiskBackend diskBackend,
       TombstoneBackend tombstoneBackend,
-      DeploymentBackend deploymentBackend,
       @Named("useVirtualNetwork") Boolean useVirtualNetwork) {
     this.xenonClient = xenonClient;
     this.taskBackend = taskBackend;
@@ -98,11 +96,13 @@ public class ProjectXenonBackend implements ProjectBackend {
     this.vmBackend = vmBackend;
     this.diskBackend = diskBackend;
     this.tombstoneBackend = tombstoneBackend;
-    this.deploymentBackend = deploymentBackend;
     this.useVirtualNetwork = useVirtualNetwork;
     this.xenonClient.start();
   }
 
+  /**
+   * Filter projects by tenantId and project name.
+   */
   @Override
   public ResourceList<Project> filter(String tenantId, Optional<String> name, Optional<Integer> pageSize) throws
       ExternalException {
@@ -112,6 +112,10 @@ public class ProjectXenonBackend implements ProjectBackend {
     return toProjectList(projectDocuments);
   }
 
+  /**
+   * Filter projects by tenantId, project name and tokenGroups. The function should only be used when auth is enabled.
+   * If null or empty tokenGroups is given, empty project list will be returned since user has no permission.
+   */
   @Override
   public ResourceList<Project> filter(String tenantId, Optional<String> name, Optional<Integer> pageSize,
                                       List<String> tokenGroups) throws

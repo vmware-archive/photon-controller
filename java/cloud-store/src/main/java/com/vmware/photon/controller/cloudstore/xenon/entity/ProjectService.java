@@ -108,6 +108,9 @@ public class ProjectService extends StatefulService {
 
   /**
    * Data object for SecurityGroup Item.
+   * Although we already have a SecurityGroup class in ApiModel, fields in securityGroup in ApiModel are private.
+   * Xenon requires field to be public in order to query it. That's the reason we're creating a SecurityGroup class
+   * here.
    */
   public static class SecurityGroup {
     public static final String FIELD_NAME = "name";
