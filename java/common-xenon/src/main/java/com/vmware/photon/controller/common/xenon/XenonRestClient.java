@@ -384,7 +384,7 @@ public class XenonRestClient implements XenonClient {
                                                                                boolean expandContent,
                                                                                boolean broadCast)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    return queryDocuments(documentType, terms, null, pageSize, expandContent, true);
+    return queryDocuments(documentType, terms, null, pageSize, expandContent, broadCast);
   }
 
   /**
