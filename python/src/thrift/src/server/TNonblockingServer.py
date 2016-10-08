@@ -29,7 +29,6 @@ import socket
 import Queue
 import select
 import struct
-import sys
 from collections import deque
 import logging
 logger = logging.getLogger(__name__)
@@ -84,7 +83,7 @@ def socket_exception(func):
         try:
             return func(self, *args, **kwargs)
         except socket.error as ex:
-            logger.debug('ignoring socket exception', sys.exc_info())
+            logger.exception('ignoring socket exception')
             self.close()
     return read
 
@@ -316,7 +315,7 @@ class TNonblockingServer:
                     self.clients[client.fileno()] = Connection(client,
                                                                self.wake_up)
                 except Exception as ex:
-                    logger.debug('error while accepting', sys.exc_info())
+                    logger.exception('error while accepting')
             else:
                 connection = self.clients[readable]
                 connection.read()
