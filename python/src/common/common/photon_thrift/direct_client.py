@@ -50,7 +50,7 @@ class DirectClient(object):
         """Connect to the HostHandler."""
         if os.path.isfile(self._cert_file):
             self._logger.info("Initialize SSLSocket using %s" % self._cert_file)
-            sock = TSSLSocket.TSSLSocket(host=self._host, port=self._port, ca_certs=self._cert_file)
+            sock = TSSLSocket.TSSLSocket(host=self._host, port=self._port, validate=False, ca_certs=self._cert_file)
         else:
             self._logger.info("SSL cert %s not found, initialize unencrypted socket" % self._cert_file)
             sock = TSocket.TSocket(self._host, self._port)
