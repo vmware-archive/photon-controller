@@ -75,11 +75,10 @@ public class SubnetConfigurationService extends StatefulService {
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
     }
 
-    startOperation.setBody(startState).complete();
-
     try {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
+        startOperation.setBody(startState).complete();
         return;
       }
 
@@ -132,7 +131,12 @@ public class SubnetConfigurationService extends StatefulService {
           currentState.subnetConfiguration.subnetCidr);
 
       SubnetConfigurationTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-      TaskUtils.sendSelfPatch(this, patchState);
+
+      if (operation == null) {
+        TaskUtils.sendSelfPatch(this, patchState);
+      } else {
+        operation.setBody(patchState).complete();
+      }
 
     } catch (Throwable ex) {
       SubnetConfigurationTask patchState = buildPatch(TaskState.TaskStage.FAILED, null);
@@ -148,7 +152,12 @@ public class SubnetConfigurationService extends StatefulService {
           currentState.subnetConfiguration.subnetId);
 
       SubnetConfigurationTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-      TaskUtils.sendSelfPatch(this, patchState);
+
+      if (operation == null) {
+        TaskUtils.sendSelfPatch(this, patchState);
+      } else {
+        operation.setBody(patchState).complete();
+      }
 
     } catch (Throwable ex) {
       SubnetConfigurationTask patchState = buildPatch(TaskState.TaskStage.FAILED, null);
