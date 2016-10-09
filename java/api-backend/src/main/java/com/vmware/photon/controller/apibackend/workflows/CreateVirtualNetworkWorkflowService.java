@@ -545,6 +545,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     subnetConfigurationTask.subnetConfiguration.subnetGateway =
         state.taskServiceEntity.reservedIpList.get(ReservedIpType.GATEWAY);
     subnetConfigurationTask.subnetConfiguration.subnetCidr = state.taskServiceEntity.cidr;
+    subnetConfigurationTask.subnetConfiguration.subnetOperation = SubnetConfigurationTask.SubnetOperation.CREATE;
 
     Operation.createPost(UriUtils.buildUri(state.dhcpAgentEndpoint + SubnetConfigurationService.FACTORY_LINK))
         .setBody(subnetConfigurationTask)

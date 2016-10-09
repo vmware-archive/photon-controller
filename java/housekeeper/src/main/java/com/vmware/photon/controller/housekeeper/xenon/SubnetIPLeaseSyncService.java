@@ -238,6 +238,7 @@ public class SubnetIPLeaseSyncService extends StatefulService {
         current.subnetIPLease.subnetId = current.subnetId;
         current.subnetIPLease.ipToMACAddressMap = new HashMap<>();
         current.subnetIPLease.version = dhcpSubnet.version;
+        current.subnetIPLease.subnetOperation = SubnetIPLeaseTask.SubnetOperation.UPDATE;
         current.operationPatch = new DhcpSubnetService.VersionOperationPatch(
                 DhcpSubnetService.VersionOperationPatch.Kind.PatchStagedVersion,
                 dhcpSubnet.version, null);
