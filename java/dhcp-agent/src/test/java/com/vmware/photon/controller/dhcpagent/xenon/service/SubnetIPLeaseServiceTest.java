@@ -315,7 +315,7 @@ public class SubnetIPLeaseServiceTest {
         /**
          * Test subnet IP lease failure.
          */
-        @Test(enabled = false)
+        @Test
         public void testSubnetLeaseIPFailure() throws Throwable {
             setUpEnvironment(Constants.DNSMASQ_HOST_DIR_PATH);
 
@@ -353,7 +353,7 @@ public class SubnetIPLeaseServiceTest {
         /**
          * Test subnet IP lease delete failure.
          */
-        @Test(enabled = false)
+        @Test
         public void testSubnetLeaseIPDeleteFailure() throws Throwable {
             // Setting some invalid path to generate failure case.
             setUpEnvironment("/etc/hosts");

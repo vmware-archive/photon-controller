@@ -76,11 +76,10 @@ public class SubnetIPLeaseService extends StatefulService {
                     ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
         }
 
-        startOperation.setBody(startState).complete();
-
         try {
             if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
                 ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
+                startOperation.setBody(startState).complete();
                 return;
             }
 
@@ -159,7 +158,11 @@ public class SubnetIPLeaseService extends StatefulService {
                 patchState = buildPatch(TaskState.TaskStage.FAILED, null);
             }
 
-            TaskUtils.sendSelfPatch(this, patchState);
+            if (operation == null) {
+                TaskUtils.sendSelfPatch(this, patchState);
+            } else {
+                operation.setBody(patchState).complete();
+            }
 
         } catch (Throwable ex) {
             SubnetIPLeaseTask patchState = buildPatch(TaskState.TaskStage.FAILED, null);
@@ -186,7 +189,11 @@ public class SubnetIPLeaseService extends StatefulService {
                 patchState = buildPatch(TaskState.TaskStage.FAILED, null);
             }
 
-            TaskUtils.sendSelfPatch(this, patchState);
+            if (operation == null) {
+                TaskUtils.sendSelfPatch(this, patchState);
+            } else {
+                operation.setBody(patchState).complete();
+            }
 
         } catch (Throwable ex) {
             SubnetIPLeaseTask patchState = buildPatch(TaskState.TaskStage.FAILED, null);
