@@ -159,6 +159,7 @@ public class ClusterMaintenanceTaskService extends StatefulService {
 
           ClusterService.State clusterPatchState = new ClusterService.State();
           clusterPatchState.clusterState = ClusterState.ERROR;
+          clusterPatchState.errorMsg = patchState.error;
 
           sendRequest(
               HostUtils.getCloudStoreHelper(this)
@@ -184,6 +185,7 @@ public class ClusterMaintenanceTaskService extends StatefulService {
 
         ClusterService.State clusterPatchState = new ClusterService.State();
         clusterPatchState.clusterState = ClusterState.ERROR;
+        clusterPatchState.errorMsg = patchState.error;
 
         sendRequest(
             HostUtils.getCloudStoreHelper(this)
