@@ -1093,6 +1093,7 @@ public class VmXenonBackend implements VmBackend {
 
     if (networkHelper.isSdnEnabled() && op == Operation.START_VM && !vm.getHasMACAddresses()) {
       step = new StepEntity();
+      step.setTransientResourceEntities(entityList);
       step.createOrUpdateTransientResource(VmGetNetworksStepCmd.RETRY_TIMEOUT_KEY, GET_NETWORK_ON_START_TIMEOUT_MS);
       step.setOperation(Operation.GET_NETWORKS);
       stepEntities.add(step);
