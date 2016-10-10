@@ -84,13 +84,13 @@ priv_key_name="rui.key"
 pub_key_name="rui.pubkey"
 crt_name="rui.crt"
 pem_name="rui.pem"
+no_auth_pem_name="no-auth.pem"
 priv_key_path="${cert_dir}/${priv_key_name}"
 pub_key_path="${cert_dir}/${pub_key_name}"
 host_crt_path="${cert_dir}/${crt_name}"
 host_pem_path="${cert_dir}/${pem_name}"
 esxi_priv_key_path="${host_cert_dir}/${priv_key_name}"
 esxi_host_crt_path="${host_cert_dir}/${crt_name}"
-esxi_host_pem_path="${host_cert_dir}/${pem_name}"
 
 function create_certificate() {
 
@@ -153,16 +153,24 @@ function create_certificate_no_auth() {
 
 function copy_certificate() {
   # listing /etc/vmware/ssl contents before copying
-  echo "listing /etc/vmware/ssl contents before copying"
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls /etc/vmware/ssl
+  echo "listing ${host_cert_dir} contents before copying"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls ${host_cert_dir}
 
-  sshpass -p "$password" scp $SSH_OPTS ${host_crt_path} ${username}@${host_address}:/etc/vmware/ssl
-  sshpass -p "$password" scp $SSH_OPTS ${host_pem_path} ${username}@${host_address}:/etc/vmware/ssl
-  sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:/etc/vmware/ssl
+  sshpass -p "$password" scp $SSH_OPTS ${host_crt_path} ${username}@${host_address}:${host_cert_dir}
+  sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:${host_cert_dir}
+
+  if [ "$create_cert" == "true" ]
+  then
+    sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${host_cert_dir}/${no_auth_pem_name}
+    sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:${host_cert_dir}/${pem_name}
+  else
+    sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${host_cert_dir}/${pem_name}
+    sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:${host_cert_dir}/${no_auth_pem_name}
+  fi
 
   # listing /etc/vmware/ssl contents after copying
-  echo "listing /etc/vmware/ssl contents after copying"
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls /etc/vmware/ssl
+  echo "listing ${host_cert_dir} contents after copying"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls ${host_cert_dir}
 
   # restart all services to load new cert
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} /bin/services.sh restart
