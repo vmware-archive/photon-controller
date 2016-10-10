@@ -83,6 +83,10 @@ public class Cluster extends Base implements Named {
   private String otherVmFlavorName;
 
   @JsonProperty
+  @ApiModelProperty(value = "When the cluster is in ERROR state, this contains the reason for the error.")
+  private String errorReason;
+
+  @JsonProperty
   @ApiModelProperty(value = "Id of the image used to create the cluster", required = false)
   private String imageId;
 
@@ -173,6 +177,14 @@ public class Cluster extends Base implements Named {
     return this.imageId;
   }
 
+  public void setErrorReason(String errorReason) {
+    this.errorReason = errorReason;
+  }
+
+  public String getErrorReason() {
+    return this.errorReason;
+  }
+
   public Map<String, String> getExtendedProperties() {
     return extendedProperties;
   }
@@ -223,6 +235,7 @@ public class Cluster extends Base implements Named {
         .add("masterVmFlavorName", masterVmFlavorName)
         .add("otherVmFlavorName", otherVmFlavorName)
         .add("imageId", imageId)
+        .add("errorMsg", errorReason)
         .add("extendedProperties", extendedProperties)
         .toString();
   }

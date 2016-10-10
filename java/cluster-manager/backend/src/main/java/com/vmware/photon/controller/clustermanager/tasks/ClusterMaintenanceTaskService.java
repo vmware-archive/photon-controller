@@ -159,6 +159,7 @@ public class ClusterMaintenanceTaskService extends StatefulService {
 
           ClusterService.State clusterPatchState = new ClusterService.State();
           clusterPatchState.clusterState = ClusterState.ERROR;
+          clusterPatchState.errorReason = patchState.error;
 
           sendRequest(
               HostUtils.getCloudStoreHelper(this)
@@ -184,6 +185,7 @@ public class ClusterMaintenanceTaskService extends StatefulService {
 
         ClusterService.State clusterPatchState = new ClusterService.State();
         clusterPatchState.clusterState = ClusterState.ERROR;
+        clusterPatchState.errorReason = patchState.error;
 
         sendRequest(
             HostUtils.getCloudStoreHelper(this)
@@ -279,10 +281,50 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                       case CREATING:
                       case RESIZING:
                       case READY:
+                        ClusterService.State clusterPatchState = new ClusterService.State();
+                        // remove the errorReason if the cluster is previously in error State
+                        // Preferable, this step should be done when the cluster exit out from error
+                        // state and move to non-error state. However, since we don't have any recovering
+                        // mechanism for cluster error state, this process serves as only a place holder.
+                        clusterPatchState.errorReason = null;
+                        sendRequest(
+                            HostUtils.getCloudStoreHelper(this)
+                                .createPatch(getClusterDocumentLink(clusterId))
+                                .setBody(clusterPatchState)
+                                .setCompletion(
+                                    (Operation operation, Throwable throwable) -> {
+                                      if (null != throwable) {
+                                        // Ignore the failure. Otherwise if we fail the maintenance task we may end up
+                                        // in a dead loop.
+                                        ServiceUtils.logSevere(this, "Failed to patch cluster %s to remove any " +
+                                                "existing errorReason: %s", clusterId, throwable.toString());
+                                      }
+                                    }
+                                ));
                         performGarbageInspection(currentState, clusterId);
                         break;
 
                       case PENDING_DELETE:
+                        ClusterService.State clusterPatchState2 = new ClusterService.State();
+                        // remove the errorReason if the cluster is previously in error State
+                        // Preferable, this step should be done when the cluster exit out from error
+                        // state and move to non-error state. However, since we don't have any recovering
+                        // mechanism for cluster error state, this process serves as only a place holder.
+                        clusterPatchState2.errorReason = null;
+                        sendRequest(
+                            HostUtils.getCloudStoreHelper(this)
+                                .createPatch(getClusterDocumentLink(clusterId))
+                                .setBody(clusterPatchState2)
+                                .setCompletion(
+                                    (Operation operation, Throwable throwable) -> {
+                                      if (null != throwable) {
+                                        // Ignore the failure. Otherwise if we fail the maintenance task we may end up
+                                        // in a dead loop.
+                                        ServiceUtils.logSevere(this, "Failed to patch cluster %s to remove any " +
+                                            "existing errorReason: %s", clusterId, throwable.toString());
+                                      }
+                                    }
+                                ));
                         deleteCluster(currentState, clusterId);
                         break;
 

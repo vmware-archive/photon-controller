@@ -552,6 +552,8 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
 
     ClusterService.State document = new ClusterService.State();
     document.clusterState = ClusterState.ERROR;
+    // Up date the errorReason so that when people later query this cluster, they can see why it failed
+    document.errorReason = throwable.toString();
     updateStates(currentState, patchState, document);
   }
 
