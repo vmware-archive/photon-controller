@@ -31,20 +31,28 @@ write_files:
     permissions: 0644
     path: /tmp/copy-ca-cert.sh
   - content: |
-        retry_max="60"
-        retry="0"
-        while [ "$retry" -lt "$retry_max" ]
+        restart_retry_max="5"
+        restart_retry="0"
+        retry_max="20"
+        while [ "$restart_retry" -lt "$restart_retry_max" ]
         do
-          docker version
-          if [ "$?" == "0" ]; then
-            echo "Docker daemon is up and running!"
-            break
-          fi
-          sleep 1
-          retry=`expr $retry + 1`
+          retry="0"
+          while [ "$retry" -lt "$retry_max" ]
+          do
+            docker version
+            if [ "$?" == "0" ]; then
+              echo "Docker daemon is up and running!"
+              break 2
+            fi
+            sleep 1
+            retry=`expr $retry + 1`
+          done
+            echo "Docker unreachable after $retry_max retries, restarting docker ($restart_retry/$restart_retry_max)"
+            systemctl restart docker
+            restart_retry=`expr $restart_retry + 1`
         done
 
-        if [ "$retry" -eq "$retry_max" ]
+        if [ "$retry" -eq "$retry_max" ] && [ "$restart_retry" -eq "$restart_retry_max" ]
         then
           echo "Docker daemon is not up yet!"
         fi
@@ -62,8 +70,8 @@ runcmd:
   - source /root/env_variables.txt
   - rm -f /etc/systemd/network/*.network
   - systemctl stop systemd-networkd
-  - echo "Starting Kubernetes worker" >> /var/log/start-kubernetes-node.log 2>&1
+  - echo "Starting Kubernetes worker" >> /var/log/start-kubernetes-node.log
   - sh /root/setup-dhcp.sh >> /var/log/start-kubernetes-node.log 2>&1
   - sh /tmp/copy-ca-cert.sh >> /var/log/start-kubernetes-node.log 2>&1
-  - sh /tmp/check-docker.sh
+  - sh /tmp/check-docker.sh >> /var/log/start-kubernetes-node.log 2>&1
   - sh /root/setup-kubernetes-worker.sh >> /var/log/start-kubernetes-node.log 2>&1
