@@ -89,7 +89,7 @@ public class VmGetNetworksStepCmd extends StepCommand {
   protected void execute() throws ApiFeException, InterruptedException, RpcException {
     try {
       List<VmEntity> entityList = step.getTransientResourceEntities(Vm.KIND);
-      Preconditions.checkArgument(entityList.size() <= 2,
+      Preconditions.checkArgument(entityList.size() == 1,
           "There should be only 1 VM referenced by step %s", step.getId());
       VmEntity vm = entityList.get(0);
       vmId = vm.getId();
