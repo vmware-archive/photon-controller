@@ -167,6 +167,7 @@ module EsxCloud
         puts "cleaning ssl certificates on #{server}"
         Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
           ssh.exec!("rm /etc/vmware/ssl/rui.pem")
+          ssh.exec!("rm /etc/vmware/ssl/no-auth.pem")
         end
       end
 

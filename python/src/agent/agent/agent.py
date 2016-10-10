@@ -49,6 +49,7 @@ from common.service_name import ServiceName
 from common.state import State
 
 SSL_CERT_FILE = "/etc/vmware/ssl/rui.pem"
+NO_AUTH_CERT_FILE = "/etc/vmware/ssl/no-auth.pem"
 
 
 class Agent:
@@ -136,9 +137,15 @@ class Agent:
             processor = plugin.service.Processor(handler)
             mux_processor.registerProcessor(plugin.name, processor)
 
+        cert_file = None
         if os.path.isfile(SSL_CERT_FILE):
-            self._logger.info("Initialize SSLSocket using %s" % SSL_CERT_FILE)
-            transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=SSL_CERT_FILE)
+            cert_file = SSL_CERT_FILE
+        elif os.path.isfile(NO_AUTH_CERT_FILE):
+            cert_file = NO_AUTH_CERT_FILE
+
+        if cert_file:
+            self._logger.info("Initialize SSLSocket using %s" % cert_file)
+            transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=cert_file)
         else:
             self._logger.info("SSL Cert not found, initialize unencrypted socket")
             transport = TSocket.TServerSocket(port=self._config.host_port)
