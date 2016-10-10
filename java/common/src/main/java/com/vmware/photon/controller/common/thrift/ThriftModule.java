@@ -50,7 +50,7 @@ public class ThriftModule extends AbstractModule {
   private static final Object lock = new Object();
   private volatile SecureRandom secureRandom;
   private volatile TProtocolFactory tProtocolFactory;
-  private static TAsyncSSLClientManager tAsyncSSLClientManager;
+  private TAsyncSSLClientManager tAsyncSSLClientManager;
   private volatile ScheduledExecutorService scheduledExecutorService;
   private final SSLContext sslContext;
 
