@@ -33,6 +33,11 @@
       "destination": "/tmp/scripts"
     },
     {
+      "type": "file",
+      "source": "kubectl",
+      "destination": "/root/kubectl"
+    },
+    {
       "type": "shell",
       "inline": "/tmp/scripts/setup-network.sh"
     },

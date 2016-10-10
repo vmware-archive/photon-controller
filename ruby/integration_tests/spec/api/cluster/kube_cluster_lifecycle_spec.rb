@@ -33,7 +33,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
   end
 
   after(:all) do
-    puts "Staring to clean up Kubernetes Cluster lifecycle tests Env"
+    puts "Starting to clean up Kubernetes Cluster lifecycle tests Env"
     # Deleting tenant2
     tmp_cleaner = EsxCloud::SystemCleaner.new(ApiClientHelper.management)
     ignoring_all_errors {
@@ -49,7 +49,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
     fail("MESOS_ZK_DNS is not defined") unless ENV["MESOS_ZK_DNS"]
     fail("MESOS_ZK_GATEWAY is not defined") unless ENV["MESOS_ZK_GATEWAY"]
     fail("MESOS_ZK_NETMASK is not defined") unless ENV["MESOS_ZK_NETMASK"]
-    fail("KUBERNETES_1_IP is not defined") unless ENV["KUBERNETES_ETCD_1_IP"]
+    fail("KUBERNETES_ETCD 1_IP is not defined") unless ENV["KUBERNETES_ETCD_1_IP"]
     fail("KUBERNETES_MASTER_IP is not defined") unless ENV["KUBERNETES_MASTER_IP"]
 
     puts "Starting to create a Kubernetes cluster"
@@ -69,14 +69,15 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
       project = @seeder.project!
       props = construct_props(ENV["KUBERNETES_MASTER_IP"],ENV["KUBERNETES_ETCD_1_IP"])
       expected_etcd_count = 1
-      if ENV["KUBERNETES_ETCD_2_IP"] != ""
+      if ENV["KUBERNETES_ETCD_2_IP"] != nil and ENV["KUBERNETES_ETCD_2_IP"] != ""
         props["etcd_ip2"] = ENV["KUBERNETES_ETCD_2_IP"]
         expected_etcd_count += 1
-        if ENV["KUBERNETES_ETCD_3_IP"] != ""
+        if ENV["KUBERNETES_ETCD_3_IP"] != nil and ENV["KUBERNETES_ETCD_3_IP"] != ""
           props["etcd_ip3"] = ENV["KUBERNETES_ETCD_3_IP"]
           expected_etcd_count += 1
         end
       end
+      puts "Creating Kubernetes cluster"
       cluster = project.create_cluster(
           name: random_name("kubernetes-"),
           type: "KUBERNETES",

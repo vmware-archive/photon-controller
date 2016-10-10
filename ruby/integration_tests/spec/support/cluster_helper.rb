@@ -76,6 +76,14 @@ module EsxCloud
         File.delete(KEY_FILE, KEY_FILE + '.pub')
       end
 
+      def remove_temporary_file(file_path)
+        File.delete(file_path)
+      end
+
+      def copy_file(source_path, dest_path)
+        FileUtils.cp(source_path, dest_path)
+      end
+
       def wait_for_cluster_state(cluster_id, target_cluster_state, retry_interval, retry_count, client)
         cluster = client.find_cluster_by_id(cluster_id)
 
