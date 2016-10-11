@@ -53,6 +53,7 @@ public class DeleteVirtualNetworkWorkflowDocument extends ServiceDocument{
       DELETE_LOGICAL_PORTS,
       DELETE_LOGICAL_ROUTER,
       DELETE_LOGICAL_SWITCH,
+      DELETE_DHCP_OPTION,
       RELEASE_IP_ADDRESS_SPACE,
       RELEASE_QUOTA,
       DELETE_NETWORK_ENTITY
@@ -119,6 +120,12 @@ public class DeleteVirtualNetworkWorkflowDocument extends ServiceDocument{
   ///
   /// Task Output
   ///
+
+  /**
+   * The endpoint of DHCP agent.
+   */
+  @WriteOnce
+  public String dhcpAgentEndpoint;
 
   /**
    * The VirtualNetworkService.State object.
