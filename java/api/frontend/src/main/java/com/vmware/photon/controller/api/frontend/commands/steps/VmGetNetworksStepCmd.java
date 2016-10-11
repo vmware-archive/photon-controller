@@ -61,7 +61,7 @@ public class VmGetNetworksStepCmd extends StepCommand {
   private static final Logger logger = LoggerFactory.getLogger(VmGetNetworksStepCmd.class);
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
-  private static final long DEFAULT_POLL_INTERVAL = TimeUnit.SECONDS.toMillis(5);
+  public static final long DEFAULT_POLL_INTERVAL = TimeUnit.SECONDS.toMillis(5);
 
   private final TaskBackend taskBackend;
 
