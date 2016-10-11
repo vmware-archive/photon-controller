@@ -219,6 +219,30 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
   }
 
   @Test
+  public void testGetNetworkWithRetryTimeout() throws Exception {
+    when(hostClient.getVmNetworks(vmId))
+            .thenReturn(vmNetworkResponse);
+
+    vmNetworks.get(0).setNetwork("PG1");
+    Subnet subnet = new Subnet();
+    subnet.setId("network-id");
+
+    when(networkBackend.filter(Optional.<String>absent(), Optional.of("PG1"),
+            Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
+            .thenReturn(new ResourceList<>(ImmutableList.of(subnet)));
+    VmGetNetworksStepCmd command = getCommandWithRetryTimeout();
+    command.execute();
+
+    InOrder inOrder = inOrder(hostClient, taskBackend);
+    inOrder.verify(hostClient).getVmNetworks(vmId);
+    inOrder.verify(taskBackend).setTaskResourceProperties(task,
+            "{\"networkConnections\":[{\"network\":\"network-id\",\"macAddress\":\"00:50:56:02:00:3f\"," +
+                    "\"ipAddress\":\"10.146.30.120\",\"netmask\":\"255.255.255.0\",\"isConnected\":\"Unknown\"}]}");
+
+    verifyNoMoreInteractions(taskBackend);
+  }
+
+  @Test
   public void testVmNotFoundExceptionInNonErrorState() throws Exception {
     when(hostClient.getVmNetworks(vmId)).thenThrow(new VmNotFoundException("Error"));
 
@@ -269,10 +293,22 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
     command.execute();
   }
 
-  private VmGetNetworksStepCmd getCommand() {
+  private void setVmInStepEntity() {
     step = new StepEntity();
     step.setId(stepId);
     step.addResource(vm);
+  }
+
+  private VmGetNetworksStepCmd getCommand() {
+    setVmInStepEntity();
+
+    return spy(new VmGetNetworksStepCmd(taskCommand, stepBackend, step, taskBackend, networkBackend, vmBackend));
+  }
+
+  private VmGetNetworksStepCmd getCommandWithRetryTimeout() {
+    setVmInStepEntity();
+    step.createOrUpdateTransientResource(VmGetNetworksStepCmd.RETRY_TIMEOUT_KEY,
+            VmGetNetworksStepCmd.DEFAULT_POLL_INTERVAL);
 
     return spy(new VmGetNetworksStepCmd(taskCommand, stepBackend, step, taskBackend, networkBackend, vmBackend));
   }
