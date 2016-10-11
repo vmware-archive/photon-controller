@@ -551,9 +551,11 @@ public class HarborClusterCreateTaskServiceTest {
           ClusterService.State.class);
 
       assertThat(cluster.clusterState, is(expectedState));
-      assertThat(cluster.extendedProperties.size(), is(7));
+      assertThat(cluster.extendedProperties.size(), is(6));
       assertThat(cluster.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_REGISTRY_CA_CERTIFICATE),
           is("ca-cert"));
+      assertThat(cluster.extendedProperties.containsKey(ClusterManagerConstants.EXTENDED_PROPERTY_ADMIN_PASSWORD),
+          is(false));
     }
 
     @DataProvider(name = "clusterSizes")
