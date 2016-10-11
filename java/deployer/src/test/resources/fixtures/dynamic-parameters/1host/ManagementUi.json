@@ -8,7 +8,7 @@
   "ENABLE_AUTH": "false",
   "REGISTRATION_ADDRESS": "0.0.0.0",
   "SYSLOG_ENDPOINT": "SYSLOG_ENDPOINT",
-  "HTTPS_PORT": "20001",
+  "HTTPS_PORT": "4343",
   "diskGb": "8",
   "cpuCount": "1"
 }

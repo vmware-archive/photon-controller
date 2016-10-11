@@ -6,7 +6,7 @@
   "APIFE_IP": "0.0.0.0",
   "ENABLE_AUTH": "true",
   "SYSLOG_ENDPOINT": "SYSLOG_ENDPOINT",
-  "HTTPS_PORT": "20001",
+  "HTTPS_PORT": "4343",
   "memoryMb": "1024",
   "MGMT_UI_LOGOUT_URL": "MGMT_UI_LOGOUT_URL",
   "APIFE_PORT": "443",
