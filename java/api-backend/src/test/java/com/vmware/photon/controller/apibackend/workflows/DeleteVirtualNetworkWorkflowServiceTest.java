@@ -22,6 +22,7 @@ import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHelper;
+import com.vmware.photon.controller.apibackend.helpers.mocks.MockSubnetConfigurationService;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.utils.TaskStateHelper;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
@@ -47,6 +48,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeExceptio
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
+import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
@@ -70,10 +72,13 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * This class implements tests for the {@link com.vmware.photon.controller.apibackend.workflows
@@ -573,54 +578,24 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     private static final String NETWORK_TOP_ROUTER_ID = "networkTopRouterId";
 
     private DeleteVirtualNetworkWorkflowDocument startState;
-    private DeploymentService.State deploymentStartState;
-    private SubnetAllocatorService.State subnetAllocatorServiceState;
-    private ProjectService.State projectState;
-    private ResourceTicketService.State resourceTicketState;
     private NsxClientFactory nsxClientFactory;
     private NsxClientMock nsxClientMock;
     private TestEnvironment testEnvironment;
+    private Map<Class<? extends Service>, Supplier<FactoryService>> testFactoryServiceMap;
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-
-      deploymentStartState = ReflectionUtils.buildValidStartState(DeploymentService.State.class);
-      deploymentStartState.sdnEnabled = true;
-      deploymentStartState.networkManagerAddress = NETWORK_MANAGER_ADDRESS;
-      deploymentStartState.networkManagerUsername = NETWORK_MANAGER_USERNAME;
-      deploymentStartState.networkManagerPassword = NETWORK_MANAGER_PASSWORD;
-      deploymentStartState.networkZoneId = NETWORK_ZONE_ID;
-      deploymentStartState.networkTopRouterId = NETWORK_TOP_ROUTER_ID;
-
-      subnetAllocatorServiceState = new SubnetAllocatorService.State();
-      subnetAllocatorServiceState.rootCidr = "192.168.1.1/24";
-      subnetAllocatorServiceState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
-
-      projectState = new ProjectService.State();
-      projectState.resourceTicketId = "resource-ticket-id";
-      projectState.name = "project-name";
-      projectState.tenantId = "tenant-id";
-      projectState.documentSelfLink = "project-id";
-
-      resourceTicketState = new ResourceTicketService.State();
-      resourceTicketState.name = "resource-ticket-name";
-      resourceTicketState.tenantId = "tenant-id";
-      resourceTicketState.parentId = "parent-id";
-      resourceTicketState.documentSelfLink = "resource-ticket-id";
-      resourceTicketState.limitMap = new HashMap<>();
-      QuotaLineItem costItem = new QuotaLineItem();
-      costItem.setKey(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY);
-      costItem.setValue(20);
-      costItem.setUnit(QuotaUnit.COUNT);
-      resourceTicketState.limitMap.put(costItem.getKey(), costItem);
-      resourceTicketState.usageMap = new HashMap<>();
-      costItem = new QuotaLineItem();
-      costItem.setKey(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY);
-      costItem.setValue(16);
-      costItem.setUnit(QuotaUnit.COUNT);
-      resourceTicketState.usageMap.put(costItem.getKey(), costItem);
-
       nsxClientFactory = mock(NsxClientFactory.class);
+
+      testFactoryServiceMap = new HashMap<>();
+      testFactoryServiceMap.put(MockSubnetConfigurationService.class, MockSubnetConfigurationService::createFactory);
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(1)
+          .testFactoryServiceMap(testFactoryServiceMap)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
     }
 
     @AfterMethod
@@ -629,13 +604,15 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
         testEnvironment.stop();
         testEnvironment = null;
       }
+
+      startState = null;
     }
 
     /**
      * Verifies that the workflow succeeds to delete a virtual network.
      */
-    @Test(dataProvider = "hostCount")
-    public void succeedsToDeleteVirtualNetwork(int hostCount) throws Throwable {
+    @Test
+    public void succeedsToDeleteVirtualNetwork() throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
           .listLogicalRouterPorts(true)
           .deleteLogicalRouterPort(true)
@@ -649,43 +626,20 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .nsxClientFactory(nsxClientFactory)
-          .build();
-
       VirtualNetworkService.State virtualNetworkDocument = createVirtualNetworkDocumentInCloudStore(testEnvironment);
       String subnetId = ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink);
+
       startState = buildValidStartState(
           TaskState.TaskStage.CREATED,
           null,
           new ControlFlags.Builder().build(),
           subnetId);
 
-      testEnvironment.callServiceAndWaitForState(
-          DeploymentServiceFactory.SELF_LINK,
-          deploymentStartState,
-          DeploymentService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          ProjectServiceFactory.SELF_LINK,
-          projectState,
-          ProjectService.State.class,
-          (state) -> true);
-
-      testEnvironment.callServiceAndWaitForState(
-          ResourceTicketServiceFactory.SELF_LINK,
-          resourceTicketState,
-          ResourceTicketService.State.class,
-          (state) -> true);
-
-      subnetAllocatorServiceState = testEnvironment.callServiceAndWaitForState(
-          SubnetAllocatorService.FACTORY_LINK,
-          subnetAllocatorServiceState,
-          SubnetAllocatorService.State.class,
-          (state) -> true);
+      startDeploymentService(testEnvironment);
+      startProjectService(testEnvironment);
+      startResourceTicketService(testEnvironment);
+      SubnetAllocatorService.State subnetAllocatorServiceState = startSubnetAllocatorService(testEnvironment);
+      startDhcpSubnetService(testEnvironment, subnetId);
 
       SubnetAllocatorService.AllocateSubnet allocateSubnetPatch =
           new SubnetAllocatorService.AllocateSubnet(
@@ -746,14 +700,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
      * Putting network in PENDING_DELETE state because there are still VMs
      * using this virtual network.
      */
-    @Test(dataProvider = "hostCount")
-    public void pendingDeleteVirtualNetwork(int hostCount) throws Throwable {
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .nsxClientFactory(nsxClientFactory)
-          .build();
-
+    @Test
+    public void pendingDeleteVirtualNetwork() throws Throwable {
       VirtualNetworkService.State virtualNetworkDocument = createVirtualNetworkDocumentInCloudStore(testEnvironment);
       String virtualNetworkId = ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink);
 
@@ -775,11 +723,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           new ControlFlags.Builder().build(),
           virtualNetworkId);
 
-      testEnvironment.callServiceAndWaitForState(
-          DeploymentServiceFactory.SELF_LINK,
-          deploymentStartState,
-          DeploymentService.State.class,
-          (state) -> true);
+      startDeploymentService(testEnvironment);
 
       DeleteVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -811,13 +755,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
      * and no NSX configuration is cached in the service document. We simulate the failure by not creating
      * a deployment service entity in cloud-store.
      */
-    @Test(dataProvider = "hostCount")
-    public void failsToGetNsxConfiguration(int hostCount) throws Throwable {
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .build();
-
+    @Test
+    public void failsToGetNsxConfiguration() throws Throwable {
       VirtualNetworkService.State virtualNetworkDocument = createVirtualNetworkDocumentInCloudStore(testEnvironment);
       startState = buildValidStartState(
           TaskState.TaskStage.CREATED,
@@ -841,19 +780,13 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     /**
      * Verifies when DELETE_LOGICAL_PORTS sub-stage fails, the workflow will progress to FAILED state.
      */
-    @Test(dataProvider = "hostCount")
-    public void failsToDeleteLogicalPorts(int hostCount) throws Throwable {
+    @Test
+    public void failsToDeleteLogicalPorts() throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
           .listLogicalRouterPorts(true)
           .deleteLogicalRouterPort(false)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
-
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .nsxClientFactory(nsxClientFactory)
-          .build();
 
       VirtualNetworkService.State virtualNetworkDocument = createVirtualNetworkDocumentInCloudStore(testEnvironment);
       startState = buildValidStartState(
@@ -862,11 +795,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           new ControlFlags.Builder().build(),
           ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink));
 
-      testEnvironment.callServiceAndWaitForState(
-          DeploymentServiceFactory.SELF_LINK,
-          deploymentStartState,
-          DeploymentService.State.class,
-          (state) -> true);
+      startDeploymentService(testEnvironment);
 
       DeleteVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -889,8 +818,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
      * Verifies that when DELETE_LOGICAL_ROUTER:DELETE_ROUTER sub-stage fails, the workflow will progress to FAILED
      * state.
      */
-    @Test(dataProvider = "hostCount")
-    public void failsToDeleteLogicalRouter(int hostCount) throws Throwable {
+    @Test
+    public void failsToDeleteLogicalRouter() throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
           .listLogicalRouterPorts(true)
           .deleteLogicalRouterPort(true)
@@ -901,12 +830,6 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .nsxClientFactory(nsxClientFactory)
-          .build();
-
       VirtualNetworkService.State virtualNetworkDocument = createVirtualNetworkDocumentInCloudStore(testEnvironment);
       startState = buildValidStartState(
           TaskState.TaskStage.CREATED,
@@ -914,11 +837,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           new ControlFlags.Builder().build(),
           ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink));
 
-      testEnvironment.callServiceAndWaitForState(
-          DeploymentServiceFactory.SELF_LINK,
-          deploymentStartState,
-          DeploymentService.State.class,
-          (state) -> true);
+      startDeploymentService(testEnvironment);
 
       DeleteVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -941,8 +860,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
      * Verifies that when DELETE_LOGICAL_ROUTER:WAIT_DELETE_ROUTER sub-stage fails,
      * the workflow will progress to FAILED state.
      */
-    @Test(dataProvider = "hostCount")
-    public void failsToWaitForDeleteLogicalRouter(int hostCount) throws Throwable {
+    @Test
+    public void failsToWaitForDeleteLogicalRouter() throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
           .listLogicalRouterPorts(true)
           .deleteLogicalRouterPort(true)
@@ -954,12 +873,6 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .nsxClientFactory(nsxClientFactory)
-          .build();
-
       VirtualNetworkService.State virtualNetworkDocument = createVirtualNetworkDocumentInCloudStore(testEnvironment);
       startState = buildValidStartState(
           TaskState.TaskStage.CREATED,
@@ -967,11 +880,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           new ControlFlags.Builder().build(),
           ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink));
 
-      testEnvironment.callServiceAndWaitForState(
-          DeploymentServiceFactory.SELF_LINK,
-          deploymentStartState,
-          DeploymentService.State.class,
-          (state) -> true);
+      startDeploymentService(testEnvironment);
 
       DeleteVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -994,8 +903,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
      * Verifies that when DELETE_LOGICAL_SWITCH:DELETE_SWITCH sub-stage fails,
      * the workflow will progress to FAILED state.
      */
-    @Test(dataProvider = "hostCount")
-    public void failsToDeleteLogicalSwitch(int hostCount) throws Throwable {
+    @Test
+    public void failsToDeleteLogicalSwitch() throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
           .listLogicalRouterPorts(true)
           .deleteLogicalRouterPort(true)
@@ -1008,12 +917,6 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .nsxClientFactory(nsxClientFactory)
-          .build();
-
       VirtualNetworkService.State virtualNetworkDocument = createVirtualNetworkDocumentInCloudStore(testEnvironment);
       startState = buildValidStartState(
           TaskState.TaskStage.CREATED,
@@ -1021,11 +924,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           new ControlFlags.Builder().build(),
           ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink));
 
-      testEnvironment.callServiceAndWaitForState(
-          DeploymentServiceFactory.SELF_LINK,
-          deploymentStartState,
-          DeploymentService.State.class,
-          (state) -> true);
+      startDeploymentService(testEnvironment);
 
       DeleteVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -1048,8 +947,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
      * Verifies that when DELETE_LOGICAL_SWITCH:WAIT_DELETE_SWITCH sub-stage fails,
      * the workflow will progress to FAILED state.
      */
-    @Test(dataProvider = "hostCount")
-    public void failsToWaitForDeleteLogicalSwitch(int hostCount) throws Throwable {
+    @Test
+    public void failsToWaitForDeleteLogicalSwitch() throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
           .listLogicalRouterPorts(true)
           .deleteLogicalRouterPort(true)
@@ -1063,12 +962,6 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      testEnvironment = new TestEnvironment.Builder()
-          .hostCount(hostCount)
-          .cloudStoreHelper(new CloudStoreHelper())
-          .nsxClientFactory(nsxClientFactory)
-          .build();
-
       VirtualNetworkService.State virtualNetworkDocument = createVirtualNetworkDocumentInCloudStore(testEnvironment);
       startState = buildValidStartState(
           TaskState.TaskStage.CREATED,
@@ -1076,11 +969,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           new ControlFlags.Builder().build(),
           ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink));
 
-      testEnvironment.callServiceAndWaitForState(
-          DeploymentServiceFactory.SELF_LINK,
-          deploymentStartState,
-          DeploymentService.State.class,
-          (state) -> true);
+      startDeploymentService(testEnvironment);
 
       DeleteVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -1097,6 +986,105 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           TaskService.State.class);
       assertThat(taskServiceState, notNullValue());
       assertThat(taskServiceState.state, is(TaskService.State.TaskState.ERROR));
+    }
+
+    private DeploymentService.State startDeploymentService(TestEnvironment testEnvironment) throws Throwable {
+      DeploymentService.State deploymentStartState =
+          ReflectionUtils.buildValidStartState(DeploymentService.State.class);
+      deploymentStartState.sdnEnabled = true;
+      deploymentStartState.networkManagerAddress = NETWORK_MANAGER_ADDRESS;
+      deploymentStartState.networkManagerUsername = NETWORK_MANAGER_USERNAME;
+      deploymentStartState.networkManagerPassword = NETWORK_MANAGER_PASSWORD;
+      deploymentStartState.networkZoneId = NETWORK_ZONE_ID;
+      deploymentStartState.networkTopRouterId = NETWORK_TOP_ROUTER_ID;
+
+      URI hostUri = testEnvironment.getHosts()[0].getUri();
+      deploymentStartState.dhcpServers = new ArrayList<>();
+      deploymentStartState.dhcpServers.add(hostUri.getHost());
+
+      return testEnvironment.callServiceAndWaitForState(
+          DeploymentServiceFactory.SELF_LINK,
+          deploymentStartState,
+          DeploymentService.State.class,
+          (state) -> true);
+    }
+
+    private ProjectService.State startProjectService(TestEnvironment testEnvironment) throws Throwable {
+      ProjectService.State projectState = new ProjectService.State();
+      projectState.resourceTicketId = "resource-ticket-id";
+      projectState.name = "project-name";
+      projectState.tenantId = "tenant-id";
+      projectState.documentSelfLink = "project-id";
+
+      return testEnvironment.callServiceAndWaitForState(
+          ProjectServiceFactory.SELF_LINK,
+          projectState,
+          ProjectService.State.class,
+          (state) -> true);
+    }
+
+    private SubnetAllocatorService.State startSubnetAllocatorService(TestEnvironment testEnvironment) throws Throwable {
+      SubnetAllocatorService.State subnetAllocatorServiceState = new SubnetAllocatorService.State();
+      subnetAllocatorServiceState.rootCidr = "192.168.1.1/24";
+      subnetAllocatorServiceState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
+      URI hostUri = testEnvironment.getHosts()[0].getUri();
+      subnetAllocatorServiceState.dhcpAgentEndpoint =
+          hostUri.getScheme() + "://" + hostUri.getHost() + ":" + hostUri.getPort();
+
+      return testEnvironment.callServiceAndWaitForState(
+          SubnetAllocatorService.FACTORY_LINK,
+          subnetAllocatorServiceState,
+          SubnetAllocatorService.State.class,
+          (state) -> true);
+    }
+
+    private DhcpSubnetService.State startDhcpSubnetService(TestEnvironment testEnvironment,
+                                                           String subnetId) throws Throwable {
+      DhcpSubnetService.State dhcpSubnetServiceState = new DhcpSubnetService.State();
+      dhcpSubnetServiceState.lowIp = 1L;
+      dhcpSubnetServiceState.highIp = 100L;
+      dhcpSubnetServiceState.lowIpDynamic = 1L;
+      dhcpSubnetServiceState.highIpDynamic = 100L;
+      dhcpSubnetServiceState.lowIpStatic = 1L;
+      dhcpSubnetServiceState.highIpDynamic = 100L;
+      dhcpSubnetServiceState.size = 128L;
+      URI hostUri = testEnvironment.getHosts()[0].getUri();
+      dhcpSubnetServiceState.dhcpAgentEndpoint =
+          hostUri.getScheme() + "://" + hostUri.getHost() + ":" + hostUri.getPort();
+      dhcpSubnetServiceState.documentSelfLink = subnetId;
+      dhcpSubnetServiceState.isFloatingIpSubnet = true;
+
+      return testEnvironment.callServiceAndWaitForState(
+          DhcpSubnetService.FACTORY_LINK,
+          dhcpSubnetServiceState,
+          DhcpSubnetService.State.class,
+          (state) -> true);
+    }
+
+    private ResourceTicketService.State startResourceTicketService(TestEnvironment testEnvironment) throws Throwable {
+      ResourceTicketService.State resourceTicketState = new ResourceTicketService.State();
+      resourceTicketState.name = "resource-ticket-name";
+      resourceTicketState.tenantId = "tenant-id";
+      resourceTicketState.parentId = "parent-id";
+      resourceTicketState.documentSelfLink = "resource-ticket-id";
+      resourceTicketState.limitMap = new HashMap<>();
+      QuotaLineItem costItem = new QuotaLineItem();
+      costItem.setKey(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY);
+      costItem.setValue(20);
+      costItem.setUnit(QuotaUnit.COUNT);
+      resourceTicketState.limitMap.put(costItem.getKey(), costItem);
+      resourceTicketState.usageMap = new HashMap<>();
+      costItem = new QuotaLineItem();
+      costItem.setKey(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY);
+      costItem.setValue(16);
+      costItem.setUnit(QuotaUnit.COUNT);
+      resourceTicketState.usageMap.put(costItem.getKey(), costItem);
+
+      return testEnvironment.callServiceAndWaitForState(
+          ResourceTicketServiceFactory.SELF_LINK,
+          resourceTicketState,
+          ResourceTicketService.State.class,
+          (state) -> true);
     }
 
     private int getTombstoneTaskCount(String entityId) throws Throwable {
