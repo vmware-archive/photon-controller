@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControll
 import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
 import com.vmware.photon.controller.api.frontend.utils.PhysicalNetworkHelper;
 import com.vmware.photon.controller.apibackend.helpers.TestHost;
+import com.vmware.photon.controller.apibackend.helpers.mocks.MockSubnetConfigurationService;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
@@ -26,6 +27,8 @@ import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
+import com.vmware.xenon.common.FactoryService;
+import com.vmware.xenon.common.Service;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -37,7 +40,10 @@ import static org.mockito.Mockito.mock;
 
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 
 /**
  * The test module for Backends tests.
@@ -94,6 +100,10 @@ public class XenonBackendTestModule extends AbstractModule {
         .build();
     ServiceHostUtils.startServices(host, CloudStoreServiceGroup.FACTORY_SERVICES);
     ServiceHostUtils.startFactoryServices(host, CloudStoreServiceGroup.FACTORY_SERVICES_MAP);
+
+    Map<Class<? extends Service>, Supplier<FactoryService>> testFactoryServiceMap = new HashMap<>();
+    testFactoryServiceMap.put(MockSubnetConfigurationService.class, MockSubnetConfigurationService::createFactory);
+    ServiceHostUtils.startFactoryServices(host, testFactoryServiceMap);
 
     return host;
   }

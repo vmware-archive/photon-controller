@@ -1621,6 +1621,8 @@ public class VmXenonBackendTest {
       SubnetAllocatorService.State startState = new SubnetAllocatorService.State();
       startState.rootCidr = "192.168.1.1/24";
       startState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
+      startState.dhcpAgentEndpoint =
+          host.getUri().getScheme() + "://" + host.getUri().getHost() + ":" + host.getUri().getPort();
 
       Operation operation = Operation.createPost(UriUtils.buildUri(host, SubnetAllocatorService.FACTORY_LINK))
           .setBody(startState);

@@ -28,6 +28,7 @@ import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalSwitchTaskServ
 import com.vmware.photon.controller.apibackend.utils.CloudStoreUtils;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
@@ -43,9 +44,12 @@ import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
+import com.vmware.photon.controller.dhcpagent.xenon.service.SubnetConfigurationService;
+import com.vmware.photon.controller.dhcpagent.xenon.service.SubnetConfigurationTask;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
@@ -195,6 +199,9 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
         case DELETE_LOGICAL_SWITCH:
           deleteLogicalSwitch(state);
           break;
+        case DELETE_DHCP_OPTION:
+          deleteDhcpOption(state);
+          break;
         case RELEASE_IP_ADDRESS_SPACE:
           releaseIpAddressSpace(state);
           break;
@@ -268,12 +275,35 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
         DeploymentService.State.class,
         deploymentState -> {
           try {
+            getNsxConfiguration(state, deploymentState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        },
+        t -> {
+          fail(state, t);
+        }
+    );
+  }
+
+  private void getNsxConfiguration(DeleteVirtualNetworkWorkflowDocument state,
+                                   DeploymentService.State deploymentState) {
+    CloudStoreUtils.getAndProcess(
+        this,
+        DhcpSubnetService.FACTORY_LINK + "/" + state.networkId,
+        DhcpSubnetService.State.class,
+        subnet -> {
+          try {
             DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
                 DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
+
             patchState.nsxAddress = deploymentState.networkManagerAddress;
             patchState.nsxUsername = deploymentState.networkManagerUsername;
             patchState.nsxPassword = deploymentState.networkManagerPassword;
+
+            patchState.dhcpAgentEndpoint = subnet.dhcpAgentEndpoint;
+
             progress(state, patchState);
           } catch (Throwable t) {
             fail(state, t);
@@ -392,7 +422,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
             switch (result.taskState.stage) {
               case FINISHED:
                 try {
-                  progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE);
+                  progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_DHCP_OPTION);
                 } catch (Throwable t) {
                   fail(state, t);
                 }
@@ -414,10 +444,31 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   }
 
   /**
+   * Deletes DHCP option.
+   */
+  private void deleteDhcpOption(DeleteVirtualNetworkWorkflowDocument state) {
+    SubnetConfigurationTask subnetConfigurationTask = new SubnetConfigurationTask();
+    subnetConfigurationTask.subnetConfiguration = new SubnetConfigurationTask.SubnetConfiguration();
+    subnetConfigurationTask.subnetConfiguration.subnetId = state.networkId;
+    subnetConfigurationTask.subnetConfiguration.subnetOperation = SubnetConfigurationTask.SubnetOperation.DELETE;
+
+    Operation.createPost(UriUtils.buildUri(state.dhcpAgentEndpoint + SubnetConfigurationService.FACTORY_LINK))
+        .setBody(subnetConfigurationTask)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE);
+        })
+        .sendWith(this);
+  }
+
+  /**
    * Release IPs for the virtual network.
    */
   private void releaseIpAddressSpace(DeleteVirtualNetworkWorkflowDocument state) {
-
     SubnetAllocatorService.ReleaseSubnet releaseSubnet =
         new SubnetAllocatorService.ReleaseSubnet(state.networkId);
 
