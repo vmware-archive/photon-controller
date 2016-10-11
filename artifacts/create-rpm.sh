@@ -7,7 +7,7 @@ set -x -e
 # and 'photon-controller-core-v0.9.1.rpm' for v0.9.1 branch.
 BRANCH=${GERRIT_BRANCH:-`git rev-parse --abbrev-ref HEAD`}
 COMMIT=`git rev-parse --short HEAD`
-VERSION=1.0.1
+VERSION=1.0.2
 
 # An increasing number is needed for release number part of RPM. This is used for updating
 # from old RPM to new RPM within same version by tdnf/yum. To autmoate incrementing the
