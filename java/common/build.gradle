@@ -83,7 +83,7 @@ artifacts {
 task downloadThriftJar(type: Exec) {
   workingDir "."
   executable "bash"
-  args "-c", "rm -f libthrift-0.9.3-ssl.jar && wget https://s3.amazonaws.com/photon-platform/artifacts/thrift/non-blocking-ssl/libthrift-0.9.3-ssl.jar"
+  args "-c", "rm -f libthrift-0.9.3-ssl.jar && wget https://s3.amazonaws.com/photon-platform/artifacts/thrift/non-blocking-ssl/tmp/libthrift-0.9.3-ssl.jar"
 }
 
 compileJava.dependsOn downloadThriftJar
