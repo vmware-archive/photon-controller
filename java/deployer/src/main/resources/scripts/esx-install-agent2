@@ -89,7 +89,14 @@ function join_lightwave_domain() {
   create_pem_cmd="cat ${host_cert_dir}/${priv_key_name} > ${host_cert_dir}/${pem_name};
     printf '\n' >> ${host_cert_dir}/${pem_name};
     cat ${host_cert_dir}/${crt_name} >> ${host_cert_dir}/${pem_name};
-    cert_alias=\$(/usr/lib/vmware/vmafd/bin/vecs-cli entry list --store TRUSTED_ROOTS | grep \"Alias\" | cut -d: -f2);
+    for i in {1..30}; do
+      cert_alias=\$(/usr/lib/vmware/vmafd/bin/vecs-cli entry list --store TRUSTED_ROOTS | grep \"Alias\" | cut -d: -f2);
+      if [ ! -z \$cert_alias ]; then
+        break;
+      fi
+      echo "waiting for lightwave to populate TRUSTED_ROOTS..."
+      sleep 1
+    done
     for cert in \$cert_alias; do
       echo \"Processing cert \$cert\";
       printf '\n' >> ${host_cert_dir}/${pem_name};
