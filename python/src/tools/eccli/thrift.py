@@ -20,10 +20,8 @@ def get_client(host, ns="Host"):
     port = 8835
     print "Connecting %s:%d ..." % (host, port)
     if ns == "Host":
-        client = DirectClient("Host", Host.Client, host, port)
+        client = DirectClient("Host", Host.Client, host, port, validate=False)
     elif ns == "AgentControl":
-        client = DirectClient("AgentControl", AgentControl.Client, host, port)
-    elif ns == "Scheduler":
-        client = DirectClient("Scheduler", Scheduler.Client, host, port)
+        client = DirectClient("AgentControl", AgentControl.Client, host, port, validate=False)
     client.connect()
     return client
