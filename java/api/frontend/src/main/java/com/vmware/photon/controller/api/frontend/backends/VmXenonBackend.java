@@ -407,7 +407,7 @@ public class VmXenonBackend implements VmBackend {
 
       VmService.NetworkInfo vmNetworkInfo = vm.networkInfo.get(pair.getKey());
 
-      if (vmNetworkInfo != null && vmNetworkInfo.macAddress == null) {
+      if (vmNetworkInfo != null && vmNetworkInfo.macAddress != null) {
         vmNetworkInfo.macAddress = (String) pair.getValue();
       }
     }

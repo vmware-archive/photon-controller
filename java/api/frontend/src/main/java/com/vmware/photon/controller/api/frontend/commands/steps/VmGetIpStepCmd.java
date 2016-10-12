@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api.frontend.commands.steps;
 
+import com.google.common.base.Preconditions;
 import com.vmware.photon.controller.api.frontend.backends.StepBackend;
 import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
@@ -28,6 +29,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 import com.vmware.photon.controller.housekeeper.xenon.SubnetIPLeaseSyncTriggerService;
 import com.vmware.xenon.common.Operation;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +87,9 @@ public class VmGetIpStepCmd extends StepCommand {
 
   private String allocateIpToMac(String subnetId, String vmId, String macAddress) {
     checkNotNull(subnetId, "subnetId is not available");
+    Preconditions.checkArgument(StringUtils.isNotBlank(subnetId), "subnetId is not available");
     checkNotNull(macAddress, "macAddress is not available");
+    Preconditions.checkArgument(StringUtils.isNotBlank(macAddress), "macAddress is not available");
 
     DhcpSubnetService.IpOperationPatch ipOperationPatch = new DhcpSubnetService.IpOperationPatch(
         DhcpSubnetService.IpOperationPatch.Kind.AllocateIp, vmId, macAddress, null);
