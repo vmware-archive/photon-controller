@@ -86,16 +86,25 @@ function join_lightwave_domain() {
 
   # Create pem file
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${host_cert_dir}/${no_auth_pem_name}
-  #create_pem_cmd="cat ${host_cert_dir}/${priv_key_name} > ${host_cert_dir}/${pem_name};
-  #  printf '\n' >> ${host_cert_dir}/${pem_name};
-  #  cat ${host_cert_dir}/${crt_name} >> ${host_cert_dir}/${pem_name};
-  #  cert_alias=\$(/usr/lib/vmware/vmafd/bin/vecs-cli entry list --store TRUSTED_ROOTS | grep \"Alias\" | cut -d: -f2);
-  #  for cert in \$cert_alias; do
-  #    echo \"Processing cert \$cert\";
-  #    printf '\n' >> ${host_cert_dir}/${pem_name};
-  #    /usr/lib/vmware/vmafd/bin/vecs-cli entry getcert --store TRUSTED_ROOTS --alias \$cert >> ${host_cert_dir}/${pem_name};
-  #  done"
-  create_pem_cmd="cat ${host_cert_dir}/${crt_name} ${host_cert_dir}/${priv_key_name} > ${host_cert_dir}/${pem_name}"
+  create_pem_cmd="cat ${host_cert_dir}/${priv_key_name} > ${host_cert_dir}/${pem_name};
+    printf '\n' >> ${host_cert_dir}/${pem_name};
+    cat ${host_cert_dir}/${crt_name} >> ${host_cert_dir}/${pem_name};
+    for i in {1..30}; do
+      cert_alias=\$(/usr/lib/vmware/vmafd/bin/vecs-cli entry list --store TRUSTED_ROOTS | grep \"Alias\" | cut -d: -f2);
+      if [ ! -z \$cert_alias ]; then
+        break;
+      fi
+      echo \"waiting for lightwave to populate TRUSTED_ROOTS...\"
+      sleep 1
+    done
+    if [ -z \$cert_alias ]; then
+      echo \"TRUSTED_ROOTS not found, generating pem without it.\"
+    fi
+    for cert in \$cert_alias; do
+      echo \"Processing cert \$cert\";
+      printf '\n' >> ${host_cert_dir}/${pem_name};
+      /usr/lib/vmware/vmafd/bin/vecs-cli entry getcert --store TRUSTED_ROOTS --alias \$cert >> ${host_cert_dir}/${pem_name};
+    done"
   echo $create_pem_cmd
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $create_pem_cmd
 
