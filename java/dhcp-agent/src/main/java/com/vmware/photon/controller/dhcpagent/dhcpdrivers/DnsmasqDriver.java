@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.dhcpagent.dhcpdrivers;
 
+import sun.awt.image.BufferedImageDevice;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,6 +22,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.nio.Buffer;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
@@ -39,12 +42,10 @@ public class DnsmasqDriver implements DHCPDriver {
     private String dhcpOptionFileDir = Constants.DNSMASQ_OPTION_DIR_PATH;
     private String dhcpOptionFileCopyDir = Constants.DNSMASQ_OPTION_DIR_PATH + "-copy";
     private String dhcpPidFilePath = Constants.DNSMASQ_PID_PATH;
-    private String dhcpReloadCachePath = "/script/dhcp-reload.sh";
 
     public DnsmasqDriver(String dhcpLeaseFilePath,
             String dhcpReleaseUtilityPath, String releaseIPPath,
-            String dhcpHostFileDir, String dhcpOptionFileDir, String dhcpPidFilePath,
-            String dhcpReloadCachePath) {
+            String dhcpHostFileDir, String dhcpOptionFileDir, String dhcpPidFilePath) {
         this.dhcpLeaseFilePath = dhcpLeaseFilePath;
         this.dhcpReleaseUtilityPath = dhcpReleaseUtilityPath;
         this.releaseIPPath = releaseIPPath;
@@ -53,7 +54,6 @@ public class DnsmasqDriver implements DHCPDriver {
         this.dhcpOptionFileDir = dhcpOptionFileDir;
         this.dhcpOptionFileCopyDir = dhcpOptionFileDir + "-copy";
         this.dhcpPidFilePath = dhcpPidFilePath;
-        this.dhcpReloadCachePath = dhcpReloadCachePath;
 
         for (String directory : new String[] {
             this.dhcpHostFileDir, this.dhcpHostFileCopyDir,
@@ -113,7 +113,8 @@ public class DnsmasqDriver implements DHCPDriver {
     public boolean reload() {
         boolean response = false;
         try {
-            String command = dhcpReloadCachePath + " " + dhcpPidFilePath;
+            BufferedReader pid = new BufferedReader(new FileReader(dhcpPidFilePath));
+            String command =  "kill -SIGHUP \"$(< " + pid + " )\" ";
             Process p = Runtime.getRuntime().exec(command);
             boolean result = p.waitFor(Constants.TIMEOUT, TimeUnit.SECONDS);
 
