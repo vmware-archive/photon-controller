@@ -86,15 +86,6 @@ function join_lightwave_domain() {
 
   # Create pem file
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${host_cert_dir}/${no_auth_pem_name}
-  #create_pem_cmd="cat ${host_cert_dir}/${priv_key_name} > ${host_cert_dir}/${pem_name};
-  #  printf '\n' >> ${host_cert_dir}/${pem_name};
-  #  cat ${host_cert_dir}/${crt_name} >> ${host_cert_dir}/${pem_name};
-  #  cert_alias=\$(/usr/lib/vmware/vmafd/bin/vecs-cli entry list --store TRUSTED_ROOTS | grep \"Alias\" | cut -d: -f2);
-  #  for cert in \$cert_alias; do
-  #    echo \"Processing cert \$cert\";
-  #    printf '\n' >> ${host_cert_dir}/${pem_name};
-  #    /usr/lib/vmware/vmafd/bin/vecs-cli entry getcert --store TRUSTED_ROOTS --alias \$cert >> ${host_cert_dir}/${pem_name};
-  #  done"
   create_pem_cmd="cat ${host_cert_dir}/${crt_name} ${host_cert_dir}/${priv_key_name} > ${host_cert_dir}/${pem_name}"
   echo $create_pem_cmd
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $create_pem_cmd
