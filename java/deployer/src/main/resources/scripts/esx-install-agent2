@@ -118,8 +118,6 @@ function create_certificate() {
       --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} \
       --server ${lightwave_address} --config "${config_file_path}"
 
-    cat ${host_crt_path} ${priv_key_path} > ${host_pem_path}
-
     # Generate pkcs12 keystore
     openssl pkcs12 -export -in ${host_crt_path} -inkey ${priv_key_path} -out hostkeystore.p12 -name MACHINE_CERT_${host_address} \
       -password pass:${lightwave_password}
@@ -128,6 +126,16 @@ function create_certificate() {
     keytool -importkeystore -deststorepass ${lightwave_password} -destkeypass ${lightwave_password} \
       -destkeystore /keystore.jks -srckeystore hostkeystore.p12 -srcstoretype PKCS12 -srcstorepass ${lightwave_password} \
       -alias MACHINE_CERT_${host_address}
+
+    # Create PEM file for agent
+    # PEM file contains private key, certificate, and trusted root certificate
+    # https://www.digicert.com/ssl-support/pem-ssl-creation.htm
+    cat ${host_crt_path} ${priv_key_path} > ${host_pem_path}
+    cert_alias=$(vecs-cli entry list --store TRUSTED_ROOTS | grep "Alias" | cut -d: -f2)
+    for cert in $cert_alias; do
+      echo "Processing cert $cert "
+      vecs-cli entry getcert --store TRUSTED_ROOTS --alias $cert >> ${host_pem_path}
+    done
   fi
 }
 
