@@ -13,25 +13,21 @@
 
 package com.vmware.transfer.nfc;
 
-import com.vmware.photon.controller.host.gen.CreateImageRequest;
+import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.common.ssl.KeyStoreUtils;
+import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.host.gen.CreateImageResponse;
-import com.vmware.photon.controller.host.gen.FinalizeImageRequest;
 import com.vmware.photon.controller.host.gen.FinalizeImageResponse;
-import com.vmware.photon.controller.host.gen.Host;
-import com.vmware.photon.controller.host.gen.ServiceTicketRequest;
 import com.vmware.photon.controller.host.gen.ServiceTicketResponse;
-import com.vmware.photon.controller.host.gen.ServiceType;
 
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TCompactProtocol;
-import org.apache.thrift.protocol.TMultiplexedProtocol;
-import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.transport.TFastFramedTransport;
-import org.apache.thrift.transport.TSocket;
-import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 
+import javax.net.ssl.SSLContext;
+
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.UUID;
 
 /**
@@ -41,24 +37,21 @@ public class ImageUploadTool {
 
   String hostAddress;
   int hostPort = 8835;
-  Host.Client hostClient;
+  HostClient hostClient;
   String datastore;
   String filePath;
 
-  private void init() throws TTransportException {
-    TTransport transport = new TFastFramedTransport(new TSocket(hostAddress, hostPort));
-    transport.open();
+  private void init() throws TTransportException, IOException {
+    KeyStoreUtils.generateKeys("/etc/vmware/ssl/");
+    SSLContext sslContext = KeyStoreUtils.acceptAllCerts(KeyStoreUtils.THRIFT_PROTOCOL);
 
-    TProtocol proto = new TCompactProtocol(transport);
-    TMultiplexedProtocol mproto = new TMultiplexedProtocol(proto, "Host");
-    hostClient = new Host.Client(mproto);
+    ThriftModule thriftModule = new ThriftModule(sslContext);
+    hostClient = thriftModule.getHostClientFactory().create();
+    hostClient.setIpAndPort(hostAddress, hostPort);
   }
 
-  private HostServiceTicket getTicket() throws TException {
-    ServiceTicketRequest request = new ServiceTicketRequest();
-    request.setDatastore_name(datastore);
-    request.setService_type(ServiceType.NFC);
-    ServiceTicketResponse response = hostClient.get_service_ticket(request);
+  private HostServiceTicket getTicket() throws TException, RpcException, InterruptedException {
+    ServiceTicketResponse response = hostClient.getNfcServiceTicket(datastore);
     com.vmware.photon.controller.resource.gen.HostServiceTicket ticket = response.getTicket();
     HostServiceTicket nfcTicket = new HostServiceTicket();
     nfcTicket.setHost(hostAddress);
@@ -74,10 +67,7 @@ public class ImageUploadTool {
     String imageId = UUID.randomUUID().toString();
     System.out.println("image-id: " + imageId);
 
-    CreateImageRequest createRequest = new CreateImageRequest();
-    createRequest.setImage_id(imageId);
-    createRequest.setDatastore(datastore);
-    CreateImageResponse createResponse = hostClient.create_image(createRequest);
+    CreateImageResponse createResponse = hostClient.createImage(imageId, datastore);
 
     NfcClient nfcClient = new NfcClient(ticket, 0);
     try (FileInputStream inputStream = new FileInputStream(filePath)) {
@@ -85,11 +75,8 @@ public class ImageUploadTool {
     }
     nfcClient.close();
 
-    FinalizeImageRequest finalizeRequest = new FinalizeImageRequest();
-    finalizeRequest.setDatastore(datastore);
-    finalizeRequest.setImage_id(imageId);
-    finalizeRequest.setTmp_image_path(createResponse.getUpload_folder());
-    FinalizeImageResponse finalizeResponse = hostClient.finalize_image(finalizeRequest);
+    FinalizeImageResponse finalizeResponse = hostClient.finalizeImage(imageId, datastore,
+        createResponse.getUpload_folder());
   }
 
   public static void main(String[] args) throws Exception {
