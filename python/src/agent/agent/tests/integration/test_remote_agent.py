@@ -111,7 +111,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         sleep_time = 0.1
         while sleep_time < max_sleep_time:
             try:
-                client = DirectClient(service, cls, server, 8835, 60, self.ssl_cert_file)
+                client = DirectClient(service, cls, server, 8835, 60, validate=False)
                 client.connect()
                 return client
             except TTransport.TTransportException:
@@ -207,7 +207,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
             self._second_remote_iso_file = config["agent_remote_test"]["second_iso_file"]
 
         self.server = config["agent_remote_test"]["server"]
-        self.ssl_cert_file = config["agent_remote_test"]["ssl_cert_file"]
 
         self.generation = int(time.time())
 

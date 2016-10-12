@@ -11,15 +11,11 @@
 # under the License.
 
 import logging
-import os
 
 from thrift.protocol import TCompactProtocol
 from thrift.protocol import TMultiplexedProtocol
 from thrift.transport import TSSLSocket
-from thrift.transport import TSocket
 from thrift.transport import TTransport
-
-from agent.agent import SSL_CERT_FILE
 
 
 class DirectClient(object):
@@ -33,8 +29,8 @@ class DirectClient(object):
         port: The port to connect to.
         client_timeout: if specified, it is set as socket timeout.
     """
-    def __init__(self, service_name, client_cls, host, port,
-                 client_timeout=None, cert_file=SSL_CERT_FILE):
+    def __init__(self, service_name, client_cls, host, port, client_timeout=None,
+                 certfile=None, keyfile=None, capath=None, validate=True):
         self._logger = logging.getLogger(__name__)
         self._service_name = service_name
         self._client_cls = client_cls
@@ -43,17 +39,18 @@ class DirectClient(object):
         self._transport = None
         self._client = None
         self._client_timeout = client_timeout
-        self._cert_file = cert_file
+        self._certfile = certfile
+        self._keyfile = keyfile
+        self._capath = capath
+        self._validate = validate
         self._request_log_level = logging.INFO
 
     def connect(self):
         """Connect to the HostHandler."""
-        if os.path.isfile(self._cert_file) and os.path.getsize(self._cert_file) > 0:
-            self._logger.info("Initialize SSLSocket using %s" % self._cert_file)
-            sock = TSSLSocket.TSSLSocket(host=self._host, port=self._port, ca_certs=self._cert_file)
-        else:
-            self._logger.info("SSL cert %s not found, initialize unencrypted socket" % self._cert_file)
-            sock = TSocket.TSocket(self._host, self._port)
+        self._logger.info("Initialize SSLSocket using certfile=%s, keyfile=%s, capath=%s" %
+                          (self._certfile, self._keyfile, self._capath))
+        sock = TSSLSocket.TSSLSocket(host=self._host, port=self._port, validate=self._validate,
+                                     certfile=self._certfile, keyfile=self._keyfile, capath=self._capath)
 
         if self._client_timeout:
             sock.setTimeout(self._client_timeout * 1000)
