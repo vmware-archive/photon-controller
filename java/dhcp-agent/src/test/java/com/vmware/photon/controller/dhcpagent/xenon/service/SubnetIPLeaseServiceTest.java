@@ -18,7 +18,9 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfig;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.Constants;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DHCPDriver;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
+import com.vmware.photon.controller.dhcpagent.xenon.DHCPAgentXenonHost;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestHost;
 import com.vmware.xenon.common.Operation;
@@ -40,6 +42,8 @@ import org.testng.annotations.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 import java.util.HashMap;
 import java.util.concurrent.Executors;
@@ -251,6 +255,8 @@ public class SubnetIPLeaseServiceTest {
     public class EndToEndTest {
         private TestEnvironment testEnvironment;
         private DnsmasqDriver dnsmasqDriver;
+        private DHCPDriver dhcpDriver;
+        private DHCPAgentXenonHost dhcpAgentXenonHost;
 
         @Mock
         private DHCPAgentConfig config;
@@ -278,13 +284,7 @@ public class SubnetIPLeaseServiceTest {
         }
 
         public void setUpEnvironment(String hostDirPath) throws Throwable {
-            dnsmasqDriver = new DnsmasqDriver(SubnetIPLeaseServiceTest.class.getResource("/dnsmasq.leases").getPath(),
-                    Constants.DHCP_RELEASE_PATH,
-                    SubnetIPLeaseServiceTest.class.getResource("/scripts/success.sh").getPath(),
-                    hostDirPath,
-                    Constants.DNSMASQ_OPTION_DIR_PATH,
-                    hostDirPath,
-                    SubnetIPLeaseServiceTest.class.getResource("/scripts/success.sh").getPath());
+            dnsmasqDriver = mock(DnsmasqDriver.class);
             testEnvironment = TestEnvironment.create(dnsmasqDriver, 1, listeningExecutorService);
         }
 
@@ -298,7 +298,7 @@ public class SubnetIPLeaseServiceTest {
         @Test
         public void testSubnetLeaseIPSuccess() throws Throwable {
             setUpEnvironment();
-
+            doReturn(true).when(dnsmasqDriver).reload();
             SubnetIPLeaseTask subnetIPLeaseTask = buildValidState(TaskState.TaskStage.CREATED, false,
                     SubnetIPLeaseTask.SubnetOperation.UPDATE);
 
@@ -336,10 +336,11 @@ public class SubnetIPLeaseServiceTest {
         @Test
         public void testSubnetLeaseIPDeleteSuccess() throws Throwable {
             setUpEnvironment();
+            doReturn(true).when(dnsmasqDriver).reload();
+            SubnetIPLeaseService.buildPatch(TaskState.TaskStage.FINISHED, null);
 
             SubnetIPLeaseTask subnetIPLeaseTask = buildValidState(TaskState.TaskStage.CREATED, false,
                     SubnetIPLeaseTask.SubnetOperation.DELETE);
-
             SubnetIPLeaseTask finalState = testEnvironment.callServiceAndWaitForState(
                     SubnetIPLeaseService.FACTORY_LINK,
                     subnetIPLeaseTask,
