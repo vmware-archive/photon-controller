@@ -47,9 +47,8 @@ class NfcImageTransferer(object):
             remote_agent_client = DirectClient("Host", Host.Client, destination_host, destination_port, 60,
                                                NO_AUTH_CERT_FILE, False)
         else:
-            # TODO: need to enable certificate validation
             remote_agent_client = DirectClient("Host", Host.Client, destination_host, destination_port, 60,
-                                               SSL_CERT_FILE, False)
+                                               SSL_CERT_FILE, True)
         remote_agent_client.connect()
 
         self._logger.info("transfer_image: getting ticket")
