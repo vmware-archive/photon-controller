@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -107,15 +108,16 @@ public class VmGetNetworksStepCmd extends StepCommand {
         response = getVmNetworksOp(vm);
       }
 
+      VmNetworks vmNetworks = toApiRepresentation(response.getNetwork_info());
+
       if (timeout != null) {
-        Map<String, String> vmMacAddressInfo = getNetworksMACAddresses(response);
+        Map<String, String> vmMacAddressInfo = getNetworksMACAddresses(vmNetworks);
 
         if (vmMacAddressInfo != null && !vmMacAddressInfo.entrySet().isEmpty()) {
           vmBackend.updateState(vm, vmMacAddressInfo);
         }
       }
 
-      VmNetworks vmNetworks = toApiRepresentation(response.getNetwork_info());
       String networkProperties = objectMapper.writeValueAsString(vmNetworks);
       taskBackend.setTaskResourceProperties(taskCommand.getTask(), networkProperties);
     } catch (JsonProcessingException e) {
@@ -226,20 +228,21 @@ public class VmGetNetworksStepCmd extends StepCommand {
     return result;
   }
 
-  private Map<String, String> getNetworksMACAddresses(GetVmNetworkResponse response) {
+  private Map<String, String> getNetworksMACAddresses(VmNetworks vmNetworks) {
     Map<String, String> networkInfo = null;
-    if (!response.isSetNetwork_info()) {
+    Set<NetworkConnection> connections = vmNetworks.getNetworkConnections();
+    if (connections == null || connections.size() == 0) {
       return networkInfo;
     }
 
     networkInfo = new HashMap<>();
-    for (VmNetworkInfo networkConnection : response.getNetwork_info()) {
+    for (NetworkConnection networkConnection : connections) {
       if (Strings.isNullOrEmpty(networkConnection.getNetwork())
-              || Strings.isNullOrEmpty(networkConnection.getMac_address())) {
+              || Strings.isNullOrEmpty(networkConnection.getMacAddress())) {
         continue;
       }
 
-      networkInfo.put(networkConnection.getNetwork(), networkConnection.getMac_address());
+      networkInfo.put(networkConnection.getNetwork(), networkConnection.getMacAddress());
     }
 
     return networkInfo;
