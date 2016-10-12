@@ -124,7 +124,7 @@ jvm_mem=$(($memoryMb/2))
 # Use the JKS keystore which has our certificate as the default java keystore
 security_opts="-Djavax.net.ssl.trustStore=/keystore.jks"
 
-export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC ${security_opts} $JAVA_DEBUG"
+export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC -Djavax.net.debug=ssl ${security_opts} $JAVA_DEBUG"
 
 if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH,,}" == "true" ]
 then

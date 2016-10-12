@@ -13,17 +13,14 @@
 from common.photon_thrift.direct_client import DirectClient
 from gen.agent import AgentControl
 from gen.host import Host
-from gen.scheduler import Scheduler
 
 
 def get_client(host, ns="Host"):
     port = 8835
     print "Connecting %s:%d ..." % (host, port)
     if ns == "Host":
-        client = DirectClient("Host", Host.Client, host, port)
+        client = DirectClient("Host", Host.Client, host, port, validate=False)
     elif ns == "AgentControl":
-        client = DirectClient("AgentControl", AgentControl.Client, host, port)
-    elif ns == "Scheduler":
-        client = DirectClient("Scheduler", Scheduler.Client, host, port)
+        client = DirectClient("AgentControl", AgentControl.Client, host, port, validate=False)
     client.connect()
     return client
