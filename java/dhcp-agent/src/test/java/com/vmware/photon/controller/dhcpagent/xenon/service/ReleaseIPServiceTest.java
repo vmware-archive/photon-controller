@@ -41,7 +41,6 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.fail;
 
 import java.io.IOException;
@@ -297,8 +296,7 @@ public class ReleaseIPServiceTest {
                     ReleaseIPServiceTest.class.getResource(scriptPath).getPath(),
                     Constants.DNSMASQ_HOST_DIR_PATH,
                     Constants.DNSMASQ_OPTION_DIR_PATH,
-                    Constants.DNSMASQ_PID_PATH,
-                    ReleaseIPServiceTest.class.getResource(scriptPath).getPath());
+                    Constants.DNSMASQ_PID_PATH);
             testEnvironment = TestEnvironment.create(dnsmasqDriver, 1, listeningExecutorService);
         }
 

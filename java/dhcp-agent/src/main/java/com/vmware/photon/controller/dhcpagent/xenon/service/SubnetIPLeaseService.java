@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.dhcpagent.xenon.service;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
