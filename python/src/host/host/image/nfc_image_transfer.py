@@ -13,7 +13,7 @@ import logging
 
 import os
 
-from agent.agent import SSL_CERT_FILE, NO_AUTH_CERT_FILE
+from agent.agent import SSL_CERT_FILE, SSL_KEY_FILE, CA_PATH, NO_AUTH_CERT_FILE
 from common.photon_thrift.direct_client import DirectClient
 from gen.host import Host
 from gen.host.ttypes import CreateImageRequest
@@ -45,11 +45,11 @@ class NfcImageTransferer(object):
         self._logger.info("transfer_image: connecting to remote agent")
         if os.path.isfile(NO_AUTH_CERT_FILE):
             remote_agent_client = DirectClient("Host", Host.Client, destination_host, destination_port, 60,
-                                               NO_AUTH_CERT_FILE, False)
+                                               validate=False)
         else:
-            # TODO: need to enable certificate validation
             remote_agent_client = DirectClient("Host", Host.Client, destination_host, destination_port, 60,
-                                               SSL_CERT_FILE, False)
+                                               certfile=SSL_CERT_FILE, keyfile=SSL_KEY_FILE, capath=CA_PATH,
+                                               validate=True)
         remote_agent_client.connect()
 
         self._logger.info("transfer_image: getting ticket")
