@@ -94,45 +94,40 @@ esxi_host_crt_path="${host_cert_dir}/${crt_name}"
 
 function create_certificate() {
 
-  cert_alias=`keytool --list --keystore /keystore.jks -storepass ${lightwave_password} -alias MACHINE_CERT_${host_address}`
-  if [[ "$cert_alias" == *"does not exist"* ]]; then
-    rm -rf ${cert_dir}
-    mkdir -p ${cert_dir}
+  rm -rf ${cert_dir}
+  mkdir -p ${cert_dir}
 
-    #copying the config file to local directory which is going to be used in the cerficate generation.
-    config_file_path="${cert_dir}/certool.cfg"
-    cp /opt/vmware/share/config/certool.cfg "${config_file_path}"
+  #copying the config file to local directory which is going to be used in the cerficate generation.
+  config_file_path="${cert_dir}/certool.cfg"
+  cp /opt/vmware/share/config/certool.cfg "${config_file_path}"
 
-    # Fill in the ip address for generating a host certificate
-    sed -i s/IPAddress.*/"IPAddress = ${host_address}"/ "${config_file_path}"
+  # Fill in the ip address for generating a host certificate
+  sed -i s/IPAddress.*/"IPAddress = ${host_address}"/ "${config_file_path}"
 
-    # Generate keys if they don't exist
-    if [ ! -f "${priv_key_path}" ] || [ ! -f "${pub_key_path}" ]; then
-      echo "Creating keys for ${host_address}"
-      certool --genkey --privkey="${priv_key_path}" --pubkey="${pub_key_path}" \
-        --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} --server ${lightwave_address}
-    fi
+  # Generate keys if they don't exist
+  if [ ! -f "${priv_key_path}" ] || [ ! -f "${pub_key_path}" ]; then
+    echo "Creating keys for ${host_address}"
+    certool --genkey --privkey="${priv_key_path}" --pubkey="${pub_key_path}" \
+      --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} --server ${lightwave_address}
+  fi
 
-    # Generate certificate if it doesn't exist
-    if [ ! -f "${host_crt_path}" ]; then
-      echo "Creating cert for ${host_address}"
-      certool --gencert --privkey="${priv_key_path}" --cert="${host_crt_path}" \
-        --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} \
-        --server ${lightwave_address} --config "${config_file_path}"
+  # Generate certificate if it doesn't exist
+  if [ ! -f "${host_crt_path}" ]; then
+    echo "Creating cert for ${host_address}"
+    certool --gencert --privkey="${priv_key_path}" --cert="${host_crt_path}" \
+      --srp-upn administrator@${lightwave_domain} --srp-pwd ${lightwave_password} \
+      --server ${lightwave_address} --config "${config_file_path}"
 
-      cat ${host_crt_path} ${priv_key_path} > ${host_pem_path}
+    cat ${host_crt_path} ${priv_key_path} > ${host_pem_path}
 
-      # Generate pkcs12 keystore
-      openssl pkcs12 -export -in ${host_crt_path} -inkey ${priv_key_path} -out hostkeystore.p12 -name MACHINE_CERT_${host_address} \
-        -password pass:${lightwave_password}
+    # Generate pkcs12 keystore
+    openssl pkcs12 -export -in ${host_crt_path} -inkey ${priv_key_path} -out hostkeystore.p12 -name MACHINE_CERT_${host_address} \
+      -password pass:${lightwave_password}
 
-      # Convert it into JKS
-      keytool -importkeystore -deststorepass ${lightwave_password} -destkeypass ${lightwave_password} \
-        -destkeystore /keystore.jks -srckeystore hostkeystore.p12 -srcstoretype PKCS12 -srcstorepass ${lightwave_password} \
-        -alias MACHINE_CERT_${host_address}
-    fi
-  else
-    echo "create_certificate skipped because cert_alias already exists"
+    # Convert it into JKS
+    keytool -importkeystore -deststorepass ${lightwave_password} -destkeypass ${lightwave_password} \
+      -destkeystore /keystore.jks -srckeystore hostkeystore.p12 -srcstoretype PKCS12 -srcstorepass ${lightwave_password} \
+      -alias MACHINE_CERT_${host_address}
   fi
 }
 
