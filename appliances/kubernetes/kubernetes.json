@@ -53,6 +53,11 @@
       "type": "file",
       "source": "vm-scripts/setup-dhcp.sh",
       "destination": "/root/setup-dhcp.sh"
+    },
+    {
+      "type": "file",
+      "source": "vm-scripts/check-docker.sh",
+      "destination": "/root/check-docker.sh"
     }
   ]
 }
