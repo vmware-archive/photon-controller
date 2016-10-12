@@ -213,6 +213,18 @@ public class GarbageInspectionTaskService extends StatefulService {
                            final ClusterService.State clusterState,
                            final String masterVmId,
                            final Set<Vm> allWorkers) {
+    // If there is a master_ip field in extended properties and its not empty.
+    // We use the master ip field instead of try to query the ip from the vm
+    String masterIp = clusterState.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
+    if (masterIp != null && !masterIp.isEmpty()) {
+      try {
+        getWorkersFromMaster(currentState, clusterState, masterIp, allWorkers);
+      } catch (Throwable t) {
+        failTask(t);
+      }
+      return;
+    }
+
     WaitForNetworkTaskService.State startState = new WaitForNetworkTaskService.State();
     startState.vmId = masterVmId;
 
