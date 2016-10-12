@@ -217,6 +217,20 @@ public class ClusterExpandTaskService extends StatefulService {
                            final ClusterService.State clusterDocument,
                            final int workerCountDelta,
                            final String masterVmId) {
+
+    // If there is a master_ip field in extended properties and its not empty.
+    // We use the master ip field instead of try to query the ip from the vm
+    String masterIp = clusterDocument.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
+    if (masterIp != null && masterIp != "") {
+      try {
+        expandCluster(currentState, clusterDocument, workerCountDelta, masterIp);
+      } catch (Throwable t) {
+        failTask(t);
+      }
+      return;
+    }
+
+    // Case where master ip is not present in the extended properties
     WaitForNetworkTaskService.State startState = new WaitForNetworkTaskService.State();
     startState.vmId = masterVmId;
 
