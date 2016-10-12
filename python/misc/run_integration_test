@@ -62,7 +62,7 @@ SSL_CERT_FILE=$PWD/rui.crt
 sshpass -p "$ESX_PWD" scp $SSH_OPTS rui.crt root@${ESX_IP}:/etc/vmware/ssl
 sshpass -p "$ESX_PWD" scp $SSH_OPTS rui.key root@${ESX_IP}:/etc/vmware/ssl
 sshpass -p "$ESX_PWD" scp $SSH_OPTS no-auth.pem root@${ESX_IP}:/etc/vmware/ssl
-sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'rm /etc/vmware/ssl/rui.pem'
+sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'rm /etc/vmware/ssl/rui.pem' || true
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP '/bin/services.sh restart'
 
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'rm /tmp/*.vib' || true
