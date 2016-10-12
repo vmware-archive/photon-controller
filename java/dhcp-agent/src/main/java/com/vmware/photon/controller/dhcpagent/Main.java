@@ -54,8 +54,7 @@ public class Main {
             DnsmasqDriver.class.getResource("/scripts/release-ip.sh").getPath(),
             Constants.DNSMASQ_HOST_DIR_PATH,
             Constants.DNSMASQ_OPTION_DIR_PATH,
-            Constants.DNSMASQ_PID_PATH,
-            DnsmasqDriver.class.getResource("/scripts/dhcp-reload.sh").getPath());
+            Constants.DNSMASQ_PID_PATH);
 
     Injector injector = Guice.createInjector(new DHCPAgentModule(dhcpAgentConfig, dnsmasqDriver));
 
