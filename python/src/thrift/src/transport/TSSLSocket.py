@@ -119,6 +119,28 @@ class TSSLSocket(TSocket.TSocket):
     if self.validate:
       self._validate_cert()
 
+  def _read_cert_field(self, cert, prop, field_name):
+    field_val = None
+    if prop in cert:
+      fields = cert[prop]
+      for field in fields:
+        # ensure structure we get back is what we expect
+        if not isinstance(field, tuple):
+          continue
+        if isinstance(field[0], tuple):
+          cert_pair = field[0]
+          if len(cert_pair) < 2:
+            continue
+          cert_key, cert_value = cert_pair[0:2]
+        else:
+          if len(field) < 2:
+            continue
+          cert_key, cert_value = field[0:2]
+        if cert_key == field_name:
+          field_val = cert_value
+          break
+    return field_val
+
   def _validate_cert(self):
     """internal method to validate the peer's SSL certificate, and to check the
     commonName of the certificate to ensure it matches the hostname we
@@ -133,32 +155,26 @@ class TSSLSocket(TSocket.TSocket):
       raise TTransportException(
         type=TTransportException.NOT_OPEN,
         message='No SSL certificate found from %s:%s' % (self.host, self.port))
-    fields = cert['subject']
-    for field in fields:
-      # ensure structure we get back is what we expect
-      if not isinstance(field, tuple):
-        continue
-      cert_pair = field[0]
-      if len(cert_pair) < 2:
-        continue
-      cert_key, cert_value = cert_pair[0:2]
-      if cert_key != 'commonName':
-        continue
-      certhost = cert_value
-      # this check should be performed by some sort of Access Manager
-      if certhost == self.host:
-        # success, cert commonName matches desired hostname
-        self.is_valid = True
-        return
-      else:
-        raise TTransportException(
-          type=TTransportException.UNKNOWN,
-          message='Hostname we connected to "%s" doesn\'t match certificate '
-                  'provided commonName "%s"' % (self.host, certhost))
-    raise TTransportException(
-      type=TTransportException.UNKNOWN,
-      message='Could not validate SSL certificate from '
-              'host "%s".  Cert=%s' % (self.host, cert))
+
+    hostName = self._read_cert_field(cert, 'subject', 'commonName')
+    hostIp = self._read_cert_field(cert, 'subjectAltName', 'IP Address')
+
+    if hostName is None:
+      raise TTransportException(
+        type=TTransportException.UNKNOWN,
+        message='Could not validate SSL certificate from '
+                'host "%s".  Cert=%s' % (self.host, cert))
+
+    # this check should be performed by some sort of Access Manager
+    if hostName == self.host or hostIp == self.host:
+      # success, cert commonName matches desired hostname
+      self.is_valid = True
+      return
+    else:
+      raise TTransportException(
+        type=TTransportException.UNKNOWN,
+        message='Hostname we connected to "%s" doesn\'t match certificate '
+                'provided commonName "%s" or subjectAltName "%s"' % (self.host, hostName, hostIp))
 
 
 class TSSLServerSocket(TSocket.TServerSocket):
