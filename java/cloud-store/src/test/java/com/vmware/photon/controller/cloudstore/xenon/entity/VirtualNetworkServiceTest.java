@@ -317,6 +317,8 @@ public class VirtualNetworkServiceTest {
     startState.parentId = "parentId";
     startState.parentKind = "parentKind";
     startState.size = 16;
+    startState.isSizeQuotaConsumed = false;
+    startState.isIpAddressSpaceConsumed = false;
 
     return startState;
   }

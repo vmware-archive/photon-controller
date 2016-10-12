@@ -381,11 +381,11 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               startState,
               CreateVirtualNetworkWorkflowDocument.class,
               (state) -> TaskState.TaskStage.STARTED == state.taskState.stage &&
-                  CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA
+                  CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION
                       == state.taskState.subStage);
 
       if (!(currentStage == TaskState.TaskStage.STARTED &&
-        currentSubStage == CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA)) {
+        currentSubStage == CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION)) {
         testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
             buildPatch(currentStage, currentSubStage));
       }
@@ -420,11 +420,11 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               startState,
               CreateVirtualNetworkWorkflowDocument.class,
               (state) -> TaskState.TaskStage.STARTED == state.taskState.stage &&
-                  CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA
+                  CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION
                       == state.taskState.subStage);
 
       if (!(currentStage == TaskState.TaskStage.STARTED &&
-          currentSubStage == CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA)) {
+          currentSubStage == CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION)) {
         testEnvironment.sendPatchAndWait(finalState.documentSelfLink,
             buildPatch(currentStage, currentSubStage));
       }
@@ -452,7 +452,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               startState,
               CreateVirtualNetworkWorkflowDocument.class,
               (state) -> TaskState.TaskStage.STARTED == state.taskState.stage &&
-                  CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA
+                  CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION
                       == state.taskState.subStage);
 
       CreateVirtualNetworkWorkflowDocument patchState = buildPatch(TaskState.TaskStage.STARTED,
