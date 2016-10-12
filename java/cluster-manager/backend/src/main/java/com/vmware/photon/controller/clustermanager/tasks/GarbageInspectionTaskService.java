@@ -12,6 +12,7 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
+import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
@@ -213,9 +214,23 @@ public class GarbageInspectionTaskService extends StatefulService {
                            final ClusterService.State clusterState,
                            final String masterVmId,
                            final Set<Vm> allWorkers) {
+
+
+    // If there is a maste_ip field in extended properties and its not empty.
+    // We use the master ip field instead of try to query the ip from the vm
+    String masterip = clusterState.extendedProperties.get(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP);
+    if (masterip != null && masterip != "") {
+        try {
+          getWorkersFromMaster(currentState, clusterState, masterip, allWorkers);
+        } catch (Throwable t) {
+          failTask(t);
+        }
+        return;
+    }
+
+    // Case where master ip is not present in the extended properties
     WaitForNetworkTaskService.State startState = new WaitForNetworkTaskService.State();
     startState.vmId = masterVmId;
-
     TaskUtils.startTaskAsync(
         this,
         WaitForNetworkTaskFactoryService.SELF_LINK,
