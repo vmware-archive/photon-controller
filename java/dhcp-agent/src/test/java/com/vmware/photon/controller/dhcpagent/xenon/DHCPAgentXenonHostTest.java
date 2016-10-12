@@ -93,7 +93,7 @@ public class DHCPAgentXenonHostTest {
     @BeforeMethod
     public void setUp() throws Exception {
       dnsmasqDriver = mock(DnsmasqDriver.class);
-      injector = TestHelper.createInjector("/config.yml", dnsmasqDriver);
+      injector = TestHelper.createInjector(configFilePath, dnsmasqDriver);
     }
 
     @AfterMethod

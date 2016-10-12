@@ -60,7 +60,6 @@ public class DnsmasqDriverTest {
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
                 DnsmasqDriverTest.class.getResource("/hosts").getPath(),
                 DnsmasqDriverTest.class.getResource("/options").getPath(),
-                DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
                 DnsmasqDriverTest.class.getResource(scriptPath).getPath());
     }
 
