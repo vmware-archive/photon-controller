@@ -36,7 +36,6 @@ import os.path
 from thrift import TMultiplexedProcessor
 from thrift.protocol import TCompactProtocol
 from thrift.server import TNonblockingServer
-from thrift.transport import TSocket
 from thrift.transport import TSSLSocket
 
 from .agent_config import AgentConfig
@@ -48,8 +47,10 @@ from common.plugin import load_plugins, thrift_services
 from common.service_name import ServiceName
 from common.state import State
 
-SSL_CERT_FILE = "/etc/vmware/ssl/rui.pem"
-NO_AUTH_CERT_FILE = "/etc/vmware/ssl/no-auth.pem"
+CA_PATH = "/etc/vmware/ssl/"
+SSL_CERT_FILE = CA_PATH + "rui.crt"
+SSL_KEY_FILE = CA_PATH + "rui.key"
+NO_AUTH_CERT_FILE = CA_PATH + "no-auth.pem"
 
 
 class Agent:
@@ -137,18 +138,10 @@ class Agent:
             processor = plugin.service.Processor(handler)
             mux_processor.registerProcessor(plugin.name, processor)
 
-        cert_file = None
-        if os.path.isfile(SSL_CERT_FILE):
-            cert_file = SSL_CERT_FILE
-        elif os.path.isfile(NO_AUTH_CERT_FILE):
-            cert_file = NO_AUTH_CERT_FILE
-
-        if cert_file:
-            self._logger.info("Initialize SSLSocket using %s" % cert_file)
-            transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=cert_file)
-        else:
-            self._logger.info("SSL Cert not found, initialize unencrypted socket")
-            transport = TSocket.TServerSocket(port=self._config.host_port)
+        self._logger.info("Initialize SSLSocket using certfile=%s, keyfile=%s, capath=%s" %
+                          (SSL_CERT_FILE, SSL_KEY_FILE, CA_PATH))
+        transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port,
+                                                certfile=SSL_CERT_FILE, keyfile=SSL_KEY_FILE, capath=CA_PATH)
 
         protocol_factory = TCompactProtocol.TCompactProtocolFactory()
 
