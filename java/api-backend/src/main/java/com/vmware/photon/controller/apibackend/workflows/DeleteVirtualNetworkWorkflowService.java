@@ -187,6 +187,12 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
         case CHECK_VM_EXISTENCE:
           checkVmExistence(state);
           break;
+        case RELEASE_QUOTA:
+          releaseQuota(state);
+          break;
+        case RELEASE_IP_ADDRESS_SPACE:
+          releaseIpAddressSpace(state);
+          break;
         case GET_NSX_CONFIGURATION:
           getNsxConfiguration(state);
           break;
@@ -201,12 +207,6 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           break;
         case DELETE_DHCP_OPTION:
           deleteDhcpOption(state);
-          break;
-        case RELEASE_IP_ADDRESS_SPACE:
-          releaseIpAddressSpace(state);
-          break;
-        case RELEASE_QUOTA:
-          releaseQuota(state);
           break;
         case DELETE_NETWORK_ENTITY:
           deleteVirtualNetwork(state);
@@ -296,7 +296,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           try {
             DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
-                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
+                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_QUOTA);
 
             patchState.nsxAddress = deploymentState.networkManagerAddress;
             patchState.nsxUsername = deploymentState.networkManagerUsername;
@@ -313,6 +313,114 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           fail(state, t);
         }
     );
+  }
+
+  /**
+   * Releases resource ticket quota for the virtual network.
+   */
+  private void releaseQuota(DeleteVirtualNetworkWorkflowDocument state) {
+    if (!state.taskServiceEntity.isSizeQuotaConsumed) {
+      ServiceUtils.logInfo(this, "The quota was not consumed. Skip releasing quota.");
+      progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE);
+      return;
+    }
+
+    checkArgument(state.taskServiceEntity.parentId != null, "parentId should not be null.");
+
+    switch (state.taskServiceEntity.parentKind) {
+      case Project.KIND:
+        String id = state.taskServiceEntity.parentId;
+        ServiceHostUtils.getCloudStoreHelper(getHost())
+            .createGet(ProjectServiceFactory.SELF_LINK + "/" + id)
+            .setCompletion((op, ex) -> {
+              if (ex != null) {
+                fail(state, ex);
+                return;
+              }
+              ProjectService.State project = op.getBody(ProjectService.State.class);
+              String resourceTicketId = project.resourceTicketId;
+
+              returnQuota(state, resourceTicketId);
+            }).sendWith(this);
+        break;
+      default:
+        throw new IllegalArgumentException("Unknown parentKind: " + state.taskServiceEntity.parentKind);
+    }
+  }
+
+  /**
+   * Return quota to the resource ticket.
+   */
+  private void returnQuota(DeleteVirtualNetworkWorkflowDocument state, String resourceTicketId) {
+
+    ResourceTicketService.Patch patch = new ResourceTicketService.Patch();
+    patch.patchtype = ResourceTicketService.Patch.PatchType.USAGE_RETURN;
+    patch.cost = new HashMap<>();
+
+    QuotaLineItem costItem = new QuotaLineItem();
+    costItem.setKey(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY);
+    costItem.setValue(state.taskServiceEntity.size);
+    costItem.setUnit(QuotaUnit.COUNT);
+    patch.cost.put(costItem.getKey(), costItem);
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPatch(ResourceTicketServiceFactory.SELF_LINK + "/" + resourceTicketId)
+        .setBody(patch)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.STARTED,
+                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE);
+            patchState.taskServiceEntity = state.taskServiceEntity;
+            patchState.taskServiceEntity.isSizeQuotaConsumed = false;
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  /**
+   * Release IPs for the virtual network.
+   */
+  private void releaseIpAddressSpace(DeleteVirtualNetworkWorkflowDocument state) {
+    if (!state.taskServiceEntity.isIpAddressSpaceConsumed) {
+      ServiceUtils.logInfo(this, "The IP address space was not consumed. Skip releasing the address space.");
+      progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
+      return;
+    }
+
+    SubnetAllocatorService.ReleaseSubnet releaseSubnet =
+        new SubnetAllocatorService.ReleaseSubnet(state.networkId);
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPatch(SubnetAllocatorService.SINGLETON_LINK)
+        .setBody(releaseSubnet)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.STARTED,
+                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
+            patchState.taskServiceEntity = state.taskServiceEntity;
+            patchState.taskServiceEntity.isIpAddressSpaceConsumed = false;
+
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        })
+        .sendWith(this);
   }
 
   /**
@@ -460,103 +568,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
             return;
           }
 
-          progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE);
-        })
-        .sendWith(this);
-  }
-
-  /**
-   * Release IPs for the virtual network.
-   */
-  private void releaseIpAddressSpace(DeleteVirtualNetworkWorkflowDocument state) {
-    SubnetAllocatorService.ReleaseSubnet releaseSubnet =
-        new SubnetAllocatorService.ReleaseSubnet(state.networkId);
-
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createPatch(SubnetAllocatorService.SINGLETON_LINK)
-        .setBody(releaseSubnet)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            fail(state, ex);
-            return;
-          }
-
-          try {
-            progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_QUOTA);
-          } catch (Throwable t) {
-            fail(state, t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  /**
-   * Releases resource ticket quota for the virtual network.
-   */
-  private void releaseQuota(DeleteVirtualNetworkWorkflowDocument state) {
-    if (!state.taskServiceEntity.isSizeQuotaConsumed) {
-      ServiceUtils.logInfo(this, "The quota was not consumed. Skip releasing quota.");
-      progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY);
-      return;
-    }
-
-    checkArgument(state.taskServiceEntity.parentId != null, "parentId should not be null.");
-
-    switch (state.taskServiceEntity.parentKind) {
-      case Project.KIND:
-        String id = state.taskServiceEntity.parentId;
-        ServiceHostUtils.getCloudStoreHelper(getHost())
-            .createGet(ProjectServiceFactory.SELF_LINK + "/" + id)
-            .setCompletion((op, ex) -> {
-              if (ex != null) {
-                fail(state, ex);
-                return;
-              }
-              ProjectService.State project = op.getBody(ProjectService.State.class);
-              String resourceTicketId = project.resourceTicketId;
-
-              returnQuota(state, resourceTicketId);
-            }).sendWith(this);
-        break;
-      default:
-        throw new IllegalArgumentException("Unknown parentKind: " + state.taskServiceEntity.parentKind);
-    }
-  }
-
-  /**
-   * Return quota to the resource ticket.
-   */
-  private void returnQuota(DeleteVirtualNetworkWorkflowDocument state, String resourceTicketId) {
-
-    ResourceTicketService.Patch patch = new ResourceTicketService.Patch();
-    patch.patchtype = ResourceTicketService.Patch.PatchType.USAGE_RETURN;
-    patch.cost = new HashMap<>();
-
-    QuotaLineItem costItem = new QuotaLineItem();
-    costItem.setKey(CreateVirtualNetworkWorkflowService.SDN_RESOURCE_TICKET_KEY);
-    costItem.setValue(state.taskServiceEntity.size);
-    costItem.setUnit(QuotaUnit.COUNT);
-    patch.cost.put(costItem.getKey(), costItem);
-
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createPatch(ResourceTicketServiceFactory.SELF_LINK + "/" + resourceTicketId)
-        .setBody(patch)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            fail(state, ex);
-            return;
-          }
-
-          try {
-            DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
-                TaskState.TaskStage.STARTED,
-                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY);
-            patchState.taskServiceEntity = state.taskServiceEntity;
-            patchState.taskServiceEntity.isSizeQuotaConsumed = false;
-            progress(state, patchState);
-          } catch (Throwable t) {
-            fail(state, t);
-          }
+          progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY);
         })
         .sendWith(this);
   }

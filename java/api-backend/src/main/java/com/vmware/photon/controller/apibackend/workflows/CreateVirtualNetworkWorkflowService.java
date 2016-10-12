@@ -167,6 +167,9 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
   private void processPatch(CreateVirtualNetworkWorkflowDocument state) {
     try {
       switch (state.taskState.subStage) {
+        case GET_NSX_CONFIGURATION:
+          getNsxConfiguration(state);
+          break;
         case ENFORCE_QUOTA:
           enforceQuotas(state);
           break;
@@ -175,9 +178,6 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           break;
         case GET_IP_ADDRESS_SPACE:
           getIpAddressSpace(state);
-          break;
-        case GET_NSX_CONFIGURATION:
-          getNsxConfiguration(state);
           break;
         case CREATE_LOGICAL_SWITCH:
           createLogicalSwitch(state);
@@ -194,6 +194,38 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     } catch (Throwable t) {
       fail(state, t);
     }
+  }
+
+  /**
+   * Gets NSX configuration from {@link DeploymentService.State} entity in cloud-store, and saves
+   * the configuration in the document of the workflow service.
+   */
+  private void getNsxConfiguration(CreateVirtualNetworkWorkflowDocument state) {
+    CloudStoreUtils.queryAndProcess(
+        this,
+        DeploymentService.State.class,
+        deploymentState -> {
+          try {
+            CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.STARTED,
+                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ENFORCE_QUOTA);
+            patchState.nsxAddress = deploymentState.networkManagerAddress;
+            patchState.nsxUsername = deploymentState.networkManagerUsername;
+            patchState.nsxPassword = deploymentState.networkManagerPassword;
+            patchState.transportZoneId = deploymentState.networkZoneId;
+            patchState.tier0RouterId = deploymentState.networkTopRouterId;
+            patchState.edgeClusterId = deploymentState.edgeClusterId;
+            patchState.dhcpRelayServiceId = deploymentState.dhcpRelayServiceId;
+            patchState.snatIp = deploymentState.snatIp;
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        },
+        t -> {
+          fail(state, t);
+        }
+    );
   }
 
   /**
@@ -283,6 +315,9 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
             CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
                 CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_IP_ADDRESS_SPACE);
+            patchState.taskServiceEntity = state.taskServiceEntity;
+            patchState.taskServiceEntity.isIpAddressSpaceConsumed = true;
+
             progress(state, patchState);
           } catch (Throwable t) {
             fail(state, t);
@@ -309,7 +344,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
             DhcpSubnetService.State subnet = op.getBody(DhcpSubnetService.State.class);
             CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
-                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
+                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH);
             patchState.taskServiceEntity = state.taskServiceEntity;
             patchState.taskServiceEntity.cidr = subnet.cidr;
             patchState.taskServiceEntity.lowIpDynamic = convertLongToDottedIp(subnet.lowIpDynamic);
@@ -335,38 +370,6 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           }
         })
         .sendWith(this);
-  }
-
-  /**
-   * Gets NSX configuration from {@link DeploymentService.State} entity in cloud-store, and saves
-   * the configuration in the document of the workflow service.
-   */
-  private void getNsxConfiguration(CreateVirtualNetworkWorkflowDocument state) {
-    CloudStoreUtils.queryAndProcess(
-        this,
-        DeploymentService.State.class,
-        deploymentState -> {
-          try {
-            CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
-                TaskState.TaskStage.STARTED,
-                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH);
-            patchState.nsxAddress = deploymentState.networkManagerAddress;
-            patchState.nsxUsername = deploymentState.networkManagerUsername;
-            patchState.nsxPassword = deploymentState.networkManagerPassword;
-            patchState.transportZoneId = deploymentState.networkZoneId;
-            patchState.tier0RouterId = deploymentState.networkTopRouterId;
-            patchState.edgeClusterId = deploymentState.edgeClusterId;
-            patchState.dhcpRelayServiceId = deploymentState.dhcpRelayServiceId;
-            patchState.snatIp = deploymentState.snatIp;
-            progress(state, patchState);
-          } catch (Throwable t) {
-            fail(state, t);
-          }
-        },
-        t -> {
-          fail(state, t);
-        }
-    );
   }
 
   /**

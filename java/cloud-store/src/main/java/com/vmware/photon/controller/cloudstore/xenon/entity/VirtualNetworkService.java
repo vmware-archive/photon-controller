@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
+import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
@@ -149,7 +150,15 @@ public class VirtualNetworkService extends StatefulService {
     /**
      * This value indicates whether the network size quota was consumed successfully in the resource ticket.
      */
+    @DefaultBoolean(false)
     public Boolean isSizeQuotaConsumed;
+
+    /**
+     * This value indicates whether the IP address space of the network was consumed successfully and tracked in the
+     * DHCP subnet service.
+     */
+    @DefaultBoolean(false)
+    public Boolean isIpAddressSpaceConsumed;
 
     /**
      * Indicates whether this network is the default one, confined in the level of its parentId.

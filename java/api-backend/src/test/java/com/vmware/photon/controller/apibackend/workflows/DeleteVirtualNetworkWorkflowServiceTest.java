@@ -146,6 +146,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     virtualNetwork.logicalSwitchId = "logical_switch_id";
     virtualNetwork.size = 16;
     virtualNetwork.isSizeQuotaConsumed = true;
+    virtualNetwork.isIpAddressSpaceConsumed = true;
 
     Operation result = testEnvironment.sendPostAndWait(VirtualNetworkService.FACTORY_LINK, virtualNetwork);
     assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
