@@ -511,7 +511,9 @@ public class GarbageInspectionTaskServiceTest {
       clusterState.clusterType = clusterType;
       clusterState.extendedProperties = new HashMap<>();
       clusterState.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK, "10.2.0.0/16");
-      clusterState.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "10.0.0.1");
+      // Set the master Ip to empty so that GarbageInspectionTaskService will trigger WaitForNetworkTaskService
+      // which will validate the testVmApiCallFailure Test.
+      clusterState.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, "");
       ClusterService.State savedClusterState = cloudStoreMachine.callServiceAndWaitForState(
           ClusterServiceFactory.SELF_LINK,
           clusterState,
