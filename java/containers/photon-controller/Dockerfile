@@ -1,6 +1,6 @@
 FROM vmware/photon:1.0
 ENV container=docker
-LABEL com.vmware.photon-controller.version "1.0.1"
+LABEL com.vmware.photon-controller.version "1.0.2"
 
 VOLUME ["/sys/fs/cgroup"]
 
@@ -42,7 +42,7 @@ RUN tdnf makecache \
  && ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key \
  && tdnf install -y sshpass \
  && tdnf install -y vmware-lightwave-clients \
- && tdnf install -y photon-controller-1.0.1 \
+ && tdnf install -y photon-controller-1.0.2 \
  && rm -rf /usr/share/doc/* \
  && rm -rf /usr/share/man/* \
  && rm -rf /usr/include/*
