@@ -85,7 +85,7 @@ public class ClusterTest {
     public void testToString() {
       String expectedString = "Cluster{id=id, Kind=cluster, name=name, type=KUBERNETES, state=READY," +
           " projectId=projectId, workerCount=3, masterVmFlavorName=flavor, otherVmFlavorName=flavor, " +
-          "imageId=image, extendedProperties={containerNetwork=10.1.0.0/16}}";
+          "imageId=image, errorReason=null, extendedProperties={containerNetwork=10.1.0.0/16}}";
       assertThat(cluster.toString(), is(expectedString));
     }
   }
