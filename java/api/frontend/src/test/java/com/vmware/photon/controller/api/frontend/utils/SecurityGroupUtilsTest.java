@@ -15,6 +15,7 @@ package com.vmware.photon.controller.api.frontend.utils;
 
 import com.vmware.photon.controller.api.frontend.entities.SecurityGroupEntity;
 import com.vmware.photon.controller.api.model.SecurityGroup;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
 
 import org.apache.commons.collections.ListUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -239,7 +240,7 @@ public class SecurityGroupUtilsTest {
   }
 
   /**
-   * Tests for methods that tranform security groups to/from internal representation.
+   * Tests for methods that tranform security groups to/from internal representation/cloudstore representation.
    */
   public static class SecurityGroupsTransformTest {
 
@@ -283,6 +284,68 @@ public class SecurityGroupUtilsTest {
       assertThat(entities.size(), is(2));
       assertThat(entities.get(0), is(new SecurityGroupEntity("sg1", true)));
       assertThat(entities.get(1), is(new SecurityGroupEntity("sg2", false)));
+    }
+
+    @Test
+    public static void testFromBackEndToFrontEnd() {
+      ProjectService.SecurityGroup sg = new ProjectService.SecurityGroup("sg1", true);
+
+      SecurityGroup securityGroup = SecurityGroupUtils.fromBackEndToFrontEnd(sg);
+      assertThat(securityGroup.getName(), is("sg1"));
+      assertThat(securityGroup.isInherited(), is(true));
+    }
+
+    @Test
+    public static void testListFromBackEndToFrontEnd() {
+      List<ProjectService.SecurityGroup> sgs = new ArrayList<>();
+      sgs.add(new ProjectService.SecurityGroup("sg1", true));
+      sgs.add(new ProjectService.SecurityGroup("sg2", false));
+
+      List<SecurityGroup> securityGroups = SecurityGroupUtils.fromBackEndToFrontEnd(sgs);
+      assertThat(securityGroups.size(), is(2));
+      assertThat(securityGroups.get(0), is(new SecurityGroup("sg1", true)));
+      assertThat(securityGroups.get(1), is(new SecurityGroup("sg2", false)));
+    }
+
+    @Test
+    public static void testFromBackEndToMiddleEnd() {
+      ProjectService.SecurityGroup sg = new ProjectService.SecurityGroup("sg1", true);
+
+      SecurityGroupEntity entity = SecurityGroupUtils.fromBackEndToMiddleEnd(sg);
+      assertThat(entity.getName(), is("sg1"));
+      assertThat(entity.isInherited(), is(true));
+    }
+
+    @Test
+    public static void testListFromBackEndToMiddleEnd() {
+      List<ProjectService.SecurityGroup> sgs = new ArrayList<>();
+      sgs.add(new ProjectService.SecurityGroup("sg1", true));
+      sgs.add(new ProjectService.SecurityGroup("sg2", false));
+
+      List<SecurityGroupEntity> entities = SecurityGroupUtils.fromBackEndToMiddleEnd(sgs);
+      assertThat(entities.size(), is(2));
+      assertThat(entities.get(0), is(new SecurityGroupEntity("sg1", true)));
+      assertThat(entities.get(1), is(new SecurityGroupEntity("sg2", false)));
+    }
+
+    @Test
+    public static void testFromFrontEndToBackEnd() {
+      SecurityGroup sg = new SecurityGroup("sg1", true);
+
+      ProjectService.SecurityGroup sgBackend = SecurityGroupUtils.fromFrontEndToBackEnd(sg);
+      assertThat(sgBackend, is(new ProjectService.SecurityGroup("sg1", true)));
+    }
+
+    @Test
+    public static void testListFromFrontEndToBackEnd() {
+      List<SecurityGroup> sgs = new ArrayList<>();
+      sgs.add(new SecurityGroup("sg1", true));
+      sgs.add(new SecurityGroup("sg2", false));
+
+      List<ProjectService.SecurityGroup> sgBackend = SecurityGroupUtils.fromFrontEndToBackEnd(sgs);
+      assertThat(sgBackend.size(), is(2));
+      assertThat(sgBackend.get(0), is(new ProjectService.SecurityGroup("sg1", true)));
+      assertThat(sgBackend.get(1), is(new ProjectService.SecurityGroup("sg2", false)));
     }
   }
 }

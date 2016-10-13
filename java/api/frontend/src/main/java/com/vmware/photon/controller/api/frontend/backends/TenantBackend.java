@@ -34,6 +34,9 @@ public interface TenantBackend {
 
   ResourceList<Tenant> filter(Optional<String> name, Optional<Integer> pageSize);
 
+  ResourceList<Tenant> filter(Optional<String> name, Optional<Integer> pageSize, List<String> tokenGroups) throws
+      ExternalException;
+
   List<TenantEntity> getAllTenantEntities();
 
   Tenant getApiRepresentation(String id) throws TenantNotFoundException;

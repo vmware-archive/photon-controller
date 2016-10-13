@@ -28,7 +28,7 @@ public class TenantServiceFactory extends FactoryService {
 
   public TenantServiceFactory() {
     super(TenantService.State.class);
-    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR);
+    super.setPeerNodeSelectorPath(ServiceUriPaths.NODE_SELECTOR_FOR_SYMMETRIC_REPLICATION);
   }
 
   @Override

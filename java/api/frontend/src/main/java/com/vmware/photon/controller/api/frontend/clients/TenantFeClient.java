@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.frontend.BackendTaskExecutor;
 import com.vmware.photon.controller.api.frontend.backends.TaskBackend;
 import com.vmware.photon.controller.api.frontend.backends.TenantBackend;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommandFactory;
+import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpiredException;
@@ -43,15 +44,17 @@ public class TenantFeClient {
   private final ExecutorService executor;
   private final TenantBackend tenantBackend;
   private final TaskBackend taskBackend;
+  private final AuthConfig authConfig;
 
   @Inject
   public TenantFeClient(TaskCommandFactory commandFactory, @BackendTaskExecutor ExecutorService executor,
-                        TenantBackend tenantBackend, TaskBackend taskBackend) {
+                        TenantBackend tenantBackend, TaskBackend taskBackend, AuthConfig authConfig) {
 
     this.commandFactory = commandFactory;
     this.executor = executor;
     this.tenantBackend = tenantBackend;
     this.taskBackend = taskBackend;
+    this.authConfig = authConfig;
   }
 
   public Tenant get(String id) throws TenantNotFoundException {
@@ -59,6 +62,17 @@ public class TenantFeClient {
   }
 
   public ResourceList<Tenant> find(Optional<String> name, Optional<Integer> pageSize) {
+    return tenantBackend.filter(name, pageSize);
+  }
+
+  public ResourceList<Tenant> find(Optional<String> name, Optional<Integer> pageSize,
+                                    List<String> tokenGroups, String defaultAdminGroup) throws ExternalException {
+    if (authConfig.isAuthEnabled()) {
+      if (tokenGroups == null || !tokenGroups.contains(defaultAdminGroup)) {
+        return tenantBackend.filter(name, pageSize, tokenGroups);
+      }
+    }
+
     return tenantBackend.filter(name, pageSize);
   }
 

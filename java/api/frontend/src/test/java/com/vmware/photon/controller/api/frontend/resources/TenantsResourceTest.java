@@ -172,7 +172,7 @@ public class TenantsResourceTest extends ResourceTest {
     t2.setId("t2");
     t2.setName("t2");
 
-    when(tenantFeClient.find(Optional.<String>absent(), Optional.of(2))).thenReturn(
+    when(tenantFeClient.find(Optional.<String>absent(), Optional.of(2), null, null)).thenReturn(
         new ResourceList<>(ImmutableList.of(t1, t2)));
 
     Response response = getTenants(Optional.<String>absent(), Optional.of(2));
@@ -202,7 +202,8 @@ public class TenantsResourceTest extends ResourceTest {
     t1.setId("t1");
     t1.setName("t1");
 
-    when(tenantFeClient.find(Optional.of("t1"), Optional.of(1))).thenReturn(new ResourceList<>(ImmutableList.of(t1)));
+    when(tenantFeClient.find(Optional.of("t1"), Optional.of(1), null, null)).thenReturn(new ResourceList<>
+        (ImmutableList.of(t1)));
     Response response = getTenants(Optional.of("t1"), Optional.of(1));
     assertThat(response.getStatus(), is(200));
 

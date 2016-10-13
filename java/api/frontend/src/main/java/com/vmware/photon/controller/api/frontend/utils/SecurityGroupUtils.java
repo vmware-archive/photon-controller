@@ -16,6 +16,7 @@ package com.vmware.photon.controller.api.frontend.utils;
 import com.vmware.photon.controller.api.frontend.entities.SecurityGroupEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidSecurityGroupFormatException;
 import com.vmware.photon.controller.api.model.SecurityGroup;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -158,5 +159,65 @@ public class SecurityGroupUtils {
    */
   public static List<SecurityGroupEntity> fromApiRepresentation(List<SecurityGroup> securityGroups) {
     return securityGroups.stream().map(sg -> fromApiRepresentation(sg)).collect(Collectors.toList());
+  }
+
+  /**
+   * Transform a security group cloudstore representation to api representation.
+   *
+   * @param group Security group cloudstore representation.
+   * @return Security group api representation.
+   */
+  public static SecurityGroup fromBackEndToFrontEnd(ProjectService.SecurityGroup group) {
+    return new SecurityGroup(group.name, group.inherited);
+  }
+
+  /**
+   * Transform a list of security group cloudstore representation to api representation.
+   *
+   * @param securityGroups List of security group cloudstore representation.
+   * @return List of security group api representation.
+   */
+  public static List<SecurityGroup> fromBackEndToFrontEnd(List<ProjectService.SecurityGroup> securityGroups) {
+    return securityGroups.stream().map(sg -> fromBackEndToFrontEnd(sg)).collect(Collectors.toList());
+  }
+
+  /**
+   * Transform a security group cloudstore representation to internal entity.
+   *
+   * @param group Security group cloudstore representation.
+   * @return Internal security group entity.
+   */
+  public static SecurityGroupEntity fromBackEndToMiddleEnd(ProjectService.SecurityGroup group) {
+    return new SecurityGroupEntity(group.name, group.inherited);
+  }
+
+  /**
+   * Transform a list of security group cloudstore representation to internal entity.
+   *
+   * @param securityGroups List of security group cloudstore representation.
+   * @return List of internal security group entity.
+   */
+  public static List<SecurityGroupEntity> fromBackEndToMiddleEnd(List<ProjectService.SecurityGroup> securityGroups) {
+    return securityGroups.stream().map(sg -> fromBackEndToMiddleEnd(sg)).collect(Collectors.toList());
+  }
+
+  /**
+   * Transform a security group api representation to cloudstore representation.
+   *
+   * @param group Security group api representation.
+   * @return Security cloud representation.
+   */
+  public static ProjectService.SecurityGroup fromFrontEndToBackEnd(SecurityGroup group) {
+    return new ProjectService.SecurityGroup(group.getName(), group.isInherited());
+  }
+
+  /**
+   * Transform a list of security group api representation to cloudstore representation.
+   *
+   * @param securityGroups List of security group api representation.
+   * @return List of security group cloudstore representation.
+   */
+  public static List<ProjectService.SecurityGroup> fromFrontEndToBackEnd(List<SecurityGroup> securityGroups) {
+    return securityGroups.stream().map(sg -> fromFrontEndToBackEnd(sg)).collect(Collectors.toList());
   }
 }

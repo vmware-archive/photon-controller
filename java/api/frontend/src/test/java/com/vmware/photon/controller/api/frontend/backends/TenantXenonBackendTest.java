@@ -25,11 +25,17 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.TenantNotFo
 import com.vmware.photon.controller.api.frontend.utils.SecurityGroupUtils;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.ProjectCreateSpec;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.ResourceTicketCreateSpec;
+import com.vmware.photon.controller.api.model.ResourceTicketReservation;
 import com.vmware.photon.controller.api.model.SecurityGroup;
 import com.vmware.photon.controller.api.model.Tenant;
 import com.vmware.photon.controller.api.model.TenantCreateSpec;
 import com.vmware.photon.controller.api.model.builders.AuthConfigurationSpecBuilder;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantServiceFactory;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
@@ -37,6 +43,7 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.apache.commons.collections.ListUtils;
 import org.junit.AfterClass;
@@ -304,6 +311,119 @@ public class TenantXenonBackendTest {
   }
 
   /**
+   * Tests for querying tenant when auth enabled.
+   */
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
+  public static class AuthEnabledQueryTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+
+    @Inject
+    private TenantBackend tenantBackend;
+
+    @Inject
+    private ProjectBackend projectBackend;
+
+    @Inject
+    private ResourceTicketBackend resourceTicketBackend;
+
+    private TenantCreateSpec spec1;
+    private TenantCreateSpec spec2;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
+
+      QuotaLineItem[] tenantTicketLimits = {
+          new QuotaLineItem("vm", 100, QuotaUnit.COUNT)
+      };
+
+      spec1 = new TenantCreateSpec();
+      spec1.setName("t1");
+      spec1.setSecurityGroups(Arrays.asList("sg1"));
+      String tenantId1 = tenantBackend.createTenant(spec1).getEntityId();
+
+      spec2 = new TenantCreateSpec();
+      spec2.setName("t2");
+      spec2.setSecurityGroups(Arrays.asList("sg2"));
+      String tenantId2 = tenantBackend.createTenant(spec2).getEntityId();
+
+      ResourceTicketCreateSpec resourceTicketCreateSpec = new ResourceTicketCreateSpec();
+      resourceTicketCreateSpec.setName("rt");
+      resourceTicketCreateSpec.setLimits(Arrays.asList(tenantTicketLimits));
+      resourceTicketBackend.create(tenantId1, resourceTicketCreateSpec);
+      resourceTicketBackend.create(tenantId2, resourceTicketCreateSpec);
+
+      ResourceTicketReservation reservation = new ResourceTicketReservation();
+      reservation.setName("rt");
+      reservation.setLimits(ImmutableList.of(new QuotaLineItem("vm", 10, QuotaUnit.COUNT)));
+
+      ProjectCreateSpec spec = new ProjectCreateSpec();
+      spec.setName("p1");
+      spec.setResourceTicket(reservation);
+      projectBackend.createProject(tenantId1, spec);
+
+      spec = new ProjectCreateSpec();
+      spec.setName("p11");
+      spec.setResourceTicket(reservation);
+      projectBackend.createProject(tenantId1, spec);
+
+      spec = new ProjectCreateSpec();
+      spec.setName("p2");
+      spec.setResourceTicket(reservation);
+      spec.setSecurityGroups(Arrays.asList("sg1"));
+      projectBackend.createProject(tenantId2, spec);
+
+      spec = new ProjectCreateSpec();
+      spec.setName("p22");
+      spec.setResourceTicket(reservation);
+      projectBackend.createProject(tenantId2, spec);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testQueryTenant() throws Exception {
+      // test empty tokenGroup returns empty tenant list
+      ResourceList<Tenant> tenantList = tenantBackend.filter(Optional.absent(), Optional.of(1), null);
+      assertThat(tenantList.getItems().size(), is(0));
+
+      // test non-overlapping tokenGroup returns empty tenant list
+      tenantList = tenantBackend.filter(Optional.absent(), Optional.of(2), Arrays.asList("sg3"));
+      assertThat(tenantList.getItems().size(), is(0));
+
+      tenantList = tenantBackend.filter(Optional.of("t1"), Optional.of(2), Arrays.asList("sg2"));
+      assertThat(tenantList.getItems().size(), is(0));
+
+      // test overlapping tokenGroup with tenant securityGroup returns expected tenant list
+      tenantList = tenantBackend.filter(Optional.of("t1"), Optional.of(2), Arrays.asList("sg1"));
+      assertThat(tenantList.getItems().size(), is(1));
+      assertThat(tenantList.getItems().get(0).getName(), is("t1"));
+
+      tenantList = tenantBackend.filter(Optional.absent(), Optional.of(2), Arrays.asList("sg1"));
+      assertThat(tenantList.getItems().size(), is(2));
+
+      // test overlapping tokenGroup with project securityGroup returns expected tenant list
+      tenantList = tenantBackend.filter(Optional.of("t2"), Optional.of(2), Arrays.asList("sg1"));
+      assertThat(tenantList.getItems().size(), is(1));
+      assertThat(tenantList.getItems().get(0).getName(), is("t2"));
+
+    }
+  }
+
+  /**
    * Tests for deleting tenant.
    */
   @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
@@ -437,8 +557,8 @@ public class TenantXenonBackendTest {
     @Test
     public void testUpdateSecurityGroupsWarning() throws Exception, DocumentNotFoundException {
       TenantService.State patch = new TenantService.State();
-      patch.securityGroups = new ArrayList<SecurityGroup>();
-      patch.securityGroups.add(new SecurityGroup("adminGroup1", true));
+      patch.securityGroups = new ArrayList<ProjectService.SecurityGroup>();
+      patch.securityGroups.add(new ProjectService.SecurityGroup("adminGroup1", true));
 
       xenonClient.patch(TenantServiceFactory.SELF_LINK + "/" + tenantId, patch);
 
@@ -468,10 +588,10 @@ public class TenantXenonBackendTest {
     public void testReadSecurityGroups() throws Exception, DocumentNotFoundException {
       // Add one inherited security group and two self security groups
       TenantService.State patch = new TenantService.State();
-      patch.securityGroups = new ArrayList<SecurityGroup>();
-      patch.securityGroups.add(new SecurityGroup("adminGroup1", false));
-      patch.securityGroups.add(new SecurityGroup("adminGroup2", false));
-      patch.securityGroups.add(new SecurityGroup("adminGroup3", true));
+      patch.securityGroups = new ArrayList<ProjectService.SecurityGroup>();
+      patch.securityGroups.add(new ProjectService.SecurityGroup("adminGroup1", false));
+      patch.securityGroups.add(new ProjectService.SecurityGroup("adminGroup2", false));
+      patch.securityGroups.add(new ProjectService.SecurityGroup("adminGroup3", true));
 
       xenonClient.patch(TenantServiceFactory.SELF_LINK + "/" + tenantId, patch);
 
@@ -481,8 +601,9 @@ public class TenantXenonBackendTest {
 
       // api-fe should only return the 2 self security groups
       Tenant tenant = tenantBackend.getApiRepresentation(tenantId);
+      List<SecurityGroup> expectedSGs = SecurityGroupUtils.fromBackEndToFrontEnd(patch.securityGroups);
       assertThat(tenant.getSecurityGroups().size(), is(3));
-      assertThat(ListUtils.isEqualList(tenant.getSecurityGroups(), patch.securityGroups), is(true));
+      assertThat(ListUtils.isEqualList(tenant.getSecurityGroups(), expectedSGs), is(true));
     }
 
     @Test

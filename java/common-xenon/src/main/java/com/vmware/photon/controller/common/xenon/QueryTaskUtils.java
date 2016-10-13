@@ -264,13 +264,29 @@ public class QueryTaskUtils {
    * @return
    */
   public static QueryTask.QuerySpecification buildQuerySpec(Class documentType, ImmutableMap<String, String> terms) {
+    return buildQuerySpec(documentType, terms, null);
+  }
+
+  /**
+   * Builds a QueryTask.QuerySpecification which will query for documents of type T.
+   * Any other filter clauses are optional.
+   * This allows for a query that returns all documents of type T.
+   * This also expands the content of the resulting documents.
+   *
+   * @param documentType
+   * @param terms
+   * @param inClauseTerms
+   * @return
+   */
+  public static QueryTask.QuerySpecification buildQuerySpec(Class documentType, ImmutableMap<String, String> terms,
+                                                            ImmutableMap<String, List<String>> inClauseTerms) {
     checkNotNull(documentType, "Cannot build query spec for unspecified documentType");
     QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
     QueryTask.Query documentKindClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
         .setTermMatchValue(Utils.buildKind(documentType));
 
-    if (terms == null || terms.isEmpty()) {
+    if ((terms == null || terms.isEmpty()) && (inClauseTerms == null || inClauseTerms.isEmpty())) {
       // since there are no other clauses
       // skip adding boolean clauses
       // to workaround the Xenon requirement to have at least 2
@@ -278,11 +294,20 @@ public class QueryTaskUtils {
       spec.query = documentKindClause;
     } else {
       spec.query.addBooleanClause(documentKindClause);
-      for (String key : terms.keySet()) {
-        QueryTask.Query clause = new QueryTask.Query()
-            .setTermPropertyName(key)
-            .setTermMatchValue(terms.get(key));
-        spec.query.addBooleanClause(clause);
+      if (terms != null && !terms.isEmpty()) {
+        for (String key : terms.keySet()) {
+          QueryTask.Query clause = new QueryTask.Query()
+              .setTermPropertyName(key)
+              .setTermMatchValue(terms.get(key));
+          spec.query.addBooleanClause(clause);
+        }
+      }
+      if (inClauseTerms != null && !inClauseTerms.isEmpty()) {
+        QueryTask.Query.Builder queryBuilder = QueryTask.Query.Builder.create();
+        for (String key : inClauseTerms.keySet()) {
+          queryBuilder.addInClause(key, inClauseTerms.get(key));
+        }
+        spec.query.addBooleanClause(queryBuilder.build());
       }
     }
 

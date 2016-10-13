@@ -48,7 +48,7 @@ public class TenantServiceFactoryTest {
         Service.ServiceOption.CONCURRENT_GET_HANDLING,
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING);
     assertThat(factory.getOptions(), is(expected));
-    assertThat(factory.getPeerNodeSelectorPath(), is(equalTo(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR)));
+    assertThat(factory.getPeerNodeSelectorPath(), is(equalTo(ServiceUriPaths.NODE_SELECTOR_FOR_SYMMETRIC_REPLICATION)));
   }
 
   @Test

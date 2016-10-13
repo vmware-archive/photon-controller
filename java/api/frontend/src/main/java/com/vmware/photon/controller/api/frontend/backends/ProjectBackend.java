@@ -37,6 +37,9 @@ public interface ProjectBackend {
                                List<String> tokenGroups)
       throws ExternalException;
 
+  ResourceList<Project> filterBySGs(Optional<Integer> pageSize, List<String> tokenGroups)
+      throws ExternalException;
+
   Project getApiRepresentation(String id) throws ExternalException;
 
   TaskEntity createProject(String tenantId, ProjectCreateSpec project) throws ExternalException;
