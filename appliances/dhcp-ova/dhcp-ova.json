@@ -36,6 +36,14 @@
     },
     {
       "type": "shell",
+      "inline": "for port in {{ user `dnsmasq_public_tcp_ports` }}; do echo iptables -I INPUT -p tcp --dport $port -j ACCEPT >> /etc/systemd/scripts/iptables; done"
+    },
+    {
+      "type": "shell",
+      "inline": "for port in {{ user `dnsmasq_public_udp_ports` }}; do echo iptables -I INPUT -p udp --dport $port -j ACCEPT >> /etc/systemd/scripts/iptables; done"
+    },
+    {
+      "type": "shell",
       "inline": "systemctl restart systemd-networkd"
     },
     {
