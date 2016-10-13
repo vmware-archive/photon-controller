@@ -54,6 +54,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.sun.tools.javac.util.FatalError;
 import org.apache.commons.io.FileUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -105,8 +106,6 @@ public class ClusterMaintenanceTaskServiceTest {
     ClusterMaintenanceTaskService.State state = ReflectionUtils.buildValidStartState(
         ClusterMaintenanceTaskService.State.class);
     state.taskState.stage = stage;
-    state.maxRetryCount = 1;
-    state.retryIntervalSecond = 1;
     return state;
   }
 
@@ -427,7 +426,26 @@ public class ClusterMaintenanceTaskServiceTest {
           {ClusterState.READY},
           {ClusterState.CREATING},
           {ClusterState.RESIZING},
-          {ClusterState.ERROR},
+          {ClusterState.RECOVERABLE_ERROR},
+      };
+    }
+
+    @Test
+    public void testClusterStateFatalError() throws Throwable {
+      mockVmProvision(true);
+      mockVmDelete(true);
+      mockGetClusterVms(5, true, true);
+      mockCluster(1, ClusterState.FATAL_ERROR);
+
+      // If the cluster is in fatal_error state, maintainence should be cancelled
+      ClusterMaintenanceTaskService.State maintenanceTask = startMaintenance();
+      assertThat(maintenanceTask.taskState.stage, is(TaskState.TaskStage.CANCELLED));
+    }
+
+    @DataProvider(name = "fatalError")
+    public Object[][] getClusterFatalStates() {
+      return new Object[][]{
+          {ClusterState.FATAL_ERROR}
       };
     }
 
@@ -440,7 +458,6 @@ public class ClusterMaintenanceTaskServiceTest {
 
       ClusterMaintenanceTaskService.State maintenanceTask = startMaintenance(TaskState.TaskStage.FAILED);
       assertThat(maintenanceTask.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(maintenanceTask.retryCount, is(maintenanceTask.maxRetryCount));
 
       // Wait until cluster state is updated - it is an async update in the maintenance task
       Thread.sleep(1000);
@@ -448,7 +465,7 @@ public class ClusterMaintenanceTaskServiceTest {
       ClusterService.State clusterState = cloudStoreMachine.getServiceState(
           ClusterServiceFactory.SELF_LINK + "/" + clusterId,
           ClusterService.State.class);
-      assertThat(clusterState.clusterState, is(ClusterState.ERROR));
+      assertThat(clusterState.clusterState, is(ClusterState.RECOVERABLE_ERROR));
     }
 
     @Test
@@ -460,7 +477,6 @@ public class ClusterMaintenanceTaskServiceTest {
 
       ClusterMaintenanceTaskService.State maintenanceTask = startMaintenance(TaskState.TaskStage.FAILED);
       assertThat(maintenanceTask.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(maintenanceTask.retryCount, is(maintenanceTask.maxRetryCount));
 
       // Wait until cluster state is updated - it is an async update in the maintenance task
       Thread.sleep(1000);
@@ -468,7 +484,7 @@ public class ClusterMaintenanceTaskServiceTest {
       ClusterService.State clusterState = cloudStoreMachine.getServiceState(
           ClusterServiceFactory.SELF_LINK + "/" + clusterId,
           ClusterService.State.class);
-      assertThat(clusterState.clusterState, is(ClusterState.ERROR));
+      assertThat(clusterState.clusterState, is(ClusterState.RECOVERABLE_ERROR));
     }
 
     @Test

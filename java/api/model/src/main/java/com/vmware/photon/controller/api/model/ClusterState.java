@@ -39,12 +39,15 @@ package com.vmware.photon.controller.api.model;
  * - PENDING_DELETE - a deleting task is scheduled. Will transition to DELETED when deleting is successful.
  * Otherwise will transfer to ERROR state.
  * <p/>
- * - ERROR - the cluster operation failed.
+ * - RECOVERABLE_ERROR - the cluster is in an error state where the error could potentially be solved
+ * <p/>
+ * - FATAL_ERROR - the cluster had an error during creation or the maintenance got cancelled.
  */
 public enum ClusterState {
   CREATING,
   RESIZING,
   READY,
   PENDING_DELETE,
-  ERROR
+  RECOVERABLE_ERROR,
+  FATAL_ERROR
 }

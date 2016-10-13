@@ -316,7 +316,7 @@ public class HarborClusterCreateTaskService extends StatefulService {
             nodeType.toString(), throwable.toString())));
 
     ClusterService.State document = new ClusterService.State();
-    document.clusterState = ClusterState.ERROR;
+    document.clusterState = ClusterState.FATAL_ERROR;
     updateStates(currentState, patchState, document);
   }
 
