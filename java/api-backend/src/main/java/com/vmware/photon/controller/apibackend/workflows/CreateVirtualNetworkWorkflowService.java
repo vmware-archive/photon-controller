@@ -564,29 +564,56 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
    * Updates the VirtualNetwork entity in cloud-store and Moves the service to the FAILED state.
    */
   protected void fail(CreateVirtualNetworkWorkflowDocument state, Throwable throwable) {
-    updateVirtualNetwork(state, SubnetState.ERROR);
-    super.fail(state, throwable);
+    VirtualNetworkService.State virtualNetworkPatchState = createVirtualNetworkPatch(state, SubnetState.ERROR);
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPatch(state.taskServiceEntity.documentSelfLink)
+        .setBody(virtualNetworkPatchState)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            ServiceUtils.logSevere(this, ex);
+            fail(state, ex);
+          }
+
+          super.fail(state, throwable);
+        })
+        .sendWith(this);
   }
 
   /**
    * Updates the VirtualNetwork entity in cloud-store and Moves the service to the FINISHED state.
    */
   protected void finish(CreateVirtualNetworkWorkflowDocument state) {
-    updateVirtualNetwork(state, SubnetState.READY);
-    try {
-      CreateVirtualNetworkWorkflowDocument patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-      patchState.taskServiceEntity = state.taskServiceEntity;
-      patchState.taskServiceEntity.state = SubnetState.READY;
-      finish(state, patchState);
-    } catch (Throwable t) {
-      fail(state, t);
-    }
+    VirtualNetworkService.State virtualNetworkPatchState = createVirtualNetworkPatch(state, SubnetState.READY);
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPatch(state.taskServiceEntity.documentSelfLink)
+        .setBody(virtualNetworkPatchState)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            ServiceUtils.logSevere(this, ex);
+            fail(state, ex);
+          }
+
+          try {
+            CreateVirtualNetworkWorkflowDocument workflowPatchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+            workflowPatchState.taskServiceEntity = state.taskServiceEntity;
+            workflowPatchState.taskServiceEntity.state = SubnetState.READY;
+
+            finish(state, workflowPatchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        })
+        .sendWith(this);
   }
 
   /**
-   * Updates the VirtualNetwork entity in cloud-store.
+   * Create a virtual network patch.
    */
-  private void updateVirtualNetwork(CreateVirtualNetworkWorkflowDocument state, SubnetState subnetState) {
+  private VirtualNetworkService.State createVirtualNetworkPatch(CreateVirtualNetworkWorkflowDocument state,
+                                                                SubnetState subnetState) {
+
     VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
     virtualNetworkPatchState.state = subnetState;
     virtualNetworkPatchState.isSizeQuotaConsumed = state.taskServiceEntity.isSizeQuotaConsumed;
@@ -604,15 +631,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     virtualNetworkPatchState.highIpStatic = state.taskServiceEntity.highIpStatic;
     virtualNetworkPatchState.reservedIpList = state.taskServiceEntity.reservedIpList;
 
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createPatch(state.taskServiceEntity.documentSelfLink)
-        .setBody(virtualNetworkPatchState)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            ServiceUtils.logSevere(this, ex);
-          }
-        })
-        .sendWith(this);
+    return virtualNetworkPatchState;
   }
 
   /**
