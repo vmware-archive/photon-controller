@@ -40,7 +40,6 @@ import com.google.common.util.concurrent.FutureCallback;
 
 import javax.annotation.Nullable;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -96,12 +95,6 @@ public class ClusterMaintenanceTaskService extends StatefulService {
         case RUN:
           startMaintenance(currentState, clusterId);
           break;
-        case RETRY:
-          getHost().schedule(
-              () -> startMaintenance(currentState, clusterId),
-              currentState.retryIntervalSecond * currentState.retryCount,
-              TimeUnit.SECONDS);
-          break;
         case SKIP:
           ServiceUtils.logInfo(this, "Skipping maintenance");
           break;
@@ -121,84 +114,49 @@ public class ClusterMaintenanceTaskService extends StatefulService {
 
     if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
       if (patchState.taskState.stage == TaskState.TaskStage.FINISHED) {
-        // The previous maintenance task succeeded. We need to reset the retry counter and increment the
-        // maintenance iteration. Maintenance retries will have the same iteration.
+        // The previous maintenance task succeeded. We increment the maintenanceOperation, reset the patch error state
+        // to null
         ServiceUtils.logInfo(this, "Not running maintenance for cluster %s because patching the task from %s to %s",
             clusterId, currentState.taskState.stage.toString(),
             patchState.taskState.stage.toString());
-        patchState.retryCount = 0;
         patchState.maintenanceIteration = currentState.maintenanceIteration + 1;
         patchState.error = null;
 
+        // recover the cluster service document state to READY in case of any previous RECOVERABLE_ERROR state
+        ClusterService.State clusterPatchState = new ClusterService.State();
+        clusterPatchState.clusterState = ClusterState.READY;
+        // cluster maintenance finished successfully, clear out any errorReason
+        clusterPatchState.errorReason = null;
+
+        updateStates(clusterId, clusterPatchState, null, ClusterState.READY);
+
         maintenanceOperation = MaintenanceOperation.SKIP;
       } else if (patchState.taskState.stage == TaskState.TaskStage.FAILED) {
-        // The previous maintenance task failed. We need to record the error message and determine
-        // whether we want to retry.
+        // The previous maintenance task failed. We need to record the error message and set the cluster to error state
+        // We will still run the maintenance in the future because this is a recoverable error
         if (patchState.taskState.failure != null) {
           patchState.error = patchState.taskState.failure.message;
         } else {
           patchState.error = "Missing failure message";
         }
 
-        if (currentState.retryCount < currentState.maxRetryCount) {
-          // We still have retry available. Increase the retry counter by one.
-          patchState.retryCount = currentState.retryCount + 1;
-          patchState.taskState.stage = TaskState.TaskStage.STARTED;
-          ServiceUtils.logInfo(this, "Cluster maintenance %d attempt %d/%d failed, will retry for" +
-                  "Cluster %s. Error was: %s",
-              currentState.maintenanceIteration, currentState.retryCount, currentState.maxRetryCount,
-              clusterId, patchState.error);
+        ClusterService.State clusterPatchState = new ClusterService.State();
+        clusterPatchState.clusterState = ClusterState.RECOVERABLE_ERROR;
+        clusterPatchState.errorReason = patchState.error;
 
-          maintenanceOperation = MaintenanceOperation.RETRY;
-        } else {
-          // We have used all retries. Fail the maintenance task and set the cluster to ERROR state.
-          ServiceUtils.logSevere(this, "Cluster maintenance %d final attempt %d failed, will set " +
-                  "cluster %s to ERROR state. Error was: %s",
-              currentState.maintenanceIteration, currentState.retryCount,
-              clusterId, patchState.error);
+        updateStates(clusterId, clusterPatchState, null, ClusterState.RECOVERABLE_ERROR);
 
-          ClusterService.State clusterPatchState = new ClusterService.State();
-          clusterPatchState.clusterState = ClusterState.ERROR;
-
-          sendRequest(
-              HostUtils.getCloudStoreHelper(this)
-                  .createPatch(getClusterDocumentLink(clusterId))
-                  .setBody(clusterPatchState)
-                  .setCompletion(
-                      (Operation operation, Throwable throwable) -> {
-                        if (null != throwable) {
-                          // Ignore the failure. Otherwise if we fail the maintenance task we may end up
-                          // in a dead loop.
-                          ServiceUtils.logSevere(this, "Failed to patch cluster %s to ERROR: %s", clusterId,
-                              throwable.toString());
-                        }
-                      }
-                  ));
-
-          maintenanceOperation = MaintenanceOperation.SKIP;
-        }
+        maintenanceOperation = MaintenanceOperation.SKIP;
       } else if (patchState.taskState.stage == TaskState.TaskStage.CANCELLED) {
         // The previous maintenance task was cancelled. We don't want to run maintenance task but we want
-        // to set the cluster to ERROR state.
+        // to set the cluster to FATAL_ERROR state. WE will not run any future maintainence for this cluster
         ServiceUtils.logInfo(this, "Maintenance for cluster %s was cancelled, not retrying", clusterId);
 
         ClusterService.State clusterPatchState = new ClusterService.State();
-        clusterPatchState.clusterState = ClusterState.ERROR;
+        clusterPatchState.clusterState = ClusterState.FATAL_ERROR;
+        clusterPatchState.errorReason = "Cluster Maintenance was cancelled, putting cluster into FATAL_ERROR";
 
-        sendRequest(
-            HostUtils.getCloudStoreHelper(this)
-                .createPatch(getClusterDocumentLink(clusterId))
-                .setBody(clusterPatchState)
-                .setCompletion(
-                    (Operation operation, Throwable throwable) -> {
-                      if (null != throwable) {
-                        // Ignore the failure. Otherwise if we fail the maintenance task we may end up
-                        // in a dead loop.
-                        ServiceUtils.logSevere(this, "Failed to patch cluster %s to ERROR: %s", clusterId,
-                            throwable.toString());
-                      }
-                    }
-                ));
+        updateStates(clusterId, clusterPatchState, null, ClusterState.FATAL_ERROR);
 
         maintenanceOperation = MaintenanceOperation.SKIP;
       }
@@ -250,8 +208,7 @@ public class ClusterMaintenanceTaskService extends StatefulService {
    * Starts processing maintenance request for a single cluster.
    */
   private void startMaintenance(State currentState, String clusterId) {
-    ServiceUtils.logInfo(this, "Starting maintenance %d attempt %d for cluster: %s",
-        currentState.maintenanceIteration, currentState.retryCount, clusterId);
+    ServiceUtils.logInfo(this, "Starting maintenance %d for cluster: %s", currentState.maintenanceIteration, clusterId);
 
     sendRequest(
         HostUtils.getCloudStoreHelper(this)
@@ -279,6 +236,7 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                       case CREATING:
                       case RESIZING:
                       case READY:
+                      case RECOVERABLE_ERROR:
                         performGarbageInspection(currentState, clusterId);
                         break;
 
@@ -286,8 +244,8 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                         deleteCluster(currentState, clusterId);
                         break;
 
-                      case ERROR:
-                        TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null));
+                      case FATAL_ERROR:
+                        TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.CANCELLED, null));
                         break;
 
                       default:
@@ -405,7 +363,8 @@ public class ClusterMaintenanceTaskService extends StatefulService {
               case FINISHED:
                 ClusterService.State clusterPatch = new ClusterService.State();
                 clusterPatch.clusterState = ClusterState.READY;
-                updateStates(clusterId, clusterPatch, buildPatch(TaskState.TaskStage.FINISHED, null));
+                updateStates(clusterId, clusterPatch, buildPatch(TaskState.TaskStage.FINISHED, null),
+                    ClusterState.READY);
                 break;
               case CANCELLED:
                 IllegalStateException cancelled = new IllegalStateException(String.format(
@@ -504,9 +463,11 @@ public class ClusterMaintenanceTaskService extends StatefulService {
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, t));
   }
 
+  // This is a helper class that patch the cluster document and the current maintainence task.
+  // if patch == null, we only need to patch to cluster service
   private void updateStates(String clusterId,
                             ClusterService.State clusterPatch,
-                            State patch) {
+                            State patch, ClusterState targetState) {
 
     sendRequest(
         HostUtils.getCloudStoreHelper(this)
@@ -517,11 +478,12 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                   if (null != throwable) {
                     // Ignore the failure. Otherwise if we fail the maintenance task may end up
                     // in a dead loop.
-                    ServiceUtils.logSevere(this, "Failed to patch cluster %s to READY: %s", clusterId,
-                        throwable.toString());
+                    ServiceUtils.logSevere(this, "Failed to patch cluster %s to %s : %s", clusterId,
+                        targetState.toString(), throwable.toString());
                   }
-
-                  TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this, patch);
+                  if (patch != null) {
+                    TaskUtils.sendSelfPatch(ClusterMaintenanceTaskService.this, patch);
+                  }
                 }
             ));
   }
@@ -565,28 +527,6 @@ public class ClusterMaintenanceTaskService extends StatefulService {
     public Integer batchExpansionSize;
 
     /**
-     * This value represents the maximum number of retries that maintenance task can take
-     * before entering FAILED state.
-     */
-    @DefaultInteger(value = ClusterManagerConstants.DEFAULT_MAINTENANCE_RETRY_COUNT)
-    @Immutable
-    public Integer maxRetryCount;
-
-    /**
-     * This value represents the number of available retries that maintenance task has taken
-     * before entering FAILED state.
-     */
-    @DefaultInteger(value = 0)
-    public Integer retryCount;
-
-    /**
-     * This value represents the retry interval, in seconds, that maintenance task should wait
-     * before retry again.
-     */
-    @DefaultInteger(value = ClusterManagerConstants.DEFAULT_MAINTENANCE_RETRY_INTERVAL_SECOND)
-    public Integer retryIntervalSecond;
-
-    /**
      * This value represents the number of times the maintenance task has been triggered. It will
      * increment by one for each maintenance task.
      */
@@ -602,8 +542,6 @@ public class ClusterMaintenanceTaskService extends StatefulService {
     // RUN means that we run maintenance task in this cycle without any delay.
     RUN,
     // SKIP means that we do not run maintenance task in this cycle.
-    SKIP,
-    // RETRY means that we run maintenance task in this cycle but with the retry delay.
-    RETRY
+    SKIP
   }
 }

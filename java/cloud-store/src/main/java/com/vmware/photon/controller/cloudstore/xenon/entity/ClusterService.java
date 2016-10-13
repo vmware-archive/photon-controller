@@ -156,6 +156,11 @@ public class ClusterService extends StatefulService {
     public Integer workerCount;
 
     /**
+     * When the cluster is in ERROR state, this contains the reason for the error.
+     */
+    public String errorReason;
+
+    /**
      * This property specifies extended properties of the cluster.
      */
     @NotBlank
