@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.model.SecurityGroup;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
@@ -230,8 +229,8 @@ public class TenantServiceTest {
 
       TenantService.State patchState = new TenantService.State();
       patchState.securityGroups = new ArrayList<>();
-      patchState.securityGroups.add(new SecurityGroup("adminGroup1", true));
-      patchState.securityGroups.add(new SecurityGroup("adminGroup2", false));
+      patchState.securityGroups.add(new ProjectService.SecurityGroup("adminGroup1", true));
+      patchState.securityGroups.add(new ProjectService.SecurityGroup("adminGroup2", false));
 
       result = xenonRestClient.patch(serviceLink, patchState);
       assertThat(result.getStatusCode(), is(200));
@@ -255,8 +254,8 @@ public class TenantServiceTest {
       TenantService.State patchState = new TenantService.State();
       patchState.name = "cannot change the name";
       patchState.securityGroups = new ArrayList<>();
-      patchState.securityGroups.add(new SecurityGroup("adminGroup1", true));
-      patchState.securityGroups.add(new SecurityGroup("adminGroup2", false));
+      patchState.securityGroups.add(new ProjectService.SecurityGroup("adminGroup1", true));
+      patchState.securityGroups.add(new ProjectService.SecurityGroup("adminGroup2", false));
 
       try {
         xenonRestClient.patch(serviceLink, patchState);

@@ -422,7 +422,7 @@ public class XenonRestClient implements XenonClient {
       checkArgument(pageSize.get() >= 1, "Cannot query documents with a page size less than 1");
     }
 
-    QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(documentType, terms);
+    QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(documentType, terms, inClauseTerms);
     if (broadCast) {
       spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.BROADCAST);
     }
@@ -431,14 +431,6 @@ public class XenonRestClient implements XenonClient {
     }
     if (pageSize.isPresent()) {
       spec.resultLimit = pageSize.get();
-    }
-
-    if (inClauseTerms != null && !inClauseTerms.isEmpty()) {
-      QueryTask.Query.Builder queryBuilder = QueryTask.Query.Builder.create();
-      for (String key : inClauseTerms.keySet()) {
-        queryBuilder.addInClause(key, inClauseTerms.get(key));
-      }
-      spec.query.addBooleanClause(queryBuilder.build());
     }
 
     // Indirect call. Xenon will not return the results. Instead the service URI

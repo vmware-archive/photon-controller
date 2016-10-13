@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api.frontend.resources.tenant;
 
+import com.vmware.photon.controller.api.frontend.auth.AuthFilter;
 import com.vmware.photon.controller.api.frontend.clients.TenantFeClient;
 import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
@@ -46,6 +47,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+
+import java.util.List;
 
 /**
  * This resource is for tenant related API.
@@ -95,7 +98,12 @@ public class TenantsResource {
       resourceList = tenantFeClient.getPage(pageLink.get());
     } else {
       Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
-      resourceList = tenantFeClient.find(name, adjustedPageSize);
+      List<String> tokenGroups = (List<String>) ((ContainerRequest) request).getProperty(
+          AuthFilter.REQUEST_TOKENGROUPS_PROPERTY_NAME);
+      String defaultAdminGroup = (String) ((ContainerRequest) request).getProperty(
+          AuthFilter.DEFAULT_ADMIN_GROUP_PROPERTY_NAME);
+
+      resourceList = tenantFeClient.find(name, adjustedPageSize, tokenGroups, defaultAdminGroup);
     }
 
     return generateResourceListResponse(

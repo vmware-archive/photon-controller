@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.model.SecurityGroup;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -26,7 +25,9 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.services.common.QueryTask;
 
 import java.util.List;
 import java.util.Set;
@@ -35,6 +36,13 @@ import java.util.Set;
  * Class TenantService is used for data persistence of entity lock.
  */
 public class TenantService extends StatefulService {
+
+  public static final String FIELD_NAME_SECURITY_GROUPS = "securityGroups";
+  public static final String SECURITY_GROUPS_KEY =
+      QueryTask.QuerySpecification.buildCollectionItemName(FIELD_NAME_SECURITY_GROUPS);
+  public static final String SECURITY_GROUPS_NAME_KEY =
+      QueryTask.QuerySpecification.buildCompositeFieldName(SECURITY_GROUPS_KEY,
+          ProjectService.SecurityGroup.FIELD_NAME);
 
   public TenantService() {
     super(State.class);
@@ -113,6 +121,8 @@ public class TenantService extends StatefulService {
     public String name;
 
     public Set<String> tagIds;
-    public List<SecurityGroup> securityGroups;
+
+    @PropertyOptions(indexing = ServiceDocumentDescription.PropertyIndexingOption.EXPAND)
+    public List<ProjectService.SecurityGroup> securityGroups;
   }
 }

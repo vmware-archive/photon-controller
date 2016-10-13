@@ -31,6 +31,7 @@ import com.vmware.photon.controller.api.frontend.utils.PaginationUtils;
 import com.vmware.photon.controller.api.frontend.utils.SecurityGroupUtils;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.ResourceTicket;
 import com.vmware.photon.controller.api.model.SecurityGroup;
@@ -57,6 +58,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -73,24 +75,54 @@ public class TenantXenonBackend implements TenantBackend {
   private final DeploymentBackend deploymentBackend;
   private final ResourceTicketBackend resourceTicketBackend;
   private final TombstoneBackend tombstoneBackend;
+  private final ProjectBackend projectBackend;
 
   @Inject
   public TenantXenonBackend(ApiFeXenonRestClient xenonClient,
                           TaskBackend taskBackend,
                           DeploymentBackend deploymentBackend,
                           ResourceTicketBackend resourceTicketBackend,
-                          TombstoneBackend tombstoneBackend) {
+                          TombstoneBackend tombstoneBackend,
+                          ProjectBackend projectBackend) {
     this.xenonClient = xenonClient;
     this.taskBackend = taskBackend;
     this.deploymentBackend = deploymentBackend;
     this.resourceTicketBackend = resourceTicketBackend;
     this.tombstoneBackend = tombstoneBackend;
+    this.projectBackend = projectBackend;
     this.xenonClient.start();
   }
 
+  /**
+   * Filter tenants by tenant name.
+   */
   @Override
   public ResourceList<Tenant> filter(Optional<String> name, Optional<Integer> pageSize) {
-    return filterTenant(name, pageSize);
+    return filterTenantByName(name, pageSize);
+  }
+
+  /**
+   * Filter tenants by tenant name and tokenGroups. The function should only be used when auth is enabled.
+   * If null or empty tokenGroups is given, empty tenant list will be returned since user has no permission.
+   */
+  @Override
+  public ResourceList<Tenant> filter(Optional<String> name, Optional<Integer> pageSize,
+                                     List<String> tokenGroups) throws ExternalException {
+    logger.info("Auth Enabled. Filter tenants according to token groups {}", tokenGroups);
+
+    // tokenGroups empty meaning user has no permission
+    if (tokenGroups == null || tokenGroups.isEmpty()) {
+      return new ResourceList<Tenant>(new ArrayList<>());
+    }
+
+    ResourceList<Tenant> tenantDocuments;
+    if (name.isPresent()) {
+      tenantDocuments = filterTenantByNameAndSGs(name.get(), tokenGroups);
+    } else {
+      tenantDocuments = filterTenantBySGs(tokenGroups);
+    }
+
+    return tenantDocuments;
   }
 
   @Override
@@ -185,7 +217,7 @@ public class TenantXenonBackend implements TenantBackend {
   @Override
   public void setSecurityGroups(String id, List<SecurityGroup> securityGroups) throws ExternalException {
     TenantService.State patch = new TenantService.State();
-    patch.securityGroups = securityGroups;
+    patch.securityGroups = SecurityGroupUtils.fromFrontEndToBackEnd(securityGroups);
 
     try {
       xenonClient.patch(TenantServiceFactory.SELF_LINK + "/" + id, patch);
@@ -228,8 +260,8 @@ public class TenantXenonBackend implements TenantBackend {
     if (deploymentList.size() > 0) {
       deploymentSecurityGroups = safeGetDeploymentSecurityGroups(deploymentList.get(0));
     }
-    state.securityGroups =
-        SecurityGroupUtils.mergeParentSecurityGroups(selfSecurityGroups, deploymentSecurityGroups).getLeft();
+    state.securityGroups = SecurityGroupUtils.fromFrontEndToBackEnd(
+        SecurityGroupUtils.mergeParentSecurityGroups(selfSecurityGroups, deploymentSecurityGroups).getLeft());
 
     com.vmware.xenon.common.Operation result = xenonClient.post(TenantServiceFactory.SELF_LINK, state);
     TenantService.State createdState = result.getBody(TenantService.State.class);
@@ -242,7 +274,7 @@ public class TenantXenonBackend implements TenantBackend {
     tenantEntity.setName(createdState.name);
 
     if (createdState.securityGroups != null && !createdState.securityGroups.isEmpty()) {
-      tenantEntity.setSecurityGroups(SecurityGroupUtils.fromApiRepresentation(createdState.securityGroups));
+      tenantEntity.setSecurityGroups(SecurityGroupUtils.fromBackEndToMiddleEnd(createdState.securityGroups));
     }
 
     return tenantEntity;
@@ -257,8 +289,8 @@ public class TenantXenonBackend implements TenantBackend {
 
     if (null != state.securityGroups) {
       List<SecurityGroupEntity> securityGroups = new ArrayList<>();
-      for (SecurityGroup group : state.securityGroups) {
-        securityGroups.add(new SecurityGroupEntity(group.getName(), group.isInherited()));
+      for (ProjectService.SecurityGroup group : state.securityGroups) {
+        securityGroups.add(SecurityGroupUtils.fromBackEndToMiddleEnd(group));
       }
       tenantEntity.setSecurityGroups(securityGroups);
     }
@@ -297,7 +329,7 @@ public class TenantXenonBackend implements TenantBackend {
     tombstoneBackend.create(tenantEntity.getKind(), tenantEntity.getId());
   }
 
-  private ResourceList<Tenant> filterTenant(Optional<String> name, Optional<Integer> pageSize) {
+  private ResourceList<Tenant> filterTenantByName(Optional<String> name, Optional<Integer> pageSize) {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     if (name.isPresent()) {
       termsBuilder.put("name", name.get());
@@ -309,6 +341,46 @@ public class TenantXenonBackend implements TenantBackend {
 
     return PaginationUtils.xenonQueryResultToResourceList(
         TenantService.State.class, queryResult, this::toApiRepresentation);
+  }
+
+  private ResourceList<Tenant> filterTenantBySGs(List<String> tokenGroups) throws ExternalException {
+    List<Tenant> tenantList = findBySGs(tokenGroups);
+    List<String> tenantIdList = tenantList.stream().map(Tenant::getId).collect(Collectors.toList());
+    ResourceList<Project> projectList = projectBackend.filterBySGs(Optional.<Integer>absent(), tokenGroups);
+
+    for (Project project : projectList.getItems()) {
+      if (!tenantIdList.contains(project.getTenantId())) {
+        tenantList.add(getApiRepresentation(project.getTenantId()));
+        tenantIdList.add(project.getTenantId());
+      }
+    }
+
+    ResourceList<Tenant> resourceList = new ResourceList<>(tenantList);
+    return resourceList;
+  }
+
+  private ResourceList<Tenant> filterTenantByNameAndSGs(String name, List<String> tokenGroups) throws
+    ExternalException {
+    List<Tenant> tenantList = toTenantList(findByName(name));
+
+    for (Iterator<Tenant> itr = tenantList.iterator(); itr.hasNext();) {
+      Tenant tenant = itr.next();
+
+      List<String> sgs = tenant.getSecurityGroups().stream().map(SecurityGroup::getName).collect(Collectors.toList());
+      Set<String> intersectionGroup = new HashSet<>(sgs);
+      intersectionGroup.retainAll(tokenGroups);
+
+      if (intersectionGroup.isEmpty()) {
+        ResourceList<Project> projectList = projectBackend.filter(tenant.getId(), Optional.<String>absent(),
+            Optional.<Integer>absent(), tokenGroups);
+        if (projectList.getItems().isEmpty()) {
+          itr.remove();
+        }
+      }
+    }
+
+    ResourceList<Tenant> resourceList = new ResourceList<>(tenantList);
+    return resourceList;
   }
 
   private List<ProjectService.State> filterProjectByTenant(String tenantId) {
@@ -330,6 +402,24 @@ public class TenantXenonBackend implements TenantBackend {
     termsBuilder.put("name", name);
 
     return xenonClient.queryDocuments(TenantService.State.class, termsBuilder.build());
+  }
+
+  private List<Tenant> findBySGs(List<String> tokenGroups) {
+    List<Tenant> tenantList = new ArrayList<>();
+    if (tokenGroups == null || tokenGroups.isEmpty()) {
+      return tenantList;
+    }
+
+    final ImmutableMap.Builder<String, List<String>> inClauseTermsBuilder = new ImmutableMap.Builder<>();
+    inClauseTermsBuilder.put(TenantService.SECURITY_GROUPS_NAME_KEY, tokenGroups);
+
+    ServiceDocumentQueryResult queryResult = xenonClient.queryDocuments(
+        TenantService.State.class, null, inClauseTermsBuilder.build(), Optional.<Integer>absent(), true, false);
+
+    queryResult.documents.values().forEach(item -> {
+      tenantList.add(toApiRepresentation(Utils.fromJson(item, TenantService.State.class)));
+    });
+    return tenantList;
   }
 
   private Tenant toApiRepresentation(TenantService.State state) {
@@ -356,8 +446,8 @@ public class TenantXenonBackend implements TenantBackend {
 
     if (null != state.securityGroups) {
       List<SecurityGroup> securityGroups = new ArrayList<>();
-      for (SecurityGroup group : state.securityGroups) {
-        securityGroups.add(new SecurityGroup(group.getName(), group.isInherited()));
+      for (ProjectService.SecurityGroup group : state.securityGroups) {
+        securityGroups.add(SecurityGroupUtils.fromBackEndToFrontEnd(group));
       }
 
       tenant.setSecurityGroups(securityGroups);

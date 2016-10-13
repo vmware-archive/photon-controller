@@ -28,6 +28,8 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.testng.Assert.fail;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -417,6 +419,98 @@ public class QueryTaskUtilsTest {
       ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
       termsBuilder.put("key1", UUID.randomUUID().toString());
       QueryTaskUtils.buildQuerySpec(null, termsBuilder.build());
+    }
+
+    @Test
+    public void testWith2Inclauses() {
+      ImmutableMap.Builder<String, List<String>> termsBuilder = new ImmutableMap.Builder<>();
+      termsBuilder.put("key1", Arrays.asList(UUID.randomUUID().toString(), UUID.randomUUID().toString()));
+      termsBuilder.put("key2", Arrays.asList(UUID.randomUUID().toString()));
+
+      QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(Object.class, null, termsBuilder.build());
+
+      assertThat(spec.query.booleanClauses.size(), is(2));
+      assertThat(spec.query.booleanClauses.get(0).term.propertyName, is("documentKind"));
+      assertThat(spec.query.booleanClauses.get(0).term.matchValue, is(equalTo(Utils.buildKind(Object.class))));
+
+      List<QueryTask.Query> inClause = spec.query.booleanClauses.get(1).booleanClauses;
+      assertThat(inClause.size(), is(2));
+      assertThat(inClause.get(0).booleanClauses.size(), is(2));
+      assertThat(inClause.get(0).booleanClauses.get(0).term.propertyName, is("key1"));
+      assertThat(inClause.get(0).booleanClauses.get(0).term.matchValue, is(termsBuilder.build().get("key1").get(0)));
+      assertThat(inClause.get(0).booleanClauses.get(0).occurance, is(QueryTask.Query.Occurance.SHOULD_OCCUR));
+      assertThat(inClause.get(0).booleanClauses.get(1).term.propertyName, is("key1"));
+      assertThat(inClause.get(0).booleanClauses.get(1).term.matchValue, is(termsBuilder.build().get("key1").get(1)));
+      assertThat(inClause.get(0).booleanClauses.get(1).occurance, is(QueryTask.Query.Occurance.SHOULD_OCCUR));
+      assertThat(inClause.get(1).term.propertyName, is("key2"));
+      assertThat(inClause.get(1).term.matchValue, is(termsBuilder.build().get("key2").get(0)));
+    }
+
+    @Test
+    public void testWith1Inclause() {
+      ImmutableMap.Builder<String, List<String>> termsBuilder = new ImmutableMap.Builder<>();
+      termsBuilder.put("key1", Arrays.asList(UUID.randomUUID().toString(), UUID.randomUUID().toString()));
+
+      QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(Object.class, null, termsBuilder.build());
+
+      assertThat(spec.query.booleanClauses.size(), is(2));
+      assertThat(spec.query.booleanClauses.get(0).term.propertyName, is("documentKind"));
+      assertThat(spec.query.booleanClauses.get(0).term.matchValue, is(equalTo(Utils.buildKind(Object.class))));
+
+      List<QueryTask.Query> inClause = spec.query.booleanClauses.get(1).booleanClauses;
+      assertThat(inClause.size(), is(1));
+      assertThat(inClause.get(0).booleanClauses.size(), is(2));
+      assertThat(inClause.get(0).booleanClauses.get(0).term.propertyName, is("key1"));
+      assertThat(inClause.get(0).booleanClauses.get(0).term.matchValue, is(termsBuilder.build().get("key1").get(0)));
+      assertThat(inClause.get(0).booleanClauses.get(0).occurance, is(QueryTask.Query.Occurance.SHOULD_OCCUR));
+      assertThat(inClause.get(0).booleanClauses.get(1).term.propertyName, is("key1"));
+      assertThat(inClause.get(0).booleanClauses.get(1).term.matchValue, is(termsBuilder.build().get("key1").get(1)));
+      assertThat(inClause.get(0).booleanClauses.get(1).occurance, is(QueryTask.Query.Occurance.SHOULD_OCCUR));
+    }
+
+    @Test
+    public void testWith0Inclauses() {
+      ImmutableMap.Builder<String, List<String>> termsBuilder = new ImmutableMap.Builder<>();
+
+      QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(Object.class, null, termsBuilder.build());
+
+      assertThat(spec.query.term.propertyName, is("documentKind"));
+      assertThat(spec.query.term.matchValue, is(equalTo(Utils.buildKind(Object.class))));
+    }
+
+    @Test
+    public void testWithNullInclauses() {
+      QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(Object.class, null, null);
+
+      assertThat(spec.query.term.propertyName, is("documentKind"));
+      assertThat(spec.query.term.matchValue, is(equalTo(Utils.buildKind(Object.class))));
+    }
+
+    @Test
+    public void testWithBothClauseAndInclause() {
+      ImmutableMap.Builder<String, String> clauseBuilder = new ImmutableMap.Builder<>();
+      clauseBuilder.put("key1", UUID.randomUUID().toString());
+      ImmutableMap.Builder<String, List<String>> inclauseBuilder = new ImmutableMap.Builder<>();
+      inclauseBuilder.put("key2", Arrays.asList(UUID.randomUUID().toString(), UUID.randomUUID().toString()));
+
+      QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(Object.class, clauseBuilder.build(),
+          inclauseBuilder.build());
+
+      assertThat(spec.query.booleanClauses.size(), is(3));
+      assertThat(spec.query.booleanClauses.get(0).term.propertyName, is("documentKind"));
+      assertThat(spec.query.booleanClauses.get(0).term.matchValue, is(equalTo(Utils.buildKind(Object.class))));
+      assertThat(spec.query.booleanClauses.get(1).term.propertyName, is("key1"));
+      assertThat(spec.query.booleanClauses.get(1).term.matchValue, is(clauseBuilder.build().get("key1")));
+
+      List<QueryTask.Query> inClause = spec.query.booleanClauses.get(2).booleanClauses;
+      assertThat(inClause.size(), is(1));
+      assertThat(inClause.get(0).booleanClauses.size(), is(2));
+      assertThat(inClause.get(0).booleanClauses.get(0).term.propertyName, is("key2"));
+      assertThat(inClause.get(0).booleanClauses.get(0).term.matchValue, is(inclauseBuilder.build().get("key2").get(0)));
+      assertThat(inClause.get(0).booleanClauses.get(0).occurance, is(QueryTask.Query.Occurance.SHOULD_OCCUR));
+      assertThat(inClause.get(0).booleanClauses.get(1).term.propertyName, is("key2"));
+      assertThat(inClause.get(0).booleanClauses.get(1).term.matchValue, is(inclauseBuilder.build().get("key2").get(1)));
+      assertThat(inClause.get(0).booleanClauses.get(1).occurance, is(QueryTask.Query.Occurance.SHOULD_OCCUR));
     }
   }
 }

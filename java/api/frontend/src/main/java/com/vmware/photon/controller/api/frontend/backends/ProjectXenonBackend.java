@@ -136,6 +136,28 @@ public class ProjectXenonBackend implements ProjectBackend {
     return toProjectList(projectDocuments);
   }
 
+  /**
+   * Filter projects by tokenGroups. The function should only be used when auth is enabled.
+   * If null or empty tokenGroups is given, empty project list will be returned since user has no permission.
+   */
+  @Override
+  public ResourceList<Project> filterBySGs(Optional<Integer> pageSize, List<String> tokenGroups) throws
+      ExternalException {
+    // tokenGroups empty meaning user has no permission
+    if (tokenGroups == null || tokenGroups.isEmpty()) {
+      ResourceList<ProjectService.State> projectDocuments = PaginationUtils.xenonQueryResultToResourceList
+          (ProjectService.State.class, new ServiceDocumentQueryResult());
+      return toProjectList(projectDocuments);
+    }
+
+    final ImmutableMap.Builder<String, List<String>> inClauseTermsBuilder = new ImmutableMap.Builder<>();
+    inClauseTermsBuilder.put(ProjectService.SECURITY_GROUPS_NAME_KEY, tokenGroups);
+
+    ServiceDocumentQueryResult queryResult = xenonClient.queryDocuments(
+        ProjectService.State.class, null, inClauseTermsBuilder.build(), pageSize, true, true);
+    return toProjectList(PaginationUtils.xenonQueryResultToResourceList(ProjectService.State.class, queryResult));
+  }
+
   @Override
   public Project getApiRepresentation(String id) throws ExternalException {
     return toApiRepresentation(findById(id));
@@ -194,7 +216,7 @@ public class ProjectXenonBackend implements ProjectBackend {
   @Override
   public void replaceSecurityGroups(String id, List<SecurityGroup> securityGroups) throws ExternalException {
     ProjectService.State patch = new ProjectService.State();
-    patch.securityGroups = fromAPIRepresentation(securityGroups);
+    patch.securityGroups = SecurityGroupUtils.fromFrontEndToBackEnd(securityGroups);
 
     try {
       xenonClient.patch(ProjectServiceFactory.SELF_LINK + "/" + id, patch);
@@ -244,7 +266,7 @@ public class ProjectXenonBackend implements ProjectBackend {
           sg -> new SecurityGroup(sg, false)).collect(Collectors.toList());
     }
     List<String> tenantSecurityGroups = getTenantSecurityGroupNames(tenantEntity.getSecurityGroups());
-    state.securityGroups = fromAPIRepresentation(
+    state.securityGroups = SecurityGroupUtils.fromFrontEndToBackEnd(
         SecurityGroupUtils.mergeParentSecurityGroups(selfSecurityGroups, tenantSecurityGroups).getLeft());
 
     ResourceTicketReservation reservation = projectCreateSpec.getResourceTicket();
@@ -264,7 +286,7 @@ public class ProjectXenonBackend implements ProjectBackend {
     projectEntity.setName(projectCreateSpec.getName());
     projectEntity.setTenantId(tenantId);
     projectEntity.setResourceTicketId(projectTicket.getId());
-    projectEntity.setSecurityGroups(toSecurityGroupEntityList(createdState.securityGroups));
+    projectEntity.setSecurityGroups(SecurityGroupUtils.fromBackEndToMiddleEnd(createdState.securityGroups));
     logger.info("Project {} has been created", projectEntity.getId());
 
     return projectEntity;
@@ -286,22 +308,6 @@ public class ProjectXenonBackend implements ProjectBackend {
     }
   }
 
-  private SecurityGroupEntity toSecurityGroupEntity(ProjectService.SecurityGroup group) {
-    return new SecurityGroupEntity(group.name, group.inherited);
-  }
-
-  private List<SecurityGroupEntity> toSecurityGroupEntityList(List<ProjectService.SecurityGroup> securityGroups) {
-    return securityGroups.stream().map(sg -> toSecurityGroupEntity(sg)).collect(Collectors.toList());
-  }
-
-  private ProjectService.SecurityGroup fromAPIRepresentation(SecurityGroup group) {
-    return new ProjectService.SecurityGroup(group.getName(), group.isInherited());
-  }
-
-  private List<ProjectService.SecurityGroup> fromAPIRepresentation(List<SecurityGroup> securityGroups) {
-    return securityGroups.stream().map(sg -> fromAPIRepresentation(sg)).collect(Collectors.toList());
-  }
-
   private ProjectEntity toProjectEntity(ProjectService.State state) {
     String id = ServiceUtils.getIDFromDocumentSelfLink(state.documentSelfLink);
     ProjectEntity projectEntity = new ProjectEntity();
@@ -314,7 +320,7 @@ public class ProjectXenonBackend implements ProjectBackend {
     if (null != state.securityGroups) {
       List<SecurityGroupEntity> securityGroups = new ArrayList<>();
       for (ProjectService.SecurityGroup group : state.securityGroups) {
-        securityGroups.add(toSecurityGroupEntity(group));
+        securityGroups.add(SecurityGroupUtils.fromBackEndToMiddleEnd(group));
       }
       projectEntity.setSecurityGroups(securityGroups);
     }

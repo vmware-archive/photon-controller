@@ -270,6 +270,7 @@ public class ProjectXenonBackendTest {
     private DeploymentBackend deploymentBackend;
 
     private String tenantId;
+    private String tenantId2;
     private ProjectCreateSpec spec1;
     private ProjectCreateSpec spec2;
 
@@ -286,10 +287,15 @@ public class ProjectXenonBackendTest {
       tenantCreateSpec.setName("t1");
       tenantId = tenantBackend.createTenant(tenantCreateSpec).getEntityId();
 
+      TenantCreateSpec tenantCreateSpec2 = new TenantCreateSpec();
+      tenantCreateSpec2.setName("t2");
+      tenantId2 = tenantBackend.createTenant(tenantCreateSpec2).getEntityId();
+
       ResourceTicketCreateSpec resourceTicketCreateSpec = new ResourceTicketCreateSpec();
       resourceTicketCreateSpec.setName("rt1");
       resourceTicketCreateSpec.setLimits(Arrays.asList(tenantTicketLimits));
       resourceTicketBackend.create(tenantId, resourceTicketCreateSpec).getId();
+      resourceTicketBackend.create(tenantId2, resourceTicketCreateSpec);
 
       ResourceTicketReservation reservation = new ResourceTicketReservation();
       reservation.setName("rt1");
@@ -398,6 +404,39 @@ public class ProjectXenonBackendTest {
       assertThat(projectList.getItems().size(), is(1));
 
       projectList = projectBackend.filter(tenantId, Optional.<String>absent(),
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), Arrays.asList(new String[] { "sg1", "sg2" }));
+      assertThat(projectList.getItems().size(), is(2));
+    }
+
+    @Test
+    public void testFilterProjectWithOnlySecurityGroups() throws Exception {
+      spec1.setSecurityGroups(Arrays.asList(new String[]{ "sg1" }));
+      spec2.setSecurityGroups(Arrays.asList(new String[]{ "sg2", "sg3" }));
+
+      TaskEntity taskEntity = projectBackend.createProject(tenantId, spec1);
+      assertThat(taskEntity.getId(), notNullValue());
+      assertThat(taskEntity.getEntityKind(), is("project"));
+
+      taskEntity = projectBackend.createProject(tenantId2, spec2);
+      assertThat(taskEntity.getId(), notNullValue());
+      assertThat(taskEntity.getEntityKind(), is("project"));
+
+      // test empty tokenGroup returns empty project list
+      ResourceList<Project> projectList = projectBackend.filterBySGs(
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), null);
+      assertThat(projectList.getItems().size(), is(0));
+
+      // test non-overlapping tokenGroup returns empty project list
+      projectList = projectBackend.filterBySGs(
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), Arrays.asList(new String[] { "sg4" }));
+      assertThat(projectList.getItems().size(), is(0));
+
+      // test overlapping tokenGroup returns expected project list
+      projectList = projectBackend.filterBySGs(
+          Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), Arrays.asList(new String[] { "sg1" }));
+      assertThat(projectList.getItems().size(), is(1));
+
+      projectList = projectBackend.filterBySGs(
           Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE), Arrays.asList(new String[] { "sg1", "sg2" }));
       assertThat(projectList.getItems().size(), is(2));
     }
