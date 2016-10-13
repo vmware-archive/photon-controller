@@ -29,6 +29,7 @@ import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.entities.VmEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.UnsupportedOperationException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
+import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Subnet;
 import com.vmware.photon.controller.api.model.VmState;
@@ -80,6 +81,9 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
 
   @Mock
   private VmBackend vmBackend;
+
+  @Mock
+  private NetworkHelper networkHelper;
 
   @Mock
   private HostClient hostClient;
@@ -274,6 +278,7 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
     step.setId(stepId);
     step.addResource(vm);
 
-    return spy(new VmGetNetworksStepCmd(taskCommand, stepBackend, step, taskBackend, networkBackend, vmBackend));
+    return spy(new VmGetNetworksStepCmd(taskCommand, stepBackend, step, taskBackend, networkBackend, vmBackend,
+            networkHelper));
   }
 }

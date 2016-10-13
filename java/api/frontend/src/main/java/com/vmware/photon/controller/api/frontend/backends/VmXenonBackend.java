@@ -91,7 +91,6 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -394,21 +393,19 @@ public class VmXenonBackend implements VmBackend {
   }
 
   @Override
-  public void updateState(VmEntity vmEntity, Map<String, String> vmMacAddressInfo)
+  public void updateState(VmEntity vmEntity, List<VmService.NetworkInfo> updatedVmNetworkInfo)
           throws VmNotFoundException {
     VmService.State vm = getVmById(vmEntity.getId());
 
-    Iterator it = vmMacAddressInfo.entrySet().iterator();
-    while (it.hasNext()) {
-      Map.Entry pair = (Map.Entry) it.next();
-      if (pair.getKey() == null || pair.getValue() == null) {
+    for (VmService.NetworkInfo networkInfo : updatedVmNetworkInfo) {
+      if (Strings.isNullOrEmpty(networkInfo.macAddress)) {
         continue;
       }
 
-      VmService.NetworkInfo vmNetworkInfo = vm.networkInfo.get(pair.getKey());
+      VmService.NetworkInfo vmNetworkInfo = vm.networkInfo.get(networkInfo.id);
 
       if (vmNetworkInfo != null && Strings.isNullOrEmpty(vmNetworkInfo.macAddress)) {
-        vmNetworkInfo.macAddress = (String) pair.getValue();
+        vmNetworkInfo.macAddress = networkInfo.macAddress;
       }
     }
 

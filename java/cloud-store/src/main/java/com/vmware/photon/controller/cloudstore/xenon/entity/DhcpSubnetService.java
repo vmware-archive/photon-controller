@@ -154,8 +154,8 @@ public class DhcpSubnetService extends StatefulService {
           ServiceUtils.doServiceOperation(this, patchOperation);
         } catch (DocumentNotFoundException de) {
           IpLeaseService.State ipLease = new IpLeaseService.State();
-          ipLease.ownerVmId = ipOperationPatch.ownerVmId;
-          ipLease.macAddress = ipOperationPatch.macAddress;
+          ipLease.ownerVmId = ipLeaseOperationPatch.ownerVmId;
+          ipLease.macAddress = ipLeaseOperationPatch.macAddress;
           ipLease.ip = allocatedIp;
           ipLease.subnetId = currentState.subnetId;
           ipLease.documentSelfLink =
