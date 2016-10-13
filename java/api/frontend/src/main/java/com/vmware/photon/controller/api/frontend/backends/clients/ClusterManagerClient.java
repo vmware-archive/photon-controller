@@ -566,6 +566,7 @@ public class ClusterManagerClient {
     cluster.setMasterVmFlavorName(clusterDocument.masterVmFlavorName);
     cluster.setOtherVmFlavorName(clusterDocument.otherVmFlavorName);
     cluster.setImageId(clusterDocument.imageId);
+    cluster.setErrorReason(clusterDocument.errorReason);
     cluster.setExtendedProperties(clusterDocument.extendedProperties);
 
     return cluster;
