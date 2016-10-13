@@ -27,6 +27,8 @@ SSHD_ENABLE_ROOT_LOGIN=${SSHD_ENABLE_ROOT_LOGIN:-"false"}
 PHOTON_OVA_URL=${PHOTON_OVA_URL:="../photon-ova/build/photon-ova-virtualbox.ova"}
 DNSMASQ_URL=${DNSMASQ_URL:="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/external/dnsmasq-v2-75/dnsmasq"}
 DNSMASQ_DHCP_RELEASE_URL=${DNSMASQ_DHCP_RELEASE_URL:="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/external/dnsmasq-v2-75/dhcp_release"}
+DNSMASQ_PUBLIC_TCP_PORTS=${DNSMASQ_PUBLIC_TCP_PORTS:="53 88 389 443 636 2012 2014 2020 17000"}
+DNSMASQ_PUBLIC_UDP_PORTS=${DNSMASQ_PUBLIC_UDP_PORTS:="53 88 17000"}
 
 packer build -force \
 	-var "photon_ova_url=$PHOTON_OVA_URL" \
@@ -34,6 +36,8 @@ packer build -force \
 	-var "dnsmasq_dhcp_release_url=$DNSMASQ_DHCP_RELEASE_URL" \
 	-var "sshd_enable_root_login=$SSHD_ENABLE_ROOT_LOGIN" \
 	-var "dhcpAgentTarPath=$DHCP_AGENT_TAR_PATH" \
+	-var "dnsmasq_public_tcp_ports=$DNSMASQ_PUBLIC_TCP_PORTS" \
+	-var "dnsmasq_public_udp_ports=$DNSMASQ_PUBLIC_UDP_PORTS" \
         dhcp-ova.json
 
 cd build
