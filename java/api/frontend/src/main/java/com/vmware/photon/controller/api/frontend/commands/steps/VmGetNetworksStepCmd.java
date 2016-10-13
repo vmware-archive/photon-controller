@@ -22,8 +22,10 @@ import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
 import com.vmware.photon.controller.api.frontend.entities.VmEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.ApiFeException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.UnsupportedOperationException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
+import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
 import com.vmware.photon.controller.api.model.NetworkConnection;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.ResourceList;
@@ -31,6 +33,7 @@ import com.vmware.photon.controller.api.model.Subnet;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmNetworks;
 import com.vmware.photon.controller.api.model.VmState;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.host.gen.GetVmNetworkResponse;
@@ -44,10 +47,8 @@ import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -68,6 +69,8 @@ public class VmGetNetworksStepCmd extends StepCommand {
 
   private final VmBackend vmBackend;
 
+  private final NetworkHelper networkHelper;
+
   private String vmId;
 
   private Long pollInterval;
@@ -77,13 +80,15 @@ public class VmGetNetworksStepCmd extends StepCommand {
                               StepEntity step,
                               TaskBackend taskBackend,
                               NetworkBackend networkBackend,
-                              VmBackend vmBackend) {
+                              VmBackend vmBackend,
+                              NetworkHelper networkHelper) {
     super(taskCommand, stepBackend, step);
 
     this.taskBackend = taskBackend;
     this.networkBackend = networkBackend;
     this.pollInterval = DEFAULT_POLL_INTERVAL;
     this.vmBackend = vmBackend;
+    this.networkHelper = networkHelper;
   }
 
   @Override
@@ -108,16 +113,16 @@ public class VmGetNetworksStepCmd extends StepCommand {
         response = getVmNetworksOp(vm);
       }
 
-      VmNetworks vmNetworks = toApiRepresentation(response.getNetwork_info());
 
-      if (timeout != null) {
-        Map<String, String> vmMacAddressInfo = getNetworksMACAddresses(vmNetworks);
 
-        if (vmMacAddressInfo != null && !vmMacAddressInfo.entrySet().isEmpty()) {
-          vmBackend.updateState(vm, vmMacAddressInfo);
+      if (timeout != null && response.getNetwork_info() != null && !response.getNetwork_info().isEmpty()) {
+        List<VmService.NetworkInfo> vmNetworkInfo = convertAgentNetworkToVmNetwork(response.getNetwork_info());
+        if (vmNetworkInfo != null && !vmNetworkInfo.isEmpty()) {
+          vmBackend.updateState(vm, vmNetworkInfo);
         }
       }
 
+      VmNetworks vmNetworks = toApiRepresentation(response.getNetwork_info());
       String networkProperties = objectMapper.writeValueAsString(vmNetworks);
       taskBackend.setTaskResourceProperties(taskCommand.getTask(), networkProperties);
     } catch (JsonProcessingException e) {
@@ -228,21 +233,27 @@ public class VmGetNetworksStepCmd extends StepCommand {
     return result;
   }
 
-  private Map<String, String> getNetworksMACAddresses(VmNetworks vmNetworks) {
-    Map<String, String> networkInfo = null;
-    Set<NetworkConnection> connections = vmNetworks.getNetworkConnections();
-    if (connections == null || connections.size() == 0) {
+  private List<VmService.NetworkInfo> convertAgentNetworkToVmNetwork(List<VmNetworkInfo> agentVmNetworks) {
+    List<VmService.NetworkInfo> networkInfo = null;
+
+    if (agentVmNetworks == null || agentVmNetworks.size() == 0) {
       return networkInfo;
     }
 
-    networkInfo = new HashMap<>();
-    for (NetworkConnection networkConnection : connections) {
-      if (Strings.isNullOrEmpty(networkConnection.getNetwork())
-              || Strings.isNullOrEmpty(networkConnection.getMacAddress())) {
+    networkInfo = new ArrayList<>();
+    for (VmNetworkInfo agentVmNetworkInfo : agentVmNetworks) {
+      if (Strings.isNullOrEmpty(agentVmNetworkInfo.getNetwork())
+              || Strings.isNullOrEmpty(agentVmNetworkInfo.getMac_address())) {
         continue;
       }
 
-      networkInfo.put(networkConnection.getNetwork(), networkConnection.getMacAddress());
+      try {
+        networkInfo.add(networkHelper.convertAgentNetworkToVmNetwork(agentVmNetworkInfo));
+      } catch (ExternalException ex) {
+        // swallowing the exception so that we can continue with other networks.
+        //// TODO(fijaz): need to figure out a better error handling strategy in this case.
+        logger.warn("ConvertAgentNetworkToVmNetwork throws exception:", ex);
+      }
     }
 
     return networkInfo;
