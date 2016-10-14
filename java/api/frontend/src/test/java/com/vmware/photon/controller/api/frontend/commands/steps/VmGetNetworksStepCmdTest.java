@@ -306,7 +306,8 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
   private VmGetNetworksStepCmd getCommand() {
     setVmInStepEntity();
 
-    return spy(new VmGetNetworksStepCmd(taskCommand, stepBackend, step, taskBackend, networkBackend, vmBackend));
+    return spy(new VmGetNetworksStepCmd(taskCommand, stepBackend, step, taskBackend, networkBackend, vmBackend,
+            networkHelper));
   }
 
   private VmGetNetworksStepCmd getCommandWithRetryTimeout() {
