@@ -51,6 +51,8 @@ public class DhcpSubnetDeleteTriggerBuilder implements TaskStateBuilder {
    */
   private final Long taskExpirationAgeMillis;
 
+  public static final int DEFAULT_PAGE_LIMIT = 1000;
+
   /**
    * Constructor.
    *
@@ -68,7 +70,9 @@ public class DhcpSubnetDeleteTriggerBuilder implements TaskStateBuilder {
 
     state.taskExpirationAgeMillis = this.taskExpirationAgeMillis.intValue();
     state.triggerIntervalMillis = this.triggerIntervalMillis.intValue();
-    state.serializedTriggerState = Utils.toJson(false, false, new DhcpSubnetDeleteService.State());
+    DhcpSubnetDeleteService.State dhcpSubnetDeleteService = new DhcpSubnetDeleteService.State();
+    dhcpSubnetDeleteService.pageLimit = DEFAULT_PAGE_LIMIT;
+    state.serializedTriggerState = Utils.toJson(false, false, dhcpSubnetDeleteService);
     state.triggerStateClassName = DhcpSubnetDeleteService.State.class.getName();
     state.factoryServiceLink = DhcpSubnetDeleteService.FACTORY_LINK;
     state.documentSelfLink = TRIGGER_SELF_LINK;

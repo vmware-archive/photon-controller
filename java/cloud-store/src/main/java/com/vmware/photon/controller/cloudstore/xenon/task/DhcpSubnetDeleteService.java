@@ -259,6 +259,7 @@ public class DhcpSubnetDeleteService extends StatefulService {
   private void triggerIpLeaseDeleteService(String subnetId) {
     IpLeaseDeleteService.State ipLeaseDeleteServiceState = new IpLeaseDeleteService.State();
     ipLeaseDeleteServiceState.subnetId = subnetId;
+    ipLeaseDeleteServiceState.pageLimit = DEFAULT_PAGE_LIMIT;
 
     Operation triggerIpLeaseDeleteOperation = Operation
         .createPost(UriUtils.buildUri(getHost(), IpLeaseDeleteService.FACTORY_LINK))

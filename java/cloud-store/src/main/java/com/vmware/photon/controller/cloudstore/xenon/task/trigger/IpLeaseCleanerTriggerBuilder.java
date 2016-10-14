@@ -51,6 +51,8 @@ public class IpLeaseCleanerTriggerBuilder implements TaskStateBuilder {
    */
   private final Long taskExpirationAgeMillis;
 
+  public static final int DEFAULT_PAGE_LIMIT = 1000;
+
   /**
    * Constructor.
    *
@@ -68,7 +70,9 @@ public class IpLeaseCleanerTriggerBuilder implements TaskStateBuilder {
 
     state.taskExpirationAgeMillis = this.taskExpirationAgeMillis.intValue();
     state.triggerIntervalMillis = this.triggerIntervalMillis.intValue();
-    state.serializedTriggerState = Utils.toJson(false, false, new IpLeaseCleanerService.State());
+    IpLeaseCleanerService.State ipLeaseCleanerService = new IpLeaseCleanerService.State();
+    ipLeaseCleanerService.pageLimit = DEFAULT_PAGE_LIMIT;
+    state.serializedTriggerState = Utils.toJson(false, false, ipLeaseCleanerService);
     state.triggerStateClassName = IpLeaseCleanerService.State.class.getName();
     state.factoryServiceLink = IpLeaseCleanerService.FACTORY_LINK;
     state.documentSelfLink = TRIGGER_SELF_LINK;

@@ -29,6 +29,7 @@ public class SubnetIPLeaseSyncTriggerService extends StatelessService {
 
   public static final String SELF_LINK = com.vmware.photon.controller.common.xenon.ServiceUriPaths.HOUSEKEEPER_ROOT
       + "/subnet-ip-lease-sync-trigger";
+  public static final int DEFAULT_PAGE_LIMIT = 1000;
 
   @Override
   public void handlePost(Operation patch) {
@@ -49,7 +50,7 @@ public class SubnetIPLeaseSyncTriggerService extends StatelessService {
    * @param state
    */
   private void processPost(SubnetIPLeaseSyncService.State state) {
-
+    state.pageLimit = DEFAULT_PAGE_LIMIT;
     getHost().schedule(
             () -> {
               Operation.createPost(UriUtils.buildUri(getHost(), SubnetIPLeaseSyncService.FACTORY_LINK))
