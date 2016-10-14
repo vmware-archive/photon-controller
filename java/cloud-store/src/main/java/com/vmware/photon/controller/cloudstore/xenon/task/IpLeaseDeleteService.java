@@ -67,22 +67,25 @@ public class IpLeaseDeleteService extends StatefulService {
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
-  public static State buildStartPatch() {
-    State s = new State();
-    s.taskState = new TaskState();
-    s.taskState.stage = TaskState.TaskStage.STARTED;
-    return s;
-  }
-
   @Override
   public void handleStart(Operation start) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
     State state = start.getBody(State.class);
     initializeState(state);
     validateState(state);
-    processStart(state);
+
+    if (state.taskState.stage == TaskState.TaskStage.CREATED) {
+      state.taskState.stage = TaskState.TaskStage.STARTED;
+    }
+
+    if (state.documentExpirationTimeMicros <= 0) {
+      state.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
+    }
 
     start.setBody(state).complete();
+
+    processStart(state);
   }
 
   @Override

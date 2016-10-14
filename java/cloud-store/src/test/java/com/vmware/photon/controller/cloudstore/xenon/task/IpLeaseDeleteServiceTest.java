@@ -159,7 +159,7 @@ public class IpLeaseDeleteServiceTest {
     @DataProvider(name = "AutoInitializedFields")
     public Object[][] getAutoInitializedFieldsParams() {
       TaskState state = new TaskState();
-      state.stage = TaskState.TaskStage.CREATED;
+      state.stage = TaskState.TaskStage.STARTED;
 
       return new Object[][]{
           {"taskState", state}
