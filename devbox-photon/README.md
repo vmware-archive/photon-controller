@@ -169,6 +169,10 @@ To enable virtual network in Photon Controller, some NSX parameters are needed t
 * `NETWORK_SNAT_IP` - SNAT IP used by NSX
 * `NETWORK_DHCP_SERVER` - address of the DHCP server
 
+Besides, you need to run ./seed_virtual_network.sh to populate several cloud-store entities for virtual network usage. Additional parameters are described as below:
+
+* `NETWORK_EXTERNAL_IP_RANGE` - range of the global external IP pool
+
 ### Using devbox with a real ESX host
 By default devbox uses an internal Photon Controller Agent, which mimics the ESX operations. To use with an actual ESX host, set the following environment variables before starting devbox:
 
