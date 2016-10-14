@@ -58,4 +58,7 @@ ${SCRIPT_DIR}/../scripts/toVMwareOva.sh harbor-virtualbox harbor
 
 BRANCH=${GERRIT_BRANCH:-`git rev-parse --abbrev-ref HEAD`}
 COMMIT=`git rev-parse --short HEAD`
-mv harbor.ova harbor-${HARBOR_VERSION}-pc-${BRANCH}-${COMMIT}.ova
+pushd ${SCRIPT_DIR}
+PC_VERSION=`cat ../../VERSION`
+popd
+mv harbor.ova harbor-${HARBOR_VERSION}-pc-${PC_VERSION}-${COMMIT}.ova
