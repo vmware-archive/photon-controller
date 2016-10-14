@@ -64,4 +64,7 @@ cd build
 ${SCRIPT_DIR}/../scripts/toVMwareOva.sh kubernetes-virtualbox kubernetes
 BRANCH=${GERRIT_BRANCH:-`git rev-parse --abbrev-ref HEAD`}
 COMMIT=`git rev-parse --short HEAD`
-mv kubernetes.ova kubernetes-${KUBERNETES_VERSION}-pc-${BRANCH}-${COMMIT}.ova
+pushd ${SCRIPT_DIR}
+PC_VERSION=`cat ../../VERSION`
+popd
+mv kubernetes.ova kubernetes-${KUBERNETES_VERSION}-pc-${PC_VERSION}-${COMMIT}.ova
