@@ -162,7 +162,7 @@ public class VsphereImageStore implements ImageStore {
   }
 
   @Override
-  public void deleteUploadFolder(Image image) throws DeleteUploadFolderException {
+  public void deleteUploadFolder(Image image) throws DeleteUploadFolderException, InternalException {
     logger.info("delete upload folder {} on datastore {}", image.getUploadFolder(), this.getDatastore());
     try {
       getHostClient().deleteDirectory(image.getUploadFolder(), this.getDatastore());
@@ -182,12 +182,12 @@ public class VsphereImageStore implements ImageStore {
   }
 
   @Override
-  public String getDatastore() {
+  public String getDatastore() throws InternalException {
     ensureHost();
     return getImageDataStoreMountPoint(this.host.getDatastores());
   }
 
-  private String getImageDataStoreMountPoint(List<HostDatastore> dataStoreList) {
+  private String getImageDataStoreMountPoint(List<HostDatastore> dataStoreList) throws InternalException {
     checkNotNull(dataStoreList);
 
     String dataStore = null;
@@ -198,7 +198,9 @@ public class VsphereImageStore implements ImageStore {
       }
     }
 
-    checkNotNull(dataStore);
+    if (dataStore == null) {
+      throw new InternalException("No image datastore among datastore list");
+    }
     return dataStore;
   }
 

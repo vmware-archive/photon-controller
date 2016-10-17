@@ -65,5 +65,5 @@ public interface ImageStore {
   /**
    * @return the name of datastore
    */
-  String getDatastore();
+  String getDatastore() throws InternalException;
 }
