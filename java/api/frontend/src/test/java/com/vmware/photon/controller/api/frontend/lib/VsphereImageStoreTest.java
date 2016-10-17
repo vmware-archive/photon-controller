@@ -15,6 +15,7 @@ package com.vmware.photon.controller.api.frontend.lib;
 
 import com.vmware.photon.controller.api.frontend.backends.HostBackend;
 import com.vmware.photon.controller.api.frontend.config.ImageConfig;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.HostDatastore;
@@ -295,14 +296,15 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
     }
 
     @Test
-    public void testDeleteFolderSuccess() throws RpcException, InterruptedException, InternalException, IOException {
+    public void testDeleteFolderSuccess() throws RpcException, InterruptedException, InternalException,
+        ExternalException, IOException {
       imageStore.deleteUploadFolder(image);
       verify(hostClient, times(1)).deleteDirectory(anyString(), anyString());
     }
 
     @Test
     public void testDeleteFolderSwallowException() throws RpcException, InterruptedException,
-        InternalException, IOException {
+        InternalException, IOException, ExternalException {
       doThrow(new DirectoryNotFoundException("Failed to delete folder")).when(hostClient).deleteDirectory(anyString(),
           anyString());
       imageStore.deleteUploadFolder(image);
@@ -311,7 +313,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
 
     @Test
     public void testDeleteFolderThrowsRpcException() throws RpcException, InterruptedException,
-        InternalException, IOException {
+        InternalException, IOException, ExternalException {
       doThrow(new RpcException("Rpc failed")).when(hostClient).deleteDirectory(anyString(), anyString());
       try {
         imageStore.deleteUploadFolder(image);
