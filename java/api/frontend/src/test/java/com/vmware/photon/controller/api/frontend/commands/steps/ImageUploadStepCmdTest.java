@@ -19,9 +19,9 @@ import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.api.frontend.config.ImageConfig;
 import com.vmware.photon.controller.api.frontend.entities.ImageEntity;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidOvaException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmdkFormatException;
-import com.vmware.photon.controller.api.frontend.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
 import com.vmware.photon.controller.api.frontend.lib.Image;
 import com.vmware.photon.controller.api.frontend.lib.ImageStore;
@@ -112,7 +112,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
   }
 
   @BeforeMethod
-  public void beforeMethod() throws InternalException, IOException, VmdkFormatException, NameTakenException {
+  public void beforeMethod() throws InternalException, IOException, VmdkFormatException, ExternalException {
     imageEntity = new ImageEntity();
     imageEntity.setId(imageId);
     imageEntity.setName("image-name");
