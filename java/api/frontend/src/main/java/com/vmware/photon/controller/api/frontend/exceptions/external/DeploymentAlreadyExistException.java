@@ -24,6 +24,7 @@ public class DeploymentAlreadyExistException extends ExternalException {
 
   @Override
   public String getMessage() {
-    return "Only one deployment is allowed to be present";
+    return "Only one deployment is allowed to be present. Try running 'photon system destroy' to clean up any existing "
+        + "deployment. Warning this will destroy any running Photon-Controller instance.";
   }
 }
