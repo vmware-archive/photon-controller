@@ -23,7 +23,7 @@ public interface ImageStore {
 
   /**
    * Set hostIp to use for subsequent calls.
-   *
+   *I
    * @param hostIp
    */
   void setHostIp(String hostIp);
@@ -34,14 +34,14 @@ public interface ImageStore {
    * @param imageId
    * @return
    */
-  Image createImage(String imageId) throws InternalException;
+  Image createImage(String imageId) throws InternalException, ExternalException;
 
   /**
    * Make image usable to the system.
    *
    * @param image
    */
-  void finalizeImage(Image image) throws InternalException;
+  void finalizeImage(Image image) throws InternalException, ExternalException;
 
   /**
    * Create image by cloning vm.
@@ -55,7 +55,7 @@ public interface ImageStore {
   /**
    * Delete the entire upload folder on the host.
    */
-  void deleteUploadFolder(Image image) throws InternalException;
+  void deleteUploadFolder(Image image) throws InternalException, ExternalException;
 
   /**
    * @return true if replication of image file needs to be performed, otherwise false
@@ -65,5 +65,5 @@ public interface ImageStore {
   /**
    * @return the name of datastore
    */
-  String getDatastore();
+  String getDatastore() throws ExternalException;
 }

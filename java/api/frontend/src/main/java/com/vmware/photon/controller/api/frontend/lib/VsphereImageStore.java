@@ -16,6 +16,7 @@ package com.vmware.photon.controller.api.frontend.lib;
 import com.vmware.photon.controller.api.frontend.backends.HostBackend;
 import com.vmware.photon.controller.api.frontend.config.ImageConfig;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidImageDatastoreSetException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.DeleteUploadFolderException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
@@ -104,7 +105,7 @@ public class VsphereImageStore implements ImageStore {
    * @throws InternalException
    */
   @Override
-  public Image createImage(String imageId) throws InternalException {
+  public Image createImage(String imageId) throws InternalException, ExternalException {
     logger.info("create image {} on datastore {}", imageId, this.getDatastore());
 
     final HostServiceTicket hostServiceTicket = getHostServiceTicket();
@@ -127,7 +128,7 @@ public class VsphereImageStore implements ImageStore {
    * @param image
    */
   @Override
-  public void finalizeImage(Image image) throws InternalException {
+  public void finalizeImage(Image image) throws InternalException, ExternalException {
     logger.info("Calling finalizeImage {} on {} {}", image.getImageId(), this.getDatastore(), image.getUploadFolder());
     try {
       getHostClient().finalizeImage(image.getImageId(), this.getDatastore(), image.getUploadFolder());
@@ -162,7 +163,7 @@ public class VsphereImageStore implements ImageStore {
   }
 
   @Override
-  public void deleteUploadFolder(Image image) throws DeleteUploadFolderException {
+  public void deleteUploadFolder(Image image) throws DeleteUploadFolderException, ExternalException {
     logger.info("delete upload folder {} on datastore {}", image.getUploadFolder(), this.getDatastore());
     try {
       getHostClient().deleteDirectory(image.getUploadFolder(), this.getDatastore());
@@ -182,12 +183,12 @@ public class VsphereImageStore implements ImageStore {
   }
 
   @Override
-  public String getDatastore() {
+  public String getDatastore() throws ExternalException {
     ensureHost();
     return getImageDataStoreMountPoint(this.host.getDatastores());
   }
 
-  private String getImageDataStoreMountPoint(List<HostDatastore> dataStoreList) {
+  private String getImageDataStoreMountPoint(List<HostDatastore> dataStoreList) throws ExternalException {
     checkNotNull(dataStoreList);
 
     String dataStore = null;
@@ -198,7 +199,9 @@ public class VsphereImageStore implements ImageStore {
       }
     }
 
-    checkNotNull(dataStore);
+    if (dataStore == null) {
+      throw new InvalidImageDatastoreSetException("No image datastore among datastore list");
+    }
     return dataStore;
   }
 
@@ -256,7 +259,7 @@ public class VsphereImageStore implements ImageStore {
    * @return
    * @throws InternalException
    */
-  private HostServiceTicket getHostServiceTicket() throws InternalException {
+  private HostServiceTicket getHostServiceTicket() throws InternalException, ExternalException {
     HostClient hostClient = getHostClient();
 
     try {
