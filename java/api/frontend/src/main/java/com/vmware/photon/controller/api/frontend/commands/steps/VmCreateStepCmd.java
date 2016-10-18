@@ -26,7 +26,6 @@ import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalExc
 import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
 import com.vmware.photon.controller.api.model.DiskState;
 import com.vmware.photon.controller.api.model.EphemeralDisk;
-import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.PersistentDisk;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmState;
@@ -91,12 +90,6 @@ public class VmCreateStepCmd extends StepCommand {
       CreateVmResponse response = taskCommand.getHostClient().createVm(
           taskCommand.getReservation(), vm.getEnvironment());
 
-      // Need to pass the location of vm to the next step if software defined network is being used.
-      if (networkHelper.isSdnEnabled()) {
-        taskCommand.getTask().findStep(Operation.CONNECT_VM_SWITCH)
-            .createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, response.getVm().getLocation_id());
-      }
-
       Map<String, VmService.NetworkInfo> networkInfoList = getNetworksFromCreateVMResponse(response.getNetwork_info());
 
       vmBackend.updateState(vm, VmState.STOPPED,
@@ -141,7 +134,7 @@ public class VmCreateStepCmd extends StepCommand {
       if (vmNetwork == null) {
         continue;
       }
-      
+
       networkInfoList.put(vmNetwork.id, vmNetwork);
     }
 

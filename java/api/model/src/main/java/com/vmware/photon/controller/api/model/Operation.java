@@ -46,7 +46,6 @@ public enum Operation {
   GET_NETWORKS("GetVmNetworks"),
   SET_METADATA("SetMetadata"),
   CREATE_VM_IMAGE("CreateVmImage"),
-  CONNECT_VM_SWITCH("ConnectVmSwitch"),
   DISCONNECT_VM_SWITCH("DisconnectVmSwitch"),
   GET_VM_IP("GetVmIp"),
   RELEASE_VM_IP("ReleaseVmIp"),

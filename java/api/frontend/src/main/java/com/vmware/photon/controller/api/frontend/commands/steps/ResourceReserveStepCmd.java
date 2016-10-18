@@ -582,14 +582,6 @@ public class ResourceReserveStepCmd extends StepCommand {
 
         String logicalSwitchId = getLogicalSwitchId(network);
         resourceConstraint.addToValues(logicalSwitchId);
-
-        // Need to pass the logical-switch-id, network-id, and vm-id, to further steps
-        // if virtual network is being used. Only one logical switch is supported at this time.
-        StepEntity step = taskCommand.getTask().findStep(
-            com.vmware.photon.controller.api.model.Operation.CONNECT_VM_SWITCH);
-        step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, logicalSwitchId);
-        step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, entity.getId());
-        step.createOrUpdateTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID, network);
       }
 
       vm.addToResource_constraints(resourceConstraint);

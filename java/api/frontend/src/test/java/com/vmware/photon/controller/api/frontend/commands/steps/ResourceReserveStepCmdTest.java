@@ -91,7 +91,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -673,10 +672,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     TaskEntity task = mock(TaskEntity.class);
-    StepEntity connectVmSwitchStep = new StepEntity();
     doReturn(task).when(taskCommand).getTask();
-    doReturn(connectVmSwitchStep).when(task).findStep(
-        com.vmware.photon.controller.api.model.Operation.CONNECT_VM_SWITCH);
 
     ResourceReserveStepCmd command = getVmReservationCommand();
     command.setInfrastructureEntity(vm);
@@ -690,17 +686,6 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resourceConstraint.getValues().size(), is(2));
     assertThat(resourceConstraint.getValues().get(0), is("P1"));
     assertThat(resourceConstraint.getValues().get(1), is("P2"));
-
-    String logicalSwitchId =
-        (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID);
-    assertThat(logicalSwitchId, nullValue());
-
-    String vmId = (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.VM_ID);
-    assertThat(vmId, nullValue());
-
-    String virtualNetworkId =
-        (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID);
-    assertThat(virtualNetworkId, nullValue());
   }
 
   @Test
@@ -728,10 +713,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     TaskEntity task = mock(TaskEntity.class);
-    StepEntity connectVmSwitchStep = new StepEntity();
     doReturn(task).when(taskCommand).getTask();
-    doReturn(connectVmSwitchStep).when(task).findStep(
-        com.vmware.photon.controller.api.model.Operation.CONNECT_VM_SWITCH);
 
     ResourceReserveStepCmd command = getVmReservationCommand();
     command.setInfrastructureEntity(vm);
@@ -745,17 +727,6 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resourceConstraint.getValues().size(), is(2));
     assertThat(resourceConstraint.getValues().get(0), is("P1"));
     assertThat(resourceConstraint.getValues().get(1), is("P2"));
-
-    String logicalSwitchId =
-        (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID);
-    assertThat(logicalSwitchId, nullValue());
-
-    String vmId = (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.VM_ID);
-    assertThat(vmId, nullValue());
-
-    String virtualNetworkId =
-        (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID);
-    assertThat(virtualNetworkId, nullValue());
   }
 
   @Test
@@ -780,10 +751,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     TaskEntity task = mock(TaskEntity.class);
-    StepEntity connectVmSwitchStep = new StepEntity();
     doReturn(task).when(taskCommand).getTask();
-    doReturn(connectVmSwitchStep).when(task).findStep(
-        com.vmware.photon.controller.api.model.Operation.CONNECT_VM_SWITCH);
 
     ResourceReserveStepCmd command = getVmReservationCommand(true);
     command.setInfrastructureEntity(vm);
@@ -796,17 +764,6 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resourceConstraint.getType(), is(ResourceConstraintType.VIRTUAL_NETWORK));
     assertThat(resourceConstraint.getValues().size(), is(1));
     assertThat(resourceConstraint.getValues().get(0), is(logicalSwitchId));
-
-    String savedLogicalSwitchId = (String) connectVmSwitchStep
-        .getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID);
-    assertThat(savedLogicalSwitchId, is(logicalSwitchId));
-
-    String savedVmId = (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.VM_ID);
-    assertThat(savedVmId, is("foo"));
-
-    String savedVirtualNetworkId = (String) connectVmSwitchStep
-        .getTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID);
-    assertThat(savedVirtualNetworkId, is(networkId));
   }
 
   @Test
@@ -832,10 +789,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     TaskEntity task = mock(TaskEntity.class);
-    StepEntity connectVmSwitchStep = new StepEntity();
     doReturn(task).when(taskCommand).getTask();
-    doReturn(connectVmSwitchStep).when(task).findStep(
-        com.vmware.photon.controller.api.model.Operation.CONNECT_VM_SWITCH);
 
     ResourceReserveStepCmd command = getVmReservationCommand(true);
     command.setInfrastructureEntity(vm);
@@ -848,17 +802,6 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resourceConstraint.getType(), is(ResourceConstraintType.VIRTUAL_NETWORK));
     assertThat(resourceConstraint.getValues().size(), is(1));
     assertThat(resourceConstraint.getValues().get(0), is(logicalSwitchId));
-
-    String savedLogicalSwitchId = (String) connectVmSwitchStep
-        .getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID);
-    assertThat(savedLogicalSwitchId, is(logicalSwitchId));
-
-    String savedVmId = (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.VM_ID);
-    assertThat(savedVmId, is("foo"));
-
-    String savedVirtualNetworkId = (String) connectVmSwitchStep
-        .getTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID);
-    assertThat(savedVirtualNetworkId, is(networkId));
   }
 
   @Test(expectedExceptions = InvalidVmNetworksSpecException.class,
