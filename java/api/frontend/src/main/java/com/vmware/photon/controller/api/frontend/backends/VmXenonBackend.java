@@ -732,7 +732,7 @@ public class VmXenonBackend implements VmBackend {
         if (networkInfo == null) {
           continue;
         }
-        
+
         if (networkInfo.floatingIpAddress != null) {
           vmEntity.setFloatingIp(networkInfo.floatingIpAddress);
           break;
@@ -869,15 +869,6 @@ public class VmXenonBackend implements VmBackend {
     stepEntities.add(step);
     step.addResources(entityList);
     step.setOperation(Operation.CREATE_VM);
-
-    // If sdn is enabled, we need to
-    // 1. connect the VM with the logical switch and
-    // 2. get private IP for this VM.
-    if (networkHelper.isSdnEnabled()) {
-      step = new StepEntity();
-      step.setOperation(Operation.CONNECT_VM_SWITCH);
-      stepEntities.add(step);
-    }
 
     TaskEntity task = taskBackend.createTaskWithSteps(vm, Operation.CREATE_VM, false, stepEntities);
     task.getToBeLockedEntities().add(vm);
