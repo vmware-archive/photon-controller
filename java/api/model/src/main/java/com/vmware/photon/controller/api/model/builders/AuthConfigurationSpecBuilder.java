@@ -18,7 +18,7 @@ import com.vmware.photon.controller.api.model.AuthConfigurationSpec;
 import java.util.List;
 
 /**
- * This class implemets a builder for {@link AuthConfigurationSpec} object.
+ * This class implements a builder for {@link AuthConfigurationSpec} object.
  */
 public class AuthConfigurationSpecBuilder {
 
@@ -31,6 +31,8 @@ public class AuthConfigurationSpecBuilder {
   private List<String> securityGroups;
 
   private String lightwaveEndpoint;
+
+  private Integer lightwavePort;
 
   public AuthConfigurationSpecBuilder() {
     this.enabled = false;
@@ -61,6 +63,11 @@ public class AuthConfigurationSpecBuilder {
     return this;
   }
 
+  public AuthConfigurationSpecBuilder lightwavePort(Integer lightwavePort) {
+    this.lightwavePort = lightwavePort;
+    return this;
+  }
+
   public AuthConfigurationSpec build() {
     AuthConfigurationSpec authConfigSpec = new AuthConfigurationSpec();
     authConfigSpec.setEnabled(this.enabled);
@@ -68,6 +75,7 @@ public class AuthConfigurationSpecBuilder {
     authConfigSpec.setPassword(this.password);
     authConfigSpec.setSecurityGroups(this.securityGroups);
     authConfigSpec.setEndpoint(lightwaveEndpoint);
+    authConfigSpec.setPort(lightwavePort);
     return authConfigSpec;
   }
 }

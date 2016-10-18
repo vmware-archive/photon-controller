@@ -56,7 +56,7 @@ public class DeploymentCreateSpec {
   private String ntpEndpoint;
 
   @JsonProperty
-  @ApiModelProperty(value = "Informatuon used to configure Authentication/Authorization.", required = true)
+  @ApiModelProperty(value = "Information used to configure Authentication/Authorization.", required = true)
   @NotNull
   private AuthConfigurationSpec auth;
 
