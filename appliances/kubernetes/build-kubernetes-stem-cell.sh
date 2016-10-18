@@ -55,6 +55,10 @@ rm -rf kube-deploy
 git clone https://github.com/vmware/kube-deploy
 cd kube-deploy; git checkout pc-1.1; cd ..
 
+# Download the kubectl binary and change permissions
+wget https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl
+chmod +x kubectl
+
 # Run the Packer build, but first clean up previous build artifacts
 mkdir -p ./build
 rm -rf ./build/*
