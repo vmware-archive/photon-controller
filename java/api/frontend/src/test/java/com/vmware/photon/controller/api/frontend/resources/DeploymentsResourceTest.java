@@ -108,8 +108,6 @@ public class DeploymentsResourceTest extends ResourceTest {
     assertThat(apiError.getMessage(), containsString("securityGroups must be null"));
   }
 
-
-
   @Test
   public void testSuccessfulWithAuthEnabled() throws Exception {
     spec.setAuth(new AuthConfigurationSpecBuilder()
@@ -117,6 +115,8 @@ public class DeploymentsResourceTest extends ResourceTest {
         .tenant("t")
         .password("p")
         .securityGroups(Arrays.asList(new String[]{"t\\adminGroup1"}))
+        .lightwaveEndpoint("192.0.2.20")
+        .lightwavePort(443)
         .build());
 
     Task task = new Task();
@@ -139,6 +139,8 @@ public class DeploymentsResourceTest extends ResourceTest {
         .tenant("t")
         .password("p")
         .securityGroups(new ArrayList<String>())
+        .lightwaveEndpoint("192.0.2.20")
+        .lightwavePort(443)
         .build());
 
     Task task = new Task();
@@ -162,6 +164,8 @@ public class DeploymentsResourceTest extends ResourceTest {
         .tenant("t")
         .password("p")
         .securityGroups(Arrays.asList(new String[]{"adminGroup1"}))
+        .lightwaveEndpoint("192.0.2.20")
+        .lightwavePort(443)
         .build());
 
     Task task = new Task();

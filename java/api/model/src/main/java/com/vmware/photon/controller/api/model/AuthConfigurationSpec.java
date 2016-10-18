@@ -15,6 +15,7 @@ package com.vmware.photon.controller.api.model;
 
 import com.vmware.photon.controller.api.model.constraints.AuthDisabled;
 import com.vmware.photon.controller.api.model.constraints.AuthEnabled;
+import com.vmware.photon.controller.api.model.constraints.NullableDomainOrIP;
 import com.vmware.photon.controller.api.model.constraints.NullableUrl;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -36,7 +37,7 @@ import java.util.Objects;
 /**
  * Contains information used to configure Authentication/ Authorization.
  */
-@ApiModel(value = "Contains informatuon used to configure Authentication/Authorization.")
+@ApiModel(value = "Contains information used to configure Authentication/Authorization.")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthConfigurationSpec {
@@ -67,10 +68,16 @@ public class AuthConfigurationSpec {
   private List<String> securityGroups;
 
   @JsonProperty
-  @ApiModelProperty(value = "External Lightwave Instance URL, e.g. https://lightwave:443.")
+  @ApiModelProperty(value = "External Lightwave Instance hostname or IP, e.g. https://lightwave or 192.0.2.20")
   @Null(groups = {AuthDisabled.class})
-  @NullableUrl(groups = {AuthEnabled.class})
+  @NullableDomainOrIP(groups = {AuthEnabled.class})
   private String endpoint;
+
+  @JsonProperty
+  @ApiModelProperty(value = "External Lightwave Instance port")
+  @Null(groups = {AuthDisabled.class})
+  @NotNull(groups = {AuthEnabled.class})
+  private Integer port;
 
   public boolean getEnabled() {
     return this.enabled;
@@ -104,17 +111,16 @@ public class AuthConfigurationSpec {
     this.securityGroups = securityGroups;
   }
 
-  public URL getEndpoint() {
-    if (this.endpoint == null) {
-      return null;
-    }
-    try {
-      return new URL(this.endpoint);
-    } catch (MalformedURLException e) {
-      // This should never happen since we are verifying that the endpoint is
-      // an actual url
-      throw new RuntimeException(e);
-    }
+  public void setPort(Integer port) {
+    this.port = port;
+  }
+
+  public Integer getPort() {
+    return port;
+  }
+
+  public String getEndpoint() {
+    return endpoint;
   }
 
   public void setEndpoint(String endpoint) {
