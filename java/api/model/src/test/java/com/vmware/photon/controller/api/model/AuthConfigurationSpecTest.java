@@ -52,7 +52,8 @@ public class AuthConfigurationSpecTest {
       .enabled(true)
       .tenant("t")
       .password("p")
-      .lightwaveEndpoint("http://mylightwave:4343")
+      .lightwaveEndpoint("http://mylightwave")
+      .lightwavePort(4343)
       .securityGroups(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}))
       .build();
 
@@ -60,7 +61,7 @@ public class AuthConfigurationSpecTest {
       .enabled(false)
       .build();
 
-  @Test(enabled = false)
+  @Test
   private void dummy() {
   }
 
@@ -72,7 +73,7 @@ public class AuthConfigurationSpecTest {
     private final String[] authEnabledErrorMsgs = new String[]{
         "password may not be null (was null)",
         "tenant may not be null (was null)",
-        "endpoint &%(&$%*^$*( is invalid URL Address (was &%(&$%*^$*()",
+        "endpoint &%(&$%*^$*( is invalid IP or Domain Address (was &%(&$%*^$*()",
     };
     private final String[] authDisabledErrorMsgs = new String[]{
         "tenant must be null (was t)",
