@@ -673,7 +673,7 @@ public class AddManagementHostWorkflowServiceTest {
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
-          .bindPort(20001)
+          .bindPort(20011)
           .hostCount(1)
           .build();
 
@@ -689,7 +689,7 @@ public class AddManagementHostWorkflowServiceTest {
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
-          .bindPort(40001)
+          .bindPort(40011)
           .hostCount(remoteNodeCount)
           .build();
     }
