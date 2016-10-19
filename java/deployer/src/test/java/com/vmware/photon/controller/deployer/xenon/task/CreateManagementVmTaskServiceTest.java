@@ -73,6 +73,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -1473,7 +1474,6 @@ public class CreateManagementVmTaskServiceTest {
 
     @Test
     public void testAttachIsoFailureInScriptRunner() throws Throwable {
-
       TestHelper.createFailScriptFile(deployerTestConfig.getDeployerContext(), "esx-create-vm-iso");
 
       CreateManagementVmTaskService.State finalState =
