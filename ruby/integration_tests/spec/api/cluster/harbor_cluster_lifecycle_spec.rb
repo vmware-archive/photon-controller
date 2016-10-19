@@ -11,6 +11,7 @@
 
 require "net/ssh"
 require "spec_helper"
+require "test_helpers"
 
 describe "Harbor cluster-service lifecycle", cluster: true do
 
@@ -53,24 +54,24 @@ describe "Harbor cluster-service lifecycle", cluster: true do
       puts "Create a Harbor cluster"
       props = construct_properties(harbor1_ip)
       project = @seeder.project!
-      cluster1 = create_cluster(project, props)
-      validate_cluster_info(cluster1.id)
-      validate_ssh(harbor1_ip)
+      cluster1 = create_harbor_cluster(project, props)
+      validate_harbor_cluster_info(cluster1.id)
+      EsxCloud::ClusterHelper.validate_ssh(harbor1_ip)
 
       puts "Test that a single tenant can have multiple clusters"
       props = construct_properties(harbor2_ip)
-      cluster2 = create_cluster(project, props)
-      validate_cluster_info(cluster2.id)
-      delete_cluster(cluster2.id)
+      cluster2 = create_harbor_cluster(project, props)
+      validate_harbor_cluster_info(cluster2.id)
+      EsxCloud::ClusterHelper.delete_cluster(client, cluster2.id, "HARBOR")
 
       puts "Test that two tenants can create and operate on their own Harbor cluster in parallel"
       project = @seeder2.project!
-      cluster3 = create_cluster(project, props)
-      validate_cluster_info(cluster3.id)
+      cluster3 = create_harbor_cluster(project, props)
+      validate_harbor_cluster_info(cluster3.id)
       validate_harbor_response(harbor1_ip)
       validate_harbor_response(harbor2_ip)
-      delete_cluster(cluster3.id)
-      delete_cluster(cluster1.id)
+      EsxCloud::ClusterHelper.delete_cluster(client, cluster3.id, "HARBOR")
+      EsxCloud::ClusterHelper.delete_cluster(client, cluster1.id, "HARBOR")
     rescue EsxCloud::Error => e
       EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
       fail "HARBOR cluster integration Test failed. Error: #{e.message}"
@@ -91,7 +92,18 @@ describe "Harbor cluster-service lifecycle", cluster: true do
     }
   end
 
-  def create_cluster(project, props)
+  def validate_harbor_cluster_info(cluster_id)
+    cluster = client.find_cluster_by_id(cluster_id)
+    expect(cluster.name).to start_with("harbor-")
+    expect(cluster.type).to eq("HARBOR")
+    expect(cluster.worker_count).to eq 0
+    expect(cluster.state).to eq "READY"
+    expect(cluster.extended_properties.size).to eq(6)
+    expect(cluster.extended_properties["ca_cert"]).to include("BEGIN CERTIFICATE")
+    expect(cluster.extended_properties["ca_cert"]).to include("END CERTIFICATE")
+  end
+
+  def create_harbor_cluster(project, props)
     project.create_cluster(
         name: random_name("harbor-"),
         type: "HARBOR",
@@ -103,47 +115,10 @@ describe "Harbor cluster-service lifecycle", cluster: true do
     )
   end
 
-  def validate_cluster_info(cluster_id)
-    cluster = client.find_cluster_by_id(cluster_id)
-    expect(cluster.name).to start_with("harbor-")
-    expect(cluster.type).to eq("HARBOR")
-    expect(cluster.worker_count).to eq 0
-    expect(cluster.state).to eq "READY"
-    expect(cluster.extended_properties.size).to eq(6)
-    expect(cluster.extended_properties["ca_cert"]).to include("BEGIN CERTIFICATE")
-    expect(cluster.extended_properties["ca_cert"]).to include("END CERTIFICATE")
-  end
-
-  def validate_ssh(master_ip)
-    # Disabling strict_host_key_checking (:paranoid => false) and setting user_known_hosts_file to null to not validate
-    # the host key as it will change with each lifecycle run.
-    Net::SSH.start(master_ip, "root",
-                   :keys => ["/tmp/test_rsa"],
-                   :paranoid => false,
-                   :user_known_hosts_file => ["/dev/null"]) do |ssh|
-      # Getting here without an exception means we can connect with ssh successfully. If SSH failed, we would get an
-      # exception like Authentication Failed or Connection Timeout and our tests will fail as we are catching the
-      # exception and failing the test below.
-      puts "SSH successful"
-    end
-  end
-
   def validate_harbor_response(master_ip)
     endpoint = "https://" + master_ip + ":443"
     http_client = EsxCloud::HttpClient.new endpoint
     response = http_client.get("/")
     expect(response.code).to be 200
-  end
-
-  def delete_cluster(cluster_id)
-    client.delete_cluster(cluster_id)
-    begin
-      client.find_cluster_by_id(cluster_id)
-      fail("HARBOR Cluster #{cluster_id} should be deleted")
-    rescue EsxCloud::ApiError => e
-      e.response_code.should == 404
-    rescue EsxCloud::CliError => e
-      e.output.should match("not found")
-    end
   end
 end
