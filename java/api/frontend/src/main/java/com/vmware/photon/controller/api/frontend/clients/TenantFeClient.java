@@ -65,6 +65,9 @@ public class TenantFeClient {
     return tenantBackend.filter(name, pageSize);
   }
 
+  /*
+   * Find all tenants that can be seen by this user
+   */
   public ResourceList<Tenant> find(Optional<String> name, Optional<Integer> pageSize,
                                     List<String> tokenGroups, String defaultAdminGroup) throws ExternalException {
     if (authConfig.isAuthEnabled()) {

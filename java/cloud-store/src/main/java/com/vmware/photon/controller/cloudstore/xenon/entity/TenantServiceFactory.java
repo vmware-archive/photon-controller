@@ -28,6 +28,12 @@ public class TenantServiceFactory extends FactoryService {
 
   public TenantServiceFactory() {
     super(TenantService.State.class);
+
+    /*
+     * Tenants are fully replicated.
+     * This isn't too expensive (tenants are not frequently created or modified);
+     * and it enables fast queries when filtering the tenants in the API
+    */
     super.setPeerNodeSelectorPath(ServiceUriPaths.NODE_SELECTOR_FOR_SYMMETRIC_REPLICATION);
   }
 

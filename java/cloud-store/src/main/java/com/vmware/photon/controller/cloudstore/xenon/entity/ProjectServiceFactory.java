@@ -28,7 +28,13 @@ public class ProjectServiceFactory extends FactoryService {
 
   public ProjectServiceFactory() {
     super(ProjectService.State.class);
-    super.setPeerNodeSelectorPath(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR);
+
+    /*
+     * Projects are fully replicated.
+     * This isn't too expensive (projects are not frequently created or modified);
+     * and it enables fast queries when filtering the projects in the API
+    */
+    super.setPeerNodeSelectorPath(ServiceUriPaths.NODE_SELECTOR_FOR_SYMMETRIC_REPLICATION);
   }
 
   @Override
