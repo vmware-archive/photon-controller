@@ -73,6 +73,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -793,6 +794,8 @@ public class CreateManagementVmTaskServiceTest {
           .when(dockerProvisioner)
           .getInfo();
 
+//      TestHelper.createSuccessScriptFile(deployerTestConfig.getDeployerContext(), "esx-create-vm-iso");
+
       CreateManagementVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateManagementVmTaskFactoryService.SELF_LINK,
@@ -1473,6 +1476,8 @@ public class CreateManagementVmTaskServiceTest {
 
     @Test
     public void testAttachIsoFailureInScriptRunner() throws Throwable {
+      ServiceConfigurator serviceConfigurator = mock(ServiceConfigurator.class);
+      doReturn(serviceConfigurator).when(serviceConfiguratorFactory).create();
 
       TestHelper.createFailScriptFile(deployerTestConfig.getDeployerContext(), "esx-create-vm-iso");
 

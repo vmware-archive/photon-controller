@@ -68,6 +68,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.net.util.SubnetUtils;
+
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -83,8 +84,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -1314,6 +1317,17 @@ public class CreateManagementVmTaskService extends StatefulService {
           ContainersConfig.ContainerType.valueOf(templateStates.get(containerState.documentSelfLink).name),
           dynamicParameters);
     }
+
+    Set<Integer> tcpPorts = templateStates.entrySet().stream()
+        .map(e -> e.getValue().portBindings.keySet())
+        .reduce(new HashSet<>(), (a, x) -> { a.addAll(x); return a; });
+    Set<Integer> udpPorts = templateStates.entrySet().stream()
+        .filter(e -> e != null && e.getValue() != null && e.getValue().udpPortBindings != null)
+        .map(e -> e.getValue().udpPortBindings.keySet())
+        .reduce(new HashSet<>(), (a, x) -> { a.addAll(x); return a; });
+    // store the firewall rules in the same folder as the mustached files such that they get
+    // deployed via the iso to the management vm
+    serviceConfigurator.createFirewallRules(tcpPorts, udpPorts, serviceConfigDirectoryPath.toString());
 
     State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.ATTACH_ISO, null);
     patchState.serviceConfigDirectory = serviceConfigDirectoryPath.toString();
