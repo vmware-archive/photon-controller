@@ -123,6 +123,13 @@ public class ContainerTemplateService extends StatefulService {
     public Map<Integer, Integer> portBindings;
 
     /**
+     * This value represents the container udp ports that has to be forwarded to the host.
+     * <Container Port, Host Port>
+     */
+    @Immutable
+    public Map<Integer, Integer> udpPortBindings;
+
+    /**
      * This value represents the environment variables that has to be set inside the container.
      */
     @Immutable

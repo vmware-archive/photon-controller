@@ -49,6 +49,8 @@ runcmd:
   - mkdir -p /tmp/config/
   - mount /dev/cdrom /tmp/config
   - cp -r /tmp/config/mustache/ /etc/esxcloud/
+  - cat /etc/esxcloud/firewall.rules >> /etc/systemd/scripts/iptables
+  - systemctl restart iptables
   - chmod +x /etc/esxcloud/*/*/run.sh
   - umount /tmp/config
   - rm -f /etc/systemd/network/*.network
