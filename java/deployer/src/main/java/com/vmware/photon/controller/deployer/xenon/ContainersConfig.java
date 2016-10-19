@@ -76,6 +76,8 @@ public class ContainersConfig {
 
     private Map<Integer, Integer> portBindings;
 
+    private Map<Integer, Integer> udpPortBindings;
+
     private String volumesFrom;
 
     private Map<String, String> dynamicParameters;
@@ -190,6 +192,14 @@ public class ContainersConfig {
 
     public void setDynamicParameters(Map<String, String> dynamicParameters) {
       this.dynamicParameters = dynamicParameters;
+    }
+
+    public Map<Integer, Integer> getUdpPortBindings() {
+      return udpPortBindings;
+    }
+
+    public void setUdpPortBindings(Map<Integer, Integer> udpPortBindings) {
+      this.udpPortBindings = udpPortBindings;
     }
   }
 

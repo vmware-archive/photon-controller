@@ -22,6 +22,7 @@ import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.lang3.text.StrSubstitutor;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,13 +31,20 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class implements all the utilities needed for configuring the containers.
  */
 public class ServiceConfigurator {
+
+  public static final String TCP_PORT_FIREWALL_TEMPLATE = "iptables -I INPUT -p tcp --dport ${port} -j ACCEPT";
+  public static final String UDP_PORT_FIREWALL_TEMPLATE =  "iptables -I INPUT -p udp --dport ${port} -j ACCEPT";
+  public static final String PORT_SUBSITUTION_KEY = "port";
+  public static final String FIREWALL_RULE_FILENAME = "firewall.rules";
 
   public ContainersConfig generateContainersConfig(String configDir) {
     ObjectMapper mapper = new ObjectMapper();
@@ -79,5 +87,27 @@ public class ServiceConfigurator {
   // Wrapper over FileUtils for mocking purpose.
   public void copyDirectory(String srcDir, String destDir) throws IOException {
     FileUtils.copyDirectory(new File(srcDir), new File(destDir));
+  }
+
+  public void createFirewallRules(Set<Integer> tcpPorts, Set<Integer> udpPorts, String directory) {
+    StringBuilder ipTablesRuleBuilder = new StringBuilder();
+    for (Integer tcpPort : tcpPorts) {
+      ipTablesRuleBuilder.append(
+          StrSubstitutor
+            .replace(TCP_PORT_FIREWALL_TEMPLATE, Collections.singletonMap(PORT_SUBSITUTION_KEY, tcpPort.toString())))
+        .append("\n");
+    }
+    for (Integer udpPort : udpPorts) {
+      ipTablesRuleBuilder.append(
+          StrSubstitutor
+            .replace(UDP_PORT_FIREWALL_TEMPLATE, Collections.singletonMap(PORT_SUBSITUTION_KEY, udpPort.toString())))
+        .append("\n");;
+    }
+    File fireRuleFile = new File(directory, FIREWALL_RULE_FILENAME);
+    try {
+      FileUtils.writeStringToFile(fireRuleFile, ipTablesRuleBuilder.toString());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 }
