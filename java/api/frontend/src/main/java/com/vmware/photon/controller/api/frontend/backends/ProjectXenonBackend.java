@@ -126,9 +126,7 @@ public class ProjectXenonBackend implements ProjectBackend {
 
     // tokenGroups empty meaning user has no permission
     if (tokenGroups == null || tokenGroups.isEmpty()) {
-      ResourceList<ProjectService.State> projectDocuments = PaginationUtils.xenonQueryResultToResourceList
-          (ProjectService.State.class, new ServiceDocumentQueryResult());
-      return toProjectList(projectDocuments);
+      return new ResourceList<Project>(new ArrayList<>());
     }
 
     ResourceList<ProjectService.State> projectDocuments = findByTenantIdAndNameAndSGs(tenantId, name, pageSize,
@@ -145,16 +143,14 @@ public class ProjectXenonBackend implements ProjectBackend {
       ExternalException {
     // tokenGroups empty meaning user has no permission
     if (tokenGroups == null || tokenGroups.isEmpty()) {
-      ResourceList<ProjectService.State> projectDocuments = PaginationUtils.xenonQueryResultToResourceList
-          (ProjectService.State.class, new ServiceDocumentQueryResult());
-      return toProjectList(projectDocuments);
+      return new ResourceList<Project>(new ArrayList<>());
     }
 
     final ImmutableMap.Builder<String, List<String>> inClauseTermsBuilder = new ImmutableMap.Builder<>();
     inClauseTermsBuilder.put(ProjectService.SECURITY_GROUPS_NAME_KEY, tokenGroups);
 
     ServiceDocumentQueryResult queryResult = xenonClient.queryDocuments(
-        ProjectService.State.class, null, inClauseTermsBuilder.build(), pageSize, true, true);
+        ProjectService.State.class, null, inClauseTermsBuilder.build(), pageSize, true, false);
     return toProjectList(PaginationUtils.xenonQueryResultToResourceList(ProjectService.State.class, queryResult));
   }
 

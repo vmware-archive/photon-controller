@@ -343,6 +343,12 @@ public class TenantXenonBackend implements TenantBackend {
         TenantService.State.class, queryResult, this::toApiRepresentation);
   }
 
+  /*
+   * This finds all tenants that the user has permission to see. Specifically:
+   * 1. All tenants for which the user is a tenant administrator (that is, listed in the tenant security groups)
+   * 2. For every project the user is in, the tenant that owns that project
+   * Note that the way we do this query breaks pagination. We should fix that in the future.
+   */
   private ResourceList<Tenant> filterTenantBySGs(List<String> tokenGroups) throws ExternalException {
     List<Tenant> tenantList = findBySGs(tokenGroups);
     List<String> tenantIdList = tenantList.stream().map(Tenant::getId).collect(Collectors.toList());
@@ -359,6 +365,12 @@ public class TenantXenonBackend implements TenantBackend {
     return resourceList;
   }
 
+  /*
+   * This method will return the tenant with the given name as long as the user has permission to see the tenant.
+   * They have permission in two conditions:
+   * 1. They are tenant administrator (that is, listed in the tenant security groups)
+   * 2. They are a project user in one of the projects owned by the tenant
+   */
   private ResourceList<Tenant> filterTenantByNameAndSGs(String name, List<String> tokenGroups) throws
     ExternalException {
     List<Tenant> tenantList = toTenantList(findByName(name));
@@ -404,6 +416,11 @@ public class TenantXenonBackend implements TenantBackend {
     return xenonClient.queryDocuments(TenantService.State.class, termsBuilder.build());
   }
 
+  /*
+   * Find all the tenants for which the user is a tenant administrator (that is,
+   * the security groups in the tenant include one of the security groups of the user).
+   * Will return empty tenant list if tokenGroups is empty (which means user has no permission)
+   */
   private List<Tenant> findBySGs(List<String> tokenGroups) {
     List<Tenant> tenantList = new ArrayList<>();
     if (tokenGroups == null || tokenGroups.isEmpty()) {
