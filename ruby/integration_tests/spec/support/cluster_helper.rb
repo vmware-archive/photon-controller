@@ -9,6 +9,7 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED. See the License for the
 # specific language governing permissions and limitations under the License.
 
+
 module EsxCloud
   class ClusterHelper
     class << self
@@ -59,6 +60,48 @@ module EsxCloud
         client.disable_cluster_type(deployment.id, spec.to_hash)
       end
 
+      def delete_cluster(client, cluster_id, cluster_type)
+        puts "Starting to delete a "+ cluster_type +" cluster: " + cluster_id
+        client.delete_cluster(cluster_id)
+        begin
+          client.find_cluster_by_id(cluster_id)
+          fail(cluster_type + " Cluster #{cluster_id} should be deleted")
+        rescue EsxCloud::ApiError => e
+          e.response_code.should == 404
+        rescue EsxCloud::CliError => e
+          e.output.should match("not found")
+        end
+      end
+
+      def validate_ssh(master_ip)
+        # Disabling strict_host_key_checking (:paranoid => false) and setting user_known_hosts_file to null to not validate
+        # the host key as it will change with each lifecycle run.
+        Net::SSH.start(master_ip, "root",
+                       :keys => ["/tmp/test_rsa"],
+                       :paranoid => false,
+                       :user_known_hosts_file => ["/dev/null"]) do |ssh|
+          # Getting here without an exception means we can connect with ssh successfully. If SSH failed, we would get an
+          # exception like Authentication Failed or Connection Timeout and our tests will fail as we are catching the
+          # exception and failing the test below.
+          puts "SSH successful"
+        end
+      end
+
+      def construct_kube_properties(master_ip, etcd_ip, ca_cert = nil)
+        public_key_contents = File.read("/tmp/test_rsa.pub")
+        props = {
+            "dns" => ENV["MESOS_ZK_DNS"],
+            "gateway" => ENV["MESOS_ZK_GATEWAY"],
+            "netmask" => ENV["MESOS_ZK_NETMASK"],
+            "master_ip" => master_ip,
+            "container_network" => "10.2.0.0/16",
+            "etcd_ip1" => etcd_ip,
+            "ssh_key" => public_key_contents,
+            "ca_cert" => ca_cert
+        }
+        return props
+      end
+
       def show_logs(project, client)
         clusters = client.get_project_clusters(project.id).items
         clusters.map do |cluster|
@@ -74,6 +117,14 @@ module EsxCloud
       def remove_temporary_ssh_key()
         puts "Removing ssh key"
         File.delete(KEY_FILE, KEY_FILE + '.pub')
+      end
+
+      def remove_temporary_file(file_path)
+        File.delete(file_path)
+      end
+
+      def copy_file(source_path, dest_path)
+        FileUtils.cp(source_path, dest_path)
       end
 
       def wait_for_cluster_state(cluster_id, target_cluster_state, retry_interval, retry_count, client)
