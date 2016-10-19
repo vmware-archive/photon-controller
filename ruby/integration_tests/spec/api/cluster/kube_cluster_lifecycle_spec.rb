@@ -33,7 +33,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
   end
 
   after(:all) do
-    puts "Staring to clean up Kubernetes Cluster lifecycle tests Env"
+    puts "Starting to clean up Kubernetes Cluster lifecycle tests Env"
     # Deleting tenant2
     tmp_cleaner = EsxCloud::SystemCleaner.new(ApiClientHelper.management)
     ignoring_all_errors {
@@ -49,7 +49,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
     fail("MESOS_ZK_DNS is not defined") unless ENV["MESOS_ZK_DNS"]
     fail("MESOS_ZK_GATEWAY is not defined") unless ENV["MESOS_ZK_GATEWAY"]
     fail("MESOS_ZK_NETMASK is not defined") unless ENV["MESOS_ZK_NETMASK"]
-    fail("KUBERNETES_1_IP is not defined") unless ENV["KUBERNETES_ETCD_1_IP"]
+    fail("KUBERNETES_ETCD 1_IP is not defined") unless ENV["KUBERNETES_ETCD_1_IP"]
     fail("KUBERNETES_MASTER_IP is not defined") unless ENV["KUBERNETES_MASTER_IP"]
 
     puts "Starting to create a Kubernetes cluster"
@@ -67,16 +67,17 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
       expect(deployment.cluster_configurations[0].type).to eq "KUBERNETES"
 
       project = @seeder.project!
-      props = construct_props(ENV["KUBERNETES_MASTER_IP"],ENV["KUBERNETES_ETCD_1_IP"])
+      props = EsxCloud::ClusterHelper.construct_kube_properties(ENV["KUBERNETES_MASTER_IP"],ENV["KUBERNETES_ETCD_1_IP"])
       expected_etcd_count = 1
-      if ENV["KUBERNETES_ETCD_2_IP"] != ""
+      if ENV["KUBERNETES_ETCD_2_IP"] != nil and ENV["KUBERNETES_ETCD_2_IP"] != ""
         props["etcd_ip2"] = ENV["KUBERNETES_ETCD_2_IP"]
         expected_etcd_count += 1
-        if ENV["KUBERNETES_ETCD_3_IP"] != ""
+        if ENV["KUBERNETES_ETCD_3_IP"] != nil and ENV["KUBERNETES_ETCD_3_IP"] != ""
           props["etcd_ip3"] = ENV["KUBERNETES_ETCD_3_IP"]
           expected_etcd_count += 1
         end
       end
+      puts "Creating Kubernetes cluster"
       cluster = project.create_cluster(
           name: random_name("kubernetes-"),
           type: "KUBERNETES",
@@ -88,10 +89,10 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
           extended_properties: props
       )
 
-      validate_cluster_info(cluster, 1, @seeder.vm_flavor!.name)
+      validate_kube_cluster_info(cluster, 1, @seeder.vm_flavor!.name)
       validate_kube_api_responding(ENV["KUBERNETES_MASTER_IP"], 2)
 
-      validate_ssh
+      EsxCloud::ClusterHelper.validate_ssh(ENV["KUBERNETES_MASTER_IP"])
 
       N_WORKERS = (ENV["N_SLAVES"] || 2).to_i
 
@@ -104,7 +105,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
       # Cluster 2 uses SWARM_ETCD_1_IP for master and MESOS_ZK_1_IP for etcd
       kube2_master_ip = ENV["SWARM_ETCD_1_IP"]
       kube2_etcd_ip = ENV["MESOS_ZK_1_IP"]
-      props2 = construct_props(kube2_master_ip,kube2_etcd_ip)
+      props2 = EsxCloud::ClusterHelper.construct_kube_properties(kube2_master_ip,kube2_etcd_ip)
       cluster2 = project.create_cluster(
           name: random_name("kubernetes-"),
           type: "KUBERNETES",
@@ -115,14 +116,14 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
           batch_size: nil,
           extended_properties: props2
       )
-      validate_cluster_info(cluster2, 1, @seeder.vm_flavor!.name)
+      validate_kube_cluster_info(cluster2, 1, @seeder.vm_flavor!.name)
       validate_kube_api_responding(kube2_master_ip, 2 )
 
       # Validate that cluster 1 still works
-      validate_cluster_info(cluster, N_WORKERS, @seeder.vm_flavor!.name)
+      validate_kube_cluster_info(cluster, N_WORKERS, @seeder.vm_flavor!.name)
       validate_kube_api_responding(ENV["KUBERNETES_MASTER_IP"], N_WORKERS + 1 )
 
-      delete_cluster(cluster2)
+      EsxCloud::ClusterHelper.delete_cluster(client, cluster2.id, "KUBERNETES")
 
     rescue => e
       EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
@@ -145,16 +146,16 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
           extended_properties: props2
       )
 
-      validate_cluster_info(cluster3, 1, @seeder2.vm_flavor!.name)
+      validate_kube_cluster_info(cluster3, 1, @seeder2.vm_flavor!.name)
       validate_kube_api_responding(kube2_master_ip, 2 )
 
       # Validate that cluster 1 is stilling responding
-      validate_cluster_info(cluster, N_WORKERS, @seeder.vm_flavor!.name)
+      validate_kube_cluster_info(cluster, N_WORKERS, @seeder.vm_flavor!.name)
       validate_kube_api_responding(ENV["KUBERNETES_MASTER_IP"], N_WORKERS + 1 )
 
-      delete_cluster(cluster3)
+      EsxCloud::ClusterHelper.delete_cluster(client, cluster3.id, "KUBERNETES")
 
-      delete_cluster(cluster)
+      EsxCloud::ClusterHelper.delete_cluster(client, cluster.id, "KUBERNETES")
 
     rescue => e
       EsxCloud::ClusterHelper.show_logs(@seeder2.project, client)
@@ -180,6 +181,22 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
     # and create new ones. Thus, the entry for node_info would be at least at big
     # for the expected_node_count.
     expect(total_node_count.to_i).to be > expected_node_count - 1
+  end
+
+  # This function validate that our cluster manager api is working properly
+  # It also checks that the extended properties added later were put it properly
+  def validate_kube_cluster_info(cluster_current, expected_worker_count, flavor)
+    cid_current = cluster_current.id
+    cluster_current = client.find_cluster_by_id(cid_current)
+    expect(cluster_current.name).to start_with("kubernetes-")
+    expect(cluster_current.type).to eq("KUBERNETES")
+    expect(cluster_current.worker_count).to eq expected_worker_count
+    expect(cluster_current.state).to eq "READY"
+    expect(cluster_current.master_vm_flavor).to eq flavor
+    expect(cluster_current.other_vm_flavor).to eq flavor
+    expect(cluster_current.image_id).to eq @kubernetes_image.id
+    expect(cluster_current.extended_properties["cluster_version"]).not_to be_empty
+    expect(cluster_current.extended_properties.length).to be > 12
   end
 
   # Removes a worker VM and check that trigger maintenance can recreate deleted VMs
@@ -230,37 +247,6 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
     return worker_node_count
   end
 
-  # This function validate that our cluster manager api is working properly
-  # It also checks that the extended properties added later were put it properly
-  def validate_cluster_info(cluster_current, expected_worker_count, flavor)
-    cid_current = cluster_current.id
-    cluster_current = client.find_cluster_by_id(cid_current)
-    expect(cluster_current.name).to start_with("kubernetes-")
-    expect(cluster_current.type).to eq("KUBERNETES")
-    expect(cluster_current.worker_count).to eq expected_worker_count
-    expect(cluster_current.state).to eq "READY"
-    expect(cluster_current.master_vm_flavor).to eq flavor
-    expect(cluster_current.other_vm_flavor).to eq flavor
-    expect(cluster_current.image_id).to eq @kubernetes_image.id
-    expect(cluster_current.extended_properties["cluster_version"]).not_to be_empty
-    expect(cluster_current.extended_properties.length).to be > 12
-  end
-
-  def validate_ssh
-    puts "Checking that we can ssh to the host."
-    # Disabling strict_host_key_checking (:paranoid => false) and setting user_known_hosts_file to null to not validate
-    # the host key as it will change with each lifecycle run.
-    Net::SSH.start(ENV["KUBERNETES_MASTER_IP"], "root",
-                   :keys => ["/tmp/test_rsa"],
-                   :paranoid => false,
-                   :user_known_hosts_file => ["/dev/null"]) do |ssh|
-      # Getting here without an exception means we can connect with ssh successfully. If SSH failed, we would get an
-      # exception like Authentication Failed or Connection Timeout and our tests will fail as we are catching the
-      # exception and failing the test below.
-      puts "SSH successful"
-    end
-  end
-
   def resize_cluster(cluster, expected_worker_count, expected_etcd_count)
     puts "Starting to resize a Kubernetes cluster"
     cid = cluster.id
@@ -289,34 +275,6 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
     expect(etcd_count).to eq expected_etcd_count
     expect(master_count).to eq 1
     expect(worker_count).to eq expected_worker_count
-  end
-
-  def delete_cluster(cluster)
-    puts "Starting to delete a Kubernetes cluster"
-    cluster_id = cluster.id
-    client.delete_cluster(cluster_id)
-    begin
-      client.find_cluster_by_id(cluster_id)
-      fail("KUBERNETES Cluster #{cluster_id} should be deleted")
-    rescue EsxCloud::ApiError => e
-      e.response_code.should == 404
-    rescue EsxCloud::CliError => e
-      e.output.should match("not found")
-    end
-  end
-
-  def construct_props(master_ip, etcd_ip)
-    public_key_contents = File.read("/tmp/test_rsa.pub")
-    props = {
-        "dns" => ENV["MESOS_ZK_DNS"],
-        "gateway" => ENV["MESOS_ZK_GATEWAY"],
-        "netmask" => ENV["MESOS_ZK_NETMASK"],
-        "master_ip" => master_ip,
-        "container_network" => "10.2.0.0/16",
-        "etcd_ip1" => etcd_ip,
-        "ssh_key" => public_key_contents
-    }
-    return props
   end
 
   # Gets a worker vm from the specified cluster
