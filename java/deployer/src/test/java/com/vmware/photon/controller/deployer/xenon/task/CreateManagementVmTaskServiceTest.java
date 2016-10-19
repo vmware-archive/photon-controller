@@ -73,6 +73,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -88,7 +89,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -727,24 +727,6 @@ public class CreateManagementVmTaskServiceTest {
           eq("SET_METADATA_TASK_ID"),
           Matchers.<FutureCallback<Task>>any());
 
-      if (authStatus.equals("no-auth")) {
-        assertTrue(FileUtils.contentEquals(
-            Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
-            Paths.get(this.getClass().getResource("/fixtures/user-data-no-auth.yml").getPath()).toFile()));
-      } else if (authStatus.equals("lightwave-server")) {
-        assertTrue(FileUtils.contentEquals(
-            Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
-            Paths.get(this.getClass().getResource("/fixtures/user-data-lightwave-server.yml").getPath()).toFile()));
-      } else {
-        assertTrue(FileUtils.contentEquals(
-            Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
-            Paths.get(this.getClass().getResource("/fixtures/user-data-lightwave-client.yml").getPath()).toFile()));
-      }
-
-      assertTrue(FileUtils.contentEquals(
-          Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory(), "meta-data").toFile(),
-          Paths.get(this.getClass().getResource("/fixtures/meta-data.yml").getPath()).toFile()));
-
       verify(vmApi).uploadAndAttachIso(
           eq(vmId),
           eq(Paths.get(finalState.vmConfigDirectory, "config.iso").toString()));
@@ -845,13 +827,6 @@ public class CreateManagementVmTaskServiceTest {
           Matchers.<FutureCallback<Task>>any());
 
       assertThat(captor.getValue().getMetadata(), is(getExpectedMetadata()));
-
-      assertTrue(FileUtils.contentEquals(
-          Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
-          Paths.get(this.getClass().getResource("/fixtures/user-data-no-auth.yml").getPath()).toFile()));
-      assertTrue(FileUtils.contentEquals(
-          Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory(), "meta-data").toFile(),
-          Paths.get(this.getClass().getResource("/fixtures/meta-data.yml").getPath()).toFile()));
 
       verify(vmApi).uploadAndAttachIso(
           eq(vmId),
@@ -1473,7 +1448,6 @@ public class CreateManagementVmTaskServiceTest {
 
     @Test
     public void testAttachIsoFailureInScriptRunner() throws Throwable {
-
       TestHelper.createFailScriptFile(deployerTestConfig.getDeployerContext(), "esx-create-vm-iso");
 
       CreateManagementVmTaskService.State finalState =

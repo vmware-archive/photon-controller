@@ -11,6 +11,8 @@
     "80": 20000,
     "443": 20001
   },
+  "udpPortBindings": {
+  },
   "volumeBindings": {
   },
   "dynamicParameters": {
