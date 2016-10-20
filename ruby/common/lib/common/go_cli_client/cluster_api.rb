@@ -13,12 +13,15 @@ module EsxCloud
   class GoCliClient
     module ClusterApi
 
+      clusterType = "";
+
       # @param [String] project_id
       # @param [Hash] payload
       # @return [Cluster]
       def create_cluster(project_id, payload)
         project = find_project_by_id(project_id)
         tenant = @project_to_tenant[project.id]
+        clusterType = payload[:type]
 
         cmd = "cluster create -t '#{tenant.name}' -p '#{project.name}' " +
             "-n '#{payload[:name]}' -k '#{payload[:type]}' -v '#{payload[:vmFlavor]}' " +
@@ -32,56 +35,61 @@ module EsxCloud
           cmd += "--etcd3 '#{payload[:extendedProperties]["etcd_ip3"]}' "
           cmd += "--master-ip '#{payload[:extendedProperties]["master_ip"]}' "
           cmd += "--container-network '#{payload[:extendedProperties]["container_network"]}'"
-        elsif payload[:type] === "MESOS"
-          cmd += "--zookeeper1 '#{payload[:extendedProperties]["zookeeper_ip1"]}' "
-          cmd += "--zookeeper2 '#{payload[:extendedProperties]["zookeeper_ip2"]}' "
-          cmd += "--zookeeper3 '#{payload[:extendedProperties]["zookeeper_ip3"]}'"
-        elsif payload[:type] === "SWARM"
-          cmd += "--etcd1 '#{payload[:extendedProperties]["etcd_ip1"]}' "
-          cmd += "--etcd2 '#{payload[:extendedProperties]["etcd_ip2"]}' "
-          cmd += "--etcd3 '#{payload[:extendedProperties]["etcd_ip3"]}'"
-        end
-
-        cluster_id = run_cli(cmd).split("\n")[0]
-        find_cluster_by_id(cluster_id)
+          cluster_id = run_cli(cmd).split("\n")[0]
+          find_cluster_by_id(cluster_id)
+        else
+          @apiclient.create_cluster(project_id, payload)
       end
 
       # @param [String] id
       # @return [Cluster]
       def find_cluster_by_id(id)
-        result = run_cli("cluster show #{id}")
-
-        get_cluster_from_response(result)
+        if clusterType === "KUBERNETES"
+          result = run_cli("cluster show #{id}")
+          get_cluster_from_response(result)
+        else
+          @apiclient.find_cluster_by_id(id)
       end
 
       # @param [String] id
       # @return [VmList]
       def get_cluster_vms(id)
-        result = run_cli ("cluster list_vms '#{id}'")
-
-        get_vm_list_from_response(result)
+        if clusterType === "KUBERNETES"
+          result = run_cli ("cluster list_vms '#{id}'")
+          get_vm_list_from_response(result)
+        else
+          @apiclient.get_cluster_vms(id)
       end
 
       # @param [String] id
       # @param [int] new_worker_count
       # @return [Boolean]
       def resize_cluster(id, new_worker_count)
-        run_cli("cluster resize '#{id}' '#{new_worker_count}'")
-        true
+        if clusterType === "KUBERNETES"
+          run_cli("cluster resize '#{id}' '#{new_worker_count}'")
+          true
+        else
+          @apiclient.resize_cluster(id, new_worker_count)
       end
 
       # @param [String] id
       # @return [Boolean]
       def delete_cluster(id)
-        run_cli("cluster delete '#{id}'")
-        true
+        if clusterType === "KUBERNETES"
+          run_cli("cluster delete '#{id}'")
+          true
+        else
+          @apiclient.delete_cluster(id)
       end
 
       # @param [String] id
       # @return [Boolean]
       def trigger_maintenance(id)
-        run_cli("cluster trigger_maintenance '#{id}'")
-        true
+        if clusterType === "KUBERNETES"
+           run_cli("cluster trigger_maintenance '#{id}'")
+           true
+         else
+           @apiclient.trigger_maintenance(id)
       end
 
       private
