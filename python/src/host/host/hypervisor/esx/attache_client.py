@@ -43,6 +43,7 @@ from host.hypervisor.esx.path_util import os_to_datastore_path
 from host.hypervisor.esx.path_util import compond_path_join
 from host.hypervisor.esx.path_util import datastore_path
 from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import datastore_to_os_path
 
 from vmware.envoy import attache
 
@@ -284,7 +285,7 @@ class AttacheClient(HostClient):
     @attache_error_handler
     def delete_vm(self, vm_id, force):
         vmPath = self._client.DeleteVM2(self._session, vm_id, force)
-        vm_dir = os.path.dirname(vmPath)
+        vm_dir = os.path.dirname(datastore_to_os_path(os.path.dirname(vmPath)))
         return vm_dir
 
     """ Disk and file operations
