@@ -67,7 +67,8 @@ memoryMb=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG memoryMb:`
 ENABLE_AUTH=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG enableAuth:`
 LIGHTWAVE_DOMAIN=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveDomain:`
 LIGHTWAVE_HOSTNAME=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveHostname:`
-LIGHTWAVE_PASSWORD=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG keyStorePassword:`
+LIGHTWAVE_PASSWORD=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwavePassword:`
+KEYSTORE_PASSWORD=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG keyStorePassword:`
 LIGHTWAVE_DOMAIN_CONTROLLER=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveDomainController:`
 LIGHTWAVE_MACHINE_ACCOUNT=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveMachineAccount:`
 LIGHTWAVE_DISABLE_VMAFD_LISTENER=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveDisableVmafdListener:`
@@ -79,7 +80,8 @@ print_warning_if_value_mssing "${REGISTRATION_ADDRESS}"    "registrationAddress"
 print_warning_if_value_mssing "${LOG_DIRECTORY}"           "logDirectory"          "$PHOTON_CONTROLLER_CORE_CONFIG"
 print_warning_if_value_mssing "${memoryMb}"                "memoryMb"              "$PHOTON_CONTROLLER_CORE_CONFIG"
 print_warning_if_value_mssing "${ENABLE_AUTH}"             "enableAuth"            "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_PASSWORD}"      "keyStorePassword"      "$PHOTON_CONTROLLER_CORE_CONFIG"
+print_warning_if_value_mssing "${LIGHTWAVE_PASSWORD}"      "lightwavePassword"      "$PHOTON_CONTROLLER_CORE_CONFIG"
+print_warning_if_value_mssing "${KEYSTORE_PASSWORD}"      "keyStorePassword"      "$PHOTON_CONTROLLER_CORE_CONFIG"
 print_warning_if_value_mssing "${LIGHTWAVE_DOMAIN}"        "lightwaveDomain"      "$PHOTON_CONTROLLER_CORE_CONFIG"
 print_warning_if_value_mssing "${LIGHTWAVE_HOSTNAME}"      "lightwaveHostname"    "$PHOTON_CONTROLLER_CORE_CONFIG"
 print_warning_if_value_mssing "${LIGHTWAVE_DOMAIN_CONTROLLER}"     "lightwaveDomainController"  "$PHOTON_CONTROLLER_CORE_CONFIG"
@@ -213,18 +215,18 @@ then
 
   # Generate pkcs12 keystore
   openssl pkcs12 -export -in /etc/keys/machine.crt -inkey /etc/keys/machine.privkey -out keystore.p12 -name MACHINE_CERT \
-    -password pass:${LIGHTWAVE_PASSWORD}
+    -password pass:${KEYSTORE_PASSWORD}
 
   # Convert it into JKS
-  keytool -importkeystore -deststorepass ${LIGHTWAVE_PASSWORD} -destkeypass ${LIGHTWAVE_PASSWORD} \
-    -destkeystore /keystore.jks -srckeystore keystore.p12 -srcstoretype PKCS12 -srcstorepass ${LIGHTWAVE_PASSWORD} \
+  keytool -importkeystore -deststorepass ${KEYSTORE_PASSWORD} -destkeypass ${KEYSTORE_PASSWORD} \
+    -destkeystore /keystore.jks -srckeystore keystore.p12 -srcstoretype PKCS12 -srcstorepass ${KEYSTORE_PASSWORD} \
     -alias MACHINE_CERT
 
   # Get the trusted roots certificate
   cert_alias=$(vecs-cli entry list --store TRUSTED_ROOTS | grep "Alias" | head -n1 | cut -d: -f2)
   vecs-cli entry getcert --store TRUSTED_ROOTS --alias $cert_alias --output /etc/keys/cacert.crt
   keytool -import -trustcacerts -alias TRUSTED_ROOTS -file /etc/keys/cacert.crt \
-  -keystore /keystore.jks -storepass ${LIGHTWAVE_PASSWORD} -noprompt
+  -keystore /keystore.jks -storepass ${KEYSTORE_PASSWORD} -noprompt
 
   # Restrict permission on the key files
   chmod 0400 /etc/keys/machine.privkey
