@@ -52,7 +52,8 @@ deployer:
     logDirectory: {{{LOG_DIRECTORY}}}
 {{#ENABLE_AUTH}}
     keyStorePath: /keystore.jks
-    keyStorePassword: {{{LIGHTWAVE_PASSWORD}}}
+    keyStorePassword: "changeme"
+    lightwavePassword: {{{LIGHTWAVE_PASSWORD}}}
     lightwaveDomain: {{{LIGHTWAVE_DOMAIN}}}
     lightwaveHostname: {{{LIGHTWAVE_HOSTNAME}}}
     lightwaveDomainController: {{{LIGHTWAVE_DOMAIN_CONTROLLER}}}
@@ -94,7 +95,7 @@ apife:
     port: 9000
     bindHost: "0.0.0.0"
     keyStorePath: /keystore.jks
-    keyStorePassword: {{{LIGHTWAVE_PASSWORD}}}
+    keyStorePassword: "changeme"
     validateCerts: false
     supportedProtocols: [TLSv1.2]
     excludedProtocols: [TLSv1, SSLv2Hello, SSLv3, TLSv1.1]
