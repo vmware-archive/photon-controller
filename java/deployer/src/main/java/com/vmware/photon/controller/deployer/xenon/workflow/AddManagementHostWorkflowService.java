@@ -34,7 +34,6 @@ import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateHostResourceTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateHostResourceTaskService;
-import com.vmware.photon.controller.deployer.xenon.task.BuildRuntimeConfigurationTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
@@ -49,6 +48,7 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
+
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -395,7 +395,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
 
   private void processBuildRuntimeConfiguration(State currentState) {
 
-    BuildRuntimeConfigurationTaskService.State startState = new BuildRuntimeConfigurationTaskService.State();
+    BuildContainersConfigurationWorkflowService.State startState = new BuildContainersConfigurationWorkflowService.State();
     startState.parentTaskServiceLink = getSelfLink();
     startState.parentPatchBody = Utils.toJson(false, false, buildPatch(TaskState.TaskStage.STARTED,
         TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS, null));

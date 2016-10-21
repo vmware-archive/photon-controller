@@ -636,13 +636,13 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
       NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
       Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
-      assertThat(documentLinks.size(), is(containersConfig.getContainerSpecs().size()));
+      assertThat(documentLinks.size(), is(containersConfig.getContainerSpecs().size() - 1));
 
       Set<String> jobsToCreate = new HashSet<>(containersConfig.getContainerSpecs().keySet());
       for (String documentLink : documentLinks) {
         jobsToCreate.remove(testEnvironment.getServiceState(documentLink, ContainerTemplateService.State.class).name);
       }
-      assertThat(jobsToCreate.size(), is(0));
+      assertThat(jobsToCreate.size(), is(1));
     }
 
     private void populateInvalidContainersConfig() {

@@ -473,6 +473,23 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
   //
 
   private void processBuildTypeSpecificStateSubStage(State currentState) {
+    HostUtils.getCloudStoreHelper(this).createGet(currentState.deploymentServiceLink)
+      .setCompletion((o, e) -> {
+        if (e != null) {
+          failTask(e);
+          return;
+        }
+        DeploymentService.State state = o.getBody(DeploymentService.State.class);
+        if (currentState.oAuthEnabled && state.oAuthServerAddress != null) {
+          currentState.dynamicParameters.put(MUSTACHE_KEY_LIGHTWAVE_HOSTNAME, state.oAuthServerAddress);
+          currentState.dynamicParameters.put(MUSTACHE_KEY_MGMT_API_AUTH_SERVER_ADDRESS, state.oAuthServerAddress);
+        }
+        processBuildTypeSpecificStateSubStage(currentState, state);
+      })
+      .sendWith(this);
+  }
+
+  private void processBuildTypeSpecificStateSubStage(State currentState, DeploymentService.State deploymentState) {
 
     //
     // Xenon-based services require information about the set of peer nodes with which they should
