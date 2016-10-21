@@ -104,6 +104,7 @@ public class Main {
   public static final String CLUSTER_SCRIPTS_DIRECTORY = "clusters";
 
   public static void main(String[] args) throws Throwable {
+    try {
     LoggingFactory.bootstrap();
 
     logger.info("args: " + Arrays.toString(args));
@@ -141,7 +142,6 @@ public class Main {
     }
 
     ThriftModule thriftModule = new ThriftModule(sslContext);
-
     ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig, sslContext);
 
     if ((Boolean) namespace.get("manual")) {
@@ -198,6 +198,10 @@ public class Main {
         LoggingFactory.detachAndStop();
       }
     });
+   } catch (Exception e) {
+      logger.error("Failed to start photon controller ", e);
+      throw e;
+     }
   }
 
   private static ServiceHost startXenonHost(PhotonControllerConfig photonControllerConfig,
