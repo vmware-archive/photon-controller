@@ -13,7 +13,7 @@ import logging
 
 import os
 
-from agent.agent import SSL_CERT_FILE, SSL_KEY_FILE, CA_PATH, NO_AUTH_CERT_FILE
+from agent.agent import SSL_CERT_FILE, SSL_KEY_FILE, CA_PATH, NO_AUTH_CERT_FILE, SSL_CIPHERS
 from common.photon_thrift.direct_client import DirectClient
 from gen.host import Host
 from gen.host.ttypes import CreateImageRequest
@@ -49,7 +49,7 @@ class NfcImageTransferer(object):
         else:
             remote_agent_client = DirectClient("Host", Host.Client, destination_host, destination_port, 60,
                                                certfile=SSL_CERT_FILE, keyfile=SSL_KEY_FILE, capath=CA_PATH,
-                                               validate=True)
+                                               ciphers=SSL_CIPHERS, validate=True)
         remote_agent_client.connect()
 
         self._logger.info("transfer_image: getting ticket")
