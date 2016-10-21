@@ -48,7 +48,10 @@ from common.plugin import load_plugins, thrift_services
 from common.service_name import ServiceName
 from common.state import State
 
-SSL_CERT_FILE = "/etc/opt/vmware/photon/controller/rui.pem"
+CA_PATH = "/etc/vmware/ssl/"
+SSL_CERT_FILE = CA_PATH + "rui.crt"
+SSL_KEY_FILE = CA_PATH + "rui.key"
+SSL_CIPHERS = "ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:RSA+AESGCM:RSA+AES:RSA:!aNULL:!MD5:!DSS"
 
 
 class Agent:
@@ -136,12 +139,11 @@ class Agent:
             processor = plugin.service.Processor(handler)
             mux_processor.registerProcessor(plugin.name, processor)
 
-        if os.path.isfile(SSL_CERT_FILE) and os.path.getsize(SSL_CERT_FILE) > 0:
-            self._logger.info("Initialize SSLSocket using %s" % SSL_CERT_FILE)
-            transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=SSL_CERT_FILE)
-        else:
-            self._logger.info("SSL Cert not found, initialize unencrypted socket")
-            transport = TSocket.TServerSocket(port=self._config.host_port)
+        self._logger.info("Initialize SSLSocket using certfile=%s, keyfile=%s, capath=%s" %
+                          (SSL_CERT_FILE, SSL_KEY_FILE, CA_PATH))
+        transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port,
+                                                certfile=SSL_CERT_FILE, keyfile=SSL_KEY_FILE, capath=CA_PATH,
+                                                ciphers=SSL_CIPHERS)
 
         protocol_factory = TCompactProtocol.TCompactProtocolFactory()
 
