@@ -453,10 +453,16 @@ public class AddManagementHostWorkflowService extends StatefulService {
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
+    ServiceUtils.logInfo(this,
+        "Making create_cert false for provisioning the management host first time during deployment.");
     startState.createCert = false;
     startState.usageTag = UsageTag.MGMT.name();
     if (currentState.hostServiceLink != null) {
+      ServiceUtils.logInfo(this,
+          "Making create_cert %s (oAuthEnabled) for provisioning the management host after deployment",
+          deploymentService.oAuthEnabled.toString());
       startState.createCert = deploymentService.oAuthEnabled;
+      // Specifying the query specification makes the usageTag field irrelevant in BulkProvisionHostsWorkflowSerivce
       startState.querySpecification = MiscUtils.generateHostQuerySpecification(currentState.hostServiceLink, null);
     }
 

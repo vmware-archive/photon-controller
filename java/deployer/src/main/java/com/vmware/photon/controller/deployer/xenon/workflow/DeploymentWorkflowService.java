@@ -451,7 +451,7 @@ public class DeploymentWorkflowService extends StatefulService {
   }
 
   private void addHosts(final State currentState) {
-    ServiceUtils.logInfo(this, "Adding management hosts, provisioning cloud hosts..");
+    ServiceUtils.logInfo(this, "Adding management hosts..");
     final Service service = this;
 
     FutureCallback<AddManagementHostWorkflowService.State> callback =
@@ -1234,6 +1234,9 @@ public class DeploymentWorkflowService extends StatefulService {
                   failTask(e);
                 } else {
                   DeploymentService.State deploymentState = o.getBody(DeploymentService.State.class);
+                  ServiceUtils.logInfo(this, "Deployment Auth Enabled: %s", deploymentState.oAuthEnabled.toString());
+                  ServiceUtils.logInfo(this, "Create cert flag being set to %s in BulkProvisionHostService for all host"
+                  , deploymentState.oAuthEnabled.toString());
                   startState.createCert = deploymentState.oAuthEnabled;
                 }
               } catch (Throwable t) {
