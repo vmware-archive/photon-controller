@@ -33,6 +33,7 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
+import com.vmware.photon.controller.deployer.xenon.ContainersConfig.ContainerType;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
@@ -366,27 +367,8 @@ public class CreateContainersWorkflowService extends StatefulService {
   //
   // CREATE_LIGHTWAVE_CONTAINER sub-stage routines
   //
+
   private void processCreateLightwaveContainerSubStage(State currentState) {
-    HostUtils.getCloudStoreHelper(this)
-        .createGet(currentState.deploymentServiceLink)
-        .setCompletion(
-            (o, e) -> {
-              if (e != null) {
-                failTask(e);
-                return;
-              }
-
-              try {
-                processCreateLightwaveContainerSubStage(
-                    currentState,
-                    o.getBody(DeploymentService.State.class));
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }).sendWith(this);;
-  }
-
-  private void processCreateLightwaveContainerSubStage(State currentState, DeploymentService.State deploymentState) {
 
     if (!currentState.isNewDeployment) {
       ServiceUtils.logInfo(this, "Skipping creation of Lightwave container (not a new deployment");
@@ -396,12 +378,6 @@ public class CreateContainersWorkflowService extends StatefulService {
 
     if (!currentState.isAuthEnabled) {
       ServiceUtils.logInfo(this, "Skipping creation of Lightwave container (auth is disabled)");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GENERATE_CERTIFICATE);
-      return;
-    }
-
-    if (currentState.isAuthEnabled && deploymentState.oAuthServerAddress != null) {
-      ServiceUtils.logInfo(this, "Skipping creation of Lightwave container (using external instance)");
       sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GENERATE_CERTIFICATE);
       return;
     }
@@ -465,12 +441,28 @@ public class CreateContainersWorkflowService extends StatefulService {
 
               try {
                 List<String> documentLinks = o.getBody(QueryTask.class).results.documentLinks;
+                if (skipContainerCreation(documentLinks, containerTypes, currentState)) {
+                  sendStageProgressPatch(nextStage, nextSubStage);
+                }
                 checkState(documentLinks.size() == containerTypes.size());
                 queryContainersForTemplates(currentState, documentLinks, nextStage, nextSubStage);
               } catch (Throwable t) {
                 failTask(t);
               }
             }));
+  }
+
+  private boolean skipContainerCreation(
+      List<String> documentLinks,
+      List<ContainerType> containerTypes,
+      State currentState) {
+    if (containerTypes.size() == 1
+        && containerTypes.contains(ContainerType.Lightwave)
+        && documentLinks.isEmpty()) {
+      ServiceUtils.logInfo(this, "Skipping creation of Lightwave container (using external instance)");
+      return true;
+    }
+    return false;
   }
 
   private void queryContainersForTemplates(State currentState,
