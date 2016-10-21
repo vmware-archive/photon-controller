@@ -30,7 +30,7 @@ class DirectClient(object):
         client_timeout: if specified, it is set as socket timeout.
     """
     def __init__(self, service_name, client_cls, host, port, client_timeout=None,
-                 certfile=None, keyfile=None, capath=None, validate=True):
+                 certfile=None, keyfile=None, capath=None, validate=True, ciphers=None):
         self._logger = logging.getLogger(__name__)
         self._service_name = service_name
         self._client_cls = client_cls
@@ -42,15 +42,17 @@ class DirectClient(object):
         self._certfile = certfile
         self._keyfile = keyfile
         self._capath = capath
+        self._ciphers = ciphers
         self._validate = validate
         self._request_log_level = logging.INFO
 
     def connect(self):
         """Connect to the HostHandler."""
-        self._logger.info("Initialize SSLSocket using certfile=%s, keyfile=%s, capath=%s" %
-                          (self._certfile, self._keyfile, self._capath))
+        self._logger.info("Initialize SSLSocket using certfile=%s, keyfile=%s, capath=%s, ciphers=%s" %
+                          (self._certfile, self._keyfile, self._capath, self._ciphers))
         sock = TSSLSocket.TSSLSocket(host=self._host, port=self._port, validate=self._validate,
-                                     certfile=self._certfile, keyfile=self._keyfile, capath=self._capath)
+                                     certfile=self._certfile, keyfile=self._keyfile, capath=self._capath,
+                                     ciphers=self._ciphers)
 
         if self._client_timeout:
             sock.setTimeout(self._client_timeout * 1000)
