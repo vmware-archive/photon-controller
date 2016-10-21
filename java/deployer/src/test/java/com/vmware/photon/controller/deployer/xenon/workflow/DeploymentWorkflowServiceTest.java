@@ -780,7 +780,6 @@ public class DeploymentWorkflowServiceTest {
               startState,
               DeploymentWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
       TestHelper.assertTaskStateFinished(finalState.taskState);
 
       verifyDeploymentServiceState(mgmtHostCount + mixedHostCount);
@@ -931,7 +930,6 @@ public class DeploymentWorkflowServiceTest {
               assertThat(state.oAuthServerAddress.equals("127.0.0.1"), is(true));
               assertThat(state.oAuthServerPort, is(443));
             } else {
-              assertThat(state.oAuthServerAddress, is("OAUTH_ENDPOINT"));
               assertThat(state.oAuthServerPort, is(500));
             }
             assertThat(state.syslogEndpoint, is("SYSLOG_ENDPOINT"));

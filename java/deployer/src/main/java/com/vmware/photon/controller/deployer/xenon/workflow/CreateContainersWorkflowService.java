@@ -366,8 +366,27 @@ public class CreateContainersWorkflowService extends StatefulService {
   //
   // CREATE_LIGHTWAVE_CONTAINER sub-stage routines
   //
-
   private void processCreateLightwaveContainerSubStage(State currentState) {
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                processCreateLightwaveContainerSubStage(
+                    currentState,
+                    o.getBody(DeploymentService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }).sendWith(this);;
+  }
+
+  private void processCreateLightwaveContainerSubStage(State currentState, DeploymentService.State deploymentState) {
 
     if (!currentState.isNewDeployment) {
       ServiceUtils.logInfo(this, "Skipping creation of Lightwave container (not a new deployment");
@@ -377,6 +396,12 @@ public class CreateContainersWorkflowService extends StatefulService {
 
     if (!currentState.isAuthEnabled) {
       ServiceUtils.logInfo(this, "Skipping creation of Lightwave container (auth is disabled)");
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GENERATE_CERTIFICATE);
+      return;
+    }
+
+    if (currentState.isAuthEnabled && deploymentState.oAuthServerAddress != null) {
+      ServiceUtils.logInfo(this, "Skipping creation of Lightwave container (using external instance)");
       sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GENERATE_CERTIFICATE);
       return;
     }
