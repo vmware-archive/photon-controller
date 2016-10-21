@@ -171,7 +171,6 @@ public class TestHelper {
     startState.oAuthEnabled = authEnabled;
     startState.oAuthTenantName = "OAUTH_ENDPOINT";
     startState.oAuthPassword = "OAUTH_PASSWORD";
-    startState.oAuthServerAddress = "OAUTH_ENDPOINT";
     if (startState.oAuthEnabled) {
       startState.oAuthServerPort = 433;
     } else {

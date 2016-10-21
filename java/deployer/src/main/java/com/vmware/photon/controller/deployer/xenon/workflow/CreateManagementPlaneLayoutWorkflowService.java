@@ -291,7 +291,8 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
           .create(HostUtils.getContainersConfig(this).getContainerSpecs().values().stream()
               .filter(spec -> currentState.isLoadbalancerEnabled
                   || !spec.getType().equals(ContainersConfig.ContainerType.LoadBalancer.name()))
-              .filter(spec -> (currentState.isAuthEnabled && deploymentState.oAuthServerAddress != null)
+              // keep all container if auth is enabled and no external lightwave instance is used
+              .filter(spec -> (currentState.isAuthEnabled && deploymentState.oAuthServerAddress == null)
                   || !spec.getType().equals(ContainersConfig.ContainerType.Lightwave.name()))
               .map(spec -> buildTemplateStartState(spec))
               .map(templateStartState -> Operation.createPost(this, ContainerTemplateFactoryService.SELF_LINK)

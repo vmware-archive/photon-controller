@@ -418,18 +418,7 @@ public class BuildRuntimeConfigurationTaskServiceTest {
                                           int hostCount,
                                           Map<String, String> expectedParameters) throws Throwable {
 
-      DeploymentService.State deploymentStartState = TestHelper.getDeploymentServiceStartState(authEnabled, false);
-      if (authEnabled) {
-        deploymentStartState.oAuthMgmtUiLoginEndpoint = "MGMT_UI_LOGIN_URL";
-        deploymentStartState.oAuthMgmtUiLogoutEndpoint = "MGMT_UI_LOGOUT_URL";
-        deploymentStartState.oAuthPassword = "PASSWORD";
-        deploymentStartState.oAuthSwaggerLoginEndpoint = "SWAGGER_LOGIN_URL";
-        deploymentStartState.oAuthSwaggerLogoutEndpoint = "SWAGGER_LOGOUT_URL";
-        deploymentStartState.oAuthTenantName = "TENANT_NAME";
-      }
-
-      startState.deploymentServiceLink =
-          TestHelper.createDeploymentService(cloudStoreEnvironment, deploymentStartState).documentSelfLink;
+      createDeploymentService(authEnabled);
 
       Map<ContainersConfig.ContainerType, ContainerTemplateService.State> templateMap = new HashMap<>();
       for (ContainersConfig.ContainerType type : ContainersConfig.ContainerType.values()) {
@@ -508,6 +497,22 @@ public class BuildRuntimeConfigurationTaskServiceTest {
           assertThat(deploymentState.loadBalancerAddress, is("0.0.0.0"));
           break;
       }
+    }
+
+    private void createDeploymentService(boolean authEnabled) throws Throwable {
+      DeploymentService.State deploymentStartState = TestHelper.getDeploymentServiceStartState(authEnabled, false);
+      deploymentStartState.oAuthServerAddress = null;
+      if (authEnabled) {
+        deploymentStartState.oAuthMgmtUiLoginEndpoint = "MGMT_UI_LOGIN_URL";
+        deploymentStartState.oAuthMgmtUiLogoutEndpoint = "MGMT_UI_LOGOUT_URL";
+        deploymentStartState.oAuthPassword = "PASSWORD";
+        deploymentStartState.oAuthSwaggerLoginEndpoint = "SWAGGER_LOGIN_URL";
+        deploymentStartState.oAuthSwaggerLogoutEndpoint = "SWAGGER_LOGOUT_URL";
+        deploymentStartState.oAuthTenantName = "TENANT_NAME";
+      }
+
+      startState.deploymentServiceLink =
+          TestHelper.createDeploymentService(cloudStoreEnvironment, deploymentStartState).documentSelfLink;
     }
   }
 
