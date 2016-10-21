@@ -36,7 +36,7 @@ class TSSLSocket(TSocket.TSocket):
   SSL_VERSION, which must be one of ssl.PROTOCOL_* and
   defaults to  ssl.PROTOCOL_TLSv1 for greatest security.
   """
-  SSL_VERSION = ssl.PROTOCOL_TLSv1
+  SSL_VERSION = ssl.PROTOCOL_TLSv1_2
 
   def __init__(self,
                host='localhost',

@@ -50,6 +50,7 @@ from common.state import State
 
 SSL_CERT_FILE = "/etc/vmware/ssl/rui.pem"
 NO_AUTH_CERT_FILE = "/etc/vmware/ssl/no-auth.pem"
+SSL_CIPHERS = "ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:RSA+AESGCM:RSA+AES:RSA:!aNULL:!MD5:!DSS"
 
 
 class Agent:
@@ -145,7 +146,7 @@ class Agent:
 
         if cert_file:
             self._logger.info("Initialize SSLSocket using %s" % cert_file)
-            transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=cert_file)
+            transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=cert_file, ciphers=SSL_CIPHERS)
         else:
             self._logger.info("SSL Cert not found, initialize unencrypted socket")
             transport = TSocket.TServerSocket(port=self._config.host_port)
