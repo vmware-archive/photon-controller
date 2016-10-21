@@ -20,6 +20,7 @@ from thrift.transport import TSocket
 from thrift.transport import TTransport
 
 from agent.agent import SSL_CERT_FILE
+from agent.agent import SSL_CIPHERS
 
 
 class DirectClient(object):
@@ -34,7 +35,7 @@ class DirectClient(object):
         client_timeout: if specified, it is set as socket timeout.
     """
     def __init__(self, service_name, client_cls, host, port,
-                 client_timeout=None, cert_file=SSL_CERT_FILE, validate=True):
+                 client_timeout=None, cert_file=SSL_CERT_FILE, ciphers=SSL_CIPHERS, validate=True):
         self._logger = logging.getLogger(__name__)
         self._service_name = service_name
         self._client_cls = client_cls
@@ -44,6 +45,7 @@ class DirectClient(object):
         self._client = None
         self._client_timeout = client_timeout
         self._cert_file = cert_file
+        self._ciphers = ciphers
         self._validate = validate
         self._request_log_level = logging.INFO
 
@@ -52,7 +54,8 @@ class DirectClient(object):
         if os.path.isfile(self._cert_file):
             self._logger.info("Initialize SSLSocket using %s" % self._cert_file)
             sock = TSSLSocket.TSSLSocket(host=self._host, port=self._port,
-                                         validate=self._validate, ca_certs=self._cert_file)
+                                         validate=self._validate, ca_certs=self._cert_file,
+                                         ciphers=self._ciphers)
         else:
             self._logger.info("SSL cert %s not found, initialize unencrypted socket" % self._cert_file)
             sock = TSocket.TSocket(self._host, self._port)
