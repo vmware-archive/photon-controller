@@ -149,6 +149,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       return;
     }
 
+    //If querySpecification is no provided then build query out of usageTag
     if (startState.querySpecification == null) {
       startState.querySpecification = buildQuerySpecification(startState.usageTag);
     }
@@ -345,11 +346,13 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
   }
 
   private void processProvisionHostsSubStage(State currentState,
-                                             Iterator<String> hostServiceLink) {
-    if (hostServiceLink.hasNext()) {
+                                             Iterator<String> hostServiceLinks) {
+    if (hostServiceLinks.hasNext()) {
       ProvisionHostTaskService.State startState = new ProvisionHostTaskService.State();
       startState.deploymentServiceLink = currentState.deploymentServiceLink;
-      startState.hostServiceLink = hostServiceLink.next();
+      startState.hostServiceLink = hostServiceLinks.next();
+      ServiceUtils.logInfo(this, "create_cert flag being set to %s in ProvisionHostTaskService(sdnEnabled) for host %s",
+          currentState.createCert.toString(), startState.hostServiceLink);
       startState.createCert = currentState.createCert;
 
       TaskUtils.startTaskAsync(
@@ -362,7 +365,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
           new FutureCallback<ProvisionHostTaskService.State>() {
             @Override
             public void onSuccess(@Nullable ProvisionHostTaskService.State state) {
-              processProvisionHostsSubStage(currentState, hostServiceLink);
+              processProvisionHostsSubStage(currentState, hostServiceLinks);
             }
 
             @Override
@@ -385,6 +388,8 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       startState.parentTaskServiceLink = aggregatorServiceLink;
       startState.deploymentServiceLink = currentState.deploymentServiceLink;
       startState.hostServiceLink = hostServiceLink;
+      ServiceUtils.logInfo(this, "create_cert flag being set to %s in ProvisionHostTaskService(sdnDisabled) for host %s"
+          , currentState.createCert.toString(), startState.hostServiceLink);
       startState.createCert = currentState.createCert;
       return Operation.createPost(this, ProvisionHostTaskFactoryService.SELF_LINK).setBody(startState);
     });
