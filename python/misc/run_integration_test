@@ -55,16 +55,6 @@ make vib DEBUG=1
 
 SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
-echo "Creating cert for ${ESX_IP}"
-openssl req -subj "/CN=${ESX_IP}/O=VMware Inc./C=US" -new -newkey rsa:1024 -days 1095 -nodes -x509 -keyout rui.key -out rui.crt
-cat rui.crt rui.key > no-auth.pem
-SSL_CERT_FILE=$PWD/rui.crt
-sshpass -p "$ESX_PWD" scp $SSH_OPTS rui.crt root@${ESX_IP}:/etc/vmware/ssl
-sshpass -p "$ESX_PWD" scp $SSH_OPTS rui.key root@${ESX_IP}:/etc/vmware/ssl
-sshpass -p "$ESX_PWD" scp $SSH_OPTS no-auth.pem root@${ESX_IP}:/etc/vmware/ssl
-sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'rm /etc/vmware/ssl/rui.pem' || true
-sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP '/bin/services.sh restart'
-
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'rm /tmp/*.vib' || true
 sshpass -p "$ESX_PWD" scp $SSH_OPTS ./dist/photon-controller-agent-*.vib root@$ESX_IP:/tmp
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP "wget $ENVOY_VIB_URL -P /tmp/"
@@ -79,7 +69,16 @@ sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'esxcli software vib install -f
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'esxcfg-vswitch -a test' || true
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'esxcfg-vswitch -A "VM Network" test' || true
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'vim-cmd hostsvc/net/refresh' || true
-sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP -t -t '/etc/init.d/photon-controller-agent restart'
+
+echo "Creating cert for ${ESX_IP}"
+openssl req -subj "/CN=${ESX_IP}/O=VMware Inc./C=US" -new -newkey rsa:1024 -days 1095 -nodes -x509 -keyout rui.key -out rui.crt
+cat rui.crt rui.key > no-auth.pem
+SSL_CERT_FILE=$PWD/rui.crt
+sshpass -p "$ESX_PWD" scp $SSH_OPTS rui.crt root@${ESX_IP}:/etc/vmware/ssl
+sshpass -p "$ESX_PWD" scp $SSH_OPTS rui.key root@${ESX_IP}:/etc/vmware/ssl
+sshpass -p "$ESX_PWD" scp $SSH_OPTS no-auth.pem root@${ESX_IP}:/etc/opt/vmware/photon/controller
+sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'rm /etc/opt/vmware/photon/controller/rui.pem' || true
+sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP -tt '/bin/services.sh restart'
 
 IMAGE_SUB_DIR=image_ttylinux
 
