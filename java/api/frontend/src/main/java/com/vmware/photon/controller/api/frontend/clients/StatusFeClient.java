@@ -15,6 +15,7 @@ package com.vmware.photon.controller.api.frontend.clients;
 
 import com.vmware.photon.controller.api.frontend.BackendTaskExecutor;
 import com.vmware.photon.controller.api.frontend.ScheduledTaskExecutor;
+import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.clients.status.StatusFeClientUtils;
 import com.vmware.photon.controller.api.frontend.clients.status.StatusProviderFactory;
 import com.vmware.photon.controller.api.frontend.clients.status.XenonStatusProviderFactory;
@@ -26,12 +27,16 @@ import com.vmware.photon.controller.api.model.ComponentStatus;
 import com.vmware.photon.controller.api.model.SystemStatus;
 import com.vmware.photon.controller.api.model.builders.ComponentInstanceBuilder;
 import com.vmware.photon.controller.api.model.builders.ComponentStatusBuilder;
-import com.vmware.photon.controller.common.PhotonControllerServerSet;
 import com.vmware.photon.controller.common.clients.StatusProvider;
-import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
+import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.services.common.NodeGroupService;
+import com.vmware.xenon.services.common.NodeState;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -42,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +56,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 
 /**
@@ -63,31 +70,56 @@ public class StatusFeClient {
   private final Set<Component> components;
   private final Map<Component, StatusProviderFactory> statusProviderFactories;
   private final ExecutorService executor;
+  private final ScheduledExecutorService scheduledExecutorService;
+  private final ServiceHost serviceHost;
+  private final ApiFeXenonRestClient xenonClient;
 
   /**
-   * Creating StatusFeClient with component server sets to iterate through individual servers to get their status.
-   *
-   * @param photonControllerServerSet
-   * @param statusConfig
+   * Creating StatusFeClient with backendTaskExecutor, scheduledTaskExecutor, statusConfig, serviceHost and xenonClient.
    */
   @Inject
   public StatusFeClient(
       @BackendTaskExecutor ExecutorService executor,
       @ScheduledTaskExecutor ScheduledExecutorService scheduledExecutorService,
-      @PhotonControllerServerSet ServerSet photonControllerServerSet,
       StatusConfig statusConfig,
-      ServiceHost serviceHost) {
+      ServiceHost serviceHost,
+      ApiFeXenonRestClient xenonClient) {
     this.executor = executor;
+    this.scheduledExecutorService = scheduledExecutorService;
+    this.serviceHost = serviceHost;
     this.components = statusConfig.getComponents();
+    this.xenonClient = xenonClient;
+    this.xenonClient.start();
 
     statusProviderFactories = Maps.newEnumMap(Component.class);
     statusProviderFactories.put(Component.PHOTON_CONTROLLER,
-            new XenonStatusProviderFactory(photonControllerServerSet, this.executor, scheduledExecutorService,
-                serviceHost));
+        new XenonStatusProviderFactory(new StaticServerSet(), this.executor, scheduledExecutorService, serviceHost));
   }
 
+  /**
+   * Get system status by the following steps:
+   * 1. Get addresses of all nodes in the default xenon node group.
+   * 2. For each node, query xenon service to find status and build info.
+   * 3. Compute overall system status from states of all nodes.
+   */
   public SystemStatus getSystemStatus() throws InternalException {
     logger.info("Getting system status");
+
+    // Get all the nodes in the node group
+    try {
+      Operation result = xenonClient.get(ServiceUriPaths.DEFAULT_NODE_GROUP);
+      Collection<NodeState> nodes = result.getBody(NodeGroupService.NodeGroupState.class).nodes.values();
+      List<InetSocketAddress> servers = nodes.stream()
+          .map(item -> new InetSocketAddress(item.groupReference.getHost(), item.groupReference.getPort()))
+          .collect(Collectors.toList());
+      logger.info("Get all nodes in default node group: {}", servers);
+      StaticServerSet serverSet = new StaticServerSet(servers.toArray(new InetSocketAddress[servers.size()]));
+      statusProviderFactories.get(Component.PHOTON_CONTROLLER).setServerSet(serverSet);
+    } catch (DocumentNotFoundException ex) {
+      logger.error("Couldn't find nodegroup document.", ex);
+      throw new InternalException(ex);
+    }
+
     SystemStatus systemStatus = new SystemStatus();
     List<Callable<Status>> componentStatuses = new ArrayList<>();
     // iterating over all the components to get their statuses
@@ -103,7 +135,7 @@ public class StatusFeClient {
         for (InetSocketAddress server : servers) {
           StatusProvider client = statusProviderFactories.get(component).create(server);
           ComponentInstance instance = new ComponentInstanceBuilder()
-              .status(StatusType.UNREACHABLE).address(server.toString()).build();
+              .status(StatusType.UNREACHABLE).address(server.getHostString()).build();
           componentStatus.addInstance(instance);
           Callable<Status> callable = () -> {
             try {

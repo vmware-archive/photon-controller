@@ -33,7 +33,7 @@ import java.util.concurrent.ScheduledExecutorService;
 public class XenonStatusProviderFactory implements StatusProviderFactory {
 
   private static final Logger logger = LoggerFactory.getLogger(XenonStatusProviderFactory.class);
-  private final ServerSet serverSet;
+  private ServerSet serverSet;
 
   private final ExecutorService executor;
   private final ScheduledExecutorService scheduledExecutorService;
@@ -52,6 +52,11 @@ public class XenonStatusProviderFactory implements StatusProviderFactory {
   @Override
   public ServerSet getServerSet() {
     return this.serverSet;
+  }
+
+  @Override
+  public void setServerSet(ServerSet serverSet) {
+    this.serverSet = serverSet;
   }
 
   @Override
