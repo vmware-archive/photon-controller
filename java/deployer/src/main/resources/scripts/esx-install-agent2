@@ -74,6 +74,7 @@ export JAVA_HOME="/usr/java/default"
 export PATH=$PATH:$JAVA_HOME/bin:/opt/esxcli:/opt/vmware/bin:/opt/likewise/bin
 
 host_cert_dir="/etc/vmware/ssl"
+config_dir="/etc/opt/vmware/photon/controller"
 priv_key_name="rui.key"
 crt_name="rui.crt"
 pem_name="rui.pem"
@@ -85,17 +86,8 @@ function join_lightwave_domain() {
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $join_domain_cmd
 
   # Create pem file
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${host_cert_dir}/${no_auth_pem_name}
-  #create_pem_cmd="cat ${host_cert_dir}/${priv_key_name} > ${host_cert_dir}/${pem_name};
-  #  printf '\n' >> ${host_cert_dir}/${pem_name};
-  #  cat ${host_cert_dir}/${crt_name} >> ${host_cert_dir}/${pem_name};
-  #  cert_alias=\$(/usr/lib/vmware/vmafd/bin/vecs-cli entry list --store TRUSTED_ROOTS | grep \"Alias\" | cut -d: -f2);
-  #  for cert in \$cert_alias; do
-  #    echo \"Processing cert \$cert\";
-  #    printf '\n' >> ${host_cert_dir}/${pem_name};
-  #    /usr/lib/vmware/vmafd/bin/vecs-cli entry getcert --store TRUSTED_ROOTS --alias \$cert >> ${host_cert_dir}/${pem_name};
-  #  done"
-  create_pem_cmd="cat ${host_cert_dir}/${crt_name} ${host_cert_dir}/${priv_key_name} > ${host_cert_dir}/${pem_name}"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${config_dir}/${no_auth_pem_name}
+  create_pem_cmd="cat ${host_cert_dir}/${crt_name} ${host_cert_dir}/${priv_key_name} > ${config_dir}/${pem_name}"
   echo $create_pem_cmd
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $create_pem_cmd
 
@@ -114,7 +106,7 @@ function create_and_copy_certificate_no_auth() {
   cert_dir="./host_cert_no_auth_${host_address}"
   priv_key_path="${cert_dir}/${priv_key_name}"
   host_crt_path="${cert_dir}/${crt_name}"
-  host_pem_path="${cert_dir}/${pem_name}"
+  host_pem_path="${config_dir}/${pem_name}"
 
   if [ ! -d "$cert_dir" ]; then
     mkdir -p ${cert_dir}
@@ -131,12 +123,16 @@ function create_and_copy_certificate_no_auth() {
   sshpass -p "$password" scp $SSH_OPTS ${host_crt_path} ${username}@${host_address}:${host_cert_dir}
   sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:${host_cert_dir}
 
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${host_cert_dir}/${pem_name}
-  sshpass -p "$password" scp $SSH_OPTS ${host_pem_path} ${username}@${host_address}:${host_cert_dir}/${no_auth_pem_name}
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${config_dir}/${pem_name}
+  sshpass -p "$password" scp $SSH_OPTS ${host_pem_path} ${username}@${host_address}:${config_dir}/${no_auth_pem_name}
 
   # listing /etc/vmware/ssl contents after copying
   echo "listing ${host_cert_dir} contents after copying"
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls ${host_cert_dir}
+
+  # listing /etc/vmware/ssl contents after copying
+  echo "listing ${config_dir} contents after creating"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls ${config_dir}
 
   # restart all services to load new cert
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} /bin/services.sh restart
