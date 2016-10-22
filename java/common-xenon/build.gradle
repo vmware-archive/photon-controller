@@ -19,6 +19,27 @@ dependencies {
   testCompile "com.vmware.xenon:xenon-common:${versions.xenon_common}:tests"
 }
 
+ext.sharedManifest = manifest {
+  attributes 'Specification-Title': 'Photon Controller Management API Frontend',
+      'Specification-Version': base_version,
+      'Implementation-Version': full_version,
+      'Built-By': System.getProperty('user.name'),
+      'Built-Date': build_timestamp,
+      'Built-JDK': System.getProperty('java.version'),
+      'Built-Gradle': gradle.gradleVersion,
+      'Git-Commit': git_commit
+}
+
+jar {
+  manifest = project.manifest {
+    from sharedManifest
+  }
+  into("META-INF/maven/$project.group/$project.name") {
+    from "$buildDir/pom.xml"
+    rename ".*", "pom.xml"
+  }
+}
+
 tasks.withType(Test) {
   scanForTestClasses = false
   include "**/*Test.class"

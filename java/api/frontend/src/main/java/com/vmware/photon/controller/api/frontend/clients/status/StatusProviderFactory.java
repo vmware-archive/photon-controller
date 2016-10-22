@@ -26,5 +26,7 @@ public interface StatusProviderFactory {
 
   ServerSet getServerSet();
 
+  void setServerSet(ServerSet serverSet);
+
   StatusProvider create(InetSocketAddress server) throws InternalException;
 }
