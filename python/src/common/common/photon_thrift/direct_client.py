@@ -49,7 +49,7 @@ class DirectClient(object):
 
     def connect(self):
         """Connect to the HostHandler."""
-        if os.path.isfile(self._cert_file):
+        if os.path.isfile(self._cert_file) and os.path.getsize(self._cert_file) > 0:
             self._logger.info("Initialize SSLSocket using %s" % self._cert_file)
             sock = TSSLSocket.TSSLSocket(host=self._host, port=self._port,
                                          validate=self._validate, ca_certs=self._cert_file)
