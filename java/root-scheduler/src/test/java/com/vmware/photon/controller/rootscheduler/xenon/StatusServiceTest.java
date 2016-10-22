@@ -31,6 +31,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.notNullValue;
 
 
 /**
@@ -88,7 +90,7 @@ public class StatusServiceTest {
     public void testReady() throws Throwable {
       Status status = testEnvironment.getServiceState(StatusService.SELF_LINK, Status.class);
       assertThat(status.getType(), is(StatusType.READY));
-      assertThat(status.getBuild_info(), is("build-info: N/A"));
+      assertThat(status.getBuild_info(), is(notNullValue()));
     }
   }
 }
