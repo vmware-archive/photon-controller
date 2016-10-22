@@ -48,8 +48,8 @@ from common.plugin import load_plugins, thrift_services
 from common.service_name import ServiceName
 from common.state import State
 
-SSL_CERT_FILE = "/etc/vmware/ssl/rui.pem"
-NO_AUTH_CERT_FILE = "/etc/vmware/ssl/no-auth.pem"
+SSL_CERT_FILE = "/etc/opt/vmware/photon/controller/rui.pem"
+NO_AUTH_CERT_FILE = "/etc/opt/vmware/photon/controller/no-auth.pem"
 
 
 class Agent:
@@ -138,9 +138,9 @@ class Agent:
             mux_processor.registerProcessor(plugin.name, processor)
 
         cert_file = None
-        if os.path.isfile(SSL_CERT_FILE):
+        if os.path.isfile(SSL_CERT_FILE) and os.path.getsize(SSL_CERT_FILE) > 0:
             cert_file = SSL_CERT_FILE
-        elif os.path.isfile(NO_AUTH_CERT_FILE):
+        elif os.path.isfile(NO_AUTH_CERT_FILE) and os.path.getsize(NO_AUTH_CERT_FILE) > 0:
             cert_file = NO_AUTH_CERT_FILE
 
         if cert_file:
