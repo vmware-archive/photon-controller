@@ -76,7 +76,6 @@ public class StatusServiceTest {
 
       Status status = testEnvironment.getServiceState(StatusService.SELF_LINK, Status.class);
       assertThat(status.getType(), is(StatusType.INITIALIZING));
-      assertThat(status.getBuild_info(), is("build-info: N/A"));
     }
   }
 }

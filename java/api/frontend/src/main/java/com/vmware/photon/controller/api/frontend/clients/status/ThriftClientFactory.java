@@ -40,7 +40,7 @@ public class ThriftClientFactory implements StatusProviderFactory {
   private final Class<?> clientClass;
   private final ClientPoolFactory clientPoolFactory;
   private final ClientProxyFactory clientProxyFactory;
-  private final ServerSet serverSet;
+  private ServerSet serverSet;
   private final String serviceName;
 
   public ThriftClientFactory(ServerSet serverSet,
@@ -58,6 +58,11 @@ public class ThriftClientFactory implements StatusProviderFactory {
   @Override
   public ServerSet getServerSet() {
     return serverSet;
+  }
+
+  @Override
+  public void setServerSet(ServerSet serverSet) {
+    this.serverSet = serverSet;
   }
 
   /**
