@@ -187,14 +187,14 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
         case CHECK_VM_EXISTENCE:
           checkVmExistence(state);
           break;
-        case RELEASE_QUOTA:
-          releaseQuota(state);
+        case GET_NSX_CONFIGURATION:
+          getNsxConfiguration(state);
           break;
         case RELEASE_IP_ADDRESS_SPACE:
           releaseIpAddressSpace(state);
           break;
-        case GET_NSX_CONFIGURATION:
-          getNsxConfiguration(state);
+        case RELEASE_QUOTA:
+          releaseQuota(state);
           break;
         case DELETE_LOGICAL_PORTS:
           deleteLogicalPorts(state);
@@ -296,7 +296,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           try {
             DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
-                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_QUOTA);
+                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE);
 
             patchState.nsxAddress = deploymentState.networkManagerAddress;
             patchState.nsxUsername = deploymentState.networkManagerUsername;
@@ -316,12 +316,49 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   }
 
   /**
+   * Release IPs for the virtual network.
+   */
+  private void releaseIpAddressSpace(DeleteVirtualNetworkWorkflowDocument state) {
+    if (!state.taskServiceEntity.isIpAddressSpaceConsumed) {
+      ServiceUtils.logInfo(this, "The IP address space was not consumed. Skip releasing the address space.");
+      progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_QUOTA);
+      return;
+    }
+
+    SubnetAllocatorService.ReleaseSubnet releaseSubnet =
+        new SubnetAllocatorService.ReleaseSubnet(state.networkId);
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPatch(SubnetAllocatorService.SINGLETON_LINK)
+        .setBody(releaseSubnet)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.STARTED,
+                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_QUOTA);
+            patchState.taskServiceEntity = state.taskServiceEntity;
+            patchState.taskServiceEntity.isIpAddressSpaceConsumed = false;
+
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  /**
    * Releases resource ticket quota for the virtual network.
    */
   private void releaseQuota(DeleteVirtualNetworkWorkflowDocument state) {
     if (!state.taskServiceEntity.isSizeQuotaConsumed) {
       ServiceUtils.logInfo(this, "The quota was not consumed. Skip releasing quota.");
-      progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE);
+      progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
       return;
     }
 
@@ -340,7 +377,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
               ProjectService.State project = op.getBody(ProjectService.State.class);
               String resourceTicketId = project.resourceTicketId;
 
-              returnQuota(state, resourceTicketId);
+              releaseQuota(state, resourceTicketId);
             }).sendWith(this);
         break;
       default:
@@ -349,9 +386,9 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   }
 
   /**
-   * Return quota to the resource ticket.
+   * Releases resource ticket quota for the virtual network.
    */
-  private void returnQuota(DeleteVirtualNetworkWorkflowDocument state, String resourceTicketId) {
+  private void releaseQuota(DeleteVirtualNetworkWorkflowDocument state, String resourceTicketId) {
 
     ResourceTicketService.Patch patch = new ResourceTicketService.Patch();
     patch.patchtype = ResourceTicketService.Patch.PatchType.USAGE_RETURN;
@@ -375,46 +412,9 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           try {
             DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
-                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE);
-            patchState.taskServiceEntity = state.taskServiceEntity;
-            patchState.taskServiceEntity.isSizeQuotaConsumed = false;
-            progress(state, patchState);
-          } catch (Throwable t) {
-            fail(state, t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  /**
-   * Release IPs for the virtual network.
-   */
-  private void releaseIpAddressSpace(DeleteVirtualNetworkWorkflowDocument state) {
-    if (!state.taskServiceEntity.isIpAddressSpaceConsumed) {
-      ServiceUtils.logInfo(this, "The IP address space was not consumed. Skip releasing the address space.");
-      progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
-      return;
-    }
-
-    SubnetAllocatorService.ReleaseSubnet releaseSubnet =
-        new SubnetAllocatorService.ReleaseSubnet(state.networkId);
-
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createPatch(SubnetAllocatorService.SINGLETON_LINK)
-        .setBody(releaseSubnet)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            fail(state, ex);
-            return;
-          }
-
-          try {
-            DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
-                TaskState.TaskStage.STARTED,
                 DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
             patchState.taskServiceEntity = state.taskServiceEntity;
-            patchState.taskServiceEntity.isIpAddressSpaceConsumed = false;
-
+            patchState.taskServiceEntity.isSizeQuotaConsumed = false;
             progress(state, patchState);
           } catch (Throwable t) {
             fail(state, t);
