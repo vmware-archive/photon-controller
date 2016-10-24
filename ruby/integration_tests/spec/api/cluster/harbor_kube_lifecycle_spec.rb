@@ -89,7 +89,6 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true do
       EsxCloud::ClusterHelper.validate_ssh(kubernetes_master_ip)
 
       dest_path_for_tmp_files = "#{ENV['WORKSPACE']}/ruby/integration_tests/spec/api/cluster"
-      puts dest_path_for_tmp_files
       EsxCloud::ClusterHelper.copy_file("/tmp/test_rsa", dest_path_for_tmp_files)
       EsxCloud::ClusterHelper.copy_file("/tmp/harbor_ca_cert.crt", dest_path_for_tmp_files)
 
@@ -110,10 +109,7 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true do
 
   def export_ca_cert(cluster_id)
     cluster = client.find_cluster_by_id(cluster_id)
-    puts cluster.extended_properties["ca_cert"]
-    harbor_ca_cert = File.open("/tmp/harbor_ca_cert.crt", "w")
-    harbor_ca_cert.puts cluster.extended_properties["ca_cert"]
-    harbor_ca_cert.close
+    File.write("/tmp/harbor_ca_cert.crt", cluster.extended_properties["ca_cert"])
   end
 
   # Creating this method separately from harbor_cluster_lifecycle spec
@@ -179,9 +175,7 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true do
   def add_current_user_to_docker_grp(ssh)
     puts "Add current user to docker group"
     add_user_cmd = "sudo usermod -aG docker $(whoami)"
-    puts add_user_cmd
-    output = ssh.exec!(add_user_cmd)
-    puts output
+    ssh.exec!(add_user_cmd)
   end
 
   def copy_ca_cert_to_devbox(ssh)
@@ -265,13 +259,16 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true do
     # puts "Sleeping for 1 mins to let the pod come up ."
     # sleep(300)
     puts "Checking busybox status"
-    check_kube_app_busybox_is_ready(ssh)
+    if !check_kube_app_busybox_is_ready?(ssh)
+      puts "Kubernetes app busybox did not become READY after polling for status 300 iterations."
+    end
 
     puts "list pods running on kubernetes"
     list_cmd = "./kubectl -s http://#{ENV['KUBERNETES_MASTER_IP']}:8080 get pods"
     puts list_cmd
     output = ssh.exec!(list_cmd)
     puts output
+    expect(output).to include("Running")
 
     puts "running nslookup on busybox"
     nslookup_cmd = "./kubectl -s http://#{ENV['KUBERNETES_MASTER_IP']}:8080 exec busybox -- nslookup kubernetes.default"
@@ -289,12 +286,10 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true do
     busybox_yaml_content["$HARBOR_MASTER_IP"] = ENV["SWARM_ETCD_1_IP"]
 
     new_busybox_yaml_path = "#{ENV['WORKSPACE']}/ruby/integration_tests/spec/api/cluster/busybox_updated.yaml"
-    new_busybox_yaml = File.open(new_busybox_yaml_path, "w")
-    new_busybox_yaml.puts busybox_yaml_content
-    new_busybox_yaml.close
+    File.write(new_busybox_yaml_path, busybox_yaml_content)
   end
 
-  def check_kube_app_busybox_is_ready(ssh)
+  def check_kube_app_busybox_is_ready?(ssh)
     retry_max = 300
     retry_cnt = 0
     while retry_cnt < retry_max
@@ -303,9 +298,9 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true do
       puts output
       if output.include? "Running"
         puts "Pod busybox is running"
-        break
+        return true
       end
     end
-    puts "Kubernetes app busybox did not become READY after polling for status 300 times."
+    return false
   end
 end
