@@ -279,13 +279,19 @@ class AttacheClient(HostClient):
     @attache_error_handler
     def unregister_vm(self, vm_id):
         vmPath = self._client.UnregisterVM(self._session, vm_id)
-        vm_dir = os.path.dirname(vmPath)
+        # Path of vm directory is different in vsanDatastore
+        vm_dir = datastore_to_os_path(os.path.dirname(vmPath))
+        if "vsanDatastore" not in vm_dir:
+            vm_dir = os.path.dirname(vm_dir)
         return vm_dir
 
     @attache_error_handler
     def delete_vm(self, vm_id, force):
         vmPath = self._client.DeleteVM2(self._session, vm_id, force)
-        vm_dir = os.path.dirname(datastore_to_os_path(os.path.dirname(vmPath)))
+        # Path of vm directory is different in vsanDatastore
+        vm_dir = datastore_to_os_path(os.path.dirname(vmPath))
+        if "vsanDatastore" not in vm_dir:
+            vm_dir = os.path.dirname(vm_dir)
         return vm_dir
 
     """ Disk and file operations
