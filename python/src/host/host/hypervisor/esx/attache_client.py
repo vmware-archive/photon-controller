@@ -285,7 +285,7 @@ class AttacheClient(HostClient):
     @attache_error_handler
     def delete_vm(self, vm_id, force):
         vmPath = self._client.DeleteVM2(self._session, vm_id, force)
-        vm_dir = os.path.dirname(datastore_to_os_path(os.path.dirname(vmPath)))
+        vm_dir = datastore_to_os_path(os.path.dirname(vmPath))
         return vm_dir
 
     """ Disk and file operations
