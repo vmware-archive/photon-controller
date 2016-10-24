@@ -263,14 +263,24 @@ class TestVmManager(unittest.TestCase):
     @patch.object(os.path, "isdir", return_value=True)
     @patch.object(os.path, "islink", return_value=False)
     def test_delete_vm(self, stray_file, expected, islink, isdir):
+        datastore = MagicMock()
+        datastore.id = "ds1"
+        datastore.type = 1
+        vm_resource = MagicMock()
+        vm_resource.datastore = "ds1"
+        datastores = [datastore]
         """Test deleting a VM"""
-        self.vm_manager.vim_client.delete_vm = MagicMock(return_value="/vmfs/volumes/fake/vm_vm_foo")
+        self.vm_manager.get_resource = MagicMock(return_value=vm_resource)
+        self.vm_manager._ds_manager.get_datastores = MagicMock(return_value=datastores)
+        self.vm_manager.vim_client.delete_vm = MagicMock(return_value="/vmfs/volumes/fake/vm_vm_foo/vm_foo")
         self.vm_manager._logger = MagicMock()
         self.vm_manager.vim_client.delete_file = MagicMock()
 
         with patch.object(os, "listdir", return_value=[stray_file]):
             self.vm_manager.delete_vm("vm_foo")
 
+        self.vm_manager.get_resource.assert_called_once_with("vm_foo")
+        self.vm_manager._ds_manager.get_datastores.assert_called_once_with()
         self.vm_manager.vim_client.delete_vm.assert_called_once_with("vm_foo", False)
         self.vm_manager.vim_client.delete_file.assert_called_once_with("/vmfs/volumes/fake/vm_vm_foo")
         self.vm_manager._logger.info.assert_has_calls(call(expected))
@@ -281,6 +291,16 @@ class TestVmManager(unittest.TestCase):
         ("poweredOn"), ("suspended")
     ])
     def test_delete_vm_wrong_state(self, state):
+        datastore = MagicMock()
+        datastore.id = "ds1"
+        datastore.type = 1
+        vm_resource = MagicMock()
+        vm_resource.datastore = "ds1"
+        datastores = [datastore]
+
+        self.vm_manager.get_resource = MagicMock(return_value=vm_resource)
+        self.vm_manager._ds_manager.get_datastores = MagicMock(return_value=datastores)
+
         runtime = MagicMock()
         runtime.powerState = state
         vm = MagicMock()
