@@ -680,7 +680,7 @@ public class DeploymentWorkflowServiceTest {
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
-          .bindPort(20001)
+          .bindPort(60001)
           .hostCount(1)
           .build();
 
@@ -696,7 +696,7 @@ public class DeploymentWorkflowServiceTest {
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
-          .bindPort(40001)
+          .bindPort(60005)
           .hostCount(remoteNodeCount)
           .build();
     }

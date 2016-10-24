@@ -821,7 +821,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .deployerContext(deployerContext)
           .apiClientFactory(apiClientFactory)
           .listeningExecutorService(listeningExecutorService)
-          .bindPort(40001)
+          .bindPort(60001)
           .zookeeperServersetBuilderFactory(destinationZKFactory)
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .agentControlClientFactory(agentControlClientFactory)
