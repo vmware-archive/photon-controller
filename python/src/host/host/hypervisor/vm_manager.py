@@ -15,6 +15,8 @@ import logging
 import os
 import threading
 
+from gen.resource.ttypes import DatastoreType
+
 from common.kind import Flavor
 from common.kind import Unit
 from host.hypervisor.exceptions import VmNotFoundException
@@ -124,8 +126,14 @@ class VmManager(object):
         :type force: boolean
         :raise VmPowerStateException when vm is not powered off
         """
-        vm_dir = self.vim_client.delete_vm(vm_id, force)
+        vm_resource = self.get_resource(vm_id)
+        ds_type = self._get_datastore_type(vm_resource.datastore)
 
+        vm_dir = self.vim_client.delete_vm(vm_id, force)
+        if ds_type == DatastoreType.VSAN:
+            vm_dir = datastore_to_os_path(vm_dir)
+        else:
+            vm_dir = os.path.dirname(datastore_to_os_path(vm_dir))
         # Upon successful destroy of VM, log any stray files still left in the
         # VM directory and delete the directory.
         if os.path.isdir(vm_dir):
@@ -184,6 +192,10 @@ class VmManager(object):
             # integration test.
             self._logger.exception("Failed to get uuid for %s" % name)
             return None
+
+    def _get_datastore_type(self, datastore_id):
+        datastores = self._ds_manager.get_datastores()
+        return [ds.type for ds in datastores if ds.id == datastore_id][0]
 
     @log_duration
     def get_resources(self):
