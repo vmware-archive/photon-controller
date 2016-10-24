@@ -82,6 +82,7 @@ no_auth_pem_name="no-auth.pem"
 function join_lightwave_domain() {
   # Join lightwave domain. param 1 means use notify services instead of put node to maintenance mode
   join_domain_cmd="/usr/lib/vmware/ic-deploy/bin/configure-lightwave.py ${lightwave_address} ${lightwave_domain} ${lightwave_password} 1 ${host_address} '$password'"
+  echo $join_domain_cmd
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $join_domain_cmd
 
   # Create pem file
