@@ -15,6 +15,8 @@ import logging
 import os
 import threading
 
+from gen.resource.ttypes import DatastoreType
+
 from common.kind import Flavor
 from common.kind import Unit
 from host.hypervisor.exceptions import VmNotFoundException
@@ -124,8 +126,22 @@ class VmManager(object):
         :type force: boolean
         :raise VmPowerStateException when vm is not powered off
         """
+        vm_resource = self.get_resource(vm_id)
+        datastores = self._ds_manager.get_datastores()
+        ds_type = [ds.type for ds in datastores if ds.id == vm_resource.datastore][0]
+
         vm_dir = self.vim_client.delete_vm(vm_id, force)
 
+        # Path of vm directory is different in vsanDatastore
+        # In VSAN every entity(image,vm,disk) is associated with id
+        # and all the files for that entity are under the id folder.
+        # eg. vm dir in vsan :- /vmfs/volumes/vsanDatastore/8989/
+        # vm dir in vmfs datastore :- /vmfs/volumes/datastore1/vm_1234/1234/
+        if ds_type == DatastoreType.VSAN:
+            vm_dir = datastore_to_os_path(vm_dir)
+        else:
+            # Getting parent directory for vm :- /vmfs/volumes/datastore1/vm_1234/
+            vm_dir = os.path.dirname(datastore_to_os_path(vm_dir))
         # Upon successful destroy of VM, log any stray files still left in the
         # VM directory and delete the directory.
         if os.path.isdir(vm_dir):
