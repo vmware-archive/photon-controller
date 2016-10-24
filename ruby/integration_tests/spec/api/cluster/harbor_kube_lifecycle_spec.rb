@@ -73,8 +73,8 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true do
       EsxCloud::ClusterHelper.validate_ssh(harbor_master_ip)
 
       puts "Create a kubernetes cluster"
-      ca_cert = File.read("/tmp/harbor_ca_cert.crt")
-      kube_props = EsxCloud::ClusterHelper.construct_kube_properties(kubernetes_master_ip, kubernetes_etcd_ip, ca_cert)
+      registry_ca_cert = File.read("/tmp/harbor_ca_cert.crt")
+      kube_props = EsxCloud::ClusterHelper.construct_kube_properties(kubernetes_master_ip, kubernetes_etcd_ip, registry_ca_cert)
       kubernetes_cluster = project.create_cluster(
           name: random_name("kubernetes-"),
           type: "KUBERNETES",
@@ -309,4 +309,3 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true do
     puts "Kubernetes app busybox did not become READY after polling for status 300 times."
   end
 end
-

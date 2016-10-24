@@ -223,7 +223,7 @@ public class HarborClusterCreateTaskService extends StatefulService {
           @Override
           public void onSuccess(@Nullable String result) {
             Map<String, String> extendedProperties = new HashMap<>(clusterState.extendedProperties);
-            extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_REGISTRY_CA_CERTIFICATE, result);
+            extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_CA_CERTIFICATE, result);
             // Remove admin password from extended properties since Harbor is already up and we don't need the
             // password any more.
             extendedProperties.remove(ClusterManagerConstants.EXTENDED_PROPERTY_ADMIN_PASSWORD);
