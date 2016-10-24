@@ -783,6 +783,7 @@ public class DeploymentWorkflowServiceTest {
       TestHelper.assertTaskStateFinished(finalState.taskState);
 
       verifyDeploymentServiceState(mgmtHostCount + mixedHostCount);
+      verifyBulkProvisionHostsWorkflowServiceState(isAuthEnabled);
       verifyVmServiceStates(mgmtHostCount + mixedHostCount);
       verifyContainerTemplateServiceStates(isAuthEnabled);
       verifyContainerServiceStates();
@@ -939,6 +940,21 @@ public class DeploymentWorkflowServiceTest {
             assertThat(state.statsStoreType, is(StatsStoreType.GRAPHITE));
             return true;
           }, remoteDeployer);
+    }
+
+    private void verifyBulkProvisionHostsWorkflowServiceState(boolean isAuthEnabled) throws Throwable {
+      List<BulkProvisionHostsWorkflowService.State> states =
+          queryForServiceStates(BulkProvisionHostsWorkflowService.State.class, localDeployer);
+
+      for (BulkProvisionHostsWorkflowService.State state : states) {
+        // If usageTag is set to CLOUD and deployment is authEnabled, the createCert flag should be true.
+        if (state.usageTag.equals(UsageTag.CLOUD.name()) && isAuthEnabled) {
+          assertThat(state.createCert, is(true));
+        } else {
+          assertThat(state.createCert, is(false));
+        }
+      }
+
     }
 
     private void verifyVmServiceStates(int expectedVmEntityNumber) throws Throwable {

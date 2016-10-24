@@ -1238,29 +1238,31 @@ public class DeploymentWorkflowService extends StatefulService {
                   ServiceUtils.logInfo(this, "Create cert flag being set to %s in BulkProvisionHostService for all host"
                   , deploymentState.oAuthEnabled.toString());
                   startState.createCert = deploymentState.oAuthEnabled;
+                  // Here even if we are going to provision all the host, the tag is being set to CLOUD.
+                  startState.usageTag = UsageTag.CLOUD.name();
+
+                  QueryTask.Query kindClause = new QueryTask.Query()
+                      .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+                      .setTermMatchValue(Utils.buildKind(HostService.State.class));
+                  QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+                  querySpecification.query.addBooleanClause(kindClause);
+                  startState.querySpecification = querySpecification;
+
+                  TaskUtils.startTaskAsync(
+                      this,
+                      BulkProvisionHostsWorkflowFactoryService.SELF_LINK,
+                      startState,
+                      (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+                      BulkProvisionHostsWorkflowService.State.class,
+                      currentState.taskPollDelay,
+                      callback);
                 }
               } catch (Throwable t) {
                 failTask(t);
               }
             }));
 
-    startState.usageTag = UsageTag.CLOUD.name();
 
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(HostService.State.class));
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    startState.querySpecification = querySpecification;
-
-    TaskUtils.startTaskAsync(
-        this,
-        BulkProvisionHostsWorkflowFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        BulkProvisionHostsWorkflowService.State.class,
-        currentState.taskPollDelay,
-        callback);
   }
 
   private void setDesiredDeploymentState(State currentState) {
