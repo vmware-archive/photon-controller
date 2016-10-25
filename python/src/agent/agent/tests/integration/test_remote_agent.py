@@ -149,6 +149,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
             used_for_vms=used_for_vms)
         req.image_datastores = set([req.image_datastore_info])
         req.management_only = True
+        req.auth_enabled = True
         if host_id:
             req.host_id = host_id
         else:

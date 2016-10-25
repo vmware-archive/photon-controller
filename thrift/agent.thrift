@@ -133,6 +133,9 @@ struct ProvisionRequest {
   // Id of the deployment
   17: optional string deployment_id
 
+  // To specify whether the deployment is auth-enabled.
+  18: optional bool auth_enabled
+
   99: optional tracing.TracingInfo tracing_info
 }
 
