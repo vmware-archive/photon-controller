@@ -50,7 +50,6 @@ from common.state import State
 CA_PATH = "/etc/vmware/ssl/"
 SSL_CERT_FILE = CA_PATH + "rui.crt"
 SSL_KEY_FILE = CA_PATH + "rui.key"
-NO_AUTH_CERT_FILE = CA_PATH + "no-auth.pem"
 
 
 class Agent:

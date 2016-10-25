@@ -1532,8 +1532,6 @@ public class ProvisionHostTaskService extends StatefulService {
           hostState.hostAddress,
           hostState.agentPort,
           0, // Overcommit ratio is not implemented
-          deploymentState.syslogEndpoint,
-          currentState.agentLogLevel,
           statsPluginConfig,
           (hostState.usageTags != null
               && hostState.usageTags.contains(UsageTag.MGMT.name())
@@ -1541,6 +1539,7 @@ public class ProvisionHostTaskService extends StatefulService {
           ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink),
           ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink),
           deploymentState.ntpEndpoint,
+          currentState.createCert,
           new AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call>() {
             @Override
             public void onComplete(AgentControl.AsyncSSLClient.provision_call provisionCall) {

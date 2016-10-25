@@ -61,6 +61,7 @@ class AgentConfig(object):
     MANAGEMENT_ONLY = "management_only"
     HOST_ID = "host_id"
     DEPLOYMENT_ID = "deployment_id"
+    AUTH_ENABLED = "auth_enabled"
     IMAGE_DATASTORES = "image_datastores"
 
     STATS_STORE_ENDPOINT = "stats_store_endpoint"
@@ -211,6 +212,11 @@ class AgentConfig(object):
             reboot |= self._check_and_set_attr(
                 self.MANAGEMENT_ONLY,
                 provision_req.management_only)
+
+        if provision_req.auth_enabled:
+            reboot |= self._check_and_set_attr(
+                self.AUTH_ENABLED,
+                provision_req.auth_enabled)
 
         reboot |= self._check_and_set_attr(
             self.HOST_ID, provision_req.host_id)
@@ -380,6 +386,11 @@ class AgentConfig(object):
     def deployment_id(self):
         return getattr(self._options, self.DEPLOYMENT_ID)
 
+    @property
+    @locked
+    def auth_enabled(self):
+        return self._options.auth_enabled
+
     @lock_with("_callback_lock")
     def on_config_change(self, option, callback):
         """
@@ -508,6 +519,10 @@ class AgentConfig(object):
         parser.add_option("--management-only", dest="management_only",
                           action="store_true",
                           default=False, help="Management only host")
+
+        parser.add_option("--auth-enabled", dest=self.AUTH_ENABLED,
+                          action="store_true", default=False,
+                          help="Flag indicating whether deployment is auth enabled")
 
         parser.add_option("--host-id", dest=self.HOST_ID,
                           type="string", default=None,
