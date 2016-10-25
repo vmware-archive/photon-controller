@@ -149,6 +149,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
             used_for_vms=used_for_vms)
         req.image_datastores = set([req.image_datastore_info])
         req.management_only = True
+        req.auth_enabled = True
         if host_id:
             req.host_id = host_id
         else:
@@ -333,6 +334,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         self.assertEqual(hostConfig.address, ServerAddress(host=self.server,
                                                            port=8835))
         self.assertTrue(hostConfig.management_only)
+        self.assertTrue(hostConfig.auth_enabled)
         # get_host_config reports datastore id for image datastore  even if it
         # was provisioned with a datastore name.
         image_datastore_name = self.get_image_datastore()

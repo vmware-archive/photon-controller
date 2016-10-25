@@ -247,13 +247,12 @@ public class AgentControlClientTest {
     private String hostAddress = "hostAddress";
     private int hostPort = 8000;
     private double memoryOverCommit = 1.0;
-    private String loggingEndpoint = "loggingEndpoint";
-    private String logLevel = "logLevel";
     private StatsPluginConfig statsPluginConfig = new StatsPluginConfig(false);
     private boolean managementOnly = false;
     private String hostId = "id1";
     private String deploymentId = "deploymentId";
     private String ntpEndpoint = "ntpEndpoint";
+    private boolean authEnabled = true;
 
     @BeforeMethod
     private void setUp() {
@@ -293,8 +292,8 @@ public class AgentControlClientTest {
       agentControlClient.setClientProxy(clientProxy);
 
       assertThat(agentControlClient.provision(dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)),
-              usedForVms, hostAddress, hostPort, memoryOverCommit, loggingEndpoint,
-              logLevel, statsPluginConfig, managementOnly, hostId, deploymentId, ntpEndpoint),
+              usedForVms, hostAddress, hostPort, memoryOverCommit, statsPluginConfig, managementOnly, hostId,
+              deploymentId, ntpEndpoint, authEnabled),
           is(provisionResponse));
       verify(clientProxy).provision(request.capture(), any(AsyncMethodCallback.class));
       // Verify that the image_datastores field is set.
@@ -305,8 +304,8 @@ public class AgentControlClientTest {
     public void testFailureNullHostIp() throws Exception {
       try {
         agentControlClient.provision(dataStoreList, Collections.singleton(imageDataStore), usedForVms,
-            hostAddress, hostPort, memoryOverCommit, loggingEndpoint,
-            logLevel, statsPluginConfig, managementOnly, hostId, deploymentId, ntpEndpoint);
+            hostAddress, hostPort, memoryOverCommit, statsPluginConfig, managementOnly, hostId,
+            deploymentId, ntpEndpoint, authEnabled);
         fail("Synchronous provision call should throw with null async clientProxy");
       } catch (IllegalArgumentException e) {
         assertThat(e.toString(), is("java.lang.IllegalArgumentException: hostname can't be null"));
@@ -322,8 +321,8 @@ public class AgentControlClientTest {
 
       try {
         agentControlClient.provision(dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)),
-            usedForVms, hostAddress, hostPort, memoryOverCommit, loggingEndpoint,
-            logLevel, statsPluginConfig, managementOnly, hostId, deploymentId, ntpEndpoint);
+            usedForVms, hostAddress, hostPort, memoryOverCommit, statsPluginConfig, managementOnly,
+            hostId, deploymentId, ntpEndpoint, authEnabled);
         fail("Synchronous provision call should convert TException on call to RpcException");
       } catch (RpcException e) {
         assertThat(e.getMessage(), is("Thrift exception"));
@@ -342,8 +341,8 @@ public class AgentControlClientTest {
 
       try {
         agentControlClient.provision(dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)),
-            usedForVms, hostAddress, hostPort, memoryOverCommit, loggingEndpoint,
-            logLevel, statsPluginConfig, managementOnly, hostId, deploymentId, ntpEndpoint);
+            usedForVms, hostAddress, hostPort, memoryOverCommit, statsPluginConfig, managementOnly,
+            hostId, deploymentId, ntpEndpoint, authEnabled);
         fail("Synchronous provision call should convert TException on call to RpcException");
       } catch (RpcException e) {
         assertThat(e.getMessage(), is("Thrift exception"));
@@ -367,8 +366,8 @@ public class AgentControlClientTest {
 
       try {
         agentControlClient.provision(dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)),
-            usedForVms, hostAddress, hostPort, memoryOverCommit, loggingEndpoint,
-            logLevel, statsPluginConfig, managementOnly, hostId, deploymentId, ntpEndpoint);
+            usedForVms, hostAddress, hostPort, memoryOverCommit, statsPluginConfig, managementOnly,
+            hostId, deploymentId, ntpEndpoint, authEnabled);
         fail("Synchronous provision call should throw on failure result: " + resultCode.toString());
       } catch (Exception e) {
         assertTrue(e.getClass() == exceptionClass);

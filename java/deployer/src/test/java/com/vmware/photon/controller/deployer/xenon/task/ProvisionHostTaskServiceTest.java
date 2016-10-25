@@ -474,13 +474,12 @@ public class ProvisionHostTaskServiceTest {
               anyString(),
               anyInt(),
               anyDouble(),
-              anyString(),
-              anyString(),
               any(),
               anyBoolean(),
               anyString(),
               anyString(),
               anyString(),
+              anyBoolean(),
               any());
 
       doReturn(agentControlClient).when(agentControlClientFactory).create();
@@ -500,6 +499,7 @@ public class ProvisionHostTaskServiceTest {
       startState.controlFlags = null;
       startState.deploymentServiceLink = deploymentState.documentSelfLink;
       startState.hostServiceLink = hostState.documentSelfLink;
+      startState.createCert = true;
     }
 
     @AfterMethod
@@ -566,13 +566,12 @@ public class ProvisionHostTaskServiceTest {
               eq(hostState.hostAddress),
               eq(hostState.agentPort),
               eq(0.0),
-              eq(deploymentState.syslogEndpoint),
-              eq(finalState.agentLogLevel),
               pluginConfigCaptor.capture(),
               eq(true),
               eq(ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink)),
               eq(ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink)),
               eq(deploymentState.ntpEndpoint),
+              eq(true),
               any());
 
       assertThat(pluginConfigCaptor.getValue().isStats_enabled(), is(deploymentState.statsEnabled));
@@ -626,13 +625,12 @@ public class ProvisionHostTaskServiceTest {
               eq(hostState.hostAddress),
               eq(hostState.agentPort),
               eq(0.0),
-              eq(deploymentState.syslogEndpoint),
-              eq(finalState.agentLogLevel),
               pluginConfigCaptor.capture(),
               eq(true),
               eq(ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink)),
               eq(ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink)),
               eq(deploymentState.ntpEndpoint),
+              eq(true),
               any());
 
       assertThat(pluginConfigCaptor.getValue().isStats_enabled(), is(deploymentState.statsEnabled));
@@ -684,13 +682,12 @@ public class ProvisionHostTaskServiceTest {
               eq(hostState.hostAddress),
               eq(hostState.agentPort),
               eq(0.0),
-              eq(deploymentState.syslogEndpoint),
-              eq(finalState.agentLogLevel),
               pluginConfigCaptor.capture(),
               eq(true),
               eq(ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink)),
               eq(ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink)),
               eq(deploymentState.ntpEndpoint),
+              eq(true),
               any());
 
       assertThat(pluginConfigCaptor.getValue().isStats_enabled(), is(deploymentState.statsEnabled));
@@ -753,13 +750,12 @@ public class ProvisionHostTaskServiceTest {
               eq(hostState.hostAddress),
               eq(hostState.agentPort),
               eq(0.0),
-              eq(deploymentState.syslogEndpoint),
-              eq(finalState.agentLogLevel),
               pluginConfigCaptor.capture(),
               eq(true),
               eq(ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink)),
               eq(ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink)),
               eq(deploymentState.ntpEndpoint),
+              eq(true),
               any());
     }
 
@@ -981,13 +977,12 @@ public class ProvisionHostTaskServiceTest {
               anyString(),
               anyInt(),
               anyDouble(),
-              anyString(),
-              anyString(),
               any(),
               anyBoolean(),
               anyString(),
               anyString(),
               anyString(),
+              anyBoolean(),
               any());
 
       ProvisionHostTaskService.State finalState =
