@@ -299,6 +299,15 @@ public class Main {
           Executors.newScheduledThreadPool(Utils.DEFAULT_IO_THREAD_COUNT),
           photonControllerXenonHost);
 
+
+      /*
+      To make sure that Xenon uses only TLSv1.2 and disallows SSLv3, TLSv1,
+      TLSv1.1 the Docker file for the photon-controller-core container can edited.
+      The java.security file located inside the container at the location
+      /var/opt/OpenJDK-* /jre/lib/security has the information under the
+      jdk.tls.disabledAlgorithms
+      */
+
       SSLContext clientContext = SSLContext.getInstance(ServiceClient.TLS_PROTOCOL_NAME);
       TrustManagerFactory trustManagerFactory = TrustManagerFactory
           .getInstance(TrustManagerFactory.getDefaultAlgorithm());
