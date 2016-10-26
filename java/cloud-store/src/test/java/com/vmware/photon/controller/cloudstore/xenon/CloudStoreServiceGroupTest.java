@@ -183,7 +183,7 @@ public class CloudStoreServiceGroupTest {
     public void setUp() throws Throwable {
       createConfig();
       host = new PhotonControllerXenonHost(
-          config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null);
+          config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
       host.registerCloudStore(cloudStoreServiceGroup);
     }
@@ -209,7 +209,7 @@ public class CloudStoreServiceGroupTest {
       assertThat(storageDir.exists(), is(false));
 
       host = new PhotonControllerXenonHost(
-          config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null);
+          config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
       host.registerCloudStore(cloudStoreServiceGroup);
       assertThat(storageDir.exists(), is(true));
@@ -240,7 +240,7 @@ public class CloudStoreServiceGroupTest {
     private void setUp() throws Throwable {
       createConfig();
       host = new PhotonControllerXenonHost(
-          config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null);
+          config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
       host.registerCloudStore(cloudStoreServiceGroup);
     }
@@ -295,7 +295,7 @@ public class CloudStoreServiceGroupTest {
     private void setUp() throws Throwable {
       createConfig();
       host = new PhotonControllerXenonHost(
-          config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null);
+          config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
       host.registerCloudStore(cloudStoreServiceGroup);
       host.start();

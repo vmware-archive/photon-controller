@@ -44,9 +44,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests {@link ProjectApi}.
+ * Tests {@link ProjectRestApi}.
  */
-public class ProjectApiTest extends ApiTestBase {
+public class ProjectRestApiTest extends ApiTestBase {
 
   @Test
   public void testGetProject() throws IOException {
@@ -58,7 +58,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     Project response = projectApi.getProject("foo");
     assertEquals(response, project1);
@@ -74,7 +74,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -110,7 +110,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     ResourceList<Task> response = projectApi.getTasksForProject("foo");
     assertEquals(response.getItems().size(), taskResourceList.getItems().size());
@@ -139,7 +139,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     ResourceList<Task> response = projectApi.getTasksForProject("foo");
     assertEquals(response.getItems().size(), taskResourceList.getItems().size() + taskResourceListNextPage.getItems()
@@ -163,7 +163,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -206,7 +206,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -242,7 +242,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     Task task = projectApi.delete("foo");
     assertEquals(task, responseTask);
@@ -260,7 +260,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -293,7 +293,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     Task task = projectApi.createDisk("foo", new DiskCreateSpec());
     assertEquals(task, responseTask);
@@ -311,7 +311,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -348,7 +348,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     ResourceList<PersistentDisk> response = projectApi.getDisksInProject("foo");
     assertEquals(response.getItems().size(), persistentDiskResourceList.getItems().size());
@@ -379,7 +379,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     ResourceList<PersistentDisk> response = projectApi.getDisksInProject("foo");
     assertEquals(response.getItems().size(),
@@ -404,7 +404,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     projectApi.getDisksInProjectAsync("foo", new FutureCallback<ResourceList<PersistentDisk>>() {
@@ -448,7 +448,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     projectApi.getDisksInProjectAsync("foo", new FutureCallback<ResourceList<PersistentDisk>>() {
@@ -483,7 +483,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     Task task = projectApi.createVm("foo", new VmCreateSpec());
     assertEquals(task, responseTask);
@@ -502,7 +502,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -542,7 +542,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     ResourceList<FlavoredCompact> response = projectApi.getVmsInProject("foo");
     assertEquals(response.getItems().size(), vmSummaryList.getItems().size());
@@ -574,7 +574,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     ResourceList<FlavoredCompact> response = projectApi.getVmsInProject("foo");
     assertEquals(response.getItems().size(), vmSummaryList.getItems().size() + vmSummaryListNextPage.getItems().size());
@@ -600,7 +600,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     ResourceList<Vm> response = projectApi.getVmDetailsInProject("foo");
     assertEquals(response.getItems().size(), vmSummaryList.getItems().size());
@@ -632,7 +632,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     ResourceList<Vm> response = projectApi.getVmDetailsInProject("foo");
     assertEquals(response.getItems().size(), vmSummaryList.getItems().size() + vmSummaryListNextPage.getItems().size());
@@ -659,7 +659,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     projectApi.getVmsInProjectAsync("foo", new FutureCallback<ResourceList<FlavoredCompact>>() {
@@ -704,7 +704,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     projectApi.getVmsInProjectAsync("foo", new FutureCallback<ResourceList<FlavoredCompact>>() {
@@ -739,7 +739,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     Task task = projectApi.createCluster("foo", new ClusterCreateSpec());
     assertEquals(task, responseTask);
@@ -757,7 +757,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -796,7 +796,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     ResourceList<Cluster> response = projectApi.getClustersInProject("foo");
     assertEquals(response.getItems().size(), clusterList.getItems().size());
@@ -828,7 +828,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
 
     ResourceList<Cluster> response = projectApi.getClustersInProject("foo");
     assertEquals(response.getItems().size(), clusterList.getItems().size() + clusterListNextPage.getItems().size());
@@ -854,7 +854,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     projectApi.getClustersInProjectAsync("foo", new FutureCallback<ResourceList<Cluster>>() {
@@ -899,7 +899,7 @@ public class ProjectApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ProjectApi projectApi = new ProjectApi(restClient);
+    ProjectApi projectApi = new ProjectRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     projectApi.getClustersInProjectAsync("foo", new FutureCallback<ResourceList<Cluster>>() {

@@ -20,12 +20,19 @@ import com.vmware.photon.controller.agent.gen.ProvisionResponse;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.agent.gen.UpgradeResultCode;
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.resource.FlavorApi;
+import com.vmware.photon.controller.api.client.resource.FlavorRestApi;
 import com.vmware.photon.controller.api.client.resource.ImagesApi;
+import com.vmware.photon.controller.api.client.resource.ImagesRestApi;
 import com.vmware.photon.controller.api.client.resource.ProjectApi;
+import com.vmware.photon.controller.api.client.resource.ProjectRestApi;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.TasksRestApi;
 import com.vmware.photon.controller.api.client.resource.TenantsApi;
+import com.vmware.photon.controller.api.client.resource.TenantsRestApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.FlavorCreateSpec;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.ImageState;
@@ -516,13 +523,13 @@ public class MockHelper {
   @SuppressWarnings("unchecked")
   public static void mockApiClient(ApiClientFactory apiClientFactory, MultiHostEnvironment<?> machine, boolean
       isSuccess) throws Throwable {
-    ApiClient apiClient = mock(ApiClient.class);
-    ProjectApi projectApi = mock(ProjectApi.class);
-    TasksApi tasksApi = mock(TasksApi.class);
-    VmApi vmApi = mock(VmApi.class);
-    FlavorApi flavorApi = mock(FlavorApi.class);
-    ImagesApi imagesApi = mock(ImagesApi.class);
-    TenantsApi tenantsApi = mock(TenantsApi.class);
+    ApiClient apiClient = mock(RestApiClient.class);
+    ProjectApi projectApi = mock(ProjectRestApi.class);
+    TasksApi tasksApi = mock(TasksRestApi.class);
+    VmApi vmApi = mock(VmRestApi.class);
+    FlavorApi flavorApi = mock(FlavorRestApi.class);
+    ImagesApi imagesApi = mock(ImagesRestApi.class);
+    TenantsApi tenantsApi = mock(TenantsRestApi.class);
 
     final Task taskReturnedByCreateVm = TestHelper.createCompletedApifeTask("CREATE_VM");
     final Task taskReturnedBySetMetadata = TestHelper.createCompletedApifeTask("SET_METADATA");

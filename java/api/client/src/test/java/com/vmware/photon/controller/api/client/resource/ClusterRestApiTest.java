@@ -37,9 +37,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests {@link ClusterApi}.
+ * Tests {@link ClusterRestApi}.
  */
-public class ClusterApiTest extends ApiTestBase {
+public class ClusterRestApiTest extends ApiTestBase {
 
   @Test
   public void testGetCluster() throws IOException {
@@ -52,7 +52,7 @@ public class ClusterApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ClusterApi clusterApi = new ClusterApi(restClient);
+    ClusterApi clusterApi = new ClusterRestApi(restClient);
 
     Cluster response = clusterApi.getCluster("foo");
     assertEquals(response, cluster);
@@ -69,7 +69,7 @@ public class ClusterApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ClusterApi clusterApi = new ClusterApi(restClient);
+    ClusterApi clusterApi = new ClusterRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -102,7 +102,7 @@ public class ClusterApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ClusterApi clusterApi = new ClusterApi(restClient);
+    ClusterApi clusterApi = new ClusterRestApi(restClient);
 
     Task task = clusterApi.delete("foo");
     assertEquals(task, responseTask);
@@ -120,7 +120,7 @@ public class ClusterApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ClusterApi clusterApi = new ClusterApi(restClient);
+    ClusterApi clusterApi = new ClusterRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -153,7 +153,7 @@ public class ClusterApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ClusterApi clusterApi = new ClusterApi(restClient);
+    ClusterApi clusterApi = new ClusterRestApi(restClient);
 
     Task task = clusterApi.resize("dummy-cluster-id", 100);
     assertEquals(task, responseTask);
@@ -171,7 +171,7 @@ public class ClusterApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ClusterApi clusterApi = new ClusterApi(restClient);
+    ClusterApi clusterApi = new ClusterRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -208,7 +208,7 @@ public class ClusterApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ClusterApi clusterApi = new ClusterApi(restClient);
+    ClusterApi clusterApi = new ClusterRestApi(restClient);
 
     ResourceList<Vm> response = clusterApi.getVmsInCluster("foo");
     assertEquals(response.getItems().size(), vmList.getItems().size());
@@ -237,7 +237,7 @@ public class ClusterApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ClusterApi clusterApi = new ClusterApi(restClient);
+    ClusterApi clusterApi = new ClusterRestApi(restClient);
 
     ResourceList<Vm> response = clusterApi.getVmsInCluster("foo");
     assertEquals(response.getItems().size(), vmList.getItems().size() + vmListNextPage.getItems().size());
@@ -261,7 +261,7 @@ public class ClusterApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ClusterApi clusterApi = new ClusterApi(restClient);
+    ClusterApi clusterApi = new ClusterRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     clusterApi.getVmsInClusterAsync("foo", new FutureCallback<ResourceList<Vm>>() {
@@ -303,7 +303,7 @@ public class ClusterApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ClusterApi clusterApi = new ClusterApi(restClient);
+    ClusterApi clusterApi = new ClusterRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     clusterApi.getVmsInClusterAsync("foo", new FutureCallback<ResourceList<Vm>>() {

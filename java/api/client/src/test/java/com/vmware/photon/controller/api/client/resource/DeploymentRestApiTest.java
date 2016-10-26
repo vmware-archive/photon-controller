@@ -39,9 +39,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests {@link DeploymentApi}.
+ * Tests {@link DeploymentRestApi}.
  */
-public class DeploymentApiTest extends ApiTestBase {
+public class DeploymentRestApiTest extends ApiTestBase {
 
   @Test
   public void testListAll() throws IOException {
@@ -54,7 +54,7 @@ public class DeploymentApiTest extends ApiTestBase {
 
     setupMocks(serializedResponse, HttpStatus.SC_OK);
 
-    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+    DeploymentApi deploymentApi = new DeploymentRestApi(restClient);
 
     ResourceList<Deployment> response = deploymentApi.listAll();
     assertEquals(response.getItems().size(), deploymentResourceList.getItems().size());
@@ -77,7 +77,7 @@ public class DeploymentApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedResponse, serializedResponseNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+    DeploymentApi deploymentApi = new DeploymentRestApi(restClient);
 
     ResourceList<Deployment> response = deploymentApi.listAll();
     assertEquals(response.getItems().size(), deploymentResourceList.getItems().size() +
@@ -97,7 +97,7 @@ public class DeploymentApiTest extends ApiTestBase {
 
     setupMocks(serializedResponse, HttpStatus.SC_OK);
 
-    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+    DeploymentApi deploymentApi = new DeploymentRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -135,7 +135,7 @@ public class DeploymentApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedResponse, serializedResponseNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+    DeploymentApi deploymentApi = new DeploymentRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -162,7 +162,7 @@ public class DeploymentApiTest extends ApiTestBase {
   @Test
   public void testPauseSystem() throws IOException {
     Task responseTask = getExpectedTaskResponse();
-    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+    DeploymentApi deploymentApi = new DeploymentRestApi(restClient);
 
     Task task = deploymentApi.pauseSystem("deploymentId1");
     assertEquals(task, responseTask);
@@ -171,7 +171,7 @@ public class DeploymentApiTest extends ApiTestBase {
   @Test
   public void testPauseSystemAsync() throws IOException, InterruptedException {
     final Task responseTask = getExpectedTaskResponse();
-    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+    DeploymentApi deploymentApi = new DeploymentRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -195,7 +195,7 @@ public class DeploymentApiTest extends ApiTestBase {
   @Test
   public void testResumeSystem() throws IOException {
     Task responseTask = getExpectedTaskResponse();
-    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+    DeploymentApi deploymentApi = new DeploymentRestApi(restClient);
 
     Task task = deploymentApi.resumeSystem("deploymentId1");
     assertEquals(task, responseTask);
@@ -204,7 +204,7 @@ public class DeploymentApiTest extends ApiTestBase {
   @Test
   public void testResumeSystemAsync() throws Exception {
     Task responseTask = getExpectedTaskResponse();
-    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+    DeploymentApi deploymentApi = new DeploymentRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -262,7 +262,7 @@ public class DeploymentApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+    DeploymentApi deploymentApi = new DeploymentRestApi(restClient);
 
     ResourceList<Vm> response = deploymentApi.getAllDeploymentVms("foo");
     assertEquals(response.getItems().size(), vmList.getItems().size());
@@ -291,7 +291,7 @@ public class DeploymentApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+    DeploymentApi deploymentApi = new DeploymentRestApi(restClient);
 
     ResourceList<Vm> response = deploymentApi.getAllDeploymentVms("foo");
     assertEquals(response.getItems().size(), vmList.getItems().size() + vmListNextPage.getItems().size());
@@ -315,7 +315,7 @@ public class DeploymentApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+    DeploymentApi deploymentApi = new DeploymentRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     deploymentApi.getAllDeploymentVmsAsync("foo", new FutureCallback<ResourceList<Vm>>() {
@@ -357,7 +357,7 @@ public class DeploymentApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    DeploymentApi deploymentApi = new DeploymentApi(restClient);
+    DeploymentApi deploymentApi = new DeploymentRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     deploymentApi.getAllDeploymentVmsAsync("foo", new FutureCallback<ResourceList<Vm>>() {
