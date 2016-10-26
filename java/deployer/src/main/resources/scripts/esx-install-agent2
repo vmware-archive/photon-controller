@@ -81,7 +81,7 @@ no_auth_pem_name="no-auth.pem"
 
 function join_lightwave_domain() {
   # Join lightwave domain. param 1 means use notify services instead of put node to maintenance mode
-  join_domain_cmd="/usr/lib/vmware/ic-deploy/bin/configure-lightwave.py ${lightwave_address} ${lightwave_domain} ${lightwave_password} 1 ${host_address} '$password'"
+  join_domain_cmd="/usr/lib/vmware/ic-deploy/bin/configure-lightwave.py ${lightwave_address} ${lightwave_domain} '${lightwave_password}' 1 ${host_address} '$password'"
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $join_domain_cmd
 
   # Create pem file
@@ -92,7 +92,7 @@ function join_lightwave_domain() {
 
   # Listing /etc/vmware/ssl contents after copying
   echo "listing ${host_cert_dir} contents after copying"
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls ${host_cert_dir}
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls -l ${host_cert_dir}
 
   # restart photon-controller-agent
   restart_agent_cmd="if [ -f /etc/init.d/photon-controller-agent ]; then /etc/init.d/photon-controller-agent restart; fi"
@@ -119,18 +119,19 @@ function create_and_copy_certificate_no_auth() {
     echo "Use existing certs at ${cert_dir}"
   fi
 
-  sshpass -p "$password" scp $SSH_OPTS ${host_crt_path} ${username}@${host_address}:${host_cert_dir}
-  sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:${host_cert_dir}
+  sshpass -p "$password" scp $SSH_OPTS ${host_crt_path} ${username}@${host_address}:/tmp
+  sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:/tmp
 
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${host_cert_dir}/${pem_name}
   sshpass -p "$password" scp $SSH_OPTS ${host_pem_path} ${username}@${host_address}:${host_cert_dir}/${no_auth_pem_name}
 
+  # apply new cert and notify affected services
+  apply_cert_cmd="/opt/vmware/photon/controller/sh/apply_cert.py ${host_address} '$password' /tmp/${crt_name} /tmp/${priv_key_name}"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $apply_cert_cmd
+
   # listing /etc/vmware/ssl contents after copying
   echo "listing ${host_cert_dir} contents after copying"
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls ${host_cert_dir}
-
-  # restart all services to load new cert
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} /bin/services.sh restart
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls -l ${host_cert_dir}
 }
 
 sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} date
