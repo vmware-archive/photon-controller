@@ -13,7 +13,9 @@
 
 package com.vmware.photon.controller.core;
 
+import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.api.frontend.ApiFeService;
+import com.vmware.photon.controller.api.frontend.clients.api.LocalApiClient;
 import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
@@ -238,12 +240,14 @@ public class Main {
         photonControllerConfig.getXenonConfig().getRegistrationAddress(), Constants.MANAGEMENT_API_PORT));
 
     logger.info("Creating PhotonController Xenon Host");
+    ApiClient apiClient = new LocalApiClient();
     final PhotonControllerXenonHost photonControllerXenonHost = new PhotonControllerXenonHost(
         photonControllerConfig.getXenonConfig(),
         hostClientFactory,
         agentControlClientFactory,
         nsxClientFactory,
         cloudStoreHelper,
+        apiClient,
         sslContext);
     logger.info("Created PhotonController Xenon Host");
 

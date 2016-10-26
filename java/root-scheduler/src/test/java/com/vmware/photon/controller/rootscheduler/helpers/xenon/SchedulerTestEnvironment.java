@@ -50,7 +50,8 @@ public class SchedulerTestEnvironment extends MultiHostEnvironment<PhotonControl
       xenonConfig.setPort(0);
       xenonConfig.setStoragePath(sandbox);
 
-      hosts[i] = new PhotonControllerXenonHost(xenonConfig, hostClientFactory, null, null, cloudStoreHelper, null);
+      hosts[i] = new PhotonControllerXenonHost(xenonConfig, hostClientFactory, null, null, cloudStoreHelper, null,
+          null);
       SchedulerServiceGroup schedulerServiceGroup = new SchedulerServiceGroup(config.getRoot(), constraintChecker);
       hosts[i].registerScheduler(schedulerServiceGroup);
     }

@@ -117,7 +117,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           agentControlClientFactory,
           nsxClientFactory,
           cloudStoreHelper,
-          null);
+          null, null);
 
       DeployerServiceGroup deployerServiceGroup = new DeployerServiceGroup(
           deployerContext,

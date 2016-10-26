@@ -14,8 +14,11 @@
 package com.vmware.photon.controller.deployer.xenon.task;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.TasksRestApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -360,9 +363,9 @@ public class DeleteVmTaskServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       apiClientFactory = mock(ApiClientFactory.class);
-      apiClient = mock(ApiClient.class);
-      vmApi = mock(VmApi.class);
-      tasksApi = mock(TasksApi.class);
+      apiClient = mock(RestApiClient.class);
+      vmApi = mock(VmRestApi.class);
+      tasksApi = mock(TasksRestApi.class);
       doReturn(apiClient).when(apiClientFactory).create();
       doReturn(vmApi).when(apiClient).getVmApi();
       doReturn(tasksApi).when(apiClient).getTasksApi();

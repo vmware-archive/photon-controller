@@ -121,7 +121,7 @@ public class SchedulerServiceGroupTest {
           null,
           null,
           cloudStoreHelper,
-          null);
+          null, null);
       SchedulerServiceGroup schedulerServiceGroup = new SchedulerServiceGroup(config.getRoot(), checker);
       host.registerScheduler(schedulerServiceGroup);
     }
@@ -150,7 +150,7 @@ public class SchedulerServiceGroupTest {
           null,
           null,
           cloudStoreHelper,
-          null);
+          null, null);
       SchedulerServiceGroup schedulerServiceGroup = new SchedulerServiceGroup(config.getRoot(), checker);
       host.registerScheduler(schedulerServiceGroup);
 
@@ -190,7 +190,7 @@ public class SchedulerServiceGroupTest {
           null,
           null,
           cloudStoreHelper,
-          null);
+          null, null);
       SchedulerServiceGroup schedulerServiceGroup = new SchedulerServiceGroup(config.getRoot(), checker);
       host.registerScheduler(schedulerServiceGroup);
     }
@@ -244,7 +244,7 @@ public class SchedulerServiceGroupTest {
           null,
           null,
           cloudStoreHelper,
-          null);
+          null, null);
       SchedulerServiceGroup schedulerServiceGroup = new SchedulerServiceGroup(config.getRoot(), checker);
       host.registerScheduler(schedulerServiceGroup);
     }
@@ -305,7 +305,7 @@ public class SchedulerServiceGroupTest {
       xenonConfig.setBindAddress("0.0.0.0");
       xenonConfig.setPort(18000);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
-      host = new PhotonControllerXenonHost(xenonConfig, hostClientFactory, null, null, cloudStoreHelper, null);
+      host = new PhotonControllerXenonHost(xenonConfig, hostClientFactory, null, null, cloudStoreHelper, null, null);
       CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(null, host);
       SchedulerServiceGroup schedulerServiceGroup = new SchedulerServiceGroup(config.getRoot(), checker);
       host.registerScheduler(schedulerServiceGroup);
@@ -318,7 +318,7 @@ public class SchedulerServiceGroupTest {
       xenonConfig2.setPort(18002);
       xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
 
-      host2 = new PhotonControllerXenonHost(xenonConfig2, hostClientFactory, null, null, cloudStoreHelper, null);
+      host2 = new PhotonControllerXenonHost(xenonConfig2, hostClientFactory, null, null, cloudStoreHelper, null, null);
       SchedulerServiceGroup schedulerServiceGroup2 = new SchedulerServiceGroup(config.getRoot(), checker);
       host2.registerScheduler(schedulerServiceGroup2);
       host2.setMaintenanceIntervalMicros(maintenanceInterval);

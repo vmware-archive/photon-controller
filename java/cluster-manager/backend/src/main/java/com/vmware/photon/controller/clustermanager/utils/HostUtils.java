@@ -33,7 +33,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 public class HostUtils {
 
   public static ApiClient getApiClient(Service service) {
-    return getClusterManagerFactory(service).createApiClient();
+    return getClusterManagerFactory(service).createApiClient(service);
   }
 
   public static EtcdClient getEtcdClient(Service service) {

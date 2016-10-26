@@ -82,7 +82,7 @@ public class HostUtilsTest {
   /**
    * This class implements tests for the getApiClient method.
    */
-  public class GetApiClientTest {
+  public class GetRestApiClientTest {
 
     private StatefulService service;
 
@@ -97,7 +97,7 @@ public class HostUtilsTest {
   /**
    * This class implements tests for the getApiClientFactory method.
    */
-  public class GetApiClientFactoryTest {
+  public class GetRestApiClientFactoryTest {
 
     private StatefulService service;
 
