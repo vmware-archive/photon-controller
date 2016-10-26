@@ -168,25 +168,31 @@ public class ClusterDeleteTaskService extends StatefulService {
   private void getVms(final ClusterDeleteTask currentState) throws Throwable {
     ApiClient client = HostUtils.getApiClient(this);
 
-    client.getClusterApi().getVmsInClusterAsync(
-        currentState.clusterId,
-        new FutureCallback<ResourceList<Vm>>() {
-          @Override
-          public void onSuccess(@Nullable ResourceList<Vm> result) {
-            List<String> vmIds = new ArrayList<>();
-            for (Vm vm : result.getItems()) {
-              vmIds.add(vm.getId());
+    getHost().run(() -> {
+      try {
+        client.getClusterApi().getVmsInClusterAsync(
+            currentState.clusterId,
+            new FutureCallback<ResourceList<Vm>>() {
+              @Override
+              public void onSuccess(@Nullable ResourceList<Vm> result) {
+                List<String> vmIds = new ArrayList<>();
+                for (Vm vm : result.getItems()) {
+                  vmIds.add(vm.getId());
+                }
+
+                deleteVms(currentState, vmIds);
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                failTask(t);
+              }
             }
-
-            deleteVms(currentState, vmIds);
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        }
-    );
+        );
+      } catch (Exception e) {
+        failTask(e);
+      }
+    });
   }
 
   /**

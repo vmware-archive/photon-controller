@@ -115,7 +115,9 @@ describe "Mesos cluster-service lifecycle", cluster: true do
       rescue EsxCloud::CliError => e
         e.output.should match("not found")
       end
-    rescue EsxCloud::Error => e
+    rescue => e
+      puts "sleep 1200"
+      sleep 1200
       EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
       fail "MESOS cluster integration Test failed. Error: #{e.message}"
     end

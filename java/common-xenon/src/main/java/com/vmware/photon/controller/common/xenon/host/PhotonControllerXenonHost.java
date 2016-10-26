@@ -12,6 +12,7 @@
  */
 package com.vmware.photon.controller.common.xenon.host;
 
+import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
@@ -80,6 +81,7 @@ public class PhotonControllerXenonHost
     private HostClientFactory hostClientFactory;
     private final NsxClientFactory nsxClientFactory;
     private CloudStoreHelper cloudStoreHelper;
+    private ApiClient apiClient;
     private BuildInfo buildInfo;
 
     private final List<XenonServiceGroup> xenonServiceGroups = Collections.synchronizedList(new ArrayList<>());
@@ -158,6 +160,13 @@ public class PhotonControllerXenonHost
       return hostClientFactory.create();
     }
 
+    public ApiClient getApiClient() {
+      return apiClient;
+    }
+
+    public void setApiClient(ApiClient apiClient) {
+      this.apiClient = apiClient;
+    }
 
     @Override
     public AgentControlClient getAgentControlClient() {

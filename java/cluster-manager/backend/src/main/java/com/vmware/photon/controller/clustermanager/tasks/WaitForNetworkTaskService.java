@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.NetworkConnection;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.VmNetworks;
@@ -130,23 +130,28 @@ public class WaitForNetworkTaskService extends StatefulService {
   }
 
   private void callGetNetworks(final State currentState) throws IOException {
+    getHost().run(() -> {
+      try {
+        HostUtils.getApiClient(this).getVmApi().getNetworksAsync(currentState.vmId,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@Nullable Task task) {
+                try {
+                  processTask(currentState, task);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }
 
-    HostUtils.getApiClient(this).getVmApi().getNetworksAsync(currentState.vmId,
-        new FutureCallback<Task>() {
-          @Override
-          public void onSuccess(@Nullable Task task) {
-            try {
-              processTask(currentState, task);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            failTask(throwable);
-          }
-        });
+              @Override
+              public void onFailure(Throwable throwable) {
+                failTask(throwable);
+              }
+            });
+      } catch (Exception e) {
+        failTask(e);
+      }
+    });
   }
 
   private void processTask(final State currentState, Task task) {
@@ -173,7 +178,7 @@ public class WaitForNetworkTaskService extends StatefulService {
   }
 
   private void processVmNetworks(final State currentState, Task task) throws IOException {
-    VmNetworks vmNetworks = VmApi.parseVmNetworksFromTask(task);
+    VmNetworks vmNetworks = VmRestApi.parseVmNetworksFromTask(task);
     ServiceUtils.logInfo(this, "Received VM networks response: " + Utils.toJson(false, true, vmNetworks));
     for (NetworkConnection networkConnection : vmNetworks.getNetworkConnections()) {
       // We look for the first NIC that has a MAC address with a VMware OUI and an IP Address
