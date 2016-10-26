@@ -27,7 +27,6 @@ import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
@@ -112,7 +111,6 @@ public class TestHost extends PhotonControllerXenonHost {
     DeployerContext deployerContext = ConfigBuilder.build(DeployerTestConfig.class,
         DeployerContextTest.class.getResource("/config.yml").getPath()).getDeployerContext();
 
-    DockerProvisionerFactory dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
     ApiClientFactory apiClientFactory = mock(ApiClientFactory.class);
     ContainersConfig containersConfig = mock(ContainersConfig.class);
     ListeningExecutorService listeningExecutorService = mock(ListeningExecutorService.class);
@@ -127,7 +125,6 @@ public class TestHost extends PhotonControllerXenonHost {
 
     DeployerServiceGroup deployerServiceGroup = new DeployerServiceGroup(
         deployerContext,
-        dockerProvisionerFactory,
         apiClientFactory,
         containersConfig,
         listeningExecutorService,
