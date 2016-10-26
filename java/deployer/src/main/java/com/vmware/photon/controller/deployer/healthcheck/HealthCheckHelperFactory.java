@@ -24,7 +24,8 @@ public interface HealthCheckHelperFactory {
   public HealthCheckHelper create(
       final Service service,
       final ContainersConfig.ContainerType containerType,
-      final String ipAddress);
+      final String ipAddress,
+      final boolean authEnabled);
 
   public XenonBasedHealthChecker create(
       final Service service,
