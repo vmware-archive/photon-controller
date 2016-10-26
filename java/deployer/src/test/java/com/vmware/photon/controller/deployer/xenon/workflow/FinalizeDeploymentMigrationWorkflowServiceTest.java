@@ -50,8 +50,6 @@ import com.vmware.photon.controller.common.xenon.migration.UpgradeInformation;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
@@ -89,6 +87,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -815,7 +814,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .hostCount(1)
           .build();
 
-      DockerProvisionerFactory dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       destinationEnvironment = new TestEnvironment.Builder()
           .hostCount(1)
           .deployerContext(deployerContext)
@@ -826,10 +824,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
-          .dockerProvisionerFactory(dockerProvisionerFactory)
           .build();
-
-      when(dockerProvisionerFactory.create(anyString())).thenReturn(mock(DockerProvisioner.class));
 
       ZookeeperClient sourceZKBuilder = mock(ZookeeperClient.class);
       doReturn(sourceZKBuilder).when(sourceZKFactory).create();
