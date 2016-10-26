@@ -14,9 +14,13 @@
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.resource.DeploymentApi;
+import com.vmware.photon.controller.api.client.resource.DeploymentRestApi;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.TasksRestApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.AuthInfo;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.NetworkConnection;
@@ -633,10 +637,10 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void mockApiClient(boolean isSuccess) throws Throwable {
 
-      ApiClient apiClient = mock(ApiClient.class);
-      DeploymentApi deploymentApi = mock(DeploymentApi.class);
-      VmApi vmApi = mock(VmApi.class);
-      TasksApi tasksApi = mock(TasksApi.class);
+      ApiClient apiClient = mock(RestApiClient.class);
+      DeploymentApi deploymentApi = mock(DeploymentRestApi.class);
+      VmApi vmApi = mock(VmRestApi.class);
+      TasksApi tasksApi = mock(TasksRestApi.class);
 
       Deployment deployment = new Deployment();
       deployment.setId("deploymentId1");
