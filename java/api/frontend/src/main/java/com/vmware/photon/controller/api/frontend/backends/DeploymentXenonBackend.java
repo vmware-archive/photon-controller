@@ -214,7 +214,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
 
     List<TenantEntity> tenantEntities = tenantBackend.getAllTenantEntities();
     if (tenantEntities != null && !tenantEntities.isEmpty()) {
-      List<BaseEntity> tenantEntitiesToBePushed = new ArrayList();
+      List<BaseEntity> tenantEntitiesToBePushed = new ArrayList<>();
       tenantEntitiesToBePushed.addAll(tenantEntities);
       taskBackend.getStepBackend().createQueuedStep(taskEntity, tenantEntitiesToBePushed,
           Operation.PUSH_TENANT_SECURITY_GROUPS);
@@ -675,7 +675,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
   }
 
   @VisibleForTesting
-  public boolean isNoManagementHost(Optional optional) {
+  public boolean isNoManagementHost(Optional<Integer> optional) {
     ResourceList<Host> hostList = null;
     hostList = this.hostBackend.filterByUsage(UsageTag.MGMT, optional);
     if (hostList == null || 0 == hostList.getItems().size()){

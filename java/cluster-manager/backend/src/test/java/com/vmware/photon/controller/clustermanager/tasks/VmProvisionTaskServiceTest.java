@@ -710,9 +710,10 @@ public class VmProvisionTaskServiceTest {
       assertThat(serviceState.taskState.failure.message, Matchers.containsString("verify vm failed"));
     }
 
+    @SuppressWarnings("unchecked")
     private void mockCreateVm(boolean isSuccess) throws Throwable {
       if (isSuccess) {
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByCreateVm);
@@ -736,9 +737,10 @@ public class VmProvisionTaskServiceTest {
       doReturn(taskReturnedByAttachIso).when(vmApi).uploadAndAttachIso(anyString(), anyString());
     }
 
+    @SuppressWarnings("unchecked")
     private void mockStartVm(boolean isSuccess) throws Throwable {
       if (isSuccess) {
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByStartVm);
@@ -751,9 +753,10 @@ public class VmProvisionTaskServiceTest {
       }
     }
 
+    @SuppressWarnings("unchecked")
     private void mockVerifyVm(boolean isSuccess) throws Throwable {
       if (isSuccess) {
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByGetVmNetwork);

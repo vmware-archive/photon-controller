@@ -215,7 +215,7 @@ public class XenonTaskStatusStepCmdTest extends PowerMockTestCase {
    */
   public class SubStageTest {
     // A complex answer that changes stage after numRetry.
-    private class TaskStageAnswer implements Answer {
+    private class TaskStageAnswer implements Answer<Object> {
       int numRetry;
       final TaskState.TaskStage stage;
       final TaskState.TaskStage newStage;
@@ -237,7 +237,7 @@ public class XenonTaskStatusStepCmdTest extends PowerMockTestCase {
     }
 
     // A complex answer that changes subStage after numRetry.
-    private class TaskSubStageAnswer implements Answer {
+    private class TaskSubStageAnswer implements Answer<Object> {
       int numRetry;
       final int subStage;
       final int newSubStage;

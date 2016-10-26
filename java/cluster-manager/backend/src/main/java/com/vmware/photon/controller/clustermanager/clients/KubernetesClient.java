@@ -66,7 +66,7 @@ public class KubernetesClient {
 
     final RestClient restClient = new RestClient(connectionString, this.httpClient);
 
-    org.apache.http.concurrent.FutureCallback futureCallback =
+    org.apache.http.concurrent.FutureCallback<HttpResponse> futureCallback =
         new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
           @Override
           public void completed(HttpResponse result) {
@@ -122,7 +122,7 @@ public class KubernetesClient {
 
     final RestClient restClient = new RestClient(connectionString, this.httpClient);
 
-    org.apache.http.concurrent.FutureCallback futureCallback =
+    org.apache.http.concurrent.FutureCallback<HttpResponse> futureCallback =
         new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
           @Override
           public void completed(HttpResponse result) {
@@ -137,7 +137,7 @@ public class KubernetesClient {
               return;
             }
 
-            Set<String> nodes = new HashSet();
+            Set<String> nodes = new HashSet<>();
             if (response != null && response.items != null) {
               for (Node n : response.items) {
                 if (n.getStatus() != null && n.getStatus().getAddresses() != null) {
@@ -182,7 +182,7 @@ public class KubernetesClient {
 
     final RestClient restClient = new RestClient(connectionString, this.httpClient);
 
-    org.apache.http.concurrent.FutureCallback futureCallback =
+    org.apache.http.concurrent.FutureCallback<HttpResponse> futureCallback =
         new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
           @Override
           public void completed(HttpResponse result) {
@@ -197,7 +197,7 @@ public class KubernetesClient {
               return;
             }
 
-            Set<String> nodes = new HashSet();
+            Set<String> nodes = new HashSet<>();
             if (response != null && response.items != null) {
               for (Node n : response.items) {
                 if (n.getMetadata() != null && n.getMetadata().getLabels() != null && n.getStatus() != null) {

@@ -21,8 +21,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -30,7 +28,6 @@ import java.io.IOException;
  * This class represents a simple Rest Client to call into Harbor Rest APIs to query the status of the cluster.
  */
 public class HarborClient {
-  private static final Logger logger = LoggerFactory.getLogger(HarborClient.class);
   private static final String HARBOR_STATUS_PATH = "/";
   private static final String HARBOR_PUBLIC_CA_CERT_PATH = "/static/resources/certs/ca.crt";
 
@@ -56,7 +53,7 @@ public class HarborClient {
 
     final RestClient restClient = new RestClient(connectionString, this.httpClient);
 
-    org.apache.http.concurrent.FutureCallback futureCallback =
+    org.apache.http.concurrent.FutureCallback<HttpResponse> futureCallback =
         new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
           @Override
           public void completed(HttpResponse result) {
@@ -91,7 +88,7 @@ public class HarborClient {
 
     final RestClient restClient = new RestClient(connectionString, this.httpClient);
 
-    org.apache.http.concurrent.FutureCallback futureCallback =
+    org.apache.http.concurrent.FutureCallback<HttpResponse> futureCallback =
         new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
           @Override
           public void completed(HttpResponse result) {

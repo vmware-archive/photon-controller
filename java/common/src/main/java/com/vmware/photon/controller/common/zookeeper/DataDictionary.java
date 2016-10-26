@@ -138,7 +138,7 @@ public class DataDictionary {
    * @return A list of strings that represents the dictionary's keys
    */
   public List<String> getKeys() {
-    List<String> keys = new ArrayList();
+    List<String> keys = new ArrayList<>();
     String path = ZKPaths.makePath(basePath, "");
     try {
       Stat stat = zkClient.checkExists().forPath(path);

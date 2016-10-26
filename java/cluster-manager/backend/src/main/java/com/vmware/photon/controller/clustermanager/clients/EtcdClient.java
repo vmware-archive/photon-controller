@@ -20,8 +20,6 @@ import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -29,7 +27,6 @@ import java.io.IOException;
  * This class represents a simple Rest Client to call into Etcd Rest APIs to query the status of the cluster.
  */
 public class EtcdClient {
-  private static final Logger logger = LoggerFactory.getLogger(EtcdClient.class);
   private static final String ETCD_STATUS_PATH = "/v2/stats/self";
 
   private CloseableHttpAsyncClient httpClient;
@@ -54,7 +51,7 @@ public class EtcdClient {
 
     final RestClient restClient = new RestClient(connectionString, this.httpClient);
 
-    org.apache.http.concurrent.FutureCallback futureCallback =
+    org.apache.http.concurrent.FutureCallback<HttpResponse> futureCallback =
         new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
           @Override
           public void completed(HttpResponse result) {
