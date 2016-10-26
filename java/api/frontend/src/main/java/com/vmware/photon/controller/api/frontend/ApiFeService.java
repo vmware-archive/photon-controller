@@ -161,6 +161,10 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     ApiFeService.sslContext = sslContext;
   }
 
+  public Injector getInjector() {
+    return injector;
+  }
+
   @Override
   public void initialize(Bootstrap<ApiFeStaticConfiguration> bootstrap) {
     bootstrap.addBundle(new AssetsBundle("/assets", "/api/", "index.html"));

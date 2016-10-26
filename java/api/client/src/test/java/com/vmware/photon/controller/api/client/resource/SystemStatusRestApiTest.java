@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Implements tests for {@link SystemStatus}.
  */
-public class SystemStatusApiTest extends ApiTestBase {
+public class SystemStatusRestApiTest extends ApiTestBase {
 
   @Test
   public void testGetSystemStatus() throws IOException {
@@ -46,7 +46,7 @@ public class SystemStatusApiTest extends ApiTestBase {
 
     setupMocks(serialized, HttpStatus.SC_OK);
 
-    SystemStatusApi systemStatusApi = new SystemStatusApi(restClient);
+    SystemStatusApi systemStatusApi = new SystemStatusRestApi(restClient);
 
     SystemStatus response = systemStatusApi.getSystemStatus();
     assertEquals(response, systemStatus);
@@ -62,7 +62,7 @@ public class SystemStatusApiTest extends ApiTestBase {
 
     setupMocks(serialized, HttpStatus.SC_OK);
 
-    SystemStatusApi systemStatusApi = new SystemStatusApi(restClient);
+    SystemStatusApi systemStatusApi = new SystemStatusRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 

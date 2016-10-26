@@ -749,6 +749,7 @@ public class VmXenonBackend implements VmBackend {
 
   @Override
   public VmService.State getVmById(String id) throws VmNotFoundException {
+    logger.info("Get VM by id " + id);
     com.vmware.xenon.common.Operation result;
     try {
       result = xenonClient.get(VmServiceFactory.SELF_LINK + "/" + id);
@@ -756,6 +757,7 @@ public class VmXenonBackend implements VmBackend {
       throw new VmNotFoundException(id);
     }
 
+    logger.info("Retrieved VM by id " + id);
     return result.getBody(VmService.State.class);
   }
 

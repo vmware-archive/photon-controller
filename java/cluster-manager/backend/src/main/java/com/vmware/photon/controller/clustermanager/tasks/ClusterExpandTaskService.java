@@ -143,74 +143,81 @@ public class ClusterExpandTaskService extends StatefulService {
                                        final ClusterService.State clusterDocument) throws IOException {
 
     Service service = this;
-    HostUtils.getApiClient(this).getClusterApi().getVmsInClusterAsync(
-        currentState.clusterId,
-        new FutureCallback<ResourceList<Vm>>() {
-          @Override
-          public void onSuccess(@Nullable ResourceList<Vm> result) {
-            int currentWorkerCount = 0;
-            String masterNodeTag;
-            String workerNodeTag;
-            switch (clusterDocument.clusterType) {
-              case KUBERNETES:
-                masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.KubernetesMaster);
-                workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.KubernetesWorker);
-                break;
-              case MESOS:
-                masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosMaster);
-                workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosWorker);
-                break;
-              case SWARM:
-                masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmMaster);
-                workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmWorker);
-                break;
-              case HARBOR:
-                // Harbor does not have any workers. Skip cluster expansion and mark this task as finished.
-                TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED));
-                return;
-              default:
-                throw new UnsupportedOperationException(
-                    "ClusterType is not supported. ClusterType: " + clusterDocument.clusterType);
-            }
 
-            String masterVmId = null;
-            for (Vm vm : result.getItems()) {
-              if (vm.getTags().contains(workerNodeTag)) {
-                ++currentWorkerCount;
-              } else if (vm.getTags().contains(masterNodeTag)) {
-                if (masterVmId == null) {
-                  masterVmId = vm.getId();
+    getHost().run(() -> {
+      try {
+        HostUtils.getApiClient(this).getClusterApi().getVmsInClusterAsync(
+            currentState.clusterId,
+            new FutureCallback<ResourceList<Vm>>() {
+              @Override
+              public void onSuccess(@Nullable ResourceList<Vm> result) {
+                int currentWorkerCount = 0;
+                String masterNodeTag;
+                String workerNodeTag;
+                switch (clusterDocument.clusterType) {
+                  case KUBERNETES:
+                    masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.KubernetesMaster);
+                    workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.KubernetesWorker);
+                    break;
+                  case MESOS:
+                    masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosMaster);
+                    workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosWorker);
+                    break;
+                  case SWARM:
+                    masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmMaster);
+                    workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmWorker);
+                    break;
+                  case HARBOR:
+                    // Harbor does not have any workers. Skip cluster expansion and mark this task as finished.
+                    TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED));
+                    return;
+                  default:
+                    throw new UnsupportedOperationException(
+                        "ClusterType is not supported. ClusterType: " + clusterDocument.clusterType);
                 }
+
+                String masterVmId = null;
+                for (Vm vm : result.getItems()) {
+                  if (vm.getTags().contains(workerNodeTag)) {
+                    ++currentWorkerCount;
+                  } else if (vm.getTags().contains(masterNodeTag)) {
+                    if (masterVmId == null) {
+                      masterVmId = vm.getId();
+                    }
+                  }
+                }
+
+                int workerCountDelta = clusterDocument.workerCount - currentWorkerCount;
+
+                if (workerCountDelta < 0) {
+                  String errorMessage = String.format(
+                      "Worker count delta %d is negative. Target worker count is %d, current worker count is %d",
+                      workerCountDelta, clusterDocument.workerCount, currentWorkerCount);
+                  ServiceUtils.logSevere(ClusterExpandTaskService.this, errorMessage);
+                  failTask(new IllegalStateException(errorMessage));
+                  return;
+                }
+
+                if (masterVmId == null) {
+                  String errorMessage = "No master vm is found.";
+                  ServiceUtils.logSevere(ClusterExpandTaskService.this, errorMessage);
+                  failTask(new IllegalStateException(errorMessage));
+                  return;
+                }
+
+                getMasterIp(currentState, clusterDocument, workerCountDelta, masterVmId);
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                failTask(t);
               }
             }
-
-            int workerCountDelta = clusterDocument.workerCount - currentWorkerCount;
-
-            if (workerCountDelta < 0) {
-              String errorMessage = String.format(
-                  "Worker count delta %d is negative. Target worker count is %d, current worker count is %d",
-                  workerCountDelta, clusterDocument.workerCount, currentWorkerCount);
-              ServiceUtils.logSevere(ClusterExpandTaskService.this, errorMessage);
-              failTask(new IllegalStateException(errorMessage));
-              return;
-            }
-
-            if (masterVmId == null) {
-              String errorMessage = "No master vm is found.";
-              ServiceUtils.logSevere(ClusterExpandTaskService.this, errorMessage);
-              failTask(new IllegalStateException(errorMessage));
-              return;
-            }
-
-            getMasterIp(currentState, clusterDocument, workerCountDelta, masterVmId);
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        }
-    );
+        );
+      } catch (Exception e) {
+        failTask(e);
+      }
+    });
   }
 
   private void getMasterIp(final State currentState,

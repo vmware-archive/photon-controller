@@ -12,6 +12,7 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
+import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
@@ -148,62 +149,71 @@ public class GarbageInspectionTaskService extends StatefulService {
   private void getVmsFromApi(final State currentState, final ClusterService.State clusterState) {
     try {
       Service service = this;
-      HostUtils.getApiClient(this).getClusterApi().getVmsInClusterAsync(
-          currentState.clusterId,
-          new FutureCallback<ResourceList<Vm>>() {
-            @Override
-            public void onSuccess(@Nullable ResourceList<Vm> result) {
-              try {
-                String masterNodeTag;
-                String workerNodeTag;
-                switch (clusterState.clusterType) {
-                  case KUBERNETES:
-                    masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.KubernetesMaster);
-                    workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.KubernetesWorker);
-                    break;
-                  case MESOS:
-                    masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosMaster);
-                    workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosWorker);
-                    break;
-                  case SWARM:
-                    masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmMaster);
-                    workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmWorker);
-                    break;
-                  case HARBOR:
-                    // Harbor does not have any workers. Skip garbage inspection and mark this task as finished.
-                    TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED));
-                    return;
-                  default:
-                    throw new UnsupportedOperationException(
-                        "ClusterType is not supported. ClusterType: " + clusterState.clusterType);
-                }
-
-                String masterVmId = null;
-                Set<Vm> workerNodes = new HashSet<>();
-                for (Vm vm : result.getItems()) {
-                  if (vm.getTags().contains(workerNodeTag)) {
-                    workerNodes.add(vm);
-                  } else if (vm.getTags().contains(masterNodeTag)) {
-                    if (masterVmId == null) {
-                      masterVmId = vm.getId();
+      ApiClient apiClient = HostUtils.getApiClient(this);
+      getHost().run(() -> {
+        try {
+          apiClient.getClusterApi().getVmsInClusterAsync(
+              currentState.clusterId,
+              new FutureCallback<ResourceList<Vm>>() {
+                @Override
+                public void onSuccess(@Nullable ResourceList<Vm> result) {
+                  try {
+                    String masterNodeTag;
+                    String workerNodeTag;
+                    switch (clusterState.clusterType) {
+                      case KUBERNETES:
+                        masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId,
+                            NodeType.KubernetesMaster);
+                        workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId,
+                            NodeType.KubernetesWorker);
+                        break;
+                      case MESOS:
+                        masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosMaster);
+                        workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.MesosWorker);
+                        break;
+                      case SWARM:
+                        masterNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmMaster);
+                        workerNodeTag = ClusterUtil.createClusterNodeTag(currentState.clusterId, NodeType.SwarmWorker);
+                        break;
+                      case HARBOR:
+                        // Harbor does not have any workers. Skip garbage inspection and mark this task as finished.
+                        TaskUtils.sendSelfPatch(service, buildPatch(TaskState.TaskStage.FINISHED));
+                        return;
+                      default:
+                        throw new UnsupportedOperationException(
+                            "ClusterType is not supported. ClusterType: " + clusterState.clusterType);
                     }
+
+                    String masterVmId = null;
+                    Set<Vm> workerNodes = new HashSet<>();
+                    for (Vm vm : result.getItems()) {
+                      if (vm.getTags().contains(workerNodeTag)) {
+                        workerNodes.add(vm);
+                      } else if (vm.getTags().contains(masterNodeTag)) {
+                        if (masterVmId == null) {
+                          masterVmId = vm.getId();
+                        }
+                      }
+                    }
+                    Preconditions.checkNotNull(masterVmId, "No master vm is found.");
+
+                    getMasterIp(currentState, clusterState, masterVmId, workerNodes);
+
+                  } catch (Throwable t) {
+                    failTask(t);
                   }
                 }
-                Preconditions.checkNotNull(masterVmId, "No master vm is found.");
 
-                getMasterIp(currentState, clusterState, masterVmId, workerNodes);
-
-              } catch (Throwable t) {
-                failTask(t);
+                @Override
+                public void onFailure(Throwable t) {
+                  failTask(t);
+                }
               }
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-              failTask(t);
-            }
-          }
-      );
+          );
+        } catch (Exception e) {
+          failTask(e);
+        }
+      });
     } catch (Throwable t) {
       failTask(t);
     }

@@ -111,7 +111,7 @@ describe "Swarm cluster-service lifecycle", cluster: true do
       rescue EsxCloud::CliError => e
         e.output.should match("not found")
       end
-    rescue EsxCloud::Error => e
+    rescue => e
       EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
       fail "SWARM cluster integration Test failed. Error: #{e.message}"
     end

@@ -44,9 +44,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests {@link VmApi}.
+ * Tests {@link VmRestApi}.
  */
-public class VmApiTest extends ApiTestBase {
+public class VmRestApiTest extends ApiTestBase {
 
   @Test
   public void testGetVm() throws IOException {
@@ -58,7 +58,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serialized, HttpStatus.SC_OK);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Vm response = vmApi.getVm("foo");
     assertEquals(response, vm);
@@ -74,7 +74,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serialized, HttpStatus.SC_OK);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -110,7 +110,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serialized, HttpStatus.SC_OK);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     ResourceList<Task> response = vmApi.getTasksForVm("foo");
     assertEquals(response.getItems().size(), taskResourceList.getItems().size());
@@ -139,7 +139,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocksForPagination(serialized, serializedNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     ResourceList<Task> response = vmApi.getTasksForVm("foo");
     assertEquals(response.getItems().size(), taskResourceList.getItems().size() + taskResourceListNextPage.getItems()
@@ -163,7 +163,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serialized, HttpStatus.SC_OK);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -206,7 +206,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocksForPagination(serialized, serializedNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -242,7 +242,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Task task = vmApi.delete("foo");
     assertEquals(task, responseTask);
@@ -260,7 +260,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -294,7 +294,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Task task = vmApi.addTagToVm("foo", new Tag("tagValue"));
     assertEquals(task, responseTask);
@@ -312,7 +312,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -346,7 +346,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Task task = vmApi.performStartOperation("foo");
     assertEquals(task, responseTask);
@@ -364,7 +364,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -397,7 +397,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Task task = vmApi.performStopOperation("foo");
     assertEquals(task, responseTask);
@@ -415,7 +415,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -448,7 +448,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Task task = vmApi.performRestartOperation("foo");
     assertEquals(task, responseTask);
@@ -466,7 +466,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -499,7 +499,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Task task = vmApi.performResumeOperation("foo");
     assertEquals(task, responseTask);
@@ -517,7 +517,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -550,7 +550,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Task task = vmApi.performSuspendOperation("foo");
     assertEquals(task, responseTask);
@@ -568,7 +568,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -601,7 +601,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Task task = vmApi.attachDisk("foo", new VmDiskOperation());
     assertEquals(task, responseTask);
@@ -619,7 +619,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     vmApi.attachDiskAsync("foo", new VmDiskOperation(), new FutureCallback<Task>() {
@@ -651,7 +651,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Task task = vmApi.detachDisk("foo", new VmDiskOperation());
     assertEquals(task, responseTask);
@@ -669,7 +669,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -703,7 +703,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Task task = vmApi.uploadAndAttachIso("foo", "file");
     assertEquals(task, responseTask);
@@ -721,7 +721,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Task task = vmApi.detachIso("foo");
     assertEquals(task, responseTask);
@@ -739,7 +739,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -772,7 +772,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Task task = vmApi.getNetworks("foo");
     assertEquals(task, responseTask);
@@ -790,7 +790,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -823,7 +823,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Map<String, String> metadata = new HashMap<>();
     metadata.put("key", "value");
@@ -847,7 +847,7 @@ public class VmApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    VmApi vmApi = new VmApi(restClient);
+    VmApi vmApi = new VmRestApi(restClient);
 
     Map<String, String> metadata = new HashMap<>();
     metadata.put("key", "value");
@@ -892,7 +892,7 @@ public class VmApiTest extends ApiTestBase {
     Task task1 = objectMapper.readValue(taskString, new com.fasterxml.jackson.core.type.TypeReference<Task>() {
     });
 
-    VmNetworks vmNetworks1 = VmApi.parseVmNetworksFromTask(task1);
+    VmNetworks vmNetworks1 = VmRestApi.parseVmNetworksFromTask(task1);
     NetworkConnection networkConnection1 = (NetworkConnection) vmNetworks1.getNetworkConnections().toArray()[0];
     assertEquals(networkConnection1.getIpAddress(), networkConnection.getIpAddress());
     assertEquals(networkConnection1.getMacAddress(), networkConnection.getMacAddress());

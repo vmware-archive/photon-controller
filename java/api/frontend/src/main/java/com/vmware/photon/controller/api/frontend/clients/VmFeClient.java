@@ -113,6 +113,7 @@ public class VmFeClient {
   }
 
   public Task operate(String vmId, Operation operation) throws ExternalException {
+    logger.info("Operate on VM " + vmId + operation.name());
     TaskEntity taskEntity = vmBackend.prepareVmOperation(vmId, operation);
     Task task = taskBackend.getApiRepresentation(taskEntity);
 
