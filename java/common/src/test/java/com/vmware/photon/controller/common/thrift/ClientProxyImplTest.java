@@ -145,6 +145,7 @@ public class ClientProxyImplTest extends PowerMockTestCase {
     verifyNoMoreInteractions(clientPool);
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testSetTimeoutMultipleClients() throws Exception {
     AsyncSSLClient client2 = mock(AsyncSSLClient.class);
@@ -172,7 +173,7 @@ public class ClientProxyImplTest extends PowerMockTestCase {
   }
 
   private void mockCallSuccess(AsyncSSLClient client) throws Exception {
-    doAnswer(new Answer() {
+    doAnswer(new Answer<Object>() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
         AsyncSSLClient.echo_call response = mock(AsyncSSLClient.echo_call.class);
@@ -184,7 +185,7 @@ public class ClientProxyImplTest extends PowerMockTestCase {
   }
 
   private void mockCallError(AsyncSSLClient client, final Exception error) throws Exception {
-    doAnswer(new Answer() {
+    doAnswer(new Answer<Object>() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
         echoHandler.getValue().onError(error);

@@ -35,11 +35,12 @@ import java.util.concurrent.TimeoutException;
  * Utility for HttpClient tests.
  */
 public class HttpClientTestUtil {
+  @SuppressWarnings("unchecked")
   public static CloseableHttpAsyncClient setupMocks(String serializedResponse, int responseCode)
       throws IOException {
     CloseableHttpAsyncClient asyncHttpClient = Mockito.mock(CloseableHttpAsyncClient.class);
 
-    Mockito.doAnswer(new Answer() {
+    Mockito.doAnswer(new Answer<Object>() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
         return null;
@@ -95,11 +96,12 @@ public class HttpClientTestUtil {
     return asyncHttpClient;
   }
 
+  @SuppressWarnings("unchecked")
   public static CloseableHttpAsyncClient setupMocksToThrowInCallback(final Exception exceptionToThrow)
       throws IOException {
     CloseableHttpAsyncClient asyncHttpClient = Mockito.mock(CloseableHttpAsyncClient.class);
 
-    Mockito.doAnswer(new Answer() {
+    Mockito.doAnswer(new Answer<Object>() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
         return null;

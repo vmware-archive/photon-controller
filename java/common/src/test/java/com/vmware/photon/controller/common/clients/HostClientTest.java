@@ -73,6 +73,29 @@ import com.vmware.photon.controller.host.gen.GetVmNetworkRequest;
 import com.vmware.photon.controller.host.gen.GetVmNetworkResponse;
 import com.vmware.photon.controller.host.gen.GetVmNetworkResultCode;
 import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.attach_disks_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.attach_iso_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.copy_image_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.create_disks_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.create_image_from_vm_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.create_vm_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.delete_disks_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.detach_disks_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.detach_iso_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.finalize_image_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.get_deleted_images_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.get_host_config_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.get_images_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.get_inactive_images_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.get_mks_ticket_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.get_service_ticket_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.get_vm_networks_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.place_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.power_vm_op_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.reserve_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.start_image_scan_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.start_image_sweep_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.transfer_image_call;
 import com.vmware.photon.controller.host.gen.HostMode;
 import com.vmware.photon.controller.host.gen.MksTicketRequest;
 import com.vmware.photon.controller.host.gen.MksTicketResponse;
@@ -174,6 +197,7 @@ public class HostClientTest {
     }
   }
 
+  @SuppressWarnings("unchecked")
   private void setUp() {
     hostClient = spy(new HostClient(
         mock(ClientProxyFactory.class), mock(ClientPoolFactory.class)));
@@ -376,12 +400,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.attach_disks_call attachDisksCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.attach_disks_call attachDisksCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.attach_disks_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.attach_disks_call> handler =
+              (AsyncMethodCallback<attach_disks_call>) args[1];
           handler.onComplete(attachDisksCall);
           return null;
         }
@@ -501,12 +527,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.attach_iso_call attachIsoCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.attach_iso_call attachIsoCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.attach_iso_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.attach_iso_call> handler =
+              (AsyncMethodCallback<attach_iso_call>) args[1];
           handler.onComplete(attachIsoCall);
           return null;
         }
@@ -623,12 +651,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.copy_image_call copyImageCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.copy_image_call copyImageCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.copy_image_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.copy_image_call> handler =
+              (AsyncMethodCallback<copy_image_call>) args[1];
           handler.onComplete(copyImageCall);
           return null;
         }
@@ -746,12 +776,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.transfer_image_call transferImageCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.transfer_image_call transferImageCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.transfer_image_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.transfer_image_call> handler =
+              (AsyncMethodCallback<transfer_image_call>) args[1];
           handler.onComplete(transferImageCall);
           return null;
         }
@@ -866,12 +898,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.create_disks_call createDisksCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.create_disks_call createDisksCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.create_disks_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.create_disks_call> handler =
+              (AsyncMethodCallback<create_disks_call>) args[1];
           handler.onComplete(createDisksCall);
           return null;
         }
@@ -986,12 +1020,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.create_vm_call createVmCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.create_vm_call createVmCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.create_vm_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.create_vm_call> handler =
+              (AsyncMethodCallback<create_vm_call>) args[1];
           handler.onComplete(createVmCall);
           return null;
         }
@@ -1110,12 +1146,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.delete_disks_call deleteDisksCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.delete_disks_call deleteDisksCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.delete_disks_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.delete_disks_call> handler =
+              (AsyncMethodCallback<delete_disks_call>) args[1];
           handler.onComplete(deleteDisksCall);
           return null;
         }
@@ -1233,12 +1271,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.finalize_image_call finalizeImageCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.finalize_image_call finalizeImageCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.finalize_image_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.finalize_image_call> handler =
+              (AsyncMethodCallback<finalize_image_call>) args[1];
           handler.onComplete(finalizeImageCall);
           return null;
         }
@@ -1358,9 +1398,10 @@ public class HostClientTest {
 
     @Test(dataProvider = "Success")
     public void testSuccess(final Long rate, final Long timeout) throws Exception {
-      final AsyncMethodCallback callback = new SyncHandler<>();
+      @SuppressWarnings("unchecked")
+      final AsyncMethodCallback<start_image_scan_call> callback = new SyncHandler<>();
 
-      Answer answer = new Answer() {
+      Answer<Object> answer = new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
@@ -1394,12 +1435,14 @@ public class HostClientTest {
       };
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expectedExceptions = IllegalArgumentException.class,
           expectedExceptionsMessageRegExp = "hostname can't be null")
     public void testFailureNullHostIp() throws Exception {
       hostClient.startImageScan(dataStore, null, null, new SyncHandler<>());
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expectedExceptions = RpcException.class,
           expectedExceptionsMessageRegExp = "Thrift exception")
     public void testFailureTExceptionOnCall() throws Exception {
@@ -1428,11 +1471,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testSuccess() throws Exception {
-      final AsyncMethodCallback callback = new SyncHandler<>();
+      final AsyncMethodCallback<get_inactive_images_call> callback = new SyncHandler<>();
 
-      Answer answer = new Answer() {
+      Answer<Object> answer = new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
@@ -1452,12 +1496,14 @@ public class HostClientTest {
       hostClient.getInactiveImages(dataStore, callback);
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expectedExceptions = IllegalArgumentException.class,
         expectedExceptionsMessageRegExp = "hostname can't be null")
     public void testFailureNullHostIp() throws Exception {
       hostClient.getInactiveImages(dataStore, new SyncHandler<>());
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expectedExceptions = RpcException.class,
         expectedExceptionsMessageRegExp = "Thrift exception")
     public void testFailureTExceptionOnCall() throws Exception {
@@ -1487,11 +1533,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
+    @SuppressWarnings("unchecked")
     @Test(dataProvider = "Success")
     public void testSuccess(final Long rate, final Long timeout) throws Exception {
-      final AsyncMethodCallback callback = new SyncHandler<>();
+      final AsyncMethodCallback<start_image_sweep_call> callback = new SyncHandler<>();
 
-      Answer answer = new Answer() {
+      Answer<Object> answer = new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
@@ -1526,12 +1573,14 @@ public class HostClientTest {
       };
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expectedExceptions = IllegalArgumentException.class,
         expectedExceptionsMessageRegExp = "hostname can't be null")
     public void testFailureNullHostIp() throws Exception {
       hostClient.startImageSweep(dataStore, images, null, null, new SyncHandler<>());
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expectedExceptions = RpcException.class,
         expectedExceptionsMessageRegExp = "Thrift exception")
     public void testFailureTExceptionOnCall() throws Exception {
@@ -1560,11 +1609,12 @@ public class HostClientTest {
       hostClient = null;
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testSuccess() throws Exception {
-      final AsyncMethodCallback callback = new SyncHandler<>();
+      final AsyncMethodCallback<get_deleted_images_call> callback = new SyncHandler<>();
 
-      Answer answer = new Answer() {
+      Answer<Object> answer = new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
@@ -1584,12 +1634,14 @@ public class HostClientTest {
       hostClient.getDeletedImages(dataStore, callback);
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expectedExceptions = IllegalArgumentException.class,
         expectedExceptionsMessageRegExp = "hostname can't be null")
     public void testFailureNullHostIp() throws Exception {
       hostClient.getDeletedImages(dataStore, new SyncHandler<>());
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expectedExceptions = RpcException.class,
         expectedExceptionsMessageRegExp = "Thrift exception")
     public void testFailureTExceptionOnCall() throws Exception {
@@ -1621,12 +1673,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.create_image_from_vm_call createImageCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.create_image_from_vm_call createImageCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.create_image_from_vm_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.create_image_from_vm_call> handler =
+              (AsyncMethodCallback<create_image_from_vm_call>) args[1];
           handler.onComplete(createImageCall);
           return null;
         }
@@ -1746,12 +1800,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.detach_disks_call detachDisksCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.detach_disks_call detachDisksCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.detach_disks_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.detach_disks_call> handler =
+              (AsyncMethodCallback<detach_disks_call>) args[1];
           handler.onComplete(detachDisksCall);
           return null;
         }
@@ -1885,6 +1941,7 @@ public class HostClientTest {
 
       doAnswer(new Answer<Void>
           () {
+        @SuppressWarnings("unchecked")
         @Override
         public Void answer(InvocationOnMock invocation) throws Throwable {
           ((AsyncMethodCallback<Host.AsyncSSLClient.set_host_mode_call>) invocation.getArguments()[1])
@@ -1899,6 +1956,7 @@ public class HostClientTest {
       latch.await(20, TimeUnit.MILLISECONDS);
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expectedExceptions = RpcException.class)
     public void failOnWrongAddress() throws Exception {
       doThrow(new TException()).when(clientProxy).set_host_mode(any(SetHostModeRequest.class), any
@@ -1927,12 +1985,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.detach_iso_call detachIsoCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.detach_iso_call detachIsoCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.detach_iso_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.detach_iso_call> handler =
+              (AsyncMethodCallback<detach_iso_call>) args[1];
           handler.onComplete(detachIsoCall);
           return null;
         }
@@ -2046,12 +2106,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.get_host_config_call getHostConfigCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.get_host_config_call getHostConfigCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.get_host_config_call> handler =
+              (AsyncMethodCallback<get_host_config_call>) args[1];
           handler.onComplete(getHostConfigCall);
           return null;
         }
@@ -2177,12 +2239,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.get_images_call getImagesCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.get_images_call getImagesCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.get_images_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.get_images_call> handler =
+              (AsyncMethodCallback<get_images_call>) args[1];
           handler.onComplete(getImagesCall);
           return null;
         }
@@ -2297,12 +2361,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.get_service_ticket_call getServiceTicketCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.get_service_ticket_call getServiceTicketCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.get_service_ticket_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.get_service_ticket_call> handler =
+              (AsyncMethodCallback<get_service_ticket_call>) args[1];
           handler.onComplete(getServiceTicketCall);
           return null;
         }
@@ -2425,12 +2491,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.get_vm_networks_call getVmNetworksCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.get_vm_networks_call getVmNetworksCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.get_vm_networks_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.get_vm_networks_call> handler =
+              (AsyncMethodCallback<get_vm_networks_call>) args[1];
           handler.onComplete(getVmNetworksCall);
           return null;
         }
@@ -2553,12 +2621,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.get_mks_ticket_call getVmMksTicketCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.get_mks_ticket_call getVmMksTicketCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.get_mks_ticket_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.get_mks_ticket_call> handler =
+              (AsyncMethodCallback<get_mks_ticket_call>) args[1];
           handler.onComplete(getVmMksTicketCall);
           return null;
         }
@@ -2678,12 +2748,13 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.place_call placeCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.place_call placeCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.place_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.place_call> handler = (AsyncMethodCallback<place_call>) args[1];
           handler.onComplete(placeCall);
           return null;
         }
@@ -2799,12 +2870,14 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.power_vm_op_call powerVmOpCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.power_vm_op_call powerVmOpCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.power_vm_op_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.power_vm_op_call> handler =
+              (AsyncMethodCallback<power_vm_op_call>) args[1];
           handler.onComplete(powerVmOpCall);
           return null;
         }
@@ -2921,12 +2994,13 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncSSLClient.reserve_call reserveCall) {
-      return new Answer() {
+    private Answer<Object> getAnswer(final Host.AsyncSSLClient.reserve_call reserveCall) {
+      return new Answer<Object>() {
+        @SuppressWarnings("unchecked")
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncSSLClient.reserve_call> handler = (AsyncMethodCallback) args[1];
+          AsyncMethodCallback<Host.AsyncSSLClient.reserve_call> handler = (AsyncMethodCallback<reserve_call>) args[1];
           handler.onComplete(reserveCall);
           return null;
         }
