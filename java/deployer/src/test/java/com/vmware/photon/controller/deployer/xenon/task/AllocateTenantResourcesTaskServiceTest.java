@@ -14,8 +14,11 @@
 package com.vmware.photon.controller.deployer.xenon.task;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.TasksRestApi;
 import com.vmware.photon.controller.api.client.resource.TenantsApi;
+import com.vmware.photon.controller.api.client.resource.TenantsRestApi;
 import com.vmware.photon.controller.api.model.ProjectCreateSpec;
 import com.vmware.photon.controller.api.model.QuotaLineItem;
 import com.vmware.photon.controller.api.model.QuotaUnit;
@@ -426,11 +429,11 @@ public class AllocateTenantResourcesTaskServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      ApiClient apiClient = mock(ApiClient.class);
+      ApiClient apiClient = mock(RestApiClient.class);
       doReturn(apiClient).when(apiClientFactory).create();
-      tasksApi = mock(TasksApi.class);
+      tasksApi = mock(TasksRestApi.class);
       doReturn(tasksApi).when(apiClient).getTasksApi();
-      tenantsApi = mock(TenantsApi.class);
+      tenantsApi = mock(TenantsRestApi.class);
       doReturn(tenantsApi).when(apiClient).getTenantsApi();
 
       projectId = UUID.randomUUID().toString();

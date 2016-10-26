@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.clustermanager.testtool;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.RestClient;
 import com.vmware.photon.controller.api.model.Cluster;
 import com.vmware.photon.controller.api.model.ClusterCreateSpec;
@@ -70,7 +71,7 @@ public class TestRunner {
     httpClient.start();
 
     String apiAddress = args.getManagementVmAddress() + ":" + API_FE_PORT;
-    this.apiClient = new ApiClient(apiAddress, httpClient, null, "http");
+    this.apiClient = new RestApiClient(apiAddress, httpClient, null, "http");
 
     String deployerAddress = args.getManagementVmAddress() + ":" + DEPLOYER_PORT;
     this.deployerClient = new RestClient(deployerAddress, httpClient);

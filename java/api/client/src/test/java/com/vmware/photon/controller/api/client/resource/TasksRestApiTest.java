@@ -31,9 +31,9 @@ import java.time.Instant;
 import java.util.Date;
 
 /**
- * Tests {@link TasksApi}.
+ * Tests {@link TasksRestApi}.
  */
-public class TasksApiTest extends ApiTestBase {
+public class TasksRestApiTest extends ApiTestBase {
 
   @Test
   public void testGetTask() throws Throwable {
@@ -46,7 +46,7 @@ public class TasksApiTest extends ApiTestBase {
     String serializedTask = mapper.writeValueAsString(responseTask);
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
-    TasksApi tasksApi = new TasksApi(this.restClient);
+    TasksApi tasksApi = new TasksRestApi(this.restClient);
 
     Task task = tasksApi.getTask("foo");
     assertEquals(task, responseTask);
@@ -63,7 +63,7 @@ public class TasksApiTest extends ApiTestBase {
     String serializedTask = mapper.writeValueAsString(responseTask);
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
-    TasksApi tasksApi = new TasksApi(this.restClient);
+    TasksApi tasksApi = new TasksRestApi(this.restClient);
 
     tasksApi.getTaskAsync("foo", new FutureCallback<Task>() {
       @Override
@@ -81,7 +81,7 @@ public class TasksApiTest extends ApiTestBase {
   @Test(expectedExceptions = IOException.class)
   public void testGetTaskThrowsException() throws IOException {
     setupMocksToThrow(new IOException());
-    TasksApi tasksApi = new TasksApi(this.restClient);
+    TasksApi tasksApi = new TasksRestApi(this.restClient);
 
     tasksApi.getTask("foo");
     fail("Unexpected success invoking api");
@@ -90,7 +90,7 @@ public class TasksApiTest extends ApiTestBase {
   @Test(expectedExceptions = IOException.class)
   public void testGetTaskAsyncThrowsException() throws IOException {
     setupMocksToThrow(new IOException());
-    TasksApi tasksApi = new TasksApi(this.restClient);
+    TasksApi tasksApi = new TasksRestApi(this.restClient);
 
     tasksApi.getTaskAsync("foo", new FutureCallback<Task>() {
       @Override
@@ -111,7 +111,7 @@ public class TasksApiTest extends ApiTestBase {
   @Test
   public void testGetTaskBadHttpResponse() throws Throwable {
     setupMocks("GARBAGE", HttpStatus.SC_OK);
-    TasksApi tasksApi = new TasksApi(this.restClient);
+    TasksApi tasksApi = new TasksRestApi(this.restClient);
 
     try {
       tasksApi.getTask("foo");
@@ -124,7 +124,7 @@ public class TasksApiTest extends ApiTestBase {
   @Test
   public void testGetTaskAsyncBadHttpResponse() throws Throwable {
     setupMocks("GARBAGE", HttpStatus.SC_OK);
-    TasksApi tasksApi = new TasksApi(this.restClient);
+    TasksApi tasksApi = new TasksRestApi(this.restClient);
 
     tasksApi.getTaskAsync("foo", new FutureCallback<Task>() {
       @Override
@@ -142,7 +142,7 @@ public class TasksApiTest extends ApiTestBase {
   @Test(dataProvider = "failureStatusCodes")
   public void testGetTaskWrongResponseCode(int status) throws IOException {
     setupMocks("IGNORED", status);
-    TasksApi tasksApi = new TasksApi(this.restClient);
+    TasksApi tasksApi = new TasksRestApi(this.restClient);
 
     try {
       tasksApi.getTask("foo");
@@ -155,7 +155,7 @@ public class TasksApiTest extends ApiTestBase {
   @Test(dataProvider = "failureStatusCodes")
   public void testGetTaskAsyncWrongResponseCode(final int status) throws IOException {
     setupMocks("IGNORED", status);
-    TasksApi tasksApi = new TasksApi(this.restClient);
+    TasksApi tasksApi = new TasksRestApi(this.restClient);
 
     tasksApi.getTaskAsync("foo", new FutureCallback<Task>() {
       @Override
