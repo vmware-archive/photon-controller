@@ -120,13 +120,13 @@ public class ClusterMaintenanceTaskService extends StatefulService {
             clusterId, currentState.taskState.stage.toString(),
             patchState.taskState.stage.toString());
         patchState.maintenanceIteration = currentState.maintenanceIteration + 1;
-        patchState.error = null;
+        patchState.error = "";
 
         // recover the cluster service document state to READY in case of any previous RECOVERABLE_ERROR state
         ClusterService.State clusterPatchState = new ClusterService.State();
         clusterPatchState.clusterState = ClusterState.READY;
         // cluster maintenance finished successfully, clear out any errorReason
-        clusterPatchState.errorReason = null;
+        clusterPatchState.errorReason = "";
 
         updateStates(clusterId, clusterPatchState, null, ClusterState.READY);
 
