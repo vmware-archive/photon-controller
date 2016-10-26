@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.NetworkConnection;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.VmNetworks;
@@ -173,7 +173,7 @@ public class WaitForNetworkTaskService extends StatefulService {
   }
 
   private void processVmNetworks(final State currentState, Task task) throws IOException {
-    VmNetworks vmNetworks = VmApi.parseVmNetworksFromTask(task);
+    VmNetworks vmNetworks = VmRestApi.parseVmNetworksFromTask(task);
     ServiceUtils.logInfo(this, "Received VM networks response: " + Utils.toJson(false, true, vmNetworks));
     for (NetworkConnection networkConnection : vmNetworks.getNetworkConnections()) {
       // We look for the first NIC that has a MAC address with a VMware OUI and an IP Address

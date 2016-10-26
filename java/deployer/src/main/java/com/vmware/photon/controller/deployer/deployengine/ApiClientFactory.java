@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.deployengine;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 
@@ -21,7 +22,7 @@ import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 
 /**
  * This class defines a factory which creates
- * {@link ApiClient} instances.
+ * {@link RestApiClient} instances.
  */
 public class ApiClientFactory {
 
@@ -68,7 +69,7 @@ public class ApiClientFactory {
       }
     }
     try {
-      return new ApiClient(endpoint, httpClient, sharedSecret, protocol);
+      return new RestApiClient(endpoint, httpClient, sharedSecret, protocol);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
