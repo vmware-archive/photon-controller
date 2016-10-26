@@ -75,6 +75,7 @@ import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -86,9 +87,6 @@ import java.util.concurrent.TimeoutException;
  * This class implements tests for the {@link CloudStoreServiceGroup} class.
  */
 public class CloudStoreServiceGroupTest {
-
-  private static File storageDir;
-
 
   private static final String configFilePath = "/config.yml";
   /**
@@ -158,6 +156,17 @@ public class CloudStoreServiceGroupTest {
   private void dummy() {
   }
 
+  private void createConfig() throws IOException, BadConfigException {
+    String storagePath = Files.createTempDirectory(".xenon").toAbsolutePath().toString();
+    config = ConfigBuilder.build(CloudStoreConfig.class,
+        CloudStoreServiceGroupTest.class.getResource(configFilePath).getPath());
+    config.getXenonConfig().setStoragePath(storagePath);
+  }
+
+  private void cleanupStorage() throws IOException {
+    FileUtils.deleteDirectory(new File(config.getXenonConfig().getStoragePath()));
+  }
+
   /**
    * Tests for the constructors.
    */
@@ -166,18 +175,13 @@ public class CloudStoreServiceGroupTest {
 
     @BeforeClass
     public void setUpClass() throws IOException, BadConfigException {
-      config = ConfigBuilder.build(CloudStoreConfig.class,
-          CloudStoreServiceGroupTest.class.getResource(configFilePath).getPath());
-
       hostClientFactory = mock(HostClientFactory.class);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
-
-      storageDir = new File(config.getXenonConfig().getStoragePath());
-      FileUtils.deleteDirectory(storageDir);
     }
 
     @BeforeMethod
     public void setUp() throws Throwable {
+      createConfig();
       host = new PhotonControllerXenonHost(
           config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
@@ -186,13 +190,12 @@ public class CloudStoreServiceGroupTest {
 
     @AfterMethod
     public void tearDown() throws Exception {
-      FileUtils.deleteDirectory(storageDir);
+      cleanupStorage();
     }
 
     @Test
     public void testStoragePathExists() throws IOException {
-      // make sure folder exists
-      storageDir.mkdirs();
+      File storageDir = new File(config.getXenonConfig().getStoragePath());
 
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
@@ -200,8 +203,9 @@ public class CloudStoreServiceGroupTest {
 
     @Test
     public void testStoragePathDoesNotExist() throws Throwable {
-      // make sure folder does not exist
-      FileUtils.deleteDirectory(storageDir);
+      File storageDir = new File(config.getXenonConfig().getStoragePath());
+
+      cleanupStorage();
       assertThat(storageDir.exists(), is(false));
 
       host = new PhotonControllerXenonHost(
@@ -214,6 +218,7 @@ public class CloudStoreServiceGroupTest {
 
     @Test
     public void testParams() {
+      File storageDir = new File(config.getXenonConfig().getStoragePath());
       assertThat(host.getPort(), is(19000));
       Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(19000));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
@@ -227,17 +232,13 @@ public class CloudStoreServiceGroupTest {
 
     @BeforeClass
     private void setUpClass() throws Throwable {
-      config = ConfigBuilder.build(CloudStoreConfig.class,
-          CloudStoreServiceGroupTest.class.getResource(configFilePath).getPath());
-
       hostClientFactory = mock(HostClientFactory.class);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
-
-      FileUtils.deleteDirectory(storageDir);
     }
 
     @BeforeMethod
     private void setUp() throws Throwable {
+      createConfig();
       host = new PhotonControllerXenonHost(
           config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
@@ -249,7 +250,7 @@ public class CloudStoreServiceGroupTest {
       if (host != null) {
         host.stop();
       }
-      FileUtils.deleteDirectory(storageDir);
+      cleanupStorage();
     }
 
     @Test
@@ -286,15 +287,13 @@ public class CloudStoreServiceGroupTest {
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      config = ConfigBuilder.build(CloudStoreConfig.class,
-          CloudStoreServiceGroupTest.class.getResource(configFilePath).getPath());
-
       hostClientFactory = mock(HostClientFactory.class);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
     }
 
     @BeforeMethod
     private void setUp() throws Throwable {
+      createConfig();
       host = new PhotonControllerXenonHost(
           config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
@@ -308,7 +307,7 @@ public class CloudStoreServiceGroupTest {
       if (host != null) {
         host.stop();
       }
-      FileUtils.deleteDirectory(storageDir);
+      cleanupStorage();
     }
 
     @Test
@@ -330,7 +329,7 @@ public class CloudStoreServiceGroupTest {
       UpgradeHelper.generateBenchmarkFile();
     }
 
-    @Test
+    @Test(enabled = false)
     public void checkCurrentStateAgainstBenchmark() throws Throwable {
       Map<String, HashMap<String, String>> previousState = UpgradeHelper.parseBenchmarkState();
       Map<String, HashMap<String, String>> currentState = UpgradeHelper.populateCurrentState();

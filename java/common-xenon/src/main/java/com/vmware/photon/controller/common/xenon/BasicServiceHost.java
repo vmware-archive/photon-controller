@@ -24,10 +24,14 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
+
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -133,10 +137,9 @@ public class BasicServiceHost
     arguments.bindAddress = this.bindAddress;
 
     if (StringUtils.isBlank(this.storagePath)) {
-      arguments.sandbox = Files.createTempDirectory(null);
-    } else {
-      arguments.sandbox = Paths.get(this.storagePath);
+      this.storagePath = Files.createTempDirectory(null).toString();
     }
+    arguments.sandbox = Paths.get(this.storagePath);
 
     super.initialize(arguments);
   }
@@ -148,7 +151,21 @@ public class BasicServiceHost
   }
 
   public synchronized void destroy() throws Throwable {
-    ServiceHostUtils.destroy(this);
+    if (isStarted()) {
+      ServiceHostUtils.destroy(this);
+    }
+  }
+
+  public synchronized void createStorage() throws IOException {
+    if (!StringUtils.isBlank(this.storagePath)) {
+      new File(this.storagePath).mkdirs();
+    }
+  }
+
+  public synchronized void cleanStorage() throws IOException {
+    if (!StringUtils.isBlank(this.storagePath)) {
+      FileUtils.deleteDirectory(new File(this.storagePath));
+    }
   }
 
   private static String buildPath(Class<? extends Service> type) {
