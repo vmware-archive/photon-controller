@@ -35,6 +35,7 @@ public class HttpBasedHealthChecker implements HealthChecker {
     try {
       // Check if the service is up. Using auth api since it is not locked.
       apiClient.getAuthApi().getAuthStatus();
+      logger.info("Get Auth Status succeeded.");
       return true;
     } catch (Exception e) {
       logger.error("Get Auth Status failed due to: " + e);

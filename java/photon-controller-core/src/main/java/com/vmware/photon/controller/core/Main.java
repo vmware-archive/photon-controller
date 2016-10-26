@@ -35,8 +35,6 @@ import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFa
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidator;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
@@ -382,8 +380,6 @@ public class Main {
       throw new RuntimeException(e);
     }
 
-    final DockerProvisionerFactory dockerProvisionerFactory = new com.vmware.photon.controller.core.Main
-        .DockerProvisionerFactoryImpl();
     final ApiClientFactory apiClientFactory = new ApiClientFactory(apiFeServerSet, httpClient,
         deployerConfig.getDeployerContext().getSharedSecret(), deployerConfig.getDeployerContext().isAuthEnabled());
 
@@ -422,22 +418,11 @@ public class Main {
         Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), CLUSTER_SCRIPTS_DIRECTORY).toString(),
         deployerConfig.getDeployerContext().isAuthEnabled());
 
-    return new DeployerServiceGroup(deployerConfig.getDeployerContext(), dockerProvisionerFactory,
+    return new DeployerServiceGroup(deployerConfig.getDeployerContext(),
         apiClientFactory, deployerConfig.getContainersConfig(), listeningExecutorService,
         httpFileServiceClientFactory, authHelperFactory, healthCheckHelperFactory,
         serviceConfiguratorFactory, zookeeperServerSetBuilderFactory, hostManagementVmAddressValidatorFactory,
         clusterManagerFactory);
-  }
-
-  /**
-   * Implementation of DockerProvisionerFactory.
-   */
-  private static class DockerProvisionerFactoryImpl implements DockerProvisionerFactory {
-
-    @Override
-    public DockerProvisioner create(String dockerEndpoint) {
-      return new DockerProvisioner(dockerEndpoint);
-    }
   }
 
   /**
@@ -458,8 +443,8 @@ public class Main {
 
     @Override
     public HealthCheckHelper create(final Service service, final ContainersConfig.ContainerType containerType,
-                                    final String ipAddress) {
-      return new HealthCheckHelper(service, containerType, ipAddress);
+                                    final String ipAddress, boolean authEnabled) {
+      return new HealthCheckHelper(service, containerType, ipAddress, authEnabled);
     }
 
     @Override

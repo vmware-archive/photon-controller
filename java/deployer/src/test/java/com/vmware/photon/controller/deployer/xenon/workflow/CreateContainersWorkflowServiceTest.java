@@ -22,8 +22,6 @@ import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeExceptio
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -39,10 +37,8 @@ import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
-import com.github.dockerjava.api.DockerException;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.mockito.Matchers;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -52,13 +48,7 @@ import org.testng.annotations.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
@@ -790,7 +780,6 @@ public class CreateContainersWorkflowServiceTest {
     private static final String configFilePath = "/config.yml";
     private TestEnvironment machine;
     private ListeningExecutorService listeningExecutorService;
-    private DockerProvisionerFactory dockerProvisionerFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
     private CreateContainersWorkflowService.State startState;
     private DeployerTestConfig deployerTestConfig;
@@ -798,7 +787,6 @@ public class CreateContainersWorkflowServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath());
       TestHelper.setContainersConfig(deployerTestConfig);
@@ -837,14 +825,10 @@ public class CreateContainersWorkflowServiceTest {
     @SuppressWarnings("unchecked")
     @Test(dataProvider = "hostCounts")
     public void testTaskFailureInsideCreateContainer(Integer hostCount) throws Throwable {
-      machine = createTestEnvironment(deployerTestConfig, listeningExecutorService, dockerProvisionerFactory,
+      machine = createTestEnvironment(deployerTestConfig, listeningExecutorService,
           healthCheckHelperFactory, hostCount);
 
-      DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
-      when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
-          Matchers.<String>anyVararg())).thenThrow(new DockerException("Start container " + "failed", 500));
+      MockHelper.mockHealthChecker(healthCheckHelperFactory, false);
 
       createDeploymentServiceDocuments();
       createHostEntitiesAndAllocateVmsAndContainers(3, 7, startState.deploymentServiceLink);
@@ -868,21 +852,8 @@ public class CreateContainersWorkflowServiceTest {
     @SuppressWarnings("unchecked")
     @Test(dataProvider = "hostCounts")
     public void testTaskSuccess(Integer hostCount) throws Throwable {
-      machine = createTestEnvironment(deployerTestConfig, listeningExecutorService, dockerProvisionerFactory,
+      machine = createTestEnvironment(deployerTestConfig, listeningExecutorService,
           healthCheckHelperFactory, hostCount);
-
-      DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
-      when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-
-      // For create container
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
-          Matchers.<String>anyVararg())).thenReturn("id");
-
-      // For copydb container
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
-          Matchers.<String>anyVararg())).thenReturn("id");
 
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
 
@@ -950,14 +921,12 @@ public class CreateContainersWorkflowServiceTest {
     private TestEnvironment createTestEnvironment(
         DeployerTestConfig deployerTestConfig,
         ListeningExecutorService listeningExecutorService,
-        DockerProvisionerFactory dockerProvisionerFactory,
         HealthCheckHelperFactory healthCheckHelperFactory,
         int hostCount)
         throws Throwable {
       TestEnvironment env = new TestEnvironment.Builder()
           .containersConfig(deployerTestConfig.getContainersConfig())
           .deployerContext(deployerTestConfig.getDeployerContext())
-          .dockerProvisionerFactory(dockerProvisionerFactory)
           .listeningExecutorService(listeningExecutorService)
           .healthCheckerFactory(healthCheckHelperFactory)
           .hostCount(hostCount)

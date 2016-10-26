@@ -661,6 +661,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     startState.isAuthEnabled = deploymentState.oAuthEnabled;
     startState.oAuthServerAddress = deploymentState.oAuthServerAddress;
     startState.oAuthTenantName = deploymentState.oAuthTenantName;
+    startState.deploymentServiceLink = deploymentState.documentSelfLink;
 
     sendRequest(Operation
         .createPost(this, CreateManagementVmTaskFactoryService.SELF_LINK)
