@@ -332,7 +332,7 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
 
     startState.udpPortBindings = new HashMap<>();
     if (null != spec.getUdpPortBindings()) {
-      startState.portBindings.putAll(spec.getUdpPortBindings());
+      startState.udpPortBindings.putAll(spec.getUdpPortBindings());
     }
 
     startState.volumeBindings = new HashMap<>();
