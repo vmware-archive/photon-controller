@@ -28,9 +28,9 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * Tests for {@link AuthApi}.
+ * Tests for {@link AuthRestApi}.
  */
-public class AuthApiTest extends ApiTestBase {
+public class AuthRestApiTest extends ApiTestBase {
 
   @Test
   public void testGetAuthStatus() throws IOException {
@@ -41,7 +41,7 @@ public class AuthApiTest extends ApiTestBase {
 
     setupMocks(serialized, HttpStatus.SC_OK);
 
-    AuthApi authApi = new AuthApi(restClient);
+    AuthApi authApi = new AuthRestApi(restClient);
 
     Auth response = authApi.getAuthStatus();
     assertEquals(response, auth);
@@ -56,7 +56,7 @@ public class AuthApiTest extends ApiTestBase {
 
     setupMocks(serialized, HttpStatus.SC_OK);
 
-    AuthApi authApi = new AuthApi(restClient);
+    AuthApi authApi = new AuthRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 

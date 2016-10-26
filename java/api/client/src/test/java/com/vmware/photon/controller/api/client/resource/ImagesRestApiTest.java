@@ -38,9 +38,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests {@link ImagesApi}.
+ * Tests {@link ImagesRestApi}.
  */
-public class ImagesApiTest extends ApiTestBase {
+public class ImagesRestApiTest extends ApiTestBase {
 
   @Test
   public void testUploadImage() throws IOException {
@@ -56,7 +56,7 @@ public class ImagesApiTest extends ApiTestBase {
     String serializedTask = mapper.writeValueAsString(responseTask);
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
-    ImagesApi imagesApi = new ImagesApi(this.restClient);
+    ImagesApi imagesApi = new ImagesRestApi(this.restClient);
 
     Task task = imagesApi.uploadImage(temp.getAbsolutePath());
     assertEquals(task, responseTask);
@@ -72,7 +72,7 @@ public class ImagesApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ImagesApi imagesApi = new ImagesApi(this.restClient);
+    ImagesApi imagesApi = new ImagesRestApi(this.restClient);
 
     Image response = imagesApi.getImage("image1");
     assertEquals(response, image);
@@ -88,7 +88,7 @@ public class ImagesApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ImagesApi imagesApi = new ImagesApi(this.restClient);
+    ImagesApi imagesApi = new ImagesRestApi(this.restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     imagesApi.getImageAsync(image.getId(), new FutureCallback<Image>() {
@@ -123,7 +123,7 @@ public class ImagesApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ImagesApi imagesApi = new ImagesApi(this.restClient);
+    ImagesApi imagesApi = new ImagesRestApi(this.restClient);
 
     ResourceList<Image> response = imagesApi.getImages();
     assertEquals(response.getItems().size(), imageResourceList.getItems().size());
@@ -152,7 +152,7 @@ public class ImagesApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ImagesApi imagesApi = new ImagesApi(this.restClient);
+    ImagesApi imagesApi = new ImagesRestApi(this.restClient);
     ResourceList<Image> response = imagesApi.getImages();
     assertEquals(response.getItems().size(), imageResourceList.getItems().size() + imageResourceListNextPage
         .getItems().size());
@@ -175,7 +175,7 @@ public class ImagesApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ImagesApi imagesApi = new ImagesApi(this.restClient);
+    ImagesApi imagesApi = new ImagesRestApi(this.restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -219,7 +219,7 @@ public class ImagesApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ImagesApi imagesApi = new ImagesApi(this.restClient);
+    ImagesApi imagesApi = new ImagesRestApi(this.restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -255,7 +255,7 @@ public class ImagesApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ImagesApi imagesApi = new ImagesApi(this.restClient);
+    ImagesApi imagesApi = new ImagesRestApi(this.restClient);
 
     Task task = imagesApi.delete("foo");
     assertEquals(task, responseTask);
@@ -273,7 +273,7 @@ public class ImagesApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    ImagesApi imagesApi = new ImagesApi(this.restClient);
+    ImagesApi imagesApi = new ImagesRestApi(this.restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     imagesApi.deleteAsync("foo", new FutureCallback<Task>() {

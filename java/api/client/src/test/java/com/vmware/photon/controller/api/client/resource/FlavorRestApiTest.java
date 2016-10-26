@@ -40,9 +40,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests {@link FlavorApi}.
+ * Tests {@link FlavorRestApi}.
  */
-public class FlavorApiTest extends ApiTestBase {
+public class FlavorRestApiTest extends ApiTestBase {
 
   @Test
   public void testCreate() throws IOException {
@@ -56,7 +56,7 @@ public class FlavorApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    FlavorApi flavorApi = new FlavorApi(restClient);
+    FlavorApi flavorApi = new FlavorRestApi(restClient);
 
     Task task = flavorApi.create(new FlavorCreateSpec());
     assertEquals(task, responseTask);
@@ -74,7 +74,7 @@ public class FlavorApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    FlavorApi flavorApi = new FlavorApi(restClient);
+    FlavorApi flavorApi = new FlavorRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -112,7 +112,7 @@ public class FlavorApiTest extends ApiTestBase {
 
     setupMocks(serializedResponse, HttpStatus.SC_OK);
 
-    FlavorApi flavorApi = new FlavorApi(restClient);
+    FlavorApi flavorApi = new FlavorRestApi(restClient);
 
     ResourceList<Flavor> response = flavorApi.listAll();
     assertEquals(response.getItems().size(), flavorResourceList.getItems().size());
@@ -143,7 +143,7 @@ public class FlavorApiTest extends ApiTestBase {
 
     setupMocks(serializedResponse, HttpStatus.SC_OK);
 
-    FlavorApi flavorApi = new FlavorApi(restClient);
+    FlavorApi flavorApi = new FlavorRestApi(restClient);
 
     ResourceList<Flavor> response = flavorApi.listAll(params);
     assertEquals(response.getItems().size(), flavorResourceList1.getItems().size());
@@ -175,7 +175,7 @@ public class FlavorApiTest extends ApiTestBase {
 
     setupMocks(serializedResponse, HttpStatus.SC_OK);
 
-    FlavorApi flavorApi = new FlavorApi(restClient);
+    FlavorApi flavorApi = new FlavorRestApi(restClient);
 
     ResourceList<Flavor> response = flavorApi.listAll(params);
     assertEquals(response.getItems().size(), flavorResourceList.getItems().size());
@@ -207,7 +207,7 @@ public class FlavorApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedResponse, serializedResponseNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    FlavorApi flavorApi = new FlavorApi(restClient);
+    FlavorApi flavorApi = new FlavorRestApi(restClient);
     ResourceList<Flavor> response = flavorApi.listAll();
     assertEquals(response.getItems().size(),
         flavorResourceList.getItems().size() + flavorResourceListNextPage.getItems().size());
@@ -232,7 +232,7 @@ public class FlavorApiTest extends ApiTestBase {
 
     setupMocks(serializedResponse, HttpStatus.SC_OK);
 
-    FlavorApi flavorApi = new FlavorApi(restClient);
+    FlavorApi flavorApi = new FlavorRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -281,7 +281,7 @@ public class FlavorApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedResponse, serializedResponseNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    FlavorApi flavorApi = new FlavorApi(restClient);
+    FlavorApi flavorApi = new FlavorRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -313,7 +313,7 @@ public class FlavorApiTest extends ApiTestBase {
 
     setupMocks(serializedResponse, HttpStatus.SC_OK);
 
-    FlavorApi flavorApi = new FlavorApi(restClient);
+    FlavorApi flavorApi = new FlavorRestApi(restClient);
 
     Flavor response = flavorApi.getFlavor("flavor1");
     assertEquals(response, flavor1);
@@ -330,7 +330,7 @@ public class FlavorApiTest extends ApiTestBase {
 
     setupMocks(serializedResponse, HttpStatus.SC_OK);
 
-    FlavorApi flavorApi = new FlavorApi(restClient);
+    FlavorApi flavorApi = new FlavorRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     flavorApi.getFlavorAsync(flavor1.getId(), new FutureCallback<Flavor>() {
@@ -363,7 +363,7 @@ public class FlavorApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    FlavorApi flavorApi = new FlavorApi(restClient);
+    FlavorApi flavorApi = new FlavorRestApi(restClient);
 
     Task task = flavorApi.delete("foo");
     assertEquals(task, responseTask);
@@ -381,7 +381,7 @@ public class FlavorApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    FlavorApi flavorApi = new FlavorApi(restClient);
+    FlavorApi flavorApi = new FlavorRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 

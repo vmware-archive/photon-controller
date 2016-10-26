@@ -14,7 +14,9 @@ package com.vmware.photon.controller.clustermanager.tasks;
 
 import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.TasksRestApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.ApiError;
 import com.vmware.photon.controller.api.model.Step;
 import com.vmware.photon.controller.api.model.Task;
@@ -424,8 +426,8 @@ public class VmDeprovisionTaskServiceTest {
     public void setUpClass() throws Throwable {
 
       apiClient = mock(ApiClient.class);
-      vmApi = mock(VmApi.class);
-      tasksApi = mock(TasksApi.class);
+      vmApi = mock(VmRestApi.class);
+      tasksApi = mock(TasksRestApi.class);
       doReturn(vmApi).when(apiClient).getVmApi();
       doReturn(tasksApi).when(apiClient).getTasksApi();
     }

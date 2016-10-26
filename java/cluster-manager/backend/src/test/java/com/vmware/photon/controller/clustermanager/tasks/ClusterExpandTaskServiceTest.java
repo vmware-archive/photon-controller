@@ -14,8 +14,11 @@ package com.vmware.photon.controller.clustermanager.tasks;
 
 import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.api.client.resource.ClusterApi;
+import com.vmware.photon.controller.api.client.resource.ClusterRestApi;
 import com.vmware.photon.controller.api.client.resource.ProjectApi;
+import com.vmware.photon.controller.api.client.resource.ProjectRestApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.ClusterState;
 import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.NetworkConnection;
@@ -396,9 +399,9 @@ public class ClusterExpandTaskServiceTest {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
 
       apiClient = mock(ApiClient.class);
-      clusterApi = mock(ClusterApi.class);
-      projectApi = mock(ProjectApi.class);
-      vmApi = mock(VmApi.class);
+      clusterApi = mock(ClusterRestApi.class);
+      projectApi = mock(ProjectRestApi.class);
+      vmApi = mock(VmRestApi.class);
       kubernetesClient = mock(KubernetesClient.class);
 
       doReturn(clusterApi).when(apiClient).getClusterApi();
