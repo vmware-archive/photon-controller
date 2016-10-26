@@ -14,7 +14,9 @@
 package com.vmware.photon.controller.deployer.xenon.task;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.resource.FlavorApi;
+import com.vmware.photon.controller.api.client.resource.FlavorRestApi;
 import com.vmware.photon.controller.api.model.FlavorCreateSpec;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -517,8 +519,8 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
 
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
 
-      apiClient = mock(ApiClient.class);
-      flavorApi = mock(FlavorApi.class);
+      apiClient = mock(RestApiClient.class);
+      flavorApi = mock(FlavorRestApi.class);
       apiClientFactory = mock(ApiClientFactory.class);
       doReturn(flavorApi).when(apiClient).getFlavorApi();
       doReturn(apiClient).when(apiClientFactory).create();

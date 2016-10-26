@@ -14,8 +14,11 @@ package com.vmware.photon.controller.clustermanager.tasks;
 
 import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.api.client.resource.ProjectApi;
+import com.vmware.photon.controller.api.client.resource.ProjectRestApi;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.TasksRestApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.NetworkConnection;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
@@ -509,9 +512,9 @@ public class VmProvisionTaskServiceTest {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
 
       apiClient = mock(ApiClient.class);
-      projectApi = mock(ProjectApi.class);
-      vmApi = mock(VmApi.class);
-      tasksApi = mock(TasksApi.class);
+      projectApi = mock(ProjectRestApi.class);
+      vmApi = mock(VmRestApi.class);
+      tasksApi = mock(TasksRestApi.class);
       doReturn(projectApi).when(apiClient).getProjectApi();
       doReturn(vmApi).when(apiClient).getVmApi();
       doReturn(tasksApi).when(apiClient).getTasksApi();

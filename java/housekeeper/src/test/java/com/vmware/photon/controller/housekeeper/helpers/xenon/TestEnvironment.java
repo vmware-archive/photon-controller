@@ -57,7 +57,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           null,
           nsxClientFactory,
           cloudStoreHelper,
-          null);
+          null, null);
       HousekeeperServiceGroup housekeeperServiceGroup = new HousekeeperServiceGroup();
       hosts[i].registerHousekeeper(housekeeperServiceGroup);
       SystemConfig.createInstance(hosts[i]);

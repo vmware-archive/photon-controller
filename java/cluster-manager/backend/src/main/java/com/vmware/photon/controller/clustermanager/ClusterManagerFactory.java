@@ -37,7 +37,8 @@ import com.vmware.photon.controller.clustermanager.tasks.VmProvisionTaskFactoryS
 import com.vmware.photon.controller.clustermanager.tasks.WaitForNetworkTaskFactoryService;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
-import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
+import com.vmware.xenon.common.Service;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
@@ -100,20 +101,9 @@ public class ClusterManagerFactory {
   /**
    * Creates an instance of {@link ApiClient}.
    */
-  public ApiClient createApiClient() {
-    String endpoint;
-    String protocol;
-    if (this.isAuthEnabled) {
-      protocol = "https";
-    } else {
-      protocol = "http";
-    }
-    try {
-      endpoint = ServiceUtils.createUriFromServerSet(this.apiFeServerSet, null, protocol).toString();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-    return new ApiClient(endpoint, this.httpAsyncClient, this.apiFeSharedSecret, protocol);
+  public ApiClient createApiClient(Service service) {
+    PhotonControllerXenonHost photonControllerXenonHost = (PhotonControllerXenonHost) service.getHost();
+    return photonControllerXenonHost.getApiClient();
   }
 
   /**
