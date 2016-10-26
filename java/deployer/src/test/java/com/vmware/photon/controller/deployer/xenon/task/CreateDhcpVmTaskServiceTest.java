@@ -458,7 +458,6 @@ public class CreateDhcpVmTaskServiceTest {
           .apiClientFactory(apiClientFactory)
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
           .deployerContext(deployerTestConfig.getDeployerContext())
-          .dockerProvisionerFactory(null)
           .hostCount(1)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)

@@ -29,6 +29,7 @@ import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
 import com.vmware.photon.controller.api.model.VmMetadata;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -40,8 +41,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
@@ -426,8 +425,6 @@ public class CreateManagementVmTaskServiceTest {
     private ApiClientFactory apiClientFactory;
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerTestConfig deployerTestConfig;
-    private DockerProvisioner dockerProvisioner;
-    private DockerProvisionerFactory dockerProvisionerFactory;
     private FlavorApi flavorApi;
     private ListeningExecutorService listeningExecutorService;
     private ProjectApi projectApi;
@@ -444,7 +441,6 @@ public class CreateManagementVmTaskServiceTest {
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       deployerTestConfig =
           ConfigBuilder.build(DeployerTestConfig.class, this.getClass().getResource("/config.yml").getPath());
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       TestHelper.setContainersConfig(deployerTestConfig);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
@@ -453,7 +449,6 @@ public class CreateManagementVmTaskServiceTest {
           .apiClientFactory(apiClientFactory)
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
           .deployerContext(deployerTestConfig.getDeployerContext())
-          .dockerProvisionerFactory(dockerProvisionerFactory)
           .hostCount(1)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
@@ -540,15 +535,6 @@ public class CreateManagementVmTaskServiceTest {
 
       doReturn(new ServiceConfigurator()).when(serviceConfiguratorFactory).create();
 
-      dockerProvisioner = mock(DockerProvisioner.class);
-      doReturn(dockerProvisioner).when(dockerProvisionerFactory).create(anyString());
-
-      doThrow(new RuntimeException("Runtime exception during first DockerProvisioner.getInfo call"))
-          .doThrow(new RuntimeException("Runtime exception during the second DockerProvisioner.getInfo call"))
-          .doReturn("DOCKER_STATUS")
-          .when(dockerProvisioner)
-          .getInfo();
-
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, FlavorService.State.class);
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
       TestHelper.assertNoServicesOfType(testEnvironment, ContainerService.State.class);
@@ -578,11 +564,16 @@ public class CreateManagementVmTaskServiceTest {
         TestHelper.createContainerService(testEnvironment, templateState, vmState);
       }
 
+      DeploymentService.State deploymentServiceStartState
+        = TestHelper.createDeploymentService(cloudStoreEnvironment, false, false);
+
+
       startState = buildValidStartState(null, null);
       startState.vmServiceLink = vmState.documentSelfLink;
       startState.controlFlags = null;
       startState.taskPollDelay = 10;
       startState.maxDockerPollIterations = 3;
+      startState.deploymentServiceLink = deploymentServiceStartState.documentSelfLink;
 
       FileUtils.copyDirectory(Paths.get(this.getClass().getResource("/scripts/").getPath()).toFile(),
           Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory()).toFile());
@@ -682,7 +673,6 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.attachIsoPollCount, is(3));
       assertThat(finalState.startVmTaskId, is("START_VM_TASK_ID"));
       assertThat(finalState.startVmPollCount, is(3));
-      assertThat(finalState.dockerPollIterations, is(3));
 
       verify(flavorApi).createAsync(
           eq(getExpectedVmFlavorCreateSpec(expectedCpuCount, expectedMemoryMb)),
@@ -771,10 +761,6 @@ public class CreateManagementVmTaskServiceTest {
           .when(vmApi)
           .performStartOperationAsync(anyString(), Matchers.<FutureCallback<Task>>any());
 
-      doReturn("DOCKER_STATUS")
-          .when(dockerProvisioner)
-          .getInfo();
-
       CreateManagementVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateManagementVmTaskFactoryService.SELF_LINK,
@@ -799,7 +785,6 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.vmConfigDirectory, notNullValue());
       assertThat(finalState.startVmTaskId, nullValue());
       assertThat(finalState.startVmPollCount, is(0));
-      assertThat(finalState.dockerPollIterations, is(1));
 
       verify(flavorApi).createAsync(
           eq(getExpectedVmFlavorCreateSpec(1, 1636L)),
@@ -1688,43 +1673,6 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.startVmTaskId, is("START_VM_TASK_ID"));
       assertThat(finalState.startVmPollCount, is(1));
     }
-
-    @Test
-    public void testWaitForDockerFailure() throws Throwable {
-
-      doThrow(new RuntimeException("Runtime exception during DockerProvisioner getInfo call"))
-          .when(dockerProvisioner)
-          .getInfo();
-
-      CreateManagementVmTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
-              startState,
-              CreateManagementVmTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message,
-          containsString("The docker endpoint on VM ipAddress failed to become ready after 3 polling iterations"));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
-      assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
-      assertThat(finalState.createVmPollCount, is(3));
-      assertThat(finalState.vmId, is(vmId));
-      assertThat(finalState.updateVmMetadataTaskId, is("SET_METADATA_TASK_ID"));
-      assertThat(finalState.updateVmMetadataPollCount, is(3));
-      assertThat(finalState.serviceConfigDirectory, notNullValue());
-      assertThat(finalState.vmConfigDirectory, notNullValue());
-      assertThat(finalState.startVmTaskId, is("START_VM_TASK_ID"));
-      assertThat(finalState.startVmPollCount, is(3));
-      assertThat(finalState.dockerPollIterations, is(3));
-    }
   }
 
   private CreateManagementVmTaskService.State buildValidStartState(
@@ -1736,6 +1684,7 @@ public class CreateManagementVmTaskServiceTest {
     startState.ntpEndpoint = "NTP_ENDPOINT";
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
     startState.isAuthEnabled = false;
+    startState.deploymentServiceLink = "fakeDeployment";
 
     if (taskStage != null) {
       startState.taskState = new CreateManagementVmTaskService.TaskState();

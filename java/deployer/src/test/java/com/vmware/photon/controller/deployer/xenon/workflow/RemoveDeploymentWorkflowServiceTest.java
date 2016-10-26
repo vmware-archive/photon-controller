@@ -728,7 +728,6 @@ public class RemoveDeploymentWorkflowServiceTest {
           .hostClientFactory(hostClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .apiClientFactory(apiClientFactory)
-          .dockerProvisionerFactory(null)
           .cloudServerSet(cloudStoreTestEnvironment.getServerSet())
           .hostCount(hostCount)
           .build();
