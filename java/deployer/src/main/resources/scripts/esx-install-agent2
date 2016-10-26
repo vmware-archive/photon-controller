@@ -79,18 +79,17 @@ crt_name="rui.crt"
 
 function join_lightwave_domain() {
   # Join lightwave domain. param 1 means use notify services instead of put node to maintenance mode
-  join_domain_cmd="/usr/lib/vmware/ic-deploy/bin/configure-lightwave.py ${lightwave_address} ${lightwave_domain} ${lightwave_password} 1 ${host_address} '$password'"
+  join_domain_cmd="/usr/lib/vmware/ic-deploy/bin/configure-lightwave.py ${lightwave_address} ${lightwave_domain} '${lightwave_password}' 1 ${host_address} '$password'"
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $join_domain_cmd
 
   # Listing /etc/vmware/ssl contents after copying
   echo "listing ${host_cert_dir} contents after copying"
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls ${host_cert_dir}
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls -l ${host_cert_dir}
 
   # restart photon-controller-agent
   restart_agent_cmd="if [ -f /etc/init.d/photon-controller-agent ]; then /etc/init.d/photon-controller-agent restart; fi"
   echo $restart_agent_cmd
   sshpass -p "$password" ssh -tt $SSH_OPTS ${username}@${host_address} $restart_agent_cmd
-  echo "join_lightwave_domain completed"
 }
 
 function create_and_copy_certificate_no_auth() {
@@ -109,29 +108,36 @@ function create_and_copy_certificate_no_auth() {
     echo "Use existing certs at ${cert_dir}"
   fi
 
-  sshpass -p "$password" scp $SSH_OPTS ${host_crt_path} ${username}@${host_address}:${host_cert_dir}
-  sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:${host_cert_dir}
+  sshpass -p "$password" scp $SSH_OPTS ${host_crt_path} ${username}@${host_address}:/tmp
+  sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:/tmp
+
+  # apply new cert and notify affected services
+  apply_cert_cmd="/opt/vmware/photon/controller/sh/apply_cert.py ${host_address} '$password' /tmp/${crt_name} /tmp/${priv_key_name}"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $apply_cert_cmd
+
+  # clean up tmp files
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm /tmp/${crt_name} /tmp/${priv_key_name}
 
   # listing /etc/vmware/ssl contents after copying
   echo "listing ${host_cert_dir} contents after copying"
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls ${host_cert_dir}
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls -l ${host_cert_dir}
 
-  # restart all services to load new cert
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} /bin/services.sh restart
+  # restart photon-controller-agent
+  restart_agent_cmd="if [ -f /etc/init.d/photon-controller-agent ]; then /etc/init.d/photon-controller-agent restart; fi"
+  echo $restart_agent_cmd
+  sshpass -p "$password" ssh -tt $SSH_OPTS ${username}@${host_address} $restart_agent_cmd
 }
 
 sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} date
 echo "create_cert=${create_cert}, vib_path=${vib_path}"
 
+install_vib
+
 if [[ "$vib_path" == *"photon-controller-agent"* ]]; then
   if [ "$create_cert" != "true" ]; then
     create_and_copy_certificate_no_auth
   fi
-fi
-
-install_vib
-
-if [[ "$vib_path" == *"lightwave"* ]]; then
+elif [[ "$vib_path" == *"lightwave"* ]]; then
   if [ "$create_cert" == "true" ]; then
     join_lightwave_domain
   fi
