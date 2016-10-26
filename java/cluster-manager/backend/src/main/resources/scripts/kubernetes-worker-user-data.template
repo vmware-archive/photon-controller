@@ -39,8 +39,6 @@ users:
 
 runcmd:
   - source /root/env_variables.txt
-  - rm -f /etc/systemd/network/*.network
-  - systemctl stop systemd-networkd
   - echo "Starting Kubernetes worker" >> /var/log/start-kubernetes-node.log
   - sh /root/setup-dhcp.sh >> /var/log/start-kubernetes-node.log 2>&1
   - sh /tmp/copy-ca-cert.sh >> /var/log/start-kubernetes-node.log 2>&1
