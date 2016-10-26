@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.deployer.xenon.task;
 
-import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -28,8 +27,6 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
-import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
-import com.vmware.photon.controller.deployer.xenon.constant.ServiceFileConstants;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
@@ -41,13 +38,12 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
+
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -79,7 +75,6 @@ public class CreateContainerTaskService extends StatefulService {
      * This class defines the possible sub-stages for a task.
      */
     public enum SubStage {
-      CREATE_CONTAINER,
       WAIT_FOR_SERVICE,
     }
 
@@ -195,7 +190,7 @@ public class CreateContainerTaskService extends StatefulService {
 
     if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
-      startState.taskState.subStage = TaskState.SubStage.CREATE_CONTAINER;
+      startState.taskState.subStage = TaskState.SubStage.WAIT_FOR_SERVICE;
     }
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -263,7 +258,6 @@ public class CreateContainerTaskService extends StatefulService {
       case STARTED:
         checkState(taskState.subStage != null);
         switch (taskState.subStage) {
-          case CREATE_CONTAINER:
           case WAIT_FOR_SERVICE:
             break;
           default:
@@ -281,146 +275,10 @@ public class CreateContainerTaskService extends StatefulService {
 
   private void processStartedStage(State currentState) {
     switch (currentState.taskState.subStage) {
-      case CREATE_CONTAINER:
-        processCreateContainerSubStage(currentState);
-        break;
       case WAIT_FOR_SERVICE:
         processWaitForServiceSubStage(currentState);
         break;
     }
-  }
-
-  //
-  // CREATE_CONTAINER sub-stage routines
-  //
-
-  private void processCreateContainerSubStage(State currentState) {
-
-    Operation deploymentOp = HostUtils.getCloudStoreHelper(this).createGet(currentState.deploymentServiceLink);
-    Operation containerOp = Operation.createGet(this, currentState.containerServiceLink);
-
-    OperationJoin
-        .create(deploymentOp, containerOp)
-        .setCompletion(
-            (ops, exs) -> {
-              if (exs != null && !exs.isEmpty()) {
-                failTask(exs.values());
-                return;
-              }
-
-              try {
-                processCreateContainerSubStage(currentState,
-                    ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class),
-                    ops.get(containerOp.getId()).getBody(ContainerService.State.class));
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            })
-        .sendWith(this);
-  }
-
-  private void processCreateContainerSubStage(State currentState,
-                                              DeploymentService.State deploymentState,
-                                              ContainerService.State containerState) {
-
-    Operation templateOp = Operation.createGet(this, containerState.containerTemplateServiceLink);
-    Operation vmOp = Operation.createGet(this, containerState.vmServiceLink);
-
-    OperationJoin
-        .create(templateOp, vmOp)
-        .setCompletion(
-            (ops, exs) -> {
-              if (exs != null && !exs.isEmpty()) {
-                failTask(exs.values());
-                return;
-              }
-
-              try {
-                processCreateContainerSubStage(currentState, deploymentState, containerState,
-                    ops.get(templateOp.getId()).getBody(ContainerTemplateService.State.class),
-                    ops.get(vmOp.getId()).getBody(VmService.State.class));
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            })
-        .sendWith(this);
-  }
-
-  private void processCreateContainerSubStage(State currentState,
-                                              DeploymentService.State deploymentState,
-                                              ContainerService.State containerState,
-                                              ContainerTemplateService.State templateState,
-                                              VmService.State vmState) {
-
-    ContainersConfig.ContainerType containerType =
-        ContainersConfig.ContainerType.valueOf(templateState.name);
-
-    String hostVolume = ServiceFileConstants.VM_MUSTACHE_DIRECTORY +
-        ServiceFileConstants.CONTAINER_CONFIG_ROOT_DIRS.get(containerType);
-
-    if (templateState.volumeBindings == null) {
-      templateState.volumeBindings = new HashMap<>();
-    }
-
-    templateState.volumeBindings.put(hostVolume, ServiceFileConstants.CONTAINER_CONFIG_DIRECTORY);
-
-    switch (containerType) {
-      case LoadBalancer:
-        templateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + HAPROXY_CONF_DIR);
-        break;
-      case Lightwave:
-        templateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + LIGHTWAVE_CONF_DIR);
-        break;
-    }
-
-    String[] commandList = {DeployerDefaults.DEFAULT_ENTRYPOINT_COMMAND};
-
-    Map<String, String> environmentVariables = new HashMap<>();
-    if (templateState.environmentVariables != null) {
-      environmentVariables.putAll(templateState.environmentVariables);
-    }
-
-    if (deploymentState.oAuthEnabled) {
-      environmentVariables.put(ENV_COMMON_ENABLE_AUTH, "true");
-      environmentVariables.put(ENV_MGMT_API_SWAGGER_LOGIN_URL, deploymentState.oAuthSwaggerLoginEndpoint);
-      environmentVariables.put(ENV_MGMT_API_SWAGGER_LOGOUT_URL, deploymentState.oAuthSwaggerLogoutEndpoint);
-      environmentVariables.put(ENV_MGMT_UI_LOGIN_URL, deploymentState.oAuthMgmtUiLoginEndpoint);
-      environmentVariables.put(ENV_MGMT_UI_LOGOUT_URL, deploymentState.oAuthMgmtUiLogoutEndpoint);
-    }
-
-    String containerId = HostUtils.getDockerProvisionerFactory(this)
-        .create(vmState.ipAddress)
-        .launchContainer(templateState.name,
-            templateState.containerImage,
-            containerState.cpuShares,
-            containerState.memoryMb,
-            templateState.volumeBindings,
-            templateState.portBindings,
-            templateState.volumesFrom,
-            templateState.isPrivileged,
-            environmentVariables,
-            true,
-            templateState.useHostNetwork,
-            commandList);
-
-    if (containerId == null) {
-      throw new IllegalStateException("Create container returned null");
-    }
-
-    ContainerService.State patchState = new ContainerService.State();
-    patchState.containerId = containerId;
-
-    sendRequest(Operation
-        .createPatch(this, currentState.containerServiceLink)
-        .setBody(patchState)
-        .setCompletion(
-            (o, e) -> {
-              if (e != null) {
-                failTask(e);
-              } else {
-                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_SERVICE);
-              }
-            }));
   }
 
   //
@@ -492,6 +350,8 @@ public class CreateContainerTaskService extends StatefulService {
     }
 
     if (currentState.successfulPollCount >= currentState.requiredPollCount) {
+      ServiceUtils.logInfo(this, "Successfully polled for service [" + templateState.name
+          + "][" + currentState.successfulPollCount + "]");
       sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
     } else if (currentState.pollCount >= currentState.maximumPollCount) {
       failTask(new IllegalStateException("Container " + containerState.containerId + " of type " + containerType +

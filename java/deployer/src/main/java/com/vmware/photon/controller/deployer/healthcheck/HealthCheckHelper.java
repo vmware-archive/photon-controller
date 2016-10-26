@@ -37,7 +37,7 @@ public class HealthCheckHelper {
         break;
 
       case PhotonControllerCore:
-        this.healthChecker = new HttpBasedHealthChecker(HostUtils.getApiClient(service));
+        this.healthChecker = new HttpBasedHealthChecker(HostUtils.getApiClient(service, "https://" + ipAddress + ":" + Constants.MANAGEMENT_API_PORT));
         break;
 
       case Lightwave:

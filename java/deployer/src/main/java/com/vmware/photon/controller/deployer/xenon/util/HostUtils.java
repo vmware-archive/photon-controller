@@ -22,7 +22,6 @@ import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
@@ -63,18 +62,6 @@ public class HostUtils {
     DeployerServiceGroup deployerServiceGroup =
         (DeployerServiceGroup) (((PhotonControllerXenonHost) service.getHost()).getDeployer());
     return deployerServiceGroup.getDeployerContext();
-  }
-
-  /**
-   * This function gets the docker provisioner factory from the host associated with the specified service.
-   *
-   * @param service Supplies a Xenon service instance.
-   * @return The docker provisioner factory provided by the Xenon host associated with the service.
-   */
-  public static DockerProvisionerFactory getDockerProvisionerFactory(Service service) {
-    DeployerServiceGroup deployerServiceGroup =
-        (DeployerServiceGroup) ((PhotonControllerXenonHost) service.getHost()).getDeployer();
-    return deployerServiceGroup.getDockerProvisionerFactory();
   }
 
   /**

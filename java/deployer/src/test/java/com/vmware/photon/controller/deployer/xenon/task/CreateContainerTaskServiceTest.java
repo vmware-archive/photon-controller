@@ -20,8 +20,6 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
@@ -31,7 +29,6 @@ import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
-import com.vmware.photon.controller.deployer.xenon.constant.ServiceFileConstants;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
@@ -43,7 +40,6 @@ import com.vmware.xenon.common.UriUtils;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.Matchers;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -51,20 +47,14 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasEntry;
-import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.anyVararg;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -156,35 +146,10 @@ public class CreateContainerTaskServiceTest {
       return new Object[][]{
           {null, null},
           {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
           {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
-      };
-    }
-
-    @Test(dataProvider = "TransitionalStartStages")
-    public void testTransitionalStartState(TaskState.TaskStage taskStage,
-                                           CreateContainerTaskService.TaskState.SubStage subStage)
-        throws Throwable {
-      CreateContainerTaskService.State startState = buildValidStartState(taskStage, subStage);
-      Operation startOp = testHost.startServiceSynchronously(createContainerTaskService, startState);
-      assertThat(startOp.getStatusCode(), is(200));
-
-      CreateContainerTaskService.State serviceState =
-          testHost.getServiceState(CreateContainerTaskService.State.class);
-      assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(serviceState.taskState.subStage,
-          is(CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER));
-    }
-
-    @DataProvider(name = "TransitionalStartStages")
-    public Object[][] getTransitionalStartStages() {
-      return new Object[][]{
-          {null, null},
-          {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
       };
     }
 
@@ -284,8 +249,6 @@ public class CreateContainerTaskServiceTest {
     public Object[][] getValidStageTransitions() {
       return new Object[][]{
           {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
-          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER,
               TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE},
           {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE,
               TaskState.TaskStage.FINISHED, null},
@@ -293,11 +256,6 @@ public class CreateContainerTaskServiceTest {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER,
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE,
@@ -330,18 +288,11 @@ public class CreateContainerTaskServiceTest {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.CREATED, null},
 
-          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER,
-              TaskState.TaskStage.CREATED, null},
-
           {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE,
-              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
 
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE},
           {TaskState.TaskStage.FINISHED, null,
@@ -354,8 +305,6 @@ public class CreateContainerTaskServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
-          {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FINISHED, null},
@@ -366,8 +315,6 @@ public class CreateContainerTaskServiceTest {
 
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE},
           {TaskState.TaskStage.CANCELLED, null,
@@ -387,7 +334,7 @@ public class CreateContainerTaskServiceTest {
 
       CreateContainerTaskService.State patchState =
           CreateContainerTaskService.buildPatch(TaskState.TaskStage.STARTED,
-              CreateContainerTaskService.TaskState.SubStage.CREATE_CONTAINER, null);
+              CreateContainerTaskService.TaskState.SubStage.WAIT_FOR_SERVICE, null);
 
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);
       declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
@@ -415,7 +362,6 @@ public class CreateContainerTaskServiceTest {
 
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerTestConfig deployerTestConfig;
-    private DockerProvisionerFactory dockerProvisionerFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
     private CreateContainerTaskService.State startState;
     private TestEnvironment testEnvironment;
@@ -435,7 +381,6 @@ public class CreateContainerTaskServiceTest {
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       deployerTestConfig =
           ConfigBuilder.build(DeployerTestConfig.class, getClass().getResource("/config.yml").getPath());
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
 
       TestHelper.setContainersConfig(deployerTestConfig);
@@ -444,7 +389,6 @@ public class CreateContainerTaskServiceTest {
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
           .containersConfig(deployerTestConfig.getContainersConfig())
           .deployerContext(deployerTestConfig.getDeployerContext())
-          .dockerProvisionerFactory(dockerProvisionerFactory)
           .healthCheckerFactory(healthCheckHelperFactory)
           .hostCount(1)
           .build();
@@ -521,23 +465,6 @@ public class CreateContainerTaskServiceTest {
 
       createTestDocuments(containerType, authEnabled);
 
-      DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
-      doReturn(dockerProvisioner).when(dockerProvisionerFactory).create(anyString());
-      doReturn("CONTAINER_ID")
-          .when(dockerProvisioner)
-          .launchContainer(anyString(),
-              anyString(),
-              anyInt(),
-              anyLong(),
-              Matchers.<Map<String, String>>any(),
-              Matchers.<Map<Integer, Integer>>any(),
-              anyString(),
-              anyBoolean(),
-              Matchers.<Map<String, String>>any(),
-              anyBoolean(),
-              anyBoolean(),
-              anyVararg());
-
       HealthChecker successfulHealthChecker = () -> true;
       HealthChecker failureHealthChecker = () -> false;
       HealthCheckHelper healthCheckHelper = mock(HealthCheckHelper.class);
@@ -560,59 +487,6 @@ public class CreateContainerTaskServiceTest {
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
-
-      ContainersConfig.Spec containerSpec =
-          deployerTestConfig.getContainersConfig().getContainerSpecs().get(containerType.name());
-
-      CaptorHolder volumeBindingsCaptor = new CaptorHolder();
-      CaptorHolder environmentVariablesCaptor = new CaptorHolder();
-
-      verify(dockerProvisioner, times(1)).launchContainer(
-          Matchers.eq(containerSpec.getServiceName()),
-          Matchers.eq(containerSpec.getContainerImage()),
-          anyInt(),
-          anyLong(),
-          volumeBindingsCaptor.captor.capture(),
-          Matchers.eq(containerSpec.getPortBindings()),
-          Matchers.eq(containerSpec.getVolumesFrom()),
-          Matchers.eq(containerSpec.getIsPrivileged()),
-          environmentVariablesCaptor.captor.capture(),
-          Matchers.eq(true),
-          Matchers.eq(containerSpec.getUseHostNetwork()),
-          anyVararg());
-
-      String hostVolumeKeyName = ServiceFileConstants.VM_MUSTACHE_DIRECTORY +
-          ServiceFileConstants.CONTAINER_CONFIG_ROOT_DIRS.get(containerType);
-
-      Map<String, String> volumeBindings = volumeBindingsCaptor.captor.getValue();
-      assertThat(volumeBindings, hasKey(hostVolumeKeyName));
-      String volumeBindingValue = volumeBindings.get(hostVolumeKeyName);
-      assertThat(volumeBindingValue, containsString(ServiceFileConstants.CONTAINER_CONFIG_DIRECTORY));
-      switch (containerType) {
-        case LoadBalancer:
-          assertThat(volumeBindingValue, containsString(CreateContainerTaskService.HAPROXY_CONF_DIR));
-          break;
-        case Lightwave:
-          assertThat(volumeBindingValue, containsString(CreateContainerTaskService.LIGHTWAVE_CONF_DIR));
-          break;
-      }
-
-      Map<String, String> environmentVariables = environmentVariablesCaptor.captor.getValue();
-      for (Map.Entry<String, String> entry : containerSpec.getDynamicParameters().entrySet()) {
-        assertThat(environmentVariables, hasEntry(entry.getKey(), entry.getValue()));
-      }
-
-      if (authEnabled) {
-        assertThat(environmentVariables,
-            hasEntry(CreateContainerTaskService.ENV_MGMT_API_SWAGGER_LOGIN_URL, SWAGGER_LOGIN_URL));
-        assertThat(environmentVariables,
-            hasEntry(CreateContainerTaskService.ENV_MGMT_API_SWAGGER_LOGOUT_URL, SWAGGER_LOGOUT_URL));
-        assertThat(environmentVariables,
-            hasEntry(CreateContainerTaskService.ENV_MGMT_UI_LOGIN_URL, MGMT_UI_LOGIN_URL));
-        assertThat(environmentVariables,
-            hasEntry(CreateContainerTaskService.ENV_MGMT_UI_LOGOUT_URL, MGMT_UI_LOGOUT_URL));
-      }
-
       verify(healthCheckHelper, times(6)).getHealthChecker();
     }
 
@@ -622,99 +496,9 @@ public class CreateContainerTaskServiceTest {
     }
 
     @Test(dataProvider = "OneContainerType")
-    public void testFailureContainerCreationException(ContainersConfig.ContainerType containerType) throws Throwable {
-
-      createTestDocuments(containerType, false);
-
-      DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
-      doReturn(dockerProvisioner).when(dockerProvisionerFactory).create(anyString());
-      doThrow(new RuntimeException("Exception during launchContainer call"))
-          .when(dockerProvisioner)
-          .launchContainer(
-              anyString(),
-              anyString(),
-              anyInt(),
-              anyLong(),
-              Matchers.<Map<String, String>>any(),
-              Matchers.<Map<Integer, Integer>>any(),
-              anyString(),
-              anyBoolean(),
-              Matchers.<Map<String, String>>any(),
-              anyBoolean(),
-              anyBoolean(),
-              anyVararg());
-
-      CreateContainerTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateContainerTaskFactoryService.SELF_LINK,
-              startState,
-              CreateContainerTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString("Exception during launchContainer call"));
-    }
-
-    @Test(dataProvider = "OneContainerType")
-    public void testFailureContainerCreationNullResult(ContainersConfig.ContainerType containerType) throws Throwable {
-
-      createTestDocuments(containerType, false);
-
-      DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
-      doReturn(dockerProvisioner).when(dockerProvisionerFactory).create(anyString());
-      doReturn(null)
-          .when(dockerProvisioner)
-          .launchContainer(
-              anyString(),
-              anyString(),
-              anyInt(),
-              anyLong(),
-              Matchers.<Map<String, String>>any(),
-              Matchers.<Map<Integer, Integer>>any(),
-              anyString(),
-              anyBoolean(),
-              Matchers.<Map<String, String>>any(),
-              anyBoolean(),
-              anyBoolean(),
-              anyVararg());
-
-      CreateContainerTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateContainerTaskFactoryService.SELF_LINK,
-              startState,
-              CreateContainerTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString("Create container returned null"));
-    }
-
-    @Test(dataProvider = "OneContainerType")
     public void testFailureServiceNotReady(ContainersConfig.ContainerType containerType) throws Throwable {
 
       createTestDocuments(containerType, false);
-
-      DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
-      doReturn(dockerProvisioner).when(dockerProvisionerFactory).create(anyString());
-      doReturn("CONTAINER_ID")
-          .when(dockerProvisioner)
-          .launchContainer(
-              anyString(),
-              anyString(),
-              anyInt(),
-              anyLong(),
-              Matchers.<Map<String, String>>any(),
-              Matchers.<Map<Integer, Integer>>any(),
-              anyString(),
-              anyBoolean(),
-              Matchers.<Map<String, String>>any(),
-              anyBoolean(),
-              anyBoolean(),
-              anyVararg());
 
       HealthChecker successfulHealthChecker = () -> true;
       HealthChecker failureHealthChecker = () -> false;
@@ -738,7 +522,7 @@ public class CreateContainerTaskServiceTest {
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString("Container CONTAINER_ID of type " +
+      assertThat(finalState.taskState.failure.message, containsString("Container null of type " +
           containerType + " on VM IP_ADDRESS failed to become ready after 10 iterations"));
     }
 
