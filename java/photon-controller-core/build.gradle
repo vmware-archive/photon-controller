@@ -9,6 +9,7 @@ import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
 mainClassName = 'com.vmware.photon.controller.core.Main'
 
 dependencies {
+  compile project(':api:client')
   compile project(':api-backend')
   compile project(':api:frontend')
   compile project(':cluster-manager:service-documents')

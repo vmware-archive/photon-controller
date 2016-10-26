@@ -14,8 +14,11 @@
 package com.vmware.photon.controller.deployer.xenon.task;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.resource.ImagesApi;
+import com.vmware.photon.controller.api.client.resource.ImagesRestApi;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.TasksRestApi;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
@@ -373,11 +376,11 @@ public class UploadImageTaskServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      ApiClient apiClient = mock(ApiClient.class);
+      ApiClient apiClient = mock(RestApiClient.class);
       doReturn(apiClient).when(apiClientFactory).create();
-      imagesApi = mock(ImagesApi.class);
+      imagesApi = mock(ImagesRestApi.class);
       doReturn(imagesApi).when(apiClient).getImagesApi();
-      tasksApi = mock(TasksApi.class);
+      tasksApi = mock(TasksRestApi.class);
       doReturn(tasksApi).when(apiClient).getTasksApi();
 
       imageId = UUID.randomUUID().toString();
