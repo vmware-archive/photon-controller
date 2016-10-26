@@ -110,7 +110,7 @@ public class ClientProxyImpl<C extends TAsyncSSLClient> implements ClientProxy<C
         return null;
       }
 
-      final AsyncMethodCallback callback = getCallback(args);
+      final AsyncMethodCallback<Object> callback = getCallback(args);
       ListenableFuture<C> futureClient = clientPool.acquire();
 
       Futures.addCallback(futureClient, new FutureCallback<C>() {
@@ -119,7 +119,7 @@ public class ClientProxyImpl<C extends TAsyncSSLClient> implements ClientProxy<C
           client.setTimeout(timeout);
           logger.debug("Timeout set for the client {}", timeout);
 
-          AsyncMethodCallback wrappedCallback = wrapCallback(client, callback);
+          AsyncMethodCallback<Object> wrappedCallback = wrapCallback(client, callback);
           args[args.length - 1] = wrappedCallback;
           setupTracing(method, args);
 
@@ -190,7 +190,7 @@ public class ClientProxyImpl<C extends TAsyncSSLClient> implements ClientProxy<C
     }
   }
 
-  private void handleException(AsyncMethodCallback callback, Throwable cause) {
+  private void handleException(AsyncMethodCallback<Object> callback, Throwable cause) {
     checkNotNull(callback);
 
     if (cause instanceof Exception) {
@@ -200,14 +200,14 @@ public class ClientProxyImpl<C extends TAsyncSSLClient> implements ClientProxy<C
     }
   }
 
-  @SuppressWarnings("unchecked")
-  private AsyncMethodCallback wrapCallback(C client, AsyncMethodCallback callback) {
+  private AsyncMethodCallback<Object> wrapCallback(C client, AsyncMethodCallback<Object> callback) {
     return new WrappedCallback<C, Object>(checkNotNull(callback), client, clientPool);
   }
 
-  private AsyncMethodCallback getCallback(Object[] args) {
+  @SuppressWarnings("unchecked")
+  private AsyncMethodCallback<Object> getCallback(Object[] args) {
     if (args.length > 0 && args[args.length - 1] instanceof AsyncMethodCallback) {
-      return (AsyncMethodCallback) args[args.length - 1];
+      return (AsyncMethodCallback<Object>) args[args.length - 1];
     }
 
     throw new IllegalArgumentException("ClientProxy only proxies methods " +

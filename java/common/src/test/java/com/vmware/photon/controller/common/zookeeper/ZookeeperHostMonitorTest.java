@@ -57,8 +57,6 @@ import java.util.concurrent.ExecutorService;
  */
 public class ZookeeperHostMonitorTest {
 
-  private TSerializer serializer = new TSerializer();
-
   @Mock
   private PathChildrenCacheFactory pathCache;
 
@@ -383,7 +381,7 @@ public class ZookeeperHostMonitorTest {
   }
 
   private List<ChildData> getChildDataFromEvents(PathChildrenCacheEvent... events) {
-    List<ChildData> currEvents = new ArrayList();
+    List<ChildData> currEvents = new ArrayList<>();
     for (PathChildrenCacheEvent event : events) {
       currEvents.add(new ChildData(event.getData().getPath(), null, event.getData().getData()));
     }

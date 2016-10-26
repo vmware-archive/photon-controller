@@ -25,6 +25,7 @@ import com.vmware.photon.controller.host.gen.GetImagesResultCode;
 import com.vmware.photon.controller.host.gen.GetInactiveImagesResponse;
 import com.vmware.photon.controller.host.gen.GetMonitoredImagesResultCode;
 import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.copy_image_call;
 import com.vmware.photon.controller.host.gen.StartImageOperationResultCode;
 import com.vmware.photon.controller.host.gen.StartImageScanResponse;
 import com.vmware.photon.controller.host.gen.StartImageSweepResponse;
@@ -109,7 +110,11 @@ public class HostClientMock extends HostClient {
   }
 
   @Override
-  public void copyImage(String imageId, String source, String destination, AsyncMethodCallback callback) {
+  public void copyImage(
+      String imageId,
+      String source,
+      String destination,
+      AsyncMethodCallback<copy_image_call> callback) {
     if (source.equals(destination)) {
       fail("Same source and destination should not be passed to call HostClient");
     }
