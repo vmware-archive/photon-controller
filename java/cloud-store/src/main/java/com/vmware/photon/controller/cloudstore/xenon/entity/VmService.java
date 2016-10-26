@@ -49,7 +49,7 @@ public class VmService extends StatefulService {
 
   @Override
   public void handleStart(Operation startOperation) {
-    ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
+    ServiceUtils.logInfo(this, "Starting vm service %s", getSelfLink());
     try {
       State startState = startOperation.getBody(State.class);
       InitializationUtils.initialize(startState);
@@ -61,11 +61,12 @@ public class VmService extends StatefulService {
       ServiceUtils.logSevere(this, t);
       startOperation.fail(t);
     }
+    ServiceUtils.logInfo(this, "Exiting vm start %s", getSelfLink());
   }
 
   @Override
   public void handlePatch(Operation patchOperation) {
-    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+    ServiceUtils.logInfo(this, "Patching vm service %s", getSelfLink());
     State currentState = getState(patchOperation);
     State patchState = patchOperation.getBody(State.class);
     try {
@@ -79,11 +80,14 @@ public class VmService extends StatefulService {
       ServiceUtils.logSevere(this, t);
       patchOperation.fail(t);
     }
+    ServiceUtils.logInfo(this, "Exiting vm patch %s", getSelfLink());
   }
 
   @Override
   public void handleDelete(Operation deleteOperation) {
+    ServiceUtils.logInfo(this, "Deleting vm service %s", getSelfLink());
     ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
+    ServiceUtils.logInfo(this, "Exiting vm delete %s", getSelfLink());
   }
 
 

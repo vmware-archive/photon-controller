@@ -13,7 +13,7 @@ require "net/ssh"
 require "spec_helper"
 require "test_helpers"
 
-describe "Harbor cluster-service lifecycle", cluster: true do
+describe "Harbor cluster-service lifecycle", cluster: true, promote: true do
 
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.instance
@@ -63,7 +63,7 @@ describe "Harbor cluster-service lifecycle", cluster: true do
       cluster2 = create_harbor_cluster(project, props)
       validate_harbor_cluster_info(cluster2.id)
       EsxCloud::ClusterHelper.delete_cluster(client, cluster2.id, "HARBOR")
-      
+
       puts "Test that two tenants can create and operate on their own Harbor cluster in parallel"
       project = @seeder2.project!
       cluster3 = create_harbor_cluster(project, props)
