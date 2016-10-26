@@ -14,7 +14,9 @@ package com.vmware.photon.controller.clustermanager.tasks;
 
 import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.api.client.resource.ClusterApi;
+import com.vmware.photon.controller.api.client.resource.ClusterRestApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.ClusterState;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
@@ -472,8 +474,8 @@ public class ClusterDeleteTaskServiceTest {
     public void setUpClass() throws Throwable {
 
       apiClient = mock(ApiClient.class);
-      clusterApi = mock(ClusterApi.class);
-      vmApi = mock(VmApi.class);
+      clusterApi = mock(ClusterRestApi.class);
+      vmApi = mock(VmRestApi.class);
       doReturn(clusterApi).when(apiClient).getClusterApi();
       doReturn(vmApi).when(apiClient).getVmApi();
     }

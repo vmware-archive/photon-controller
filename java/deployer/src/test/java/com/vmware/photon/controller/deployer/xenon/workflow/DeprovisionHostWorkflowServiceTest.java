@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
@@ -581,7 +582,7 @@ public class DeprovisionHostWorkflowServiceTest {
 
       VmService.State vmService = TestHelper.createVmService(testEnvironment, hostService);
 
-      ApiClient apiClient = mock(ApiClient.class);
+      ApiClient apiClient = mock(RestApiClient.class);
       doReturn(apiClient).when(apiClientFactory).create();
 
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
