@@ -14,10 +14,15 @@
 package com.vmware.photon.controller.deployer.xenon.task;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.resource.FlavorApi;
+import com.vmware.photon.controller.api.client.resource.FlavorRestApi;
 import com.vmware.photon.controller.api.client.resource.ProjectApi;
+import com.vmware.photon.controller.api.client.resource.ProjectRestApi;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.TasksRestApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.model.EphemeralDisk;
 import com.vmware.photon.controller.api.model.FlavorCreateSpec;
@@ -471,15 +476,15 @@ public class CreateDhcpVmTaskServiceTest {
     @BeforeMethod
     public void setUpTest() throws Throwable {
 
-      ApiClient apiClient = mock(ApiClient.class);
+      ApiClient apiClient = mock(RestApiClient.class);
       doReturn(apiClient).when(apiClientFactory).create();
-      flavorApi = mock(FlavorApi.class);
+      flavorApi = mock(FlavorRestApi.class);
       doReturn(flavorApi).when(apiClient).getFlavorApi();
-      projectApi = mock(ProjectApi.class);
+      projectApi = mock(ProjectRestApi.class);
       doReturn(projectApi).when(apiClient).getProjectApi();
-      tasksApi = mock(TasksApi.class);
+      tasksApi = mock(TasksRestApi.class);
       doReturn(tasksApi).when(apiClient).getTasksApi();
-      vmApi = mock(VmApi.class);
+      vmApi = mock(VmRestApi.class);
       doReturn(vmApi).when(apiClient).getVmApi();
       vmId = UUID.randomUUID().toString();
 

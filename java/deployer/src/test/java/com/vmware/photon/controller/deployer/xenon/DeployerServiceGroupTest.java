@@ -158,7 +158,7 @@ public class DeployerServiceGroupTest {
           agentControlClientFactory,
           nsxClientFactory,
           cloudStoreHelper,
-          null);
+          null, null);
 
       deployerServiceGroup = new DeployerServiceGroup(
           deployerTestConfig.getDeployerContext(),
@@ -203,7 +203,7 @@ public class DeployerServiceGroupTest {
           agentControlClientFactory,
           nsxClientFactory,
           cloudStoreHelper,
-          null);
+          null, null);
 
       deployerServiceGroup = new DeployerServiceGroup(
           deployerTestConfig.getDeployerContext(),
@@ -270,7 +270,7 @@ public class DeployerServiceGroupTest {
           agentControlClientFactory,
           nsxClientFactory,
           cloudStoreHelper,
-          null);
+          null, null);
 
       deployerServiceGroup = new DeployerServiceGroup(
           deployerTestConfig.getDeployerContext(),
@@ -358,7 +358,7 @@ public class DeployerServiceGroupTest {
           agentControlClientFactory,
           nsxClientFactory,
           cloudStoreHelper,
-          null);
+          null, null);
 
       deployerServiceGroup = new DeployerServiceGroup(
           deployerTestConfig.getDeployerContext(),
@@ -447,7 +447,7 @@ public class DeployerServiceGroupTest {
           agentControlClientFactory,
           nsxClientFactory,
           cloudStoreHelper,
-          null);
+          null, null);
 
       deployerServiceGroup = new DeployerServiceGroup(
           null,
@@ -479,7 +479,7 @@ public class DeployerServiceGroupTest {
           agentControlClientFactory,
           nsxClientFactory,
           cloudStoreHelper,
-          null);
+          null, null);
 
       DeployerServiceGroup deployerServiceGroup2 = new DeployerServiceGroup(
           null,

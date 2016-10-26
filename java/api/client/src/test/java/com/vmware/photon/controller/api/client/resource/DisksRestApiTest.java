@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.api.client.resource;
 
+import com.vmware.photon.controller.api.model.PersistentDisk;
 import com.vmware.photon.controller.api.model.ResourceList;
-import com.vmware.photon.controller.api.model.ResourceTicket;
 import com.vmware.photon.controller.api.model.Task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,48 +30,50 @@ import static org.testng.AssertJUnit.fail;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests {@link ResourceTicketApi}.
+ * Tests {@link DisksRestApi}.
  */
-public class ResourceTicketApiTest extends ApiTestBase {
+public class DisksRestApiTest extends ApiTestBase {
 
   @Test
-  public void testGetResourceTicket() throws IOException {
-    ResourceTicket resourceTicket1 = new ResourceTicket();
-    resourceTicket1.setId("resourceTicket1");
+  public void testGetDisk() throws IOException {
+    PersistentDisk persistentDisk = new PersistentDisk();
+    persistentDisk.setId("persistentDisk");
 
     ObjectMapper mapper = new ObjectMapper();
-    String serializedTask = mapper.writeValueAsString(resourceTicket1);
+    String serializedTask = mapper.writeValueAsString(persistentDisk);
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ResourceTicketApi resourceTicketApi = new ResourceTicketApi(restClient);
+    DisksApi disksApi = new DisksRestApi(restClient);
 
-    ResourceTicket response = resourceTicketApi.getResourceTicket("foo");
-    assertEquals(response, resourceTicket1);
+    PersistentDisk response = disksApi.getDisk("disk1");
+    assertEquals(response, persistentDisk);
   }
 
   @Test
-  public void testGetResourceTicketAsync() throws IOException, InterruptedException {
-    final ResourceTicket resourceTicket1 = new ResourceTicket();
-    resourceTicket1.setId("resourceTicket1");
+  public void testGetDiskAsync() throws IOException, InterruptedException {
+    final PersistentDisk persistentDisk = new PersistentDisk();
+    persistentDisk.setId("persistentDisk");
 
     ObjectMapper mapper = new ObjectMapper();
-    String serializedTask = mapper.writeValueAsString(resourceTicket1);
+    String serializedTask = mapper.writeValueAsString(persistentDisk);
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ResourceTicketApi resourceTicketApi = new ResourceTicketApi(restClient);
+    DisksApi disksApi = new DisksRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
-    resourceTicketApi.getResourceTicketAsync("foo", new FutureCallback<ResourceTicket>() {
+    disksApi.getDiskAsync("disk1", new FutureCallback<PersistentDisk>() {
       @Override
-      public void onSuccess(@Nullable ResourceTicket result) {
-        assertEquals(result, resourceTicket1);
+      public void onSuccess(@Nullable PersistentDisk result) {
+        assertEquals(result, persistentDisk);
         latch.countDown();
       }
 
@@ -82,11 +84,11 @@ public class ResourceTicketApiTest extends ApiTestBase {
       }
     });
 
-    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));;
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
   }
 
   @Test
-  public void testGetResourceTicketTasks() throws IOException {
+  public void testDiskTasks() throws IOException {
 
     Task task1 = new Task();
     task1.setId("task1");
@@ -101,15 +103,15 @@ public class ResourceTicketApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ResourceTicketApi resourceTicketApi = new ResourceTicketApi(restClient);
+    DisksApi disksApi = new DisksRestApi(restClient);
 
-    ResourceList<Task> response = resourceTicketApi.getTasksForResourceTicket("foo");
+    ResourceList<Task> response = disksApi.getTasksForDisk("foo");
     assertEquals(response.getItems().size(), taskResourceList.getItems().size());
     assertTrue(response.getItems().containsAll(taskResourceList.getItems()));
   }
 
   @Test
-  public void testGetResourceTicketTasksForPagination() throws IOException {
+  public void testDiskTasksForPagination() throws IOException {
 
     Task task1 = new Task();
     task1.setId("task1");
@@ -120,10 +122,13 @@ public class ResourceTicketApiTest extends ApiTestBase {
     Task task3 = new Task();
     task3.setId("task3");
 
+    Task task4 = new Task();
+    task4.setId("task4");
+
     String nextPageLink = "nextPageLink";
 
     ResourceList<Task> taskResourceList = new ResourceList<>(Arrays.asList(task1, task2), nextPageLink, null);
-    ResourceList<Task> taskResourceListNextPage = new ResourceList<>(Arrays.asList(task3));
+    ResourceList<Task> taskResourceListNextPage = new ResourceList<>(Arrays.asList(task3, task4));
 
     ObjectMapper mapper = new ObjectMapper();
     String serializedTask = mapper.writeValueAsString(taskResourceList);
@@ -131,9 +136,9 @@ public class ResourceTicketApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ResourceTicketApi resourceTicketApi = new ResourceTicketApi(restClient);
+    DisksApi disksApi = new DisksRestApi(restClient);
 
-    ResourceList<Task> response = resourceTicketApi.getTasksForResourceTicket("foo");
+    ResourceList<Task> response = disksApi.getTasksForDisk("foo");
     assertEquals(response.getItems().size(), taskResourceList.getItems().size() + taskResourceListNextPage.getItems()
         .size());
     assertTrue(response.getItems().containsAll(taskResourceList.getItems()));
@@ -141,8 +146,7 @@ public class ResourceTicketApiTest extends ApiTestBase {
   }
 
   @Test
-  public void testGetResourceTicketTasksAsync() throws IOException, InterruptedException {
-
+  public void testGetTasksForDisksAsync() throws IOException, InterruptedException {
     Task task1 = new Task();
     task1.setId("task1");
 
@@ -156,10 +160,10 @@ public class ResourceTicketApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    ResourceTicketApi resourceTicketApi = new ResourceTicketApi(restClient);
+    DisksApi disksApi = new DisksRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
-    resourceTicketApi.getTasksForResourceTicketAsync("foo", new FutureCallback<ResourceList<Task>>() {
+    disksApi.getTasksForDiskAsync("persistentDisk", new FutureCallback<ResourceList<Task>>() {
       @Override
       public void onSuccess(@Nullable ResourceList<Task> result) {
         assertEquals(result.getItems(), taskResourceList.getItems());
@@ -177,8 +181,7 @@ public class ResourceTicketApiTest extends ApiTestBase {
   }
 
   @Test
-  public void testGetResourceTicketTasksAsyncForPagination() throws IOException, InterruptedException {
-
+  public void testGetTasksForDisksAsyncForPagination() throws IOException, InterruptedException {
     Task task1 = new Task();
     task1.setId("task1");
 
@@ -188,10 +191,13 @@ public class ResourceTicketApiTest extends ApiTestBase {
     Task task3 = new Task();
     task3.setId("task3");
 
+    Task task4 = new Task();
+    task4.setId("task4");
+
     String nextPageLink = "nextPageLink";
 
-    ResourceList<Task> taskResourceList = new ResourceList<>(Arrays.asList(task1, task2), nextPageLink, null);
-    ResourceList<Task> taskResourceListNextPage = new ResourceList<>(Arrays.asList(task3));
+    final ResourceList<Task> taskResourceList = new ResourceList<>(Arrays.asList(task1, task2), nextPageLink, null);
+    final ResourceList<Task> taskResourceListNextPage = new ResourceList<>(Arrays.asList(task3, task4));
 
     ObjectMapper mapper = new ObjectMapper();
     String serializedTask = mapper.writeValueAsString(taskResourceList);
@@ -199,17 +205,66 @@ public class ResourceTicketApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    ResourceTicketApi resourceTicketApi = new ResourceTicketApi(restClient);
+    DisksApi disksApi = new DisksRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
-    resourceTicketApi.getTasksForResourceTicketAsync("foo", new FutureCallback<ResourceList<Task>>() {
+    disksApi.getTasksForDiskAsync("persistentDisk", new FutureCallback<ResourceList<Task>>() {
       @Override
       public void onSuccess(@Nullable ResourceList<Task> result) {
         assertEquals(result.getItems().size(), taskResourceList.getItems().size() + taskResourceListNextPage.getItems()
             .size());
         assertTrue(result.getItems().containsAll(taskResourceList.getItems()));
         assertTrue(result.getItems().containsAll(taskResourceListNextPage.getItems()));
+        latch.countDown();
+      }
 
+      @Override
+      public void onFailure(Throwable t) {
+        fail(t.toString());
+        latch.countDown();
+      }
+    });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));;
+  }
+
+  @Test
+  public void testDelete() throws IOException {
+    Task responseTask = new Task();
+    responseTask.setId("12345");
+    responseTask.setState("QUEUED");
+    responseTask.setQueuedTime(Date.from(Instant.now()));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(responseTask);
+
+    setupMocks(serializedTask, HttpStatus.SC_CREATED);
+
+    DisksApi disksApi = new DisksRestApi(restClient);
+
+    Task task = disksApi.delete("foo");
+    assertEquals(task, responseTask);
+  }
+
+  @Test
+  public void testDeleteAsync() throws IOException, InterruptedException {
+    final Task responseTask = new Task();
+    responseTask.setId("12345");
+    responseTask.setState("QUEUED");
+    responseTask.setQueuedTime(Date.from(Instant.now()));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(responseTask);
+
+    setupMocks(serializedTask, HttpStatus.SC_CREATED);
+
+    DisksApi disksApi = new DisksRestApi(restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    disksApi.deleteAsync("persistentDisk", new FutureCallback<Task>() {
+      @Override
+      public void onSuccess(@Nullable Task result) {
+        assertEquals(result, responseTask);
         latch.countDown();
       }
 

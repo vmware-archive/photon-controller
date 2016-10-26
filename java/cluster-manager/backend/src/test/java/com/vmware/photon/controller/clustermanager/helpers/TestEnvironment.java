@@ -35,6 +35,7 @@ import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertTrue;
@@ -81,7 +82,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           agentControlClientFactory,
           nsxClientFactory,
           cloudStoreHelper,
-          null);
+          null, null);
 
       ClusterManagerTestServiceGroup clusterManagerTestServiceGroup =
           new ClusterManagerTestServiceGroup(clusterManagerFactory);
@@ -194,7 +195,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       }
 
       if (this.apiClient != null) {
-        doReturn(this.apiClient).when(clusterManagerFactory).createApiClient();
+        doReturn(this.apiClient).when(clusterManagerFactory).createApiClient(anyObject());
       }
 
       if (this.scriptsDirectory != null) {
