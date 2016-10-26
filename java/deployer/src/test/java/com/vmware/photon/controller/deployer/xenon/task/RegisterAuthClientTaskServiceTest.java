@@ -23,8 +23,6 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
@@ -39,22 +37,18 @@ import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.mockito.Mockito;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.doReturn;
 import static org.powermock.api.mockito.PowerMockito.doThrow;
 import static org.powermock.api.mockito.PowerMockito.mock;
@@ -326,7 +320,6 @@ public class RegisterAuthClientTaskServiceTest {
     private AuthHelperFactory authHelperFactory;
     private AuthHelper authHelper;
     private ListeningExecutorService listeningExecutorService;
-    private DockerProvisionerFactory dockerProvisionerFactory;
     private DeploymentService.State deploymentServiceState;
     private DeployerTestConfig deployerTestConfig;
     private AuthClientHandler.ImplicitClient implicitClient;
@@ -334,7 +327,6 @@ public class RegisterAuthClientTaskServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath());
       TestHelper.setContainersConfig(deployerTestConfig);
@@ -351,12 +343,6 @@ public class RegisterAuthClientTaskServiceTest {
 
       authHelperFactory = mock(AuthHelperFactory.class);
       doReturn(authHelper).when(authHelperFactory).create();
-
-      DockerProvisioner dockerProvisioner = Mockito.mock(DockerProvisioner.class);
-      when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
-          anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn("id");
 
       startTestEnvironment();
       setupDeploymentServiceDocuments();
@@ -450,7 +436,6 @@ public class RegisterAuthClientTaskServiceTest {
           .authHelperFactory(authHelperFactory)
           .deployerContext(deployerTestConfig.getDeployerContext())
           .containersConfig(deployerTestConfig.getContainersConfig())
-          .dockerProvisionerFactory(dockerProvisionerFactory)
           .listeningExecutorService(listeningExecutorService)
           .cloudServerSet(cloudStoreMachine.getServerSet())
           .hostCount(1)

@@ -42,7 +42,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -75,6 +74,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -454,7 +454,6 @@ public class BatchCreateManagementWorkflowServiceTest {
     private TestEnvironment machine;
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private ListeningExecutorService listeningExecutorService;
-    private DockerProvisionerFactory dockerProvisionerFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
 
     private BatchCreateManagementWorkflowService.State startState;
@@ -496,7 +495,6 @@ public class BatchCreateManagementWorkflowServiceTest {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
 
       deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine).documentSelfLink;
@@ -661,7 +659,7 @@ public class BatchCreateManagementWorkflowServiceTest {
     @Test(dataProvider = "hostCounts")
     public void testEndToEndSuccess(Integer hostCount) throws Throwable {
       machine = createTestEnvironment(deployerContext, listeningExecutorService, apiClientFactory,
-          dockerProvisionerFactory, healthCheckHelperFactory, serviceConfiguratorFactory, containersConfig, hostCount);
+          healthCheckHelperFactory, serviceConfiguratorFactory, containersConfig, hostCount);
 
       mockSuccessFulCreateManagementVmWorkFlow();
 
@@ -678,7 +676,7 @@ public class BatchCreateManagementWorkflowServiceTest {
     @Test(dataProvider = "hostCounts")
     public void testEndToEndFailsWhenUploadImageFails(Integer hostCount) throws Throwable {
       machine = createTestEnvironment(deployerContext, listeningExecutorService, apiClientFactory,
-          dockerProvisionerFactory, healthCheckHelperFactory, serviceConfiguratorFactory, containersConfig, hostCount);
+          healthCheckHelperFactory, serviceConfiguratorFactory, containersConfig, hostCount);
 
       BatchCreateManagementWorkflowService.State finalState =
           machine.callServiceAndWaitForState(
@@ -703,7 +701,6 @@ public class BatchCreateManagementWorkflowServiceTest {
       mockSuccessfulCreateIso();
       mockSuccessfulStartVm();
       mockSuccessfulVmCreate();
-      MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
     }
 
@@ -872,7 +869,6 @@ public class BatchCreateManagementWorkflowServiceTest {
         DeployerContext deployerContext,
         ListeningExecutorService listeningExecutorService,
         ApiClientFactory apiClientFactory,
-        DockerProvisionerFactory dockerProvisionerFactory,
         HealthCheckHelperFactory healthCheckHelperFactory,
         ServiceConfiguratorFactory serviceConfiguratorFactory,
         ContainersConfig containersConfig,
@@ -881,7 +877,6 @@ public class BatchCreateManagementWorkflowServiceTest {
 
       return new TestEnvironment.Builder()
           .deployerContext(deployerContext)
-          .dockerProvisionerFactory(dockerProvisionerFactory)
           .apiClientFactory(apiClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .healthCheckerFactory(healthCheckHelperFactory)

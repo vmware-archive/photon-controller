@@ -65,21 +65,6 @@ public class HostUtilsTest {
   }
 
   /**
-   * This class implements tests for the getDockerProvisionerFactory method.
-   */
-  public class GetDockerProvisionerFactoryTest {
-
-    private StatefulService service;
-
-    @Test(expectedExceptions = ClassCastException.class)
-    public void testClassCastError() {
-      service = spy(new StatefulService(ServiceDocument.class));
-      doReturn(mock(ServiceHost.class)).when(service).getHost();
-      HostUtils.getDockerProvisionerFactory(service);
-    }
-  }
-
-  /**
    * This class implements tests for the getApiClient method.
    */
   public class GetApiClientTest {
