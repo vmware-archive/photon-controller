@@ -397,9 +397,10 @@ public class DeleteVmTaskServiceTest {
     public void tearDownClass() throws Exception {
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testEndToEndSuccess() throws Throwable {
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(apifeTask);
@@ -407,7 +408,7 @@ public class DeleteVmTaskServiceTest {
         }
       }).when(vmApi).deleteAsync(any(String.class), any(FutureCallback.class));
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(apifeTask);
@@ -427,9 +428,10 @@ public class DeleteVmTaskServiceTest {
       TestHelper.assertTaskStateFinished(finalState.taskState);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testEndToEndEsxClientCallDeleteFailure() throws Throwable {
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           throw new IOException("Expected exception");
@@ -450,10 +452,11 @@ public class DeleteVmTaskServiceTest {
       assertThat(finalState.taskState.failure.message, containsString("Expected exception"));
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testEndToEndEsxClientCallWaitFailure() throws Throwable {
       apifeTask.setState("QUEUED");
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(apifeTask);
