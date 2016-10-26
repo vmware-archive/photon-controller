@@ -143,6 +143,11 @@ public class TestHelper {
       containerTemplateServiceState.portBindings.putAll(spec.getPortBindings());
     }
 
+    containerTemplateServiceState.udpPortBindings = new HashMap<>();
+    if (null != spec.getUdpPortBindings()) {
+      containerTemplateServiceState.udpPortBindings.putAll(spec.getPortBindings());
+    }
+
     containerTemplateServiceState.volumeBindings = new HashMap<>();
     if (null != spec.getVolumeBindings()) {
       containerTemplateServiceState.volumeBindings.putAll(spec.getVolumeBindings());

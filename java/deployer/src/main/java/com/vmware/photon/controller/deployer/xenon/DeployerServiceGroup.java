@@ -29,8 +29,6 @@ import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactoryProvider;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
@@ -61,7 +59,6 @@ import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskFa
 import com.vmware.photon.controller.deployer.xenon.task.CreateVmSpecLayoutTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.CreateVmSpecTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.DeleteAgentTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.DeleteContainerTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.DeleteVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.MigrationStatusUpdateTriggerFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskFactoryService;
@@ -103,7 +100,6 @@ import org.slf4j.LoggerFactory;
 public class DeployerServiceGroup
     implements XenonServiceGroup,
     DeployerContextProvider,
-    DockerProvisionerFactoryProvider,
     ApiClientFactoryProvider,
     ContainersConfigProvider,
     ListeningExecutorServiceProvider,
@@ -162,7 +158,6 @@ public class DeployerServiceGroup
       CreateVmSpecLayoutTaskFactoryService.class,
       CreateVmSpecTaskFactoryService.class,
       DeleteAgentTaskFactoryService.class,
-      DeleteContainerTaskFactoryService.class,
       DeleteVmTaskFactoryService.class,
       MigrationStatusUpdateTriggerFactoryService.class,
       ProvisionHostTaskFactoryService.class,
@@ -196,7 +191,6 @@ public class DeployerServiceGroup
   };
 
   private final DeployerContext deployerContext;
-  private final DockerProvisionerFactory dockerProvisionerFactory;
   private final ApiClientFactory apiClientFactory;
   private final ContainersConfig containersConfig;
   private final ListeningExecutorService listeningExecutorService;
@@ -212,7 +206,6 @@ public class DeployerServiceGroup
 
   public DeployerServiceGroup (
       DeployerContext deployerContext,
-      DockerProvisionerFactory dockerProvisionerFactory,
       ApiClientFactory apiClientFactory,
       ContainersConfig containersConfig,
       ListeningExecutorService listeningExecutorService,
@@ -225,7 +218,6 @@ public class DeployerServiceGroup
       ClusterManagerFactory clusterManagerFactory) {
 
     this.deployerContext = deployerContext;
-    this.dockerProvisionerFactory = dockerProvisionerFactory;
     this.apiClientFactory = apiClientFactory;
     this.containersConfig = containersConfig;
     this.listeningExecutorService = listeningExecutorService;
@@ -251,16 +243,6 @@ public class DeployerServiceGroup
   @Override
   public DeployerContext getDeployerContext() {
     return deployerContext;
-  }
-
-  /**
-   * This method gets the host-wide Docker provisioner factory instance.
-   *
-   * @return
-   */
-  @Override
-  public DockerProvisionerFactory getDockerProvisionerFactory() {
-    return dockerProvisionerFactory;
   }
 
   /**

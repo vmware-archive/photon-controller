@@ -27,7 +27,6 @@ import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceS
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
@@ -42,6 +41,7 @@ import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertTrue;
 
@@ -80,7 +80,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       HttpFileServiceClientFactory httpFileServiceClientFactory,
       ListeningExecutorService listeningExecutorService,
       ApiClientFactory apiClientFactory,
-      DockerProvisionerFactory dockerProvisionerFactory,
       AuthHelperFactory authHelperFactory,
       HealthCheckHelperFactory healthCheckHelperFactory,
       ServiceConfiguratorFactory serviceConfiguratorFactory,
@@ -121,7 +120,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
 
       DeployerServiceGroup deployerServiceGroup = new DeployerServiceGroup(
           deployerContext,
-          dockerProvisionerFactory,
           apiClientFactory,
           containersConfig,
           listeningExecutorService,
@@ -160,7 +158,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
     private AuthHelperFactory authHelperFactory;
     private ContainersConfig containersConfig;
     private DeployerContext deployerContext;
-    private DockerProvisionerFactory dockerProvisionerFactory;
     private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
@@ -194,11 +191,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
 
     public Builder deployerContext(DeployerContext deployerContext) {
       this.deployerContext = deployerContext;
-      return this;
-    }
-
-    public Builder dockerProvisionerFactory(DockerProvisionerFactory dockerProvisionerFactory) {
-      this.dockerProvisionerFactory = dockerProvisionerFactory;
       return this;
     }
 
@@ -304,7 +296,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           this.httpFileServiceClientFactory,
           this.listeningExecutorService,
           this.apiClientFactory,
-          this.dockerProvisionerFactory,
           this.authHelperFactory,
           this.healthCheckHelperFactory,
           this.serviceConfiguratorFactory,
