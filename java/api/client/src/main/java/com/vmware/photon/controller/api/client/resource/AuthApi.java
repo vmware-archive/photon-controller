@@ -10,59 +10,21 @@
  * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-
 package com.vmware.photon.controller.api.client.resource;
 
-import com.vmware.photon.controller.api.client.RestClient;
 import com.vmware.photon.controller.api.model.Auth;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.util.concurrent.FutureCallback;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
 
 import java.io.IOException;
 
 /**
- * Auth API.
+ * Interface for interacting with Auth API.
  */
-public class AuthApi extends ApiBase {
-  public AuthApi(RestClient restClient) {
-    super(restClient);
-  }
+public interface AuthApi {
+  String getBasePath();
 
-  @Override
-  public String getBasePath() {
-    return "/auth";
-  }
+  Auth getAuthStatus() throws IOException;
 
-  /**
-   * Get auth status.
-   *
-   * @return {@link Auth} details.
-   * @throws IOException
-   */
-  public Auth getAuthStatus() throws IOException {
-    String path = getBasePath();
-
-    HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
-    this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
-
-    return this.restClient.parseHttpResponse(httpResponse,
-        new TypeReference<Auth>() {
-        });
-  }
-
-  /**
-   * Get auth status asynchronously.
-   *
-   * @param responseCallback
-   * @throws IOException
-   */
-  public void getAuthStatusAsync(final FutureCallback<Auth> responseCallback) throws  IOException {
-    String path = getBasePath();
-
-    getObjectByPathAsync(path, responseCallback, new TypeReference<Auth>() {
-    });
-  }
+  void getAuthStatusAsync(FutureCallback<Auth> responseCallback) throws  IOException;
 }

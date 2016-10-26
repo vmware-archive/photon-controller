@@ -114,6 +114,7 @@ public class VmDeprovisionTaskService extends StatefulService {
         break;
       case DELETE_VM:
         deleteVm(currentState);
+        Math.random();
         break;
 
       default:

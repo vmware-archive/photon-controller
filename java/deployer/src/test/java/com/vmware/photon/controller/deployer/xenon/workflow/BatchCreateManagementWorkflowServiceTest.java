@@ -14,12 +14,19 @@
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.resource.FlavorApi;
+import com.vmware.photon.controller.api.client.resource.FlavorRestApi;
 import com.vmware.photon.controller.api.client.resource.ImagesApi;
+import com.vmware.photon.controller.api.client.resource.ImagesRestApi;
 import com.vmware.photon.controller.api.client.resource.ProjectApi;
+import com.vmware.photon.controller.api.client.resource.ProjectRestApi;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.TasksRestApi;
 import com.vmware.photon.controller.api.client.resource.TenantsApi;
+import com.vmware.photon.controller.api.client.resource.TenantsRestApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.FlavorCreateSpec;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.ProjectCreateSpec;
@@ -522,13 +529,13 @@ public class BatchCreateManagementWorkflowServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
 
-      apiClient = mock(ApiClient.class);
-      projectApi = mock(ProjectApi.class);
-      tasksApi = mock(TasksApi.class);
-      vmApi = mock(VmApi.class);
-      flavorApi = mock(FlavorApi.class);
-      imagesApi = mock(ImagesApi.class);
-      tenantsApi = mock(TenantsApi.class);
+      apiClient = mock(RestApiClient.class);
+      projectApi = mock(ProjectRestApi.class);
+      tasksApi = mock(TasksRestApi.class);
+      vmApi = mock(VmRestApi.class);
+      flavorApi = mock(FlavorRestApi.class);
+      imagesApi = mock(ImagesRestApi.class);
+      tenantsApi = mock(TenantsRestApi.class);
       serviceConfigurator = mock(ServiceConfigurator.class);
 
       apiClientFactory = mock(ApiClientFactory.class);

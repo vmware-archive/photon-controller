@@ -14,7 +14,9 @@
 package com.vmware.photon.controller.deployer.healthcheck;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.resource.AuthApi;
+import com.vmware.photon.controller.api.client.resource.AuthRestApi;
 import com.vmware.photon.controller.api.model.Auth;
 
 import org.testng.annotations.Test;
@@ -31,8 +33,8 @@ public class HttpBasedHealthCheckerTest {
 
   @Test
   public void testSuccess() throws Throwable {
-    ApiClient apiClient = mock(ApiClient.class);
-    AuthApi authApi = mock(AuthApi.class);
+    ApiClient apiClient = mock(RestApiClient.class);
+    AuthApi authApi = mock(AuthRestApi.class);
 
     doReturn(authApi).when(apiClient).getAuthApi();
     doReturn(new Auth()).when(authApi).getAuthStatus();
@@ -45,8 +47,8 @@ public class HttpBasedHealthCheckerTest {
 
   @Test
   public void testFailure() throws Throwable {
-    ApiClient apiClient = mock(ApiClient.class);
-    AuthApi authApi = mock(AuthApi.class);
+    ApiClient apiClient = mock(RestApiClient.class);
+    AuthApi authApi = mock(AuthRestApi.class);
 
     doReturn(authApi).when(apiClient).getAuthApi();
     doThrow(new RuntimeException("Failed to get auth status")).when(authApi).getAuthStatus();
