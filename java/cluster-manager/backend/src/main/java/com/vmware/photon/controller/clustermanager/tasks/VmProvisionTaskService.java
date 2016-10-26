@@ -182,14 +182,16 @@ public class VmProvisionTaskService extends StatefulService {
       }
     };
 
-    try {
-      HostUtils.getApiClient(this).getProjectApi().createVmAsync(
-          currentState.projectId,
-          composeVmCreateSpec(currentState),
-          callback);
-    } catch (IOException ex) {
-      failTask(ex);
-    }
+    getHost().run(() -> {
+      try {
+        HostUtils.getApiClient(this).getProjectApi().createVmAsync(
+            currentState.projectId,
+            composeVmCreateSpec(currentState),
+            callback);
+      } catch (Exception ex) {
+        failTask(ex);
+      }
+    });
   }
 
   private VmCreateSpec composeVmCreateSpec(final State currentState) {
@@ -347,25 +349,27 @@ public class VmProvisionTaskService extends StatefulService {
    * @param currentState Supplies the current state object.
    */
   private void startVm(State currentState) {
-    try {
-      HostUtils.getApiClient(this).getVmApi().performStartOperationAsync(
-          currentState.vmId,
-          new FutureCallback<Task>() {
-            @Override
-            public void onSuccess(@Nullable Task result) {
-              processTask(result, currentState,
-                  buildPatch(TaskState.TaskStage.STARTED, State.TaskState.SubStage.VERIFY_VM));
-            }
+    getHost().run(() -> {
+      try {
+        HostUtils.getApiClient(this).getVmApi().performStartOperationAsync(
+            currentState.vmId,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@Nullable Task result) {
+                processTask(result, currentState,
+                    buildPatch(TaskState.TaskStage.STARTED, State.TaskState.SubStage.VERIFY_VM));
+              }
 
-            @Override
-            public void onFailure(Throwable t) {
-              failTask(t);
+              @Override
+              public void onFailure(Throwable t) {
+                failTask(t);
+              }
             }
-          }
-      );
-    } catch (IOException e) {
-      failTask(e);
-    }
+        );
+      } catch (Exception e) {
+        failTask(e);
+      }
+    });
   }
 
   private void processTask(Task task, final State currentState, final State patchState) {

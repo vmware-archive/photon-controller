@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.deployer.xenon.util;
 
 import com.vmware.photon.controller.api.client.ApiClient;
-import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.NetworkConnection;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
@@ -167,7 +167,7 @@ public class MiscUtils {
                 @Override
                 public void onSuccess(@Nullable Task task) {
                   try {
-                    VmNetworks vmNetworks = VmApi.parseVmNetworksFromTask(task);
+                    VmNetworks vmNetworks = VmRestApi.parseVmNetworksFromTask(task);
 
                     checkState(vmNetworks.getNetworkConnections() != null);
                     List<String> result = new ArrayList<>();
