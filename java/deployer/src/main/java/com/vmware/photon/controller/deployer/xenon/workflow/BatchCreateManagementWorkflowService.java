@@ -692,6 +692,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       startState.isAuthEnabled = currentState.isAuthEnabled;
       startState.oAuthServerAddress = currentState.oAuthServerAddress;
       startState.oAuthTenantName = currentState.oAuthTenantName;
+      startState.deploymenServicetLink = currentState.deploymentServiceLink;
 
       sendRequest(Operation
           .createPost(this, CreateManagementVmTaskFactoryService.SELF_LINK)

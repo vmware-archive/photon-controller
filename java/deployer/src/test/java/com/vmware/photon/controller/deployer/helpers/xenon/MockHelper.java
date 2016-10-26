@@ -52,8 +52,6 @@ import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFa
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
@@ -79,20 +77,17 @@ import com.vmware.photon.controller.resource.gen.DatastoreType;
 import com.vmware.photon.controller.resource.gen.Network;
 import com.vmware.xenon.common.Service;
 
-import com.github.dockerjava.api.DockerException;
 import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.thrift.async.AsyncMethodCallback;
 import org.mockito.ArgumentMatcher;
-import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.powermock.api.mockito.PowerMockito;
+
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -183,21 +178,6 @@ public class MockHelper {
 
   public static Callable<Integer> mockUploadFile(int returnCode) {
     return () -> returnCode;
-  }
-
-  public static void mockCreateContainer(DockerProvisionerFactory dockerProvisionerFactory, boolean isSuccess) throws
-      Throwable {
-    DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
-    when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-    if (isSuccess) {
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
-          Matchers.<String>anyVararg())).thenReturn("id");
-    } else {
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
-          Matchers.<String>anyVararg())).thenThrow(new DockerException("Start container " + "failed", 500));
-    }
   }
 
   public static void mockAuthHelper(AuthClientHandler.ImplicitClient implicitClient,

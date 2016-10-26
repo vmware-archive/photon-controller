@@ -22,6 +22,7 @@ import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
 import com.vmware.photon.controller.api.model.VmMetadata;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -40,7 +41,6 @@ import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.configuration.LoadBalancerServer;
 import com.vmware.photon.controller.deployer.configuration.PeerNode;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
-import com.vmware.photon.controller.deployer.configuration.ZookeeperServer;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
@@ -102,13 +102,12 @@ public class CreateManagementVmTaskService extends StatefulService {
 
   public static final String DOMAIN_NAME = "photon.vmware.com";
 
+  @SuppressWarnings("rawtypes")
   private static final TypeToken loadBalancerTypeToken = new TypeToken<ArrayList<LoadBalancerServer>>() {
   };
 
+  @SuppressWarnings("rawtypes")
   private static final TypeToken peerNodeTypeToken = new TypeToken<ArrayList<PeerNode>>() {
-  };
-
-  private static final TypeToken zookeeperTypeToken = new TypeToken<ArrayList<ZookeeperServer>>() {
   };
 
   /**
@@ -132,7 +131,6 @@ public class CreateManagementVmTaskService extends StatefulService {
       WAIT_FOR_ATTACH_ISO,
       START_VM,
       WAIT_FOR_VM_START,
-      WAIT_FOR_DOCKER,
     }
 
     /**
@@ -173,6 +171,10 @@ public class CreateManagementVmTaskService extends StatefulService {
      */
     @Immutable
     public String parentPatchBody;
+
+    @NotNull
+    @Immutable
+    public String deploymenServicetLink;
 
     /**
      * This value represents the document self-link of the {@link VmService} to be created.
@@ -447,7 +449,6 @@ public class CreateManagementVmTaskService extends StatefulService {
           case WAIT_FOR_ATTACH_ISO:
           case START_VM:
           case WAIT_FOR_VM_START:
-          case WAIT_FOR_DOCKER:
             break;
           default:
             throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
@@ -499,9 +500,6 @@ public class CreateManagementVmTaskService extends StatefulService {
         break;
       case WAIT_FOR_VM_START:
         processWaitForVmStartSubStage(currentState);
-        break;
-      case WAIT_FOR_DOCKER:
-        processWaitForDockerSubStage(currentState);
         break;
     }
   }
@@ -1203,6 +1201,21 @@ public class CreateManagementVmTaskService extends StatefulService {
   }
 
   private void processContainerConfig(State currentState) {
+    HostUtils.getCloudStoreHelper(this).createGet(currentState.deploymenServicetLink)
+      .setCompletion((o, e) -> {
+        if (e != null) {
+          failTask(e);
+          return;
+        }
+        processContainerConfig(
+            currentState,
+            o.getBody(DeploymentService.State.class)
+            );
+      }).sendWith(this);
+
+  }
+
+  private void processContainerConfig(State currentState, DeploymentService.State deploymentState) {
 
     QueryTask containerQueryTask = QueryTask.Builder.createDirectTask()
         .setQuery(QueryTask.Query.Builder.create()
@@ -1225,14 +1238,20 @@ public class CreateManagementVmTaskService extends StatefulService {
               }
 
               try {
-                processContainerConfig(currentState, o.getBody(QueryTask.class).results.documents);
+                processContainerConfig(
+                    currentState,
+                    o.getBody(QueryTask.class).results.documents,
+                    deploymentState);
               } catch (Throwable t) {
                 failTask(t);
               }
             }));
   }
 
-  private void processContainerConfig(State currentState, Map<String, Object> containerDocuments) {
+  private void processContainerConfig(
+      State currentState,
+      Map<String, Object> containerDocuments,
+      DeploymentService.State deploymentState) {
 
     Map<String, ContainerService.State> containerStates = containerDocuments.entrySet().stream()
         .collect(Collectors.toMap(
@@ -1258,7 +1277,8 @@ public class CreateManagementVmTaskService extends StatefulService {
                     .collect(Collectors.toMap(
                         (containerServiceLink) -> containerServiceLink,
                         (containerServiceLink) -> ops.get(templateOperationMap.get(containerServiceLink).getId())
-                            .getBody(ContainerTemplateService.State.class))));
+                            .getBody(ContainerTemplateService.State.class))),
+                    deploymentState);
               } catch (Throwable t) {
                 failTask(t);
               }
@@ -1268,7 +1288,8 @@ public class CreateManagementVmTaskService extends StatefulService {
 
   private void processContainerConfig(State currentState,
                                       Map<String, ContainerService.State> containerStates,
-                                      Map<String, ContainerTemplateService.State> templateStates) throws Throwable {
+                                      Map<String, ContainerTemplateService.State> templateStates,
+                                      DeploymentService.State deploymentState) throws Throwable {
 
     Path serviceConfigDirectoryPath = Files.createTempDirectory("mustache-" + currentState.vmId).toAbsolutePath();
     ServiceUtils.logInfo(this, "Created service config directory: " + serviceConfigDirectoryPath.toString());
@@ -1330,6 +1351,13 @@ public class CreateManagementVmTaskService extends StatefulService {
     // deployed via the iso to the management vm
     serviceConfigurator.createFirewallRules(tcpPorts, udpPorts, serviceConfigDirectoryPath.toString());
 
+    serviceConfigurator.createDockerContainerStartFile(
+        containerStates,
+        templateStates,
+        deploymentState,
+        serviceConfigDirectoryPath.toString(),
+        this);
+
     State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.ATTACH_ISO, null);
     patchState.serviceConfigDirectory = serviceConfigDirectoryPath.toString();
     TaskUtils.sendSelfPatch(this, patchState);
@@ -1387,7 +1415,6 @@ public class CreateManagementVmTaskService extends StatefulService {
     String ipAddress = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP);
     String netmask = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_NETMASK);
     String dnsEndpointList = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_DNS_SERVER);
-    String allowedServices = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_SERVICES);
 
     if (!Strings.isNullOrEmpty(dnsEndpointList)) {
       dnsEndpointList = Stream.of(dnsEndpointList.split(","))
@@ -1636,7 +1663,7 @@ public class CreateManagementVmTaskService extends StatefulService {
             currentState.taskPollDelay, TimeUnit.MILLISECONDS);
         break;
       case "COMPLETED":
-        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER, null);
+        State patchState = buildPatch(TaskState.TaskStage.FINISHED, null, null);
         patchState.dockerPollIterations = 1;
         sendStageProgressPatch(patchState);
         break;
@@ -1686,7 +1713,7 @@ public class CreateManagementVmTaskService extends StatefulService {
             currentState.taskPollDelay, TimeUnit.MILLISECONDS);
         break;
       case "COMPLETED":
-        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER, null);
+        State patchState = buildPatch(TaskState.TaskStage.FINISHED, null, null);
         patchState.dockerPollIterations = 1;
         sendStageProgressPatch(patchState);
         break;
@@ -1694,73 +1721,6 @@ public class CreateManagementVmTaskService extends StatefulService {
         throw new IllegalStateException(ApiUtils.getErrors(task));
       default:
         throw new IllegalStateException("Unknown task state: " + task.getState());
-    }
-  }
-
-  //
-  // WAIT_FOR_DOCKER sub-stage routines
-  //
-
-  private void processWaitForDockerSubStage(State currentState) {
-
-    if (currentState.dockerEndpointAddress == null) {
-
-      sendRequest(Operation
-          .createGet(this, currentState.vmServiceLink)
-          .setCompletion(
-              (o, e) -> {
-                if (e != null) {
-                  failTask(e);
-                  return;
-                }
-
-                try {
-                  State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER, null);
-                  patchState.dockerEndpointAddress = o.getBody(VmService.State.class).ipAddress;
-                  TaskUtils.sendSelfPatch(this, patchState);
-                } catch (Throwable t) {
-                  failTask(t);
-                }
-              }));
-
-      return;
-    }
-
-    //
-    // N.B. The Docker API call is performed on a separate thread because it is blocking. This
-    // behavior can be removed if and when an asynchronous version of this call is added to the
-    // client library.
-    //
-
-    HostUtils.getListeningExecutorService(this).submit(
-        () -> {
-          try {
-            String dockerInfo = HostUtils.getDockerProvisionerFactory(this)
-                .create(currentState.dockerEndpointAddress)
-                .getInfo();
-
-            ServiceUtils.logInfo(this, "Received Docker status response: " + dockerInfo);
-            sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
-          } catch (Throwable t) {
-            processFailedDockerPollingInterval(currentState, t);
-          }
-        });
-  }
-
-  private void processFailedDockerPollingInterval(State currentState, Throwable failure) {
-    if (currentState.dockerPollIterations >= currentState.maxDockerPollIterations) {
-      ServiceUtils.logSevere(this, failure);
-      failTask(new IllegalStateException("The docker endpoint on VM " + currentState.dockerEndpointAddress +
-          " failed to become ready after " + currentState.dockerPollIterations + " polling iterations"));
-    } else {
-      ServiceUtils.logTrace(this, failure);
-      getHost().schedule(
-          () -> {
-            State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER, null);
-            patchState.dockerPollIterations = currentState.dockerPollIterations + 1;
-            TaskUtils.sendSelfPatch(this, patchState);
-          },
-          currentState.taskPollDelay, TimeUnit.MILLISECONDS);
     }
   }
 

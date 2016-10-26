@@ -35,7 +35,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
@@ -619,7 +618,6 @@ public class DeploymentWorkflowServiceTest {
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private ListeningExecutorService listeningExecutorService;
     private ApiClientFactory apiClientFactory;
-    private DockerProvisionerFactory dockerProvisionerFactory;
     private AuthHelperFactory authHelperFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
     private ServiceConfiguratorFactory serviceConfiguratorFactory;
@@ -659,7 +657,6 @@ public class DeploymentWorkflowServiceTest {
       containersConfig = deployerTestConfig.getContainersConfig();
       authHelperFactory = mock(AuthHelperFactory.class);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
       MockHelper.mockServiceConfigurator(serviceConfiguratorFactory, true);
     }
@@ -672,7 +669,6 @@ public class DeploymentWorkflowServiceTest {
           .authHelperFactory(authHelperFactory)
           .containersConfig(containersConfig)
           .deployerContext(context)
-          .dockerProvisionerFactory(dockerProvisionerFactory)
           .apiClientFactory(apiClientFactory)
           .healthCheckerFactory(healthCheckHelperFactory)
           .agentControlClientFactory(agentControlClientFactory)
@@ -688,7 +684,6 @@ public class DeploymentWorkflowServiceTest {
           .authHelperFactory(authHelperFactory)
           .containersConfig(containersConfig)
           .deployerContext(context)
-          .dockerProvisionerFactory(dockerProvisionerFactory)
           .apiClientFactory(apiClientFactory)
           .healthCheckerFactory(healthCheckHelperFactory)
           .agentControlClientFactory(agentControlClientFactory)
@@ -715,7 +710,6 @@ public class DeploymentWorkflowServiceTest {
 
       authHelperFactory = null;
       containersConfig = null;
-      dockerProvisionerFactory = null;
       apiClientFactory = null;
       healthCheckHelperFactory = null;
       agentControlClientFactory = null;
@@ -754,7 +748,6 @@ public class DeploymentWorkflowServiceTest {
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           CreateContainersWorkflowService.GENERATE_CERTIFICATE_SCRIPT_NAME, true);
-      MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
 
@@ -832,7 +825,6 @@ public class DeploymentWorkflowServiceTest {
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
-      MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
 
@@ -865,7 +857,6 @@ public class DeploymentWorkflowServiceTest {
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
-      MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
 
@@ -898,7 +889,6 @@ public class DeploymentWorkflowServiceTest {
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
-      MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, false);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
 
