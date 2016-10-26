@@ -19,7 +19,7 @@ require "test_helpers"
 # Logins to harbor registry from devbox and uploads the busy box image to harbor.
 # Creates busy box application pod on kubernetes cluster and runs nslookup command
 # remotely to confirm the application is up and running.
-describe "Harbor-Kube cluster-service lifecycle", cluster: true, devbox: true do
+describe "Harbor-Kube cluster-service lifecycle", cluster: true, devbox: true, dont_run: true do
 
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.instance

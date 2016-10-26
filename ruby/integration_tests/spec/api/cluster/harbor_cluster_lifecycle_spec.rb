@@ -13,7 +13,7 @@ require "net/ssh"
 require "spec_helper"
 require "test_helpers"
 
-describe "Harbor cluster-service lifecycle", cluster: true do
+describe "Harbor cluster-service lifecycle", cluster: true, dont_run: true do
 
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.instance

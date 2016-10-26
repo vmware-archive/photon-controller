@@ -14,7 +14,7 @@ require "spec_helper"
 require "json"
 require "test_helpers"
 
-describe "Kubernetes cluster-service lifecycle", cluster: true do
+describe "Kubernetes cluster-service lifecycle", cluster: true, dont_run: true do
 
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.instance

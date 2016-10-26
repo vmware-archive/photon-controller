@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.core;
 
 import com.vmware.photon.controller.api.frontend.ApiFeService;
+import com.vmware.photon.controller.api.frontend.clients.api.LocalApiClient;
 import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
@@ -55,7 +56,6 @@ import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerServiceGroup;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceClient;
-import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.common.http.netty.NettyHttpServiceClient;
 
@@ -140,7 +140,8 @@ public class Main {
     }
 
     ThriftModule thriftModule = new ThriftModule(sslContext);
-    ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig, sslContext);
+    PhotonControllerXenonHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig,
+        sslContext);
 
     if ((Boolean) namespace.get("manual")) {
       DefaultDeployment.createDefaultDeployment(
@@ -179,8 +180,13 @@ public class Main {
     ApiFeService.addServiceHost(xenonHost);
     ApiFeService.setSSLContext(sslContext);
 
-    new ApiFeService().run(apiFeArgs);
+    ApiFeService apiFeService = new ApiFeService();
+    apiFeService.run(apiFeArgs);
     apiFeTempConfig.deleteOnExit();
+
+    LocalApiClient localApiClient = apiFeService.getInjector().getInstance(LocalApiClient.class);
+    logger.info("LocalApiClient: " + localApiClient.toString());
+    xenonHost.setApiClient(localApiClient);
 
     // in the non-auth enabled scenario we need to be able to accept any self-signed certificate
     if (!deployerConfig.getDeployerContext().isAuthEnabled()) {
@@ -202,7 +208,7 @@ public class Main {
      }
   }
 
-  private static ServiceHost startXenonHost(PhotonControllerConfig photonControllerConfig,
+  private static PhotonControllerXenonHost startXenonHost(PhotonControllerConfig photonControllerConfig,
                                             ThriftModule thriftModule,
                                             DeployerConfig deployerConfig,
                                             SSLContext sslContext) throws Throwable {
@@ -414,7 +420,7 @@ public class Main {
         com.vmware.photon.controller.core.Main.HostManagementVmAddressValidatorFactoryImpl();
 
     final ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(listeningExecutorService,
-        httpClient, apiFeServerSet, deployerConfig.getDeployerContext().getSharedSecret(), cloudStoreServerSet,
+        httpClient, apiFeServerSet, cloudStoreServerSet,
         Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), CLUSTER_SCRIPTS_DIRECTORY).toString(),
         deployerConfig.getDeployerContext().isAuthEnabled());
 

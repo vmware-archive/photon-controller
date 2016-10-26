@@ -72,6 +72,7 @@ public class VmDeprovisionTaskService extends StatefulService {
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
     }
 
+    ServiceUtils.logInfo(this, "VmDeprovisionTask for VM ", startState.vmId);
     startOperation.setBody(startState).complete();
 
     try {
@@ -128,24 +129,30 @@ public class VmDeprovisionTaskService extends StatefulService {
    */
   private void stopVm(State currentState) throws IOException {
 
-    HostUtils.getApiClient(this).getVmApi().performStopOperationAsync(
-        currentState.vmId,
-        new FutureCallback<Task>() {
-          @Override
-          public void onSuccess(@Nullable Task result) {
-            processTask(result,
-                buildPatch(TaskState.TaskStage.STARTED, State.TaskState.SubStage.DELETE_VM));
-          }
+    getHost().run(() -> {
+      try {
+        HostUtils.getApiClient(this).getVmApi().performStopOperationAsync(
+            currentState.vmId,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@Nullable Task result) {
+                processTask(result,
+                    buildPatch(TaskState.TaskStage.STARTED, State.TaskState.SubStage.DELETE_VM));
+              }
 
-          @Override
-          public void onFailure(Throwable t) {
-            // We ignore the exception if stopping VM fails.
-            ServiceUtils.logInfo(VmDeprovisionTaskService.this, "Stopping VM failed: %s", t.getMessage());
-            TaskUtils.sendSelfPatch(VmDeprovisionTaskService.this,
-                buildPatch(TaskState.TaskStage.STARTED, State.TaskState.SubStage.DELETE_VM));
-          }
-        }
-    );
+              @Override
+              public void onFailure(Throwable t) {
+                // We ignore the exception if stopping VM fails.
+                ServiceUtils.logInfo(VmDeprovisionTaskService.this, "Stopping VM failed: %s", t.getMessage());
+                TaskUtils.sendSelfPatch(VmDeprovisionTaskService.this,
+                    buildPatch(TaskState.TaskStage.STARTED, State.TaskState.SubStage.DELETE_VM));
+              }
+            }
+        );
+      } catch (Exception e) {
+        failTask(e);
+      }
+    });
   }
 
   /**
@@ -154,27 +161,34 @@ public class VmDeprovisionTaskService extends StatefulService {
    * @param currentState
    */
   private void deleteVm(State currentState) throws IOException {
-    HostUtils.getApiClient(this).getVmApi().deleteAsync(
-        currentState.vmId,
-        new FutureCallback<Task>() {
-          @Override
-          public void onSuccess(@Nullable Task result) {
-            processTask(result,
-                buildPatch(TaskState.TaskStage.FINISHED, null));
-          }
 
-          @Override
-          public void onFailure(Throwable t) {
-            // We ignore the VmNotFound exception if delete VM fails.
-            if (t.getMessage().contains("VmNotFound")) {
-              TaskUtils.sendSelfPatch(VmDeprovisionTaskService.this,
-                  buildPatch(TaskState.TaskStage.FINISHED, null));
-            } else {
-              failTask(t);
+    getHost().run(() -> {
+      try {
+        HostUtils.getApiClient(this).getVmApi().deleteAsync(
+            currentState.vmId,
+            new FutureCallback<Task>() {
+              @Override
+              public void onSuccess(@Nullable Task result) {
+                processTask(result,
+                    buildPatch(TaskState.TaskStage.FINISHED, null));
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                // We ignore the VmNotFound exception if delete VM fails.
+                if (t.getMessage().contains("VmNotFound")) {
+                  TaskUtils.sendSelfPatch(VmDeprovisionTaskService.this,
+                      buildPatch(TaskState.TaskStage.FINISHED, null));
+                } else {
+                  failTask(t);
+                }
+              }
             }
-          }
-        }
-    );
+        );
+      } catch (Exception e) {
+        failTask(e);
+      }
+    });
   }
 
   private void processTask(Task task, final State patchState) {
