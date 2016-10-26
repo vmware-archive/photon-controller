@@ -226,6 +226,102 @@ describe "authorization", authorization: true, devbox: true do
     end
   end
 
+  describe "#list projects user has access to", auth_enabled: true do
+    let(:api_client) { EsxCloud::ApiClient.new endpoint, nil, token }
+    let(:endpoint) { ApiClientHelper.endpoint }
+
+    before(:all) {
+      @cleaner = EsxCloud::SystemCleaner.new(client)
+
+      @tenant1 = create_tenant(:name => random_name("tenant-"), :security_groups => [ENV["PHOTON_TENANT_ADMIN_GROUP"]])
+      @tenant2 = create_tenant(:name => random_name("tenant-"))
+
+      rt1 = @tenant1.create_resource_ticket(:name => random_name("rt-"), :limits => [create_limit("vm", 10, "COUNT")])
+      @project1 = @tenant1.create_project(:name => random_name("project-"),
+                                          :resource_ticket_name => rt1.name,
+                                          :limits => [{:key => "vm", :value => 1.0, :unit => "COUNT"}])
+      @project2 = @tenant1.create_project(:name => random_name("project-"),
+                                          :resource_ticket_name => rt1.name,
+                                          :limits => [{:key => "vm", :value => 1.0, :unit => "COUNT"}])
+      client.set_project_security_groups(@project2.id, :items => [ENV["PHOTON_PROJECT_USER_GROUP"]])
+
+      rt2 = @tenant2.create_resource_ticket(:name => random_name("rt-"), :limits => [create_limit("vm", 10, "COUNT")])
+      @project3 = @tenant2.create_project(:name => random_name("project-"),
+                                          :resource_ticket_name => rt2.name,
+                                          :limits => [{:key => "vm", :value => 1.0, :unit => "COUNT"}])
+    }
+
+    after(:all) {
+      @cleaner.delete_tenant(@tenant1) if @tenant1
+      @cleaner.delete_tenant(@tenant2) if @tenant2
+    }
+
+    context "when user is admin", auth_admin: true do
+      let(:token) { @token }
+
+      before(:all) { @token = ApiClientHelper.access_token }
+
+      it "should retrieve all projects" do
+        projects = api_client.find_all_projects(@tenant1.id).items
+        projects.size.should == 2
+
+        projects = api_client.find_all_projects(@tenant2.id).items
+        projects.size.should == 1
+      end
+    end
+
+    context "when user is tenant admin", auth_tenant_admin: true do
+      let(:token) { @token }
+
+      before(:all) { @token = ApiClientHelper.access_token "TENANT_ADMIN" }
+
+      it "should retrieve all projects under the tenant user is an admin of" do
+        projects = api_client.find_all_projects(@tenant1.id).items
+        projects.size.should == 2
+      end
+
+      it "should not retrieve projects under other tenant user is not an admin of" do
+        projects = api_client.find_all_projects(@tenant2.id).items
+        projects.size.should == 0
+      end
+    end
+
+    context "when user is project user", auth_project_user: true do
+      let(:token) { @token }
+
+      before(:all) { @token = ApiClientHelper.access_token "PROJECT_USER" }
+
+      it "should retrieve projects user is an admin of" do
+        projects = api_client.find_all_projects(@tenant1.id).items
+        projects.size.should == 1
+        projects[0].id.should == @project2.id
+
+        projects = api_client.find_projects_by_name(@tenant1.id, @project2.name).items
+        projects.size.should == 1
+        projects[0].id.should == @project2.id
+      end
+
+      it "should not retrieve projects user is not an admin of" do
+        projects = api_client.find_projects_by_name(@tenant1.id, @project1.name).items
+        projects.size.should == 0
+      end
+    end
+
+    context "when user is guest user", auth_non_admin: true do
+      let(:token) { @token }
+
+      before(:all) { @token = ApiClientHelper.access_token "NON_ADMIN" }
+
+      it "should not retrieve any projects" do
+        projects = api_client.find_all_projects(@tenant1.id).items
+        projects.size.should == 0
+
+        projects = api_client.find_all_projects(@tenant2.id).items
+        projects.size.should == 0
+      end
+    end
+  end
+
   def http_client_send(action, uri)
     response = if action == :upload
       api_client.http_client.send action, uri, __FILE__
