@@ -14,8 +14,11 @@
 package com.vmware.photon.controller.clustermanager.tasks;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.TasksRestApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.NetworkConnection;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.VmNetworks;
@@ -342,9 +345,9 @@ public class WaitForNetworkTaskServiceTest {
     @BeforeMethod
     public void setUpTest() throws Throwable {
 
-      tasksApi = mock(TasksApi.class);
-      vmApi = mock(VmApi.class);
-      ApiClient apiClient = mock(ApiClient.class);
+      tasksApi = mock(TasksRestApi.class);
+      vmApi = mock(VmRestApi.class);
+      ApiClient apiClient = mock(RestApiClient.class);
       when(apiClient.getTasksApi()).thenReturn(tasksApi);
       when(apiClient.getVmApi()).thenReturn(vmApi);
 

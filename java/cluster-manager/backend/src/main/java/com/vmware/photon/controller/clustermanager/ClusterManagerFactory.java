@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.clustermanager;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
+import com.vmware.photon.controller.api.frontend.clients.api.LocalApiClient;
 import com.vmware.photon.controller.clustermanager.clients.EtcdClient;
 import com.vmware.photon.controller.clustermanager.clients.HarborClient;
 import com.vmware.photon.controller.clustermanager.clients.KubernetesClient;
@@ -98,22 +100,23 @@ public class ClusterManagerFactory {
   }
 
   /**
-   * Creates an instance of {@link ApiClient}.
+   * Creates an instance of {@link RestApiClient}.
    */
   public ApiClient createApiClient() {
-    String endpoint;
-    String protocol;
-    if (this.isAuthEnabled) {
-      protocol = "https";
-    } else {
-      protocol = "http";
-    }
-    try {
-      endpoint = ServiceUtils.createUriFromServerSet(this.apiFeServerSet, null, protocol).toString();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-    return new ApiClient(endpoint, this.httpAsyncClient, this.apiFeSharedSecret, protocol);
+    return new LocalApiClient();
+//    String endpoint;
+//    String protocol;
+//    if (this.isAuthEnabled) {
+//      protocol = "https";
+//    } else {
+//      protocol = "http";
+//    }
+//    try {
+//      endpoint = ServiceUtils.createUriFromServerSet(this.apiFeServerSet, null, protocol).toString();
+//    } catch (Exception e) {
+//      throw new RuntimeException(e);
+//    }
+//    return new RestApiClient(endpoint, this.httpAsyncClient, this.apiFeSharedSecret, protocol);
   }
 
   /**

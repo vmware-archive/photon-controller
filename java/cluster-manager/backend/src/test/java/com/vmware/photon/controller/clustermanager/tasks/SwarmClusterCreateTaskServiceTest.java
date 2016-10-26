@@ -14,9 +14,13 @@
 package com.vmware.photon.controller.clustermanager.tasks;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.resource.ImagesApi;
+import com.vmware.photon.controller.api.client.resource.ImagesRestApi;
 import com.vmware.photon.controller.api.client.resource.ProjectApi;
+import com.vmware.photon.controller.api.client.resource.ProjectRestApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.ClusterState;
 import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.NetworkConnection;
@@ -506,10 +510,10 @@ public class SwarmClusterCreateTaskServiceTest {
       etcdClient = mock(EtcdClient.class);
       swarmClient = mock(SwarmClient.class);
 
-      apiClient = mock(ApiClient.class);
-      imagesApi = mock(ImagesApi.class);
-      projectApi = mock(ProjectApi.class);
-      vmApi = mock(VmApi.class);
+      apiClient = mock(RestApiClient.class);
+      imagesApi = mock(ImagesRestApi.class);
+      projectApi = mock(ProjectRestApi.class);
+      vmApi = mock(VmRestApi.class);
       doReturn(imagesApi).when(apiClient).getImagesApi();
       doReturn(projectApi).when(apiClient).getProjectApi();
       doReturn(vmApi).when(apiClient).getVmApi();

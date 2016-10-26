@@ -13,9 +13,13 @@
 package com.vmware.photon.controller.clustermanager.tasks;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.resource.ClusterApi;
+import com.vmware.photon.controller.api.client.resource.ClusterRestApi;
 import com.vmware.photon.controller.api.client.resource.ProjectApi;
+import com.vmware.photon.controller.api.client.resource.ProjectRestApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.ClusterState;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
@@ -302,10 +306,10 @@ public class GarbageCollectionTaskServiceTest {
     @BeforeMethod
     public void setUpTest() throws Throwable {
 
-      ApiClient apiClient = mock(ApiClient.class);
-      ProjectApi projectApi = mock(ProjectApi.class);
-      clusterApi = mock(ClusterApi.class);
-      vmApi = mock(VmApi.class);
+      ApiClient apiClient = mock(RestApiClient.class);
+      ProjectApi projectApi = mock(ProjectRestApi.class);
+      clusterApi = mock(ClusterRestApi.class);
+      vmApi = mock(VmRestApi.class);
       doReturn(projectApi).when(apiClient).getProjectApi();
       doReturn(clusterApi).when(apiClient).getClusterApi();
       doReturn(vmApi).when(apiClient).getVmApi();
