@@ -88,33 +88,22 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true do
       validate_kube_cluster_info(kubernetes_cluster, 1, @seeder.vm_flavor!.name)
       EsxCloud::ClusterHelper.validate_ssh(kubernetes_master_ip)
 
-      puts "Copying harbor_ca_cert from local machine to management vm"
-      copy_harbor_ca_cert_cmd = "sshpass -p \"vmware\" scp /tmp/harbor_ca_cert.crt esxcloud@#{ENV['API_ADDRESS']}:~/"
-      puts copy_harbor_ca_cert_cmd
-      `#{copy_harbor_ca_cert_cmd}`
-
-      puts "Copying priv key (for kube nodes) test_rsa from local machine to management vm"
-      copy_test_rsa_cmd = "sshpass -p \"vmware\" scp /tmp/test_rsa esxcloud@#{ENV['API_ADDRESS']}:~/"
-      puts copy_test_rsa_cmd
-      `#{copy_test_rsa_cmd}`
+      dest_path_for_tmp_files = "#{ENV['WORKSPACE']}/ruby/integration_tests/spec/api/cluster"
+      EsxCloud::ClusterHelper.copy_file("/tmp/test_rsa", dest_path_for_tmp_files)
+      EsxCloud::ClusterHelper.copy_file("/tmp/harbor_ca_cert.crt", dest_path_for_tmp_files)
 
       create_kubernetes_application_workflow()
 
       EsxCloud::ClusterHelper.remove_temporary_file("/tmp/harbor_ca_cert.crt")
-      EsxCloud::ClusterHelper.remove_temporary_file("/tmp/busybox_updated.yaml")
+      EsxCloud::ClusterHelper.remove_temporary_file(dest_path_for_tmp_files + "/harbor_ca_cert.crt")
+      EsxCloud::ClusterHelper.remove_temporary_file(dest_path_for_tmp_files + "/test_rsa")
+      EsxCloud::ClusterHelper.remove_temporary_file(dest_path_for_tmp_files + "/busybox_updated.yaml")
+
+      EsxCloud::ClusterHelper.delete_cluster(client, harbor_cluster.id, "HARBOR")
+      EsxCloud::ClusterHelper.delete_cluster(client, kubernetes_cluster.id, "KUBERNETES")
     rescue EsxCloud::Error => e
       EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
       fail "Harbor-Kube cluster integration Test failed. Error: #{e.message}"
-    ensure
-      # Since we are sharing the ips KUBERNETES_MASTER_IP, KUBERNETES_ETCD_1_IP and SWARM_ETCD_1_IP between different cluster
-      # lifecycle tests, we need to ensure that clusters created in this test get deleted so that those test which may run
-      # after this test does not fail even if this test fails.
-      if harbor_cluster.id != nil
-        EsxCloud::ClusterHelper.delete_cluster(client, harbor_cluster.id, "HARBOR")
-      end
-      if kubernetes_cluster.id != nil
-        EsxCloud::ClusterHelper.delete_cluster(client, kubernetes_cluster.id, "KUBERNETES")
-      end
     end
   end
 
@@ -197,7 +186,7 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true do
     puts output
 
     puts "Copying harbor_ca_cert to the above created folder"
-    copy_cmd = "sudo cp ~/harbor_ca_cert.crt /etc/docker/certs.d/#{ENV['SWARM_ETCD_1_IP']}/"
+    copy_cmd = "sudo cp /devbox_data/ruby/integration_tests/spec/api/cluster/harbor_ca_cert.crt /etc/docker/certs.d/#{ENV['SWARM_ETCD_1_IP']}/"
     puts copy_cmd
     output = ssh.exec!(copy_cmd)
     puts output
@@ -237,7 +226,7 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true do
   def copy_over_the_kubectl_from_master_node_to_devbox(ssh)
 
     puts "copying the kubectl from master node to devbox"
-    scp_cmd = "sudo scp -i ~/test_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@#{ENV['KUBERNETES_MASTER_IP']}:~/kubectl ~/"
+    scp_cmd = "sudo scp -i /devbox_data/ruby/integration_tests/spec/api/cluster/test_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@#{ENV['KUBERNETES_MASTER_IP']}:~/kubectl ~/"
     puts scp_cmd
     output = ssh.exec!(scp_cmd)
     puts output
@@ -260,12 +249,15 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true do
     puts output
 
     puts "creating busybox application"
-    create_cmd = "./kubectl -s http://#{ENV['KUBERNETES_MASTER_IP']}:8080 create -f ~/busybox_updated.yaml"
+    create_cmd = "./kubectl -s http://#{ENV['KUBERNETES_MASTER_IP']}:8080 create -f /devbox_data/ruby/integration_tests/spec/api/cluster/busybox_updated.yaml"
     puts create_cmd
     output = ssh.exec!(create_cmd)
     puts output
     expect(output).to include("created")
 
+    # #TODO: Instead of sleep use polling to check if created pod has become ready.
+    # puts "Sleeping for 1 mins to let the pod come up ."
+    # sleep(300)
     puts "Checking busybox status"
     if !check_kube_app_busybox_is_ready?(ssh)
       puts "Kubernetes app busybox did not become READY after polling for status 300 iterations."
@@ -293,13 +285,8 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true do
 
     busybox_yaml_content["$HARBOR_MASTER_IP"] = ENV["SWARM_ETCD_1_IP"]
 
-    new_busybox_yaml_path = "/tmp/busybox_updated.yaml"
+    new_busybox_yaml_path = "#{ENV['WORKSPACE']}/ruby/integration_tests/spec/api/cluster/busybox_updated.yaml"
     File.write(new_busybox_yaml_path, busybox_yaml_content)
-
-    puts "Copying busybox_updated.yaml from local machine to management vm"
-    copy_busybox_yaml_cmd = "sshpass -p \"vmware\" scp /tmp/busybox_updated.yaml esxcloud@#{ENV['API_ADDRESS']}:~/"
-    puts copy_busybox_yaml_cmd
-    `#{copy_busybox_yaml_cmd}`
   end
 
   def check_kube_app_busybox_is_ready?(ssh)
