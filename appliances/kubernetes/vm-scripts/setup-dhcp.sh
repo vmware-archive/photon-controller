@@ -8,6 +8,8 @@ Name=${eno_name}
 [Network]
 DHCP=yes
 EOF
+rm -f /etc/systemd/network/*.network
+systemctl stop systemd-networkd
 ip addr flush label "${eno_name}"
 systemctl restart systemd-networkd
 timeout=20

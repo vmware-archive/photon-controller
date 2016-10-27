@@ -72,6 +72,11 @@
       "type": "file",
       "source": "../scripts/setup-static-ip.sh",
       "destination": "/root/setup-static-ip.sh"
+    },
+    {
+      "type": "file",
+      "source": "../scripts/copy-ca-cert.sh",
+      "destination": "/root/copy-ca-cert.sh"
     }
   ]
 }

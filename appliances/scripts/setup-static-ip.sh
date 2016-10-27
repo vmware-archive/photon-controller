@@ -18,6 +18,8 @@ Address=$ADDRESS
 [Route]
 Gateway=$GATEWAY
 EOF
+rm -f /etc/systemd/network/*.network
+systemctl stop systemd-networkd
 ip addr flush label "${eno_name}"
 systemctl restart systemd-networkd
 ip=`grep Address= /etc/systemd/network/10-dhcp-${eno_name}.network | sed 's/.*=\.*//' | sed 's/\/.*//'`
