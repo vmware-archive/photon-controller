@@ -4,6 +4,8 @@ DNS=$1
 ADDRESS=$2
 GATEWAY=$3
 
+rm -f /etc/systemd/network/*.network
+systemctl stop systemd-networkd
 eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
 cat > "/etc/systemd/network/10-dhcp-${eno_name}.network" << EOF
 [Match]
