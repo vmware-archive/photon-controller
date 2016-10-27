@@ -23,7 +23,7 @@
   "provisioners": [
     {
       "type": "shell",
-      "inline": "tdnf install -y tar && tdnf install -y wget"
+      "inline": "tdnf install -y tar && tdnf install -y wget && tdnf install -y vmware-lightwave-clients"
     },
     {
       "type": "shell",

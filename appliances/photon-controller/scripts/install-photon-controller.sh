@@ -15,7 +15,7 @@ echo "installing photon-controller"
 # install photon-controller
 tdnf install -y openjdk
 tdnf install -y sshpass
-mkdir -p /usr/java && ln -s /var/opt/OpenJDK* /usr/java/default
+mkdir -p /usr/java/default && ln -s /var/opt/OpenJDK* /usr/java/default
 
 rpm -i /tmp/photon-controller*.rpm
 
