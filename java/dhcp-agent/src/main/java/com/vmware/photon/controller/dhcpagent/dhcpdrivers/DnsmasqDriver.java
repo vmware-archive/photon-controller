@@ -17,7 +17,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -71,6 +70,7 @@ public class DnsmasqDriver implements DHCPDriver {
      *
      * @return
      */
+    @Override
     public Response releaseIP(String networkInterface, String macAddress) {
         Response response = new Response();
 
@@ -93,12 +93,11 @@ public class DnsmasqDriver implements DHCPDriver {
                    response.stdError += s;
                }
             }
-        } catch (Exception e) {
+        } catch (Throwable t) {
             response.exitCode = -1;
-            response.stdError = e.toString();
-        } finally {
-            return response;
+            response.stdError = t.toString();
         }
+        return response;
     }
 
     /**
@@ -107,10 +106,10 @@ public class DnsmasqDriver implements DHCPDriver {
      *
      * @return
      */
+    @Override
     public boolean reload() {
         boolean response = false;
-        try {
-            BufferedReader pid = new BufferedReader(new FileReader(dhcpPidFilePath));
+        try (BufferedReader pid = new BufferedReader(new FileReader(dhcpPidFilePath))) {
             String command =  "kill -SIGHUP \"$(< " + pid + " )\" ";
             Process p = Runtime.getRuntime().exec(command);
             boolean result = p.waitFor(Constants.TIMEOUT, TimeUnit.SECONDS);
@@ -118,11 +117,10 @@ public class DnsmasqDriver implements DHCPDriver {
             if (result && p.exitValue() == 0) {
                 response = true;
             }
-        } catch (IOException e) {
-            return response;
-        } finally {
+        } catch (Exception e) {
             return response;
         }
+        return response;
     }
 
     /**
@@ -131,7 +129,8 @@ public class DnsmasqDriver implements DHCPDriver {
      *
      * @return
      */
-    
+
+    @Override
     public boolean isRunning() {
         boolean response = false;
         try {
@@ -142,11 +141,10 @@ public class DnsmasqDriver implements DHCPDriver {
             if (result && p.exitValue() == 0) {
                 response = true;
             }
-        } catch (IOException e) {
-            return response;
-        } finally {
+        } catch (Exception e) {
             return response;
         }
+        return response;
     }
 
     /**
@@ -182,6 +180,7 @@ public class DnsmasqDriver implements DHCPDriver {
      * @return
      * @throws Exception
      */
+    @Override
     public Response createSubnetConfiguration(
         String subnetId,
         String gateway,
@@ -215,6 +214,7 @@ public class DnsmasqDriver implements DHCPDriver {
      * @return
      * @throws Exception
      */
+    @Override
     public Response deleteSubnetConfiguration(
         String subnetId) throws Exception {
 
@@ -236,6 +236,7 @@ public class DnsmasqDriver implements DHCPDriver {
      *
      * @return
      */
+    @Override
     public Response updateSubnetIPLease(
         String subnetId,
         Map<String, String> ipAddressToMACAddressMap,
@@ -298,6 +299,7 @@ public class DnsmasqDriver implements DHCPDriver {
      *
      * @return
      */
+    @Override
     public Response deleteSubnetIPLease(String subnetId) throws Exception {
         Response response = new Response();
         String subnetFilename = dhcpHostFileDir + "/" + subnetId;
