@@ -62,5 +62,9 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
         <Label>Lightwave hostname</Label> \
         <Description>Hostname of the Lightwave server. (default: 172.16.127.67)</Description> \
       </Property> \
+      <Property ovf:key="lw_replication" ovf:userConfigurable="true" ovf:type="string"> \
+        <Label>Lightwave Replication Partner</Label> \
+        <Description>IP Address of the Lightwave peer server.</Description> \
+      </Property> \
     </ProductSection> \
     <VirtualHardwareSection ovf:transport="com.vmware.guestInfo"@' ${outputVM}.ovf
