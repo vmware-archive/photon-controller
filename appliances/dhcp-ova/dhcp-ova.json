@@ -16,7 +16,7 @@
   "provisioners": [
     {
       "type": "shell",
-      "inline": "tdnf makecache"
+      "inline": "tdnf update -y tdnf && tdnf update -y rpm && tdnf makecache"
     },
     {
       "type": "shell",
