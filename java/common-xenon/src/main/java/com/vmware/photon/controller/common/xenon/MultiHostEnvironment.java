@@ -48,7 +48,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
   public static final int WAIT_ITERATION_COUNT = 30000 / WAIT_ITERATION_SLEEP; // 30 seconds.
   public static final int MAINTENANCE_INTERVAL_MS = 500;
   public static final int TEST_NODE_GROUP_CONVERGENCE_SLEEP = 20;
-  public static final int DEFAULT_MULTI_HOST_COUNT = 3;
+  public static final int DEFAULT_MULTI_HOST_COUNT = 1;
   protected static final String BIND_ADDRESS = "0.0.0.0";
   protected static final String STORAGE_PATH_PREFIX = ".xenon_test_sandbox";
   private static final Logger logger = LoggerFactory.getLogger(MultiHostEnvironment.class);
