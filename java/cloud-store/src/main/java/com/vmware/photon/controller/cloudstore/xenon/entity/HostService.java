@@ -67,9 +67,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -108,12 +108,6 @@ public class HostService extends StatefulService {
    * service instance to ping the agent within its polling interval (10 seconds).
    */
   public static final int DEFAULT_MAX_PING_WAIT_TIME_MILLIS = 50 * 1000;
-
-  /**
-   * This value represents the time we have to wait for all the datastore documents to
-   * get updated before completing the maintenance.
-   */
-  public static final int UPDATE_TIMEOUT_SECONDS = 5;
 
   /**
    * The scheduling constant is a random number in (0, MAX_SCHEDULING_CONSTANT] assigned to each HostService.State. The
@@ -446,7 +440,7 @@ public class HostService extends StatefulService {
   private void setDatastoreState(Operation operation, List<Datastore> datastores, Set<String> imageDatastores) {
     if (datastores != null) {
       // Create datastore documents.
-      final CountDownLatch done = new CountDownLatch(datastores.size());
+      final AtomicInteger latch = new AtomicInteger(datastores.size());
       for (Datastore datastore : datastores) {
         DatastoreService.State datastoreState = new DatastoreService.State();
         datastoreState.documentSelfLink = datastore.getId();
@@ -466,22 +460,18 @@ public class HostService extends StatefulService {
                 if (ex != null) {
                   ServiceUtils.logWarning(this, "Set datastore state failed " + ex.getMessage());
                 }
-                done.countDown();
+                if (0 == latch.decrementAndGet() && operation != null) {
+                  operation.complete();
+                }
               });
           sendRequest(post);
         } catch (Throwable t) {
           ServiceUtils.logWarning(this, "Set datastore state failed " + t.getMessage());
-          done.countDown();
+          if (0 == latch.decrementAndGet() && operation != null) {
+            operation.complete();
+          }
         }
       }
-      try {
-        done.await(UPDATE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-      } catch (InterruptedException ex) {
-        logWarning("Got interrupted waiting for datastore update operations to complete");
-      }
-    }
-    if (operation != null) {
-      operation.complete();
     }
   }
 
