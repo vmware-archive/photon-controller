@@ -42,8 +42,8 @@ public class HealthCheckHelper {
         if (authEnabled) {
           protocol = "https";
         }
-        this.healthChecker = new HttpBasedHealthChecker
-          (HostUtils.getApiClient(service, protocol + "://" + ipAddress + ":" + Constants.MANAGEMENT_API_PORT));
+        this.healthChecker
+          = new XenonBasedHealthChecker(service, protocol, ipAddress, Constants.PHOTON_CONTROLLER_PORT);
         break;
 
       case Lightwave:

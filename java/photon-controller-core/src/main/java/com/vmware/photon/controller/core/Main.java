@@ -448,8 +448,9 @@ public class Main {
     }
 
     @Override
-    public XenonBasedHealthChecker create(final Service service, final Integer port, final String ipAddress) {
-      return new XenonBasedHealthChecker(service, ipAddress, port);
+    public XenonBasedHealthChecker create(final Service service, final String protocol, final Integer port,
+                                          final String ipAddress) {
+      return new XenonBasedHealthChecker(service, protocol, ipAddress, port);
     }
   }
 

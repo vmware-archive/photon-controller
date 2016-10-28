@@ -29,6 +29,7 @@ public interface HealthCheckHelperFactory {
 
   public XenonBasedHealthChecker create(
       final Service service,
+      final String protocol,
       final Integer port,
       final String ipAddress);
 

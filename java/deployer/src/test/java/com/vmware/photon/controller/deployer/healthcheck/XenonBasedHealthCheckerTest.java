@@ -43,7 +43,7 @@ public class XenonBasedHealthCheckerTest {
   @BeforeMethod
   public void beforeMethod() {
     service = mock(Service.class);
-    target = new XenonBasedHealthChecker(service, ADDRESS, PORT);
+    target = new XenonBasedHealthChecker(service, "http", ADDRESS, PORT);
   }
 
   @Test
