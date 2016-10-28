@@ -1256,7 +1256,7 @@ public class CreateDhcpVmTaskService extends StatefulService {
     }
 
     final HealthChecker healthChecker = HostUtils.getHealthCheckHelperFactory(this)
-        .create(this, Constants.DHCP_AGENT_PORT, currentState.dhcpAgentEndpointAddress);
+        .create(this, "http", Constants.DHCP_AGENT_PORT, currentState.dhcpAgentEndpointAddress);
 
     if (healthChecker.isReady()) {
       ServiceUtils.logInfo(this,

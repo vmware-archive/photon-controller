@@ -37,18 +37,21 @@ public class XenonBasedHealthChecker implements HealthChecker {
   private final Service service;
   private final String address;
   private final List<Integer> ports;
+  private final String protocol;
 
-  public XenonBasedHealthChecker(Service service, String address, int port) {
+  public XenonBasedHealthChecker(Service service, String protocol, String address, int port) {
     this.service = service;
     this.address = address;
     this.ports = new ArrayList<>();
     this.ports.add(port);
+    this.protocol = protocol;
   }
 
-  public XenonBasedHealthChecker(Service service, String address, List<Integer> ports) {
+  public XenonBasedHealthChecker(Service service, String protocol, String address, List<Integer> ports) {
     this.service = service;
     this.address = address;
     this.ports = ports;
+    this.protocol = protocol;
   }
 
   @Override
@@ -58,7 +61,7 @@ public class XenonBasedHealthChecker implements HealthChecker {
       // that it is no longer true, multiple ports may contribute to the overall health of a
       // container, thus the introduction of a list of ports.
       for (Integer port : this.ports){
-        URI uri = UriUtils.buildUri("http", address, port, ServiceUriPaths.STATUS_SERVICE, null);
+        URI uri = UriUtils.buildUri(this.protocol, address, port, ServiceUriPaths.STATUS_SERVICE, null);
         Operation getOperation = Operation
                 .createGet(uri)
                 .setUri(uri)
