@@ -164,7 +164,12 @@ public class CloudStoreServiceGroupTest {
   }
 
   private void cleanupStorage() throws IOException {
-    FileUtils.deleteDirectory(new File(config.getXenonConfig().getStoragePath()));
+    try {
+      FileUtils.deleteDirectory(new File(config.getXenonConfig().getStoragePath()));
+    } catch (Exception e) {
+      // this error can happen when lucene did not release all file handles yet
+      // however the devbox cleanup task will clean up left over temp folders.
+    }
   }
 
   /**
