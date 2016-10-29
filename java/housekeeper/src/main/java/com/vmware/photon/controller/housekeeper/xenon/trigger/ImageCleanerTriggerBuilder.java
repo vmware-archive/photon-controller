@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.xenon.trigger;
 
-import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskStateBuilder;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerService;
 import com.vmware.photon.controller.housekeeper.xenon.ImageCleanerService;
@@ -56,7 +55,7 @@ public class ImageCleanerTriggerBuilder implements TaskStateBuilder {
   /**
    * Age at which the unused image should expire.
    */
-  private static final long UNUSED_IMAGE_AGE = TimeUnit.MINUTES.toSeconds(30);
+  public static final long UNUSED_IMAGE_AGE = TimeUnit.MINUTES.toSeconds(30);
 
   /**
    * Constructor.
@@ -85,11 +84,8 @@ public class ImageCleanerTriggerBuilder implements TaskStateBuilder {
 
   private String buildStartState() {
     ImageCleanerService.State state = new ImageCleanerService.State();
-    state.imageWatermarkTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
     state.imageDeleteWatermarkTime =
         TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - UNUSED_IMAGE_AGE;
-    state.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
-        TimeUnit.MILLISECONDS.toMicros(triggerIntervalMillis) * 5);
     return Utils.toJson(state);
   }
 }
