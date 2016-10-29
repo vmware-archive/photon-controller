@@ -99,7 +99,6 @@ public class ImageDatastoreSweeperServiceTest {
     ImageDatastoreSweeperService.State state = new ImageDatastoreSweeperService.State();
     state.isSelfProgressionDisabled = true;
     state.datastore = "datastore-1";
-    state.imageCreateWatermarkTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
     state.imageDeleteWatermarkTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
     return state;
   }
@@ -471,9 +470,6 @@ public class ImageDatastoreSweeperServiceTest {
           {"hostPollIntervalMilliSeconds", 0},
           {"hostPollIntervalMilliSeconds", -10},
 
-          {"imageCreateWatermarkTime", 0L},
-          {"imageCreateWatermarkTime", -10L},
-
           {"imageDeleteWatermarkTime", 0L},
           {"imageDeleteWatermarkTime", -10L},
       };
@@ -787,7 +783,6 @@ public class ImageDatastoreSweeperServiceTest {
           {"sweepRate", 10L},
           {"sweepTimeout", 10L},
           {"parentLink", "/new-link"},
-          {"imageCreateWatermarkTime", 10L},
           {"imageDeleteWatermarkTime", 10L},
           {"datastore", "new-datastore"}
       };
