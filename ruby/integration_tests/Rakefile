@@ -321,7 +321,7 @@ task :download_esx_logs do
   EsxCloud::LogBackUpHelpers.download_esx_logs
 end
 
-desc 'Verify no usernames or passwords in service logs'
+desc 'Verify no sensitive information (usernames, passwords, sshkeys) in service logs'
 task :verify_logs do
   EsxCloud::LogBackUpHelpers.verify_logs
 end
