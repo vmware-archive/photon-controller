@@ -93,6 +93,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
 
   @Override
   public void handleStart(Operation start) {
+    ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
     State s = start.getBody(State.class);
     initializeState(s);
     validateState(s);
@@ -366,7 +367,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
           public void onComplete(Host.AsyncSSLClient.start_image_scan_call call) {
             try {
               StartImageScanResponse response = call.getResult();
-              ServiceUtils.logInfo(ImageDatastoreSweeperService.this, "Received: %s", response);
+              ServiceUtils.logInfo(ImageDatastoreSweeperService.this, "Image scan received: %s", response);
               HostClient.ResponseValidator.checkStartImageScanResponse(response);
 
               sendStageProgressPatch(
@@ -401,7 +402,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
             try {
 
               GetInactiveImagesResponse response = call.getResult();
-              ServiceUtils.logInfo(ImageDatastoreSweeperService.this, "Received: %s", response);
+              ServiceUtils.logInfo(ImageDatastoreSweeperService.this, "Inactive images received: %s", response);
               HostClient.ResponseValidator.checkGetInactiveImagesResponse(response);
 
               if (current.isSelfProgressionDisabled) {
@@ -453,7 +454,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
             try {
 
               GetInactiveImagesResponse response = call.getResult();
-              ServiceUtils.logInfo(ImageDatastoreSweeperService.this, "Received: %s", response);
+              ServiceUtils.logInfo(ImageDatastoreSweeperService.this, "Inactive images received: %s", response);
               HostClient.ResponseValidator.checkGetInactiveImagesResponse(response);
 
               if (!response.isSetImage_descs()) {
@@ -501,7 +502,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
             try {
 
               GetDeletedImagesResponse response = call.getResult();
-              ServiceUtils.logInfo(ImageDatastoreSweeperService.this, "Received: %s", response);
+              ServiceUtils.logInfo(ImageDatastoreSweeperService.this, "Delete images received: %s", response);
               HostClient.ResponseValidator.checkGetDeletedImagesResponse(response);
 
               for (InactiveImageDescriptor descriptor : response.getImage_descs()) {
@@ -618,7 +619,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
             try {
 
               StartImageSweepResponse response = call.getResult();
-              ServiceUtils.logInfo(ImageDatastoreSweeperService.this, "Received: %s", response);
+              ServiceUtils.logInfo(ImageDatastoreSweeperService.this, "Image sweep received: %s", response);
               HostClient.ResponseValidator.checkStartImageSweepResponse(response);
 
               sendStageProgressPatch(
@@ -708,12 +709,9 @@ public class ImageDatastoreSweeperService extends StatefulService {
     List<InactiveImageDescriptor> imagesToDelete = new LinkedList<>();
     for (InactiveImageDescriptor image : inactiveImages) {
       ImageService.State referenceImage = referenceImages.get(image.getImage_id());
-      ServiceUtils.logInfo(this, Utils.toJson(false, false, referenceImage));
-
-      if (image.getTimestamp() > current.imageCreateWatermarkTime ||
-          image.getTimestamp() > current.imageDeleteWatermarkTime) {
+      if (image.getTimestamp() > current.imageDeleteWatermarkTime) {
         // we only want to delete images that have been not used for a
-        // period longer than the watermark times
+        // period longer than the watermark time
         continue;
       }
 
@@ -916,14 +914,6 @@ public class ImageDatastoreSweeperService extends StatefulService {
      */
     @Immutable
     public String parentLink;
-
-    /**
-     * The timestamp indicating when the reference images were retrieved.
-     */
-    @NotNull
-    @Positive
-    @Immutable
-    public Long imageCreateWatermarkTime;
 
     /**
      * The timestamp indicating how long images need to be found as un-used before we should delete them

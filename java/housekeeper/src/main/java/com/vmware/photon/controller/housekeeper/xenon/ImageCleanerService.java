@@ -23,6 +23,7 @@ import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.housekeeper.xenon.trigger.ImageCleanerTriggerBuilder;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationSequence;
 import com.vmware.xenon.common.ServiceDocument;
@@ -95,6 +96,10 @@ public class ImageCleanerService extends StatefulService {
             ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
       }
 
+      // Update the watermark time to be UNUSED_IMAGE_AGE seconds before the current time.
+      s.imageDeleteWatermarkTime =  TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis())
+          - ImageCleanerTriggerBuilder.UNUSED_IMAGE_AGE;
+
       this.validateState(s);
       start.setBody(s).complete();
 
@@ -150,9 +155,6 @@ public class ImageCleanerService extends StatefulService {
 
     checkNotNull(current.queryPollDelay, "queryPollDelay cannot be null");
     checkState(current.queryPollDelay > 0, "queryPollDelay must be greater than zero");
-
-    checkNotNull(current.imageWatermarkTime, "imageWatermarkTime cannot be null");
-    checkState(current.imageWatermarkTime > 0, "imageWatermarkTime must be greater than zero");
 
     checkNotNull(current.imageDeleteWatermarkTime, "imageDeleteWatermarkTime cannot be null");
     checkState(current.imageDeleteWatermarkTime > 0, "imageDeleteWatermarkTime must be greater than zero");
@@ -214,7 +216,7 @@ public class ImageCleanerService extends StatefulService {
       }
     }
 
-    checkArgument(patch.imageWatermarkTime == null, "imageWatermarkTime cannot be changed.");
+    checkArgument(patch.imageDeleteWatermarkTime == null, "imageDeleteWatermarkTime cannot be changed.");
   }
 
   /**
@@ -360,11 +362,9 @@ public class ImageCleanerService extends StatefulService {
     ImageDatastoreSweeperService.State request = new ImageDatastoreSweeperService.State();
     request.datastore = dataStore;
     request.parentLink = this.getSelfLink();
-    request.imageCreateWatermarkTime = current.imageWatermarkTime;
     request.imageDeleteWatermarkTime = current.imageDeleteWatermarkTime;
     request.hostPollIntervalMilliSeconds = current.queryPollDelay;
     request.isImageDatastore = isImageDatastore;
-    request.documentExpirationTimeMicros = current.documentExpirationTimeMicros;
 
     // start service
     Operation operation = Operation
@@ -441,8 +441,8 @@ public class ImageCleanerService extends StatefulService {
       QueryTask rsp = completedOp.getBody(QueryTask.class);
 
       State s = buildPatch(current.taskInfo.stage, current.taskInfo.subStage, null);
-      ServiceUtils.logInfo(ImageCleanerService.this, "Finished %s", Utils.toJson(false, false,
-          rsp.results.documentLinks));
+      ServiceUtils.logInfo(ImageCleanerService.this, "ImageDatastoreSweeperService instances that are finished: %s",
+          Utils.toJson(false, false, rsp.results.documentLinks));
 
       s.finishedDeletes = rsp.results.documentLinks.size();
       sendSelfPatch(s);
@@ -474,8 +474,8 @@ public class ImageCleanerService extends StatefulService {
       QueryTask rsp = completedOp.getBody(QueryTask.class);
 
       State s = buildPatch(current.taskInfo.stage, current.taskInfo.subStage, null);
-      ServiceUtils.logInfo(ImageCleanerService.this, "Failed or Cancelled %s",
-          Utils.toJson(false, false, rsp.results.documentLinks));
+      ServiceUtils.logInfo(ImageCleanerService.this, "ImageDatastoreSweeperService instances that have failed or " +
+              "cancelled %s", Utils.toJson(false, false, rsp.results.documentLinks));
 
       s.failedOrCanceledDeletes = rsp.results.documentLinks.size();
       sendSelfPatch(s);
@@ -629,11 +629,6 @@ public class ImageCleanerService extends StatefulService {
      * Time in milliseconds to delay before issuing query tasks.
      */
     public Integer queryPollDelay;
-
-    /**
-     * The timestamp indicating when the reference images were retrieved.
-     */
-    public Long imageWatermarkTime;
 
     /**
      * The timestamp indicating the cutoff for unused images deletion.
