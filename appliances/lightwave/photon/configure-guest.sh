@@ -82,6 +82,13 @@ function mask2cidr()
 
 function set_network_properties()
 {
+  if ! -z "$lw_hostname" ]
+  then
+    echo "Setting hostname to $lw_hostname"
+    hostnamectl set-hostname $lw_hostname
+    hostnamectl set-hostname --static $lw_hostname
+  fi
+
   if [ -z "$dns" ]
   then
     multiline_dns=""
