@@ -82,11 +82,28 @@ function mask2cidr()
 
 function set_network_properties()
 {
-  if ! -z "$lw_hostname" ]
+  if [ ! -z "$lw_hostname" ]
   then
     echo "Setting hostname to $lw_hostname"
-    hostnamectl set-hostname $lw_hostname
-    hostnamectl set-hostname --static $lw_hostname
+    fqdn=$lw_hostname
+    hostname=`echo $lw_hostname | awk -F "." "{print $1;}"`
+    if [ "$hostname" = "$lw_hostname" ];
+    then
+        fqdn=$hostname.$lw_domain
+    else
+        fqdn=$lw_hostname
+    fi
+    hostnamectl set-hostname $hostname
+    hostnamectl set-hostname --static $hostname
+
+    cat > /etc/hosts <<-EOF
+	#Begin /etc/hosts (network card version)
+	
+	::1 localhost ipv6-localhost ipv6-loopback
+	127.0.0.1 localhost
+	$ip0 $fqdn $hostname
+	#End /etc/hosts (network card version)
+	EOF
   fi
 
   if [ -z "$dns" ]
