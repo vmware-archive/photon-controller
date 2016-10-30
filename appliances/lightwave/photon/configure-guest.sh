@@ -10,11 +10,29 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
 # specific language governing permissions and limitations under the License.
 #
-# This script runs on first boot up of the ova to confgigure the system.
-XML_FILE=configovf.xml
 
-function set_ntp_servers() {
+#
+# This script runs on first boot up of the ova to configure the system.
+#
 
+OVF_ENV_XML_FILE=configovf.xml
+LIGHTWAVE_CFG_FILE=/etc/photon/config/lightwave-server.cfg
+LIGHTWAVE_CFG_INSTANCE_FILE=/etc/photon/config/lightwave-server-instance.cfg
+
+function cleanup()
+{
+  # the XML file contains passwords
+  rm -rf $OVF_ENV_XML_FILE
+
+  # the Lightwave config files contain passwords
+  rm -rf $LIGHTWAVE_CFG_INSTANCE_FILE
+
+  #remove itself from startup
+  systemctl disable configure-guest
+}
+
+function set_ntp_servers()
+{
   if [ -z "$ntp_servers" ]
   then
      echo "No ntp_servers."
@@ -31,19 +49,20 @@ function set_ntp_servers() {
 
   unset IFS
 
-  cat > "/etc/systemd/timesyncd.conf" << EOF
-NTP=${ntp_servers_arr[@]}
-
-EOF
+  cat > "/etc/systemd/timesyncd.conf" <<-EOF
+	NTP=${ntp_servers_arr[@]}
+	EOF
 
   systemctl daemon-reload
   systemctl restart systemd-timesyncd
 }
 
-function mask2cidr() {
+function mask2cidr()
+{
     bits=0
     IFS=.
-    for dig in $netmask0 ; do
+    for dig in $netmask0
+    do
         case $dig in
             255) let bits+=8;;
             254) let bits+=7 ; break ;;
@@ -61,7 +80,8 @@ function mask2cidr() {
     echo "$bits"
 }
 
-function set_network_properties(){
+function set_network_properties()
+{
   if [ -z "$dns" ]
   then
     multiline_dns=""
@@ -73,7 +93,8 @@ function set_network_properties(){
 
     #add DNS= to the beginning
     len=${#dns_arr[@]}
-    for ((i=0;i<len;i++)); do
+    for ((i=0;i<len;i++))
+    do
       dns_entry=$(echo "${dns_arr[i]}" | sed 's/^[[:blank:]]*//')
       dns_arr[i]="DNS=${dns_entry}"
     done
@@ -91,41 +112,42 @@ function set_network_properties(){
     echo "Using DHCP"
     nwConfig="DHCP=yes"
   else
-    nwConfig=$(cat <<EOF
-[Address]
-Address=${ip0}/$(mask2cidr)
-EOF
-)
+    nwConfig=$(cat <<-EOF
+	[Address]
+	Address=${ip0}/$(mask2cidr)
+	EOF
+        )
   fi
 
   echo "Setting Network properties"
 
   en_name=$(ip addr show label "e*" | head -n 1 | sed 's/^[0-9]*: \(e.*\): .*/\1/')
 
-  cat > "/etc/systemd/network/10-dhcp-${en_name}.network" << EOF
-[Match]
-Name=$en_name
-
-[Network]
-$multiline_dns
-
-$nwConfig
-
-[Route]
-Gateway=${gateway}
-EOF
+  cat > "/etc/systemd/network/10-dhcp-${en_name}.network" <<-EOF
+	[Match]
+	Name=$en_name
+	
+	[Network]
+	$multiline_dns
+	
+	$nwConfig
+	
+	[Route]
+	Gateway=${gateway}
+	EOF
 
   systemctl restart systemd-networkd
 }
 
-function set_root_password(){
+function set_root_password()
+{
   if [ -z "$root_password" ]
   then
      echo "No root_password."
      return
   fi
 
-  echo "root:${root_password}" | chpasswd
+  echo -e "${root_password}\n${root_password}" | passwd
   exit_code=$?
   if [ 0 -ne $exit_code ]
   then
@@ -134,14 +156,15 @@ function set_root_password(){
   fi
 }
 
-function set_photon_password(){
+function set_photon_password()
+{
   if [ -z "$photon_password" ]
   then
      echo "No photon_password."
      return
   fi
 
-  echo "photon:${photon_password}" | chpasswd
+  echo -e "${photon_password}\n${photon_password}" | passwd photon
   exit_code=$?
   if [ 0 -ne $exit_code ]
   then
@@ -150,7 +173,8 @@ function set_photon_password(){
   fi
 }
 
-function configure_lightwave() {
+function configure_lightwave()
+{
   context="{\
     \"DEPLOYMENT\" : \"$lw_deployment\", \
     \"LIGHTWAVE_DOMAIN\" : \"$lw_domain\", \
@@ -158,68 +182,90 @@ function configure_lightwave() {
     \"IS_FIRST_INSTANCE\" : \"$lw_is_first_instance\", \
     \"LIGHTWAVE_HOSTNAME\" : \"$lw_hostname\" \
   }"
-  content=`cat /etc/photon/config/lightwave-server.cfg`
-  pystache "$content" "$context" > /etc/photon/config/lightwave-server-instance.cfg
+  content=`cat $LIGHTWAVE_CFG_FILE`
+  pystache "$content" "$context" > $LIGHTWAVE_CFG_INSTANCE_FILE
 
   # adding master node reference
-  if [[ $lw_deployment == "partner" ]]; then
-    echo "replication-partner-hostname=$lw_replication" >> /etc/photon/config/lightwave-server-instance.cfg
+  if [[ $lw_deployment == "partner" ]]
+  then
+    echo "replication-partner-hostname=$lw_replication" >> $LIGHTWAVE_CFG_INSTANCE_FILE
   fi
 
   # restart lightwave to pick up new config
   systemctl start lwsmd
-  /opt/vmware/bin/configure-lightwave-server --config-file /etc/photon/config/lightwave-server-instance.cfg
+
+  /opt/vmware/bin/configure-lightwave-server --config-file $LIGHTWAVE_CFG_INSTANCE_FILE
+
   /opt/vmware/bin/configure-identity-server
-  rm -rf /etc/photon/config/lightwave-server-instance.cfg
+
+  rm -rf $LIGHTWAVE_CFG_INSTANCE_FILE
 }
 
-function parse_ovf_env() {
+function parse_ovf_env()
+{
   # vm config
-  ip0=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ip0']/../@*[local-name()='value'])")
-  netmask0=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='netmask0']/../@*[local-name()='value'])")
-  gateway=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='gateway']/../@*[local-name()='value'])")
-  dns=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='DNS']/../@*[local-name()='value'])")
-  ntp_servers=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ntp_servers']/../@*[local-name()='value'])")
+  ip0=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ip0']/../@*[local-name()='value'])")
+  netmask0=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='netmask0']/../@*[local-name()='value'])")
+  gateway=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='gateway']/../@*[local-name()='value'])")
+  dns=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='DNS']/../@*[local-name()='value'])")
+  ntp_servers=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ntp_servers']/../@*[local-name()='value'])")
 
   # users
-  root_password=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='root_password']/../@*[local-name()='value'])")
-  photon_password=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='photon_password']/../@*[local-name()='value'])")
+  root_password=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='root_password']/../@*[local-name()='value'])")
+  photon_password=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='photon_password']/../@*[local-name()='value'])")
 
   # lightwave config
-  lw_domain=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_domain']/../@*[local-name()='value'])") # some.domain.com
-  lw_hostname=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_hostname']/../@*[local-name()='value'])") # {{{LIGHTWAVE_HOSTNAME}}}
-  lw_password=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_password']/../@*[local-name()='value'])") # >7 chars, one number, one upper case char, one lowercase char, one special char
-  lw_replication=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_replication']/../@*[local-name()='value'])") # if deployment = partner
+  lw_domain=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_domain']/../@*[local-name()='value'])") # some.domain.com
+  lw_hostname=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_hostname']/../@*[local-name()='value'])") # {{{LIGHTWAVE_HOSTNAME}}}
+  lw_password=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_password']/../@*[local-name()='value'])") # >7 chars, one number, one upper case char, one lowercase char, one special char
+  lw_replication=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_replication']/../@*[local-name()='value'])") # if deployment = partner
   lw_deployment="standalone"
   lw_is_first_instance="true"
   # we know this instance is a replcation partner if a replication host is specified
-  if [ ! -z "$lw_replication" ]; then
+  if [ ! -z "$lw_replication" ]
+  then
     lw_deployment="partner"
     lw_is_first_instance="false"
   fi
-  if [ -z "$lw_password" ]; then
+  if [ -z "$lw_password" ]
+  then
     missing_values = "Missing lw_password"
   fi
-  if [ -z "$lw_hostname" ]; then
+  if [ -z "$lw_hostname" ]
+  then
     missing_values = ${missing_values}", lw_hostname"
   fi
-  if [ -z "$lw_domain" ]; then
+  if [ -z "$lw_domain" ]
+  then
     missing_values = ${missing_values}", lw_domain"
   fi
-  if [ ! -z "$missing_values" ]; then
+  if [ ! -z "$missing_values" ]
+  then
     echo $missing_values
     exit -1
   fi
 }
 
+#
+# Main
+#
+
+trap cleanup EXIT
+
+# Exit immediately if a command returns with a non-zero status
 set +e
+
 # Get env variables set in this OVF thru properties
 ovf_env=$(vmtoolsd --cmd 'info-get guestinfo.ovfEnv')
-if [ ! -z "${ova_enf}" ]; then
+
+if [ ! -z "${ovf_env}" ]
+then
   # remove passwords from guestinfo.ovfEnv
   vmtoolsd --cmd "info-set guestinfo.ovfEnv `vmtoolsd --cmd 'info-get guestinfo.ovfEnv' | grep -v password`"
+
   # this file needs to be deleted since it contains passwords
-  echo "$ovf_env" > $XML_FILE
+  echo "$ovf_env" > $OVF_ENV_XML_FILE
+
   parse_ovf_env
 
   set_ntp_servers
@@ -228,12 +274,7 @@ if [ ! -z "${ova_enf}" ]; then
   set_photon_password
   configure_lightwave
 
-  # the XML file contains passwords
-  rm -rf $XML_FILE
 fi
+
 set -e
 
-
-
-#remove itself from startup
-systemctl disable configure-guest
