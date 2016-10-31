@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidImag
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidVmStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.DeleteUploadFolderException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
+import com.vmware.photon.controller.api.model.AgentState;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.HostDatastore;
 import com.vmware.photon.controller.api.model.HostState;
@@ -237,9 +238,9 @@ public class VsphereImageStore implements ImageStore {
     }
 
     // since we can't guarantee that the management plane is running on a ESX host
-    // we are selecting any host in READY state
+    // we are selecting any host in READY state with agent in ACTIVE state
     if ((null == hostList || 0 == hostList.getItems().size()) && this.lookForImageDatstoreHostsIfNeeded) {
-      hostList = this.hostBackend.filterByState(HostState.READY, Optional.of(1));
+      hostList = this.hostBackend.filterByState(HostState.READY, Optional.of(AgentState.ACTIVE), Optional.of(1));
     }
 
     checkState(

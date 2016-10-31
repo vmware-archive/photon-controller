@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.frontend.backends.HostBackend;
 import com.vmware.photon.controller.api.frontend.config.ImageConfig;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
+import com.vmware.photon.controller.api.model.AgentState;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.HostDatastore;
 import com.vmware.photon.controller.api.model.HostState;
@@ -111,7 +112,8 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
     public void setUp() {
       hostBackend = mock(HostBackend.class);
       ResourceList<Host> hostList = buildHostList();
-      when(hostBackend.filterByState(eq(HostState.READY), any())).thenReturn(hostList);
+      when(hostBackend.filterByState(eq(HostState.READY), eq(Optional.of(AgentState.ACTIVE)), any()))
+          .thenReturn(hostList);
       when(hostBackend.filterByAddress(eq(HOST_ADDRESS), any())).thenReturn(hostList);
 
       hostClient = mock(HostClient.class);
@@ -173,7 +175,8 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
           expectedExceptionsMessageRegExp = "Could not find any host to upload image.")
     public void testWithHostIpProvidedNoHostFound() throws Exception {
       doReturn(new ResourceList<Host>()).when(hostBackend).filterByAddress(HOST_ADDRESS, Optional.absent());
-      doReturn(new ResourceList<Host>()).when(hostBackend).filterByState(HostState.READY, Optional.of(1));
+      doReturn(new ResourceList<Host>()).when(hostBackend).filterByState(HostState.READY,
+          Optional.of(AgentState.ACTIVE), Optional.of(1));
 
       imageStore.createImage(imageId);
     }
@@ -182,7 +185,8 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
           expectedExceptionsMessageRegExp = "Could not find any host to upload image.")
     public void testNoHostIpProvidedNoHostFound() throws Exception {
       imageConfig.setEndpoint(null);
-      doReturn(new ResourceList<Host>()).when(hostBackend).filterByState(HostState.READY, Optional.of(1));
+      doReturn(new ResourceList<Host>()).when(hostBackend).filterByState(HostState.READY,
+          Optional.of(AgentState.ACTIVE), Optional.of(1));
 
       imageStore.createImage(imageId);
     }
@@ -201,7 +205,8 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
       ResourceList<Host> vmHostList = buildVmHostList();
       when(hostBackend.filterByAddress(eq(HOST_ADDRESS), any())).thenReturn(hostList);
       when(hostBackend.filterByAddress(eq(VM_HOST_ADDRESS), any())).thenReturn(vmHostList);
-      when(hostBackend.filterByState(HostState.READY, Optional.of(1))).thenReturn(vmHostList);
+      when(hostBackend.filterByState(HostState.READY, Optional.of(AgentState.ACTIVE), Optional.of(1)))
+          .thenReturn(vmHostList);
 
       hostClient = mock(HostClient.class);
       hostClientFactory = mock(HostClientFactory.class);
@@ -286,7 +291,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
       imageConfig.setEndpoint(HOST_ADDRESS);
 
       hostBackend = mock(HostBackend.class);
-      when(hostBackend.filterByState(any(), any())).thenReturn(buildHostList());
+      when(hostBackend.filterByState(any(), any(), any())).thenReturn(buildHostList());
 
       hostClient = mock(HostClient.class);
       hostClientFactory = mock(HostClientFactory.class);
