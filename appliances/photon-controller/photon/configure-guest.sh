@@ -10,11 +10,20 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
 # specific language governing permissions and limitations under the License.
 #
+ 
+#
 # This script is run during first start up to configure the vm.
-XML_FILE=configovf.xml
+#
 
-function set_ntp_servers() {
+CONFIG_XML_FILE=configovf.xml
 
+function cleanup()
+{
+    rm -rf $CONFIG_XML_FILE
+}
+
+function set_ntp_servers()
+{
   if [ -z "$ntp_servers" ]
   then
      echo "No ntp_servers."
@@ -31,16 +40,16 @@ function set_ntp_servers() {
 
   unset IFS
 
-  cat > "/etc/systemd/timesyncd.conf" << EOF
-NTP=${ntp_servers_arr[@]}
-
-EOF
+  cat > "/etc/systemd/timesyncd.conf" <<-EOF
+	NTP=${ntp_servers_arr[@]}
+	EOF
 
   systemctl daemon-reload
   systemctl restart systemd-timesyncd
 }
 
-function mask2cidr() {
+function mask2cidr()
+{
     bits=0
     IFS=.
     for dig in $netmask0 ; do
@@ -61,7 +70,8 @@ function mask2cidr() {
     echo "$bits"
 }
 
-function set_network_properties(){
+function set_network_properties()
+{
   if [ -z "$dns" ]
   then
     multiline_dns=""
@@ -91,41 +101,44 @@ function set_network_properties(){
     echo "Using DHCP"
     nwConfig="DHCP=yes"
   else
-    nwConfig=$(cat <<EOF
-[Address]
-Address=${ip0}/$(mask2cidr)
-EOF
-)
+    nwConfig=$(cat <<-EOF
+	[Address]
+	Address=${ip0}/$(mask2cidr)
+	EOF
+    )
   fi
 
   echo "Setting Network properties"
 
-  en_name=$(ip addr show label "e*" | head -n 1 | sed 's/^[0-9]*: \(e.*\): .*/\1/')
+  en_name=$(ip addr show label "e*" | \
+            head -n 1 | \
+            sed 's/^[0-9]*: \(e.*\): .*/\1/')
 
-  cat > "/etc/systemd/network/10-dhcp-${en_name}.network" << EOF
-[Match]
-Name=$en_name
-
-[Network]
-$multiline_dns
-
-$nwConfig
-
-[Route]
-Gateway=${gateway}
-EOF
+  cat > "/etc/systemd/network/10-dhcp-${en_name}.network" <<-EOF
+	[Match]
+	Name=$en_name
+	
+	[Network]
+	$multiline_dns
+	
+	$nwConfig
+	
+	[Route]
+	Gateway=${gateway}
+	EOF
 
   systemctl restart systemd-networkd
 }
 
-function set_root_password(){
+function set_root_password()
+{
   if [ -z "$root_password" ]
   then
      echo "No root_password."
      return
   fi
 
-  echo "root:${root_password}" | chpasswd
+  echo "${root_password}\n${root_password}" | passwd
   exit_code=$?
   if [ 0 -ne $exit_code ]
   then
@@ -134,14 +147,15 @@ function set_root_password(){
   fi
 }
 
-function set_photon_password(){
+function set_photon_password()
+{
   if [ -z "$photon_password" ]
   then
      echo "No photon_password."
      return
   fi
 
-  echo "photon:${photon_password}" | chpasswd
+  echo "${photon_password}\n${photon_password}" | passwd photon
   exit_code=$?
   if [ 0 -ne $exit_code ]
   then
@@ -150,22 +164,25 @@ function set_photon_password(){
   fi
 }
 
-function configure_photon() {
+function configure_photon()
+{
   pc_auth_enabled="true"
   pc_enabled_syslog="true"
-  if [ -z "$pc_syslog_endpoint" ]; then
+
+  if [ -z "$pc_syslog_endpoint" ]
+  then
     pc_enabled_syslog="false"
   fi
-  if [ -z "$lw_host" ] || [ -z "$lw_port" ] || [ -z "$lw_domain" ]; then
-    pc_auth_enabled="false"
-  fi
+
   pc_peer_nodes="{\"${ip0}\" : \"19000\"}"
+
   # convert to array using , as seperator
   IFS=','
   read -a node_arr <<< "$pc_peer_nodes_comma_seperated"
   len=${#node_arr[@]}
   pc_peer_nodes="{ \"peerAddress\" : \"${ip0}\", \"peerPort\" : 19000 }"
-  for ((i=0;i<len;i++)); do
+  for ((i=0;i<len;i++))
+  do
     pc_peer_nodes=${pc_peer_nodes}", { \"peerAddress\" : \"${node_arr[i]}\", \"peerPort\" : 19000 } "
     dns_entry=$(echo "${dns_arr[i]}" | sed 's/^[[:blank:]]*//')
     dns_arr[i]="DNS=${dns_entry}"
@@ -180,7 +197,7 @@ function configure_photon() {
     \"PHOTON_CONTROLLER_PEER_NODES\" : ${pc_peer_nodes}, \
     \"APIFE_IP\" : \"${ip0}\", \
     \"APIFE_PORT\" : 9000, \
-    \"LIGHTWAVE_PASSWORD\" : \"${pc_keystore_password}\", \
+    \"LIGHTWAVE_PASSWORD\" : \"${lw_password}\", \
     \"LIGHTWAVE_HOSTNAME\" : \"${lw_host}\", \
     \"LIGHTWAVE_DOMAIN\" : \"${lw_domain}\", \
     \"USE_VIRTUAL_NETWORK\" : false, \
@@ -216,28 +233,29 @@ function configure_photon() {
   systemctl start photon-controller
 }
 
-function parse_ovf_env() {
+function parse_ovf_env()
+{
   # vm config
-  ip0=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ip0']/../@*[local-name()='value'])")
-  netmask0=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='netmask0']/../@*[local-name()='value'])")
-  gateway=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='gateway']/../@*[local-name()='value'])")
-  dns=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='DNS']/../@*[local-name()='value'])")
-  ntp_servers=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ntp_servers']/../@*[local-name()='value'])")
+  ip0=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ip0']/../@*[local-name()='value'])")
+  netmask0=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='netmask0']/../@*[local-name()='value'])")
+  gateway=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='gateway']/../@*[local-name()='value'])")
+  dns=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='DNS']/../@*[local-name()='value'])")
+  ntp_servers=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ntp_servers']/../@*[local-name()='value'])")
 
   # users
-  root_password=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='root_password']/../@*[local-name()='value'])")
-  photon_password=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='photon_password']/../@*[local-name()='value'])")
+  root_password=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='root_password']/../@*[local-name()='value'])")
+  photon_password=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='photon_password']/../@*[local-name()='value'])")
 
   # photon Controller
-  pc_syslog_endpoint=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_syslog_endpoint']/../@*[local-name()='value'])")
+  pc_syslog_endpoint=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_syslog_endpoint']/../@*[local-name()='value'])")
   # host,host
-  pc_peer_nodes_comma_seperated=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_peer_nodes']/../@*[local-name()='value'])")
-  pc_secret_password=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_secret_password']/../@*[local-name()='value'])")
+  pc_peer_nodes_comma_seperated=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_peer_nodes']/../@*[local-name()='value'])")
+  pc_secret_password=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_secret_password']/../@*[local-name()='value'])")
 
   # lightwave config
-  lw_domain=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_domain']/../@*[local-name()='value'])") # some.domain.com
-  lw_host=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_hostname']/../@*[local-name()='value'])")
-  lw_port=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_port']/../@*[local-name()='value'])")
+  lw_domain=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_domain']/../@*[local-name()='value'])") # some.domain.com
+  lw_host=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_hostname']/../@*[local-name()='value'])")
+  lw_port=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_port']/../@*[local-name()='value'])")
   pc_secret_password=$(date +%s | base64 | head -c 8)
   pc_keystore_password=$(date +%s | base64 | head -c 8)
 
@@ -257,14 +275,24 @@ function parse_ovf_env() {
   fi
 }
 
+#
+# Main
+#
+
+trap cleanup EXIT
+
 set +e
+
 # Get env variables set in this OVF thru properties
 ovf_env=$(vmtoolsd --cmd 'info-get guestinfo.ovfEnv')
+
 # remove passwords from guestinfo.ovfEnv
 vmtoolsd --cmd "info-set guestinfo.ovfEnv `vmtoolsd --cmd 'info-get guestinfo.ovfEnv' | grep -v password`"
+
 # this file needs to be deleted since it contains passwords
-if [ ! -z "$ovf_env" ]; then
-  echo "$ovf_env" > $XML_FILE
+if [ ! -z "$ovf_env" ]
+then
+  echo "$ovf_env" > $CONFIG_XML_FILE
   parse_ovf_env
 
   set_ntp_servers
@@ -273,9 +301,8 @@ if [ ! -z "$ovf_env" ]; then
   set_photon_password
   configure_photon
 
-  # the XML file contains passwords
-  rm -rf $XML_FILE
 fi
+
 set -e
 
 

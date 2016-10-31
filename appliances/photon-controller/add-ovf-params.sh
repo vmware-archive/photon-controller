@@ -54,6 +54,10 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
         <Label>Lightwave domain</Label> \
         <Description>Domain of the Lightwave server. (default: photon.vmware.com)</Description> \
       </Property> \
+      <Property ovf:key="lw_password" ovf:userConfigurable="true" ovf:type="password"> \
+        <Label>Lightwave Administrator Password</Label> \
+        <Description>This is the Lightwave administrator password.</Description> \
+      </Property> \
       <Property ovf:key="lw_hostname" ovf:userConfigurable="true" ovf:type="string"> \
         <Label>Lightwave hostaddress</Label> \
         <Description>Hostaddress of the Lightwave master. (default: 172.16.127.67)</Description> \
