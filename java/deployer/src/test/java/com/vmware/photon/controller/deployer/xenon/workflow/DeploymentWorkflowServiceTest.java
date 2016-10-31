@@ -35,7 +35,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
-import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -51,6 +50,7 @@ import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.CreateVmSpecLayoutTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskService;
+import com.vmware.photon.controller.deployer.xenon.task.UploadVibTaskService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -615,7 +615,6 @@ public class DeploymentWorkflowServiceTest {
     private ContainersConfig containersConfig;
     private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
-    private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private ListeningExecutorService listeningExecutorService;
     private ApiClientFactory apiClientFactory;
     private AuthHelperFactory authHelperFactory;
@@ -652,7 +651,6 @@ public class DeploymentWorkflowServiceTest {
     public void setUpTest() throws Throwable {
       agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
-      httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
       apiClientFactory = mock(ApiClientFactory.class);
       containersConfig = deployerTestConfig.getContainersConfig();
       authHelperFactory = mock(AuthHelperFactory.class);
@@ -673,7 +671,6 @@ public class DeploymentWorkflowServiceTest {
           .healthCheckerFactory(healthCheckHelperFactory)
           .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
-          .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
           .bindPort(60001)
@@ -688,7 +685,6 @@ public class DeploymentWorkflowServiceTest {
           .healthCheckerFactory(healthCheckHelperFactory)
           .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
-          .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
           .bindPort(60005)
@@ -714,7 +710,6 @@ public class DeploymentWorkflowServiceTest {
       healthCheckHelperFactory = null;
       agentControlClientFactory = null;
       hostClientFactory = null;
-      httpFileServiceClientFactory = null;
     }
 
     @AfterClass
@@ -737,13 +732,14 @@ public class DeploymentWorkflowServiceTest {
     public void testSuccess(Integer mgmtHostCount, Integer mixedHostCount, Integer cloudHostCount,
                             Boolean isAuthEnabled) throws Throwable {
       createTestEnvironment(1);
-      MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localDeployer, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
+          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
@@ -816,13 +812,14 @@ public class DeploymentWorkflowServiceTest {
     @Test(dataProvider = "AuthEnabled")
     public void testProvisionManagementHostFailure(Boolean authEnabled) throws Throwable {
       createTestEnvironment(1);
-      MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, false);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, false);
       MockHelper.mockApiClient(apiClientFactory, localDeployer, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
+          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
@@ -848,13 +845,14 @@ public class DeploymentWorkflowServiceTest {
     @Test(dataProvider = "AuthEnabled")
     public void testCreateManagementPlaneFailure(Boolean authEnabled) throws Throwable {
       createTestEnvironment(1);
-      MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localDeployer, false);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
+          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
@@ -880,13 +878,14 @@ public class DeploymentWorkflowServiceTest {
     @Test
     public void testAuthClientRegistrationFailure() throws Throwable {
       createTestEnvironment(1);
-      MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localDeployer, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
+          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, false);
