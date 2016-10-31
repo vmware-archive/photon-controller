@@ -138,7 +138,7 @@ function set_root_password()
      return
   fi
 
-  echo "${root_password}\n${root_password}" | passwd
+  echo -e "${root_password}\n${root_password}" | passwd
   exit_code=$?
   if [ 0 -ne $exit_code ]
   then
@@ -155,7 +155,7 @@ function set_photon_password()
      return
   fi
 
-  echo "${photon_password}\n${photon_password}" | passwd photon
+  echo -e "${photon_password}\n${photon_password}" | passwd photon
   exit_code=$?
   if [ 0 -ne $exit_code ]
   then
