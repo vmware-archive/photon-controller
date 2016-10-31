@@ -26,6 +26,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.HostAvailab
 import com.vmware.photon.controller.api.frontend.exceptions.external.HostNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidAvailabilityZoneStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidOperationStateException;
+import com.vmware.photon.controller.api.model.AgentState;
 import com.vmware.photon.controller.api.model.AvailabilityZoneCreateSpec;
 import com.vmware.photon.controller.api.model.AvailabilityZoneState;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
@@ -331,6 +332,9 @@ public class HostXenonBackendTest {
       patchState.reportedNetworks = new HashSet<>();
       patchState.reportedNetworks.add(PORT_GROUP);
 
+      // set agent state
+      patchState.agentState = AgentState.MISSING;
+
       com.vmware.xenon.common.Operation patch = com.vmware.xenon.common.Operation
           .createPatch(basicServiceHost, HostServiceFactory.SELF_LINK + "/" + hostId)
           .setBody(patchState);
@@ -445,11 +449,15 @@ public class HostXenonBackendTest {
 
     @Test
     public void testFilterByStatus() {
-      ResourceList<Host> hosts = hostBackend.filterByPortGroup(PORT_GROUP, Optional.<Integer>absent());
+      ResourceList<Host> hosts = hostBackend.filterByState(HostState.CREATING, Optional.absent(), Optional.absent());
+      assertThat(hosts, notNullValue());
+      assertThat(hosts.getItems().size(), is(2));
+
+      hosts = hostBackend.filterByState(HostState.CREATING, Optional.of(AgentState.MISSING), Optional.absent());
       assertThat(hosts, notNullValue());
       assertThat(hosts.getItems().size(), is(1));
 
-      hosts = hostBackend.filterByPortGroup("MISSING_PORTGROUP", Optional.<Integer>absent());
+      hosts = hostBackend.filterByState(HostState.CREATING, Optional.of(AgentState.ACTIVE), Optional.absent());
       assertThat(hosts, notNullValue());
       assertThat(hosts.getItems().size(), is(0));
     }

@@ -29,6 +29,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidAvai
 import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.frontend.lib.UsageTagHelper;
 import com.vmware.photon.controller.api.frontend.utils.PaginationUtils;
+import com.vmware.photon.controller.api.model.AgentState;
 import com.vmware.photon.controller.api.model.AvailabilityZoneState;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentState;
@@ -187,9 +188,13 @@ public class HostXenonBackend implements HostBackend {
   }
 
   @Override
-  public ResourceList<Host> filterByState(HostState hostState, Optional<Integer> pageSize) {
+  public ResourceList<Host> filterByState(HostState hostState, Optional<AgentState> agentState,
+                                          Optional<Integer> pageSize) {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     termsBuilder.put(HostService.State.FIELD_NAME_STATE, hostState.toString());
+    if (agentState.isPresent()) {
+      termsBuilder.put(HostService.State.FIELD_NAME_AGENT_STATE, agentState.get().toString());
+    }
 
     return findDocuments(termsBuilder, pageSize);
   }
