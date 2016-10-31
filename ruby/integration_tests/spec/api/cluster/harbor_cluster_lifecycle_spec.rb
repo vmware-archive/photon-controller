@@ -62,7 +62,6 @@ describe "Harbor cluster-service lifecycle", cluster: true do
       props = construct_properties(harbor2_ip)
       cluster2 = create_harbor_cluster(project, props)
       validate_harbor_cluster_info(cluster2.id)
-      EsxCloud::ClusterHelper.delete_cluster(client, cluster2.id, "HARBOR")
 
       puts "Test that two tenants can create and operate on their own Harbor cluster in parallel"
       project = @seeder2.project!
@@ -70,11 +69,22 @@ describe "Harbor cluster-service lifecycle", cluster: true do
       validate_harbor_cluster_info(cluster3.id)
       validate_harbor_response(harbor1_ip)
       validate_harbor_response(harbor2_ip)
-      EsxCloud::ClusterHelper.delete_cluster(client, cluster3.id, "HARBOR")
-      EsxCloud::ClusterHelper.delete_cluster(client, cluster1.id, "HARBOR")
     rescue EsxCloud::Error => e
       EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
       fail "HARBOR cluster integration Test failed. Error: #{e.message}"
+    ensure
+      # Since we are sharing the ips KUBERNETES_MASTER_IP, KUBERNETES_ETCD_1_IP and SWARM_ETCD_1_IP between different cluster
+      # lifecycle tests, we need to ensure that clusters created in this test get deleted so that those test which may run
+      # after this test does not fail even if this test fails.
+      if cluster1 != nil
+        EsxCloud::ClusterHelper.delete_cluster(client, cluster1.id, "HARBOR")
+      end
+      if cluster2 != nil
+        EsxCloud::ClusterHelper.delete_cluster(client, cluster2.id, "HARBOR")
+      end
+      if cluster3 != nil
+        EsxCloud::ClusterHelper.delete_cluster(client, cluster3.id, "HARBOR")
+      end
     end
   end
 
