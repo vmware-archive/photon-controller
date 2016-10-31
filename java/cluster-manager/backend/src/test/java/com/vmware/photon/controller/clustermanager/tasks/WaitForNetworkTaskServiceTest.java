@@ -359,6 +359,7 @@ public class WaitForNetworkTaskServiceTest {
       testEnvironment.stop();
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testEndToEndSuccess() throws Throwable {
 
@@ -366,7 +367,7 @@ public class WaitForNetworkTaskServiceTest {
       getVmNetworksResult.setId("taskId");
       getVmNetworksResult.setState("QUEUED");
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(getVmNetworksResult);
@@ -387,7 +388,7 @@ public class WaitForNetworkTaskServiceTest {
       getTaskResult.setState("COMPLETED");
       getTaskResult.setResourceProperties(vmNetworks);
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(getTaskResult);

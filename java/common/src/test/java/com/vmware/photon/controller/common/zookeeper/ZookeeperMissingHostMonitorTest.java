@@ -21,7 +21,6 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent.Type;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-import org.apache.thrift.TSerializer;
 import org.apache.zookeeper.data.Stat;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -42,8 +41,6 @@ import java.util.concurrent.ExecutorService;
  * Tests {@link ZookeeperMissingHostMonitorTest}.
  */
 public class ZookeeperMissingHostMonitorTest {
-
-  private TSerializer serializer = new TSerializer();
 
   @Mock
   private PathChildrenCacheFactory pathCache;
@@ -129,7 +126,7 @@ public class ZookeeperMissingHostMonitorTest {
   }
 
   private List<ChildData> getChildDataFromEvents(PathChildrenCacheEvent... events) {
-    List<ChildData> currEvents = new ArrayList();
+    List<ChildData> currEvents = new ArrayList<>();
     for (PathChildrenCacheEvent event : events) {
       currEvents.add(new ChildData(event.getData().getPath(), null, event.getData().getData()));
     }

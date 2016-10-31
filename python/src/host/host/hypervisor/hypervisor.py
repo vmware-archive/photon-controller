@@ -57,7 +57,7 @@ class Hypervisor(object):
                                           self.image_manager,
                                           self.vm_manager)
         self.image_manager.monitor_for_cleanup()
-        self.image_transferer = NfcImageTransferer(self.host_client)
+        self.image_transferer = NfcImageTransferer(self.host_client, agent_config.auth_enabled)
         atexit.register(self.image_manager.cleanup)
 
     @staticmethod

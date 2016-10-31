@@ -76,84 +76,68 @@ export PATH=$PATH:$JAVA_HOME/bin:/opt/esxcli:/opt/vmware/bin:/opt/likewise/bin
 host_cert_dir="/etc/vmware/ssl"
 priv_key_name="rui.key"
 crt_name="rui.crt"
-pem_name="rui.pem"
-no_auth_pem_name="no-auth.pem"
 
 function join_lightwave_domain() {
   # Join lightwave domain. param 1 means use notify services instead of put node to maintenance mode
-  join_domain_cmd="/usr/lib/vmware/ic-deploy/bin/configure-lightwave.py ${lightwave_address} ${lightwave_domain} ${lightwave_password} 1 ${host_address} '$password'"
+  join_domain_cmd="/usr/lib/vmware/ic-deploy/bin/configure-lightwave.py ${lightwave_address} ${lightwave_domain} '${lightwave_password}' 1 ${host_address} '$password'"
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $join_domain_cmd
-
-  # Create pem file
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${host_cert_dir}/${no_auth_pem_name}
-  #create_pem_cmd="cat ${host_cert_dir}/${priv_key_name} > ${host_cert_dir}/${pem_name};
-  #  printf '\n' >> ${host_cert_dir}/${pem_name};
-  #  cat ${host_cert_dir}/${crt_name} >> ${host_cert_dir}/${pem_name};
-  #  cert_alias=\$(/usr/lib/vmware/vmafd/bin/vecs-cli entry list --store TRUSTED_ROOTS | grep \"Alias\" | cut -d: -f2);
-  #  for cert in \$cert_alias; do
-  #    echo \"Processing cert \$cert\";
-  #    printf '\n' >> ${host_cert_dir}/${pem_name};
-  #    /usr/lib/vmware/vmafd/bin/vecs-cli entry getcert --store TRUSTED_ROOTS --alias \$cert >> ${host_cert_dir}/${pem_name};
-  #  done"
-  create_pem_cmd="cat ${host_cert_dir}/${crt_name} ${host_cert_dir}/${priv_key_name} > ${host_cert_dir}/${pem_name}"
-  echo $create_pem_cmd
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $create_pem_cmd
 
   # Listing /etc/vmware/ssl contents after copying
   echo "listing ${host_cert_dir} contents after copying"
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls ${host_cert_dir}
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls -l ${host_cert_dir}
 
   # restart photon-controller-agent
   restart_agent_cmd="if [ -f /etc/init.d/photon-controller-agent ]; then /etc/init.d/photon-controller-agent restart; fi"
   echo $restart_agent_cmd
   sshpass -p "$password" ssh -tt $SSH_OPTS ${username}@${host_address} $restart_agent_cmd
-  echo "join_lightwave_domain completed"
 }
 
 function create_and_copy_certificate_no_auth() {
   cert_dir="./host_cert_no_auth_${host_address}"
   priv_key_path="${cert_dir}/${priv_key_name}"
   host_crt_path="${cert_dir}/${crt_name}"
-  host_pem_path="${cert_dir}/${pem_name}"
 
   if [ ! -d "$cert_dir" ]; then
     mkdir -p ${cert_dir}
 
     echo "Creating cert for ${host_address}"
     openssl req -subj '/CN=photon-controller.com/O=VMware Inc./C=US' -new -newkey rsa:1024 -days 1095 -nodes -x509 -keyout ${priv_key_path} -out ${host_crt_path}
-    cat ${host_crt_path} ${priv_key_path} > ${host_pem_path}
 
     # no need to import into keystore since in the non-auth case we accept any cert
   else
     echo "Use existing certs at ${cert_dir}"
   fi
 
-  sshpass -p "$password" scp $SSH_OPTS ${host_crt_path} ${username}@${host_address}:${host_cert_dir}
-  sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:${host_cert_dir}
+  sshpass -p "$password" scp $SSH_OPTS ${host_crt_path} ${username}@${host_address}:/tmp
+  sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:/tmp
 
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm ${host_cert_dir}/${pem_name}
-  sshpass -p "$password" scp $SSH_OPTS ${host_pem_path} ${username}@${host_address}:${host_cert_dir}/${no_auth_pem_name}
+  # apply new cert and notify affected services
+  apply_cert_cmd="/opt/vmware/photon/controller/sh/apply_cert.py ${host_address} '$password' /tmp/${crt_name} /tmp/${priv_key_name}"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $apply_cert_cmd
+
+  # clean up tmp files
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm /tmp/${crt_name} /tmp/${priv_key_name}
 
   # listing /etc/vmware/ssl contents after copying
   echo "listing ${host_cert_dir} contents after copying"
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls ${host_cert_dir}
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls -l ${host_cert_dir}
 
-  # restart all services to load new cert
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} /bin/services.sh restart
+  # restart photon-controller-agent
+  restart_agent_cmd="if [ -f /etc/init.d/photon-controller-agent ]; then /etc/init.d/photon-controller-agent restart; fi"
+  echo $restart_agent_cmd
+  sshpass -p "$password" ssh -tt $SSH_OPTS ${username}@${host_address} $restart_agent_cmd
 }
 
 sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} date
 echo "create_cert=${create_cert}, vib_path=${vib_path}"
 
+install_vib
+
 if [[ "$vib_path" == *"photon-controller-agent"* ]]; then
   if [ "$create_cert" != "true" ]; then
     create_and_copy_certificate_no_auth
   fi
-fi
-
-install_vib
-
-if [[ "$vib_path" == *"lightwave"* ]]; then
+elif [[ "$vib_path" == *"lightwave"* ]]; then
   if [ "$create_cert" == "true" ]; then
     join_lightwave_domain
   fi

@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.housekeeper.xenon.mock;
 
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.copy_image_call;
+
 import org.apache.thrift.async.AsyncMethodCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +30,11 @@ public class HostClientCopyImageErrorMock extends HostClientMock {
   }
 
   @Override
-  public void copyImage(String imageId, String source, String destination, AsyncMethodCallback callback) {
+  public void copyImage(
+      String imageId,
+      String source,
+      String destination,
+      AsyncMethodCallback<copy_image_call> callback) {
     logger.info("Host copyImage error invocation");
     callback.onError(new RuntimeException("copyImage error"));
   }

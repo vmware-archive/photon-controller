@@ -29,7 +29,8 @@ public class HealthCheckHelper {
   public HealthCheckHelper(
       final Service service,
       final ContainersConfig.ContainerType containerType,
-      final String ipAddress) {
+      final String ipAddress,
+      final boolean authEnabled) {
 
     switch (containerType) {
       case LoadBalancer:
@@ -37,7 +38,12 @@ public class HealthCheckHelper {
         break;
 
       case PhotonControllerCore:
-        this.healthChecker = new HttpBasedHealthChecker(HostUtils.getApiClient(service));
+        String protocol = "http";
+        if (authEnabled) {
+          protocol = "https";
+        }
+        this.healthChecker
+          = new XenonBasedHealthChecker(service, protocol, ipAddress, Constants.PHOTON_CONTROLLER_PORT);
         break;
 
       case Lightwave:

@@ -231,7 +231,8 @@ then
   # Restrict permission on the key files
   chmod 0400 /etc/keys/machine.privkey
   chmod 0444 /etc/keys/machine.pubkey
-
+  chmod 0600 /keystore.jks
+  chmod 0600 keystore.p12
 fi
 
 # Move vecs jar out of classpath

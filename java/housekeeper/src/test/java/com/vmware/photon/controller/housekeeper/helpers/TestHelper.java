@@ -29,7 +29,7 @@ public class TestHelper {
   public static String[] setupOperationContextIdCaptureOnSendRequest(ServiceHost host) {
     final String[] contextId = new String[1];
 
-    doAnswer(new Answer() {
+    doAnswer(new Answer<Object>() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
         Operation op = (Operation) invocation.getArguments()[0];

@@ -13,6 +13,8 @@
     "80": 80,
     "4343": 4343
   },
+  "udpPortBindings": {
+  },
   "volumeBindings": {
     "/var/log": "/var/log"
   },

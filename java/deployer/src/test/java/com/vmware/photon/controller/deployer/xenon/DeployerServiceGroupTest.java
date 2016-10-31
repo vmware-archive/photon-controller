@@ -26,7 +26,6 @@ import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
@@ -45,6 +44,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -81,7 +81,6 @@ public class DeployerServiceGroupTest {
   private HttpFileServiceClientFactory httpFileServiceClientFactory;
   private ListeningExecutorService listeningExecutorService;
   private ApiClientFactory apiClientFactory;
-  private DockerProvisionerFactory dockerProvisionerFactory;
   private AuthHelperFactory authHelperFactory;
   private HealthCheckHelperFactory healthCheckHelperFactory;
   private ServiceConfiguratorFactory serviceConfiguratorFactory;
@@ -138,7 +137,6 @@ public class DeployerServiceGroupTest {
       hostClientFactory = mock(HostClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
       apiClientFactory = mock(ApiClientFactory.class);
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       authHelperFactory = mock(AuthHelperFactory.class);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
@@ -164,7 +162,6 @@ public class DeployerServiceGroupTest {
 
       deployerServiceGroup = new DeployerServiceGroup(
           deployerTestConfig.getDeployerContext(),
-          dockerProvisionerFactory,
           apiClientFactory,
           deployerTestConfig.getContainersConfig(),
           listeningExecutorService,
@@ -210,7 +207,6 @@ public class DeployerServiceGroupTest {
 
       deployerServiceGroup = new DeployerServiceGroup(
           deployerTestConfig.getDeployerContext(),
-          dockerProvisionerFactory,
           apiClientFactory,
           deployerTestConfig.getContainersConfig(),
           listeningExecutorService,
@@ -254,7 +250,6 @@ public class DeployerServiceGroupTest {
       hostClientFactory = mock(HostClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
       apiClientFactory = mock(ApiClientFactory.class);
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       authHelperFactory = mock(AuthHelperFactory.class);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
@@ -279,7 +274,6 @@ public class DeployerServiceGroupTest {
 
       deployerServiceGroup = new DeployerServiceGroup(
           deployerTestConfig.getDeployerContext(),
-          dockerProvisionerFactory,
           apiClientFactory,
           deployerTestConfig.getContainersConfig(),
           listeningExecutorService,
@@ -344,7 +338,6 @@ public class DeployerServiceGroupTest {
       hostClientFactory = mock(HostClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
       apiClientFactory = mock(ApiClientFactory.class);
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       authHelperFactory = mock(AuthHelperFactory.class);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
@@ -369,7 +362,6 @@ public class DeployerServiceGroupTest {
 
       deployerServiceGroup = new DeployerServiceGroup(
           deployerTestConfig.getDeployerContext(),
-          dockerProvisionerFactory,
           apiClientFactory,
           deployerTestConfig.getContainersConfig(),
           listeningExecutorService,
@@ -427,7 +419,6 @@ public class DeployerServiceGroupTest {
       hostClientFactory = mock(HostClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
       apiClientFactory = mock(ApiClientFactory.class);
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       authHelperFactory = mock(AuthHelperFactory.class);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
@@ -460,7 +451,6 @@ public class DeployerServiceGroupTest {
 
       deployerServiceGroup = new DeployerServiceGroup(
           null,
-          dockerProvisionerFactory,
           apiClientFactory,
           null,
           listeningExecutorService,
@@ -493,7 +483,6 @@ public class DeployerServiceGroupTest {
 
       DeployerServiceGroup deployerServiceGroup2 = new DeployerServiceGroup(
           null,
-          dockerProvisionerFactory,
           apiClientFactory,
           null,
           listeningExecutorService,

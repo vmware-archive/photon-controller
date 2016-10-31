@@ -77,7 +77,7 @@ public class ClusterWaitTaskServiceTest {
     ClusterWaitTaskService.State startState = new ClusterWaitTaskService.State();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
 
-    startState.nodeAddresses = new ArrayList();
+    startState.nodeAddresses = new ArrayList<String>();
     startState.nodeAddresses.add("10.146.22.40");
     startState.nodeAddresses.add("10.146.22.41");
     startState.nodeAddresses.add("10.146.22.42");
@@ -383,6 +383,7 @@ public class ClusterWaitTaskServiceTest {
       testEnvironment.stop();
     }
 
+    @SuppressWarnings("unchecked")
     @Test(dataProvider = "nodeTypes")
     public void testEndToEndSuccess(NodeType nodeType) throws Throwable {
       startState = buildValidStartState(null, nodeType);
@@ -390,7 +391,7 @@ public class ClusterWaitTaskServiceTest {
       startState.maxApiCallPollIterations = 3;
       startState.apiCallPollDelay = 10;
 
-      final Set<String> nodeAddresses = new HashSet();
+      final Set<String> nodeAddresses = new HashSet<String>();
       for (String address : startState.nodeAddresses) {
         nodeAddresses.add(address);
       }
@@ -434,6 +435,7 @@ public class ClusterWaitTaskServiceTest {
       };
     }
 
+    @SuppressWarnings("unchecked")
     @Test(dataProvider = "nodeTypes")
     public void testWaitFailure(NodeType nodeType) throws Throwable {
       startState = buildValidStartState(null, nodeType);
@@ -441,7 +443,7 @@ public class ClusterWaitTaskServiceTest {
       startState.maxApiCallPollIterations = 3;
       startState.apiCallPollDelay = 10;
 
-      final Set<String> nodeAddresses = new HashSet();
+      final Set<String> nodeAddresses = new HashSet<String>();
 
       doAnswer(invocation -> {
         ((FutureCallback<Set<String>>) invocation.getArguments()[1]).onSuccess(nodeAddresses);

@@ -11,6 +11,8 @@
     "9000": 9000,
     "19000": 19000
   },
+  "udpPortBindings": {
+  },
   "volumeBindings": {
     "/var/log": "/var/log",
     "/var/esxcloud/packages":"/var/esxcloud/packages",

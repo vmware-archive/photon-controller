@@ -20,7 +20,7 @@ RUN ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key
 
 # configure journald
 RUN sed -i 's/#Storage=auto/Storage=persistent/' /etc/systemd/journald.conf
-
+RUN sed -i 's/^jdk.tls.disabledAlgorithms=/jdk.tls.disabledAlgorithms=TLSv1.1, TLSv1, /' ./var/opt/OpenJDK-*/jre/lib/security/java.security
 # install lightwave
 RUN tdnf install -y procps-ng; \
     tdnf install -y likewise-open; \

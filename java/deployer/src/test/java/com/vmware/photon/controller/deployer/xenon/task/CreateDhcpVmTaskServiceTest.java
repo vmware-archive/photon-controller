@@ -451,14 +451,13 @@ public class CreateDhcpVmTaskServiceTest {
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
       healthChecker = mock(XenonBasedHealthChecker.class);
       doReturn(healthChecker).when(healthCheckHelperFactory)
-          .create(any(Service.class), anyInt(), anyString());
+          .create(any(Service.class), anyString(), anyInt(), anyString());
 
 
       testEnvironment = new TestEnvironment.Builder()
           .apiClientFactory(apiClientFactory)
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
           .deployerContext(deployerTestConfig.getDeployerContext())
-          .dockerProvisionerFactory(null)
           .hostCount(1)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)

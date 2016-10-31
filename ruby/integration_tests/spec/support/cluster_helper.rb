@@ -97,7 +97,7 @@ module EsxCloud
             "container_network" => "10.2.0.0/16",
             "etcd_ip1" => etcd_ip,
             "ssh_key" => public_key_contents,
-            "ca_cert" => ca_cert
+            "registry_ca_cert" => ca_cert
         }
         return props
       end

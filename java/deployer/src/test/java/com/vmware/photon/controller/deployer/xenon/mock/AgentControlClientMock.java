@@ -67,13 +67,12 @@ public class AgentControlClientMock extends AgentControlClient {
       String hostAddress,
       int hostPort,
       double memoryOvercommit,
-      String loggingEndpoint,
-      String logLevel,
       StatsPluginConfig statsPluginConfig,
       boolean managementOnly,
       String ntpEndpoint,
       String hostId,
       String deploymentId,
+      boolean authEnabled,
       AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call> handler) {
 
     logger.info("Host provision complete invocation");

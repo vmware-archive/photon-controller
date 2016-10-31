@@ -57,12 +57,9 @@ SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
 echo "Creating cert for ${ESX_IP}"
 openssl req -subj "/CN=${ESX_IP}/O=VMware Inc./C=US" -new -newkey rsa:1024 -days 1095 -nodes -x509 -keyout rui.key -out rui.crt
-cat rui.crt rui.key > no-auth.pem
 SSL_CERT_FILE=$PWD/rui.crt
 sshpass -p "$ESX_PWD" scp $SSH_OPTS rui.crt root@${ESX_IP}:/etc/vmware/ssl
 sshpass -p "$ESX_PWD" scp $SSH_OPTS rui.key root@${ESX_IP}:/etc/vmware/ssl
-sshpass -p "$ESX_PWD" scp $SSH_OPTS no-auth.pem root@${ESX_IP}:/etc/vmware/ssl
-sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'rm /etc/vmware/ssl/rui.pem' || true
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP '/bin/services.sh restart'
 
 sshpass -p "$ESX_PWD" ssh $SSH_OPTS root@$ESX_IP 'rm /tmp/*.vib' || true

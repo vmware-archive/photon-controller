@@ -396,8 +396,8 @@ public class ServiceHostUtilsTest {
       verify(host).registerForServiceAvailability(any(Operation.CompletionHandler.class), eq("/test"), eq("/test2"));
     }
 
-    private Answer buildRegisterForServiceAvailabilityAnswer(final Throwable t) {
-      return new Answer() {
+    private Answer<?> buildRegisterForServiceAvailabilityAnswer(final Throwable t) {
+      return new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Operation.CompletionHandler handler = (Operation.CompletionHandler) invocation.getArguments()[0];

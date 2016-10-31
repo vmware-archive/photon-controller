@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api.frontend.clients;
 
+import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.clients.status.StatusProviderFactory;
 import com.vmware.photon.controller.api.frontend.clients.status.XenonStatusProvider;
 import com.vmware.photon.controller.api.frontend.clients.status.XenonStatusProviderFactory;
@@ -26,11 +27,16 @@ import com.vmware.photon.controller.common.thrift.ClientProxy;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
+import com.vmware.xenon.services.common.NodeGroupService;
+import com.vmware.xenon.services.common.NodeState;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.mockito.Matchers;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
@@ -41,11 +47,13 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -68,12 +76,15 @@ public class StatusFeClientTest {
 
   private List<StatusProvider> photonControllerClients;
 
-  private ServerSet photonControllerServerSet = mock(StaticServerSet.class);
-
   private ExecutorService executor = Executors.newFixedThreadPool(5);
+
+  private ApiFeXenonRestClient xenonClient;
+  private BasicServiceHost host;
 
   @BeforeMethod
   public void setup() throws Throwable {
+    xenonClient = mock(ApiFeXenonRestClient.class);
+
     statusConfig = new StatusConfig();
     statusConfig.setComponents(
         ImmutableList.of("photon-controller"));
@@ -186,16 +197,17 @@ public class StatusFeClientTest {
   }
 
   private void prepareStatusFeClient() throws Throwable {
-    BasicServiceHost host = new BasicServiceHost();
+    host = new BasicServiceHost();
     client = new StatusFeClient(
         executor,
         Executors.newScheduledThreadPool(1),
-        photonControllerServerSet,
-        statusConfig, host);
+        statusConfig,
+        host,
+        xenonClient);
 
     Map<Component, StatusProviderFactory> statusProviderFactories = client.getStatusProviderFactories();
     StatusProviderFactory photonControllerClientFactory = spy(new XenonStatusProviderFactory(
-        photonControllerServerSet, executor, Executors.newScheduledThreadPool(1), host));
+        new StaticServerSet(), executor, Executors.newScheduledThreadPool(1), host));
     setupStatusProviderFactory(photonControllerClientFactory, photonControllerClients);
     statusProviderFactories.put(Component.PHOTON_CONTROLLER, photonControllerClientFactory);
   }
@@ -215,17 +227,24 @@ public class StatusFeClientTest {
     }
   }
 
-  private void createServerSet() {
+  private void createServerSet() throws Exception, DocumentNotFoundException {
     servers = new ArrayList<>();
     serverSet = new HashSet<>();
 
+    NodeGroupService.NodeGroupState nodeGroupState = new NodeGroupService.NodeGroupState();
     for (int i = 0; i < SERVER_COUNT; i++) {
       InetSocketAddress server = new InetSocketAddress("192.168.1." + i, 256);
       servers.add(server);
       serverSet.add(server);
+
+      NodeState nodeState = new NodeState();
+      nodeState.groupReference = new URI("http", null, server.getHostString(), server.getPort(), null, null, null);
+      nodeGroupState.nodes.put(UUID.randomUUID().toString(), nodeState);
     }
 
-    when(photonControllerServerSet.getServers()).thenReturn(serverSet);
+    com.vmware.xenon.common.Operation serviceOp = mock(com.vmware.xenon.common.Operation.class);
+    when(serviceOp.getBody(Matchers.any())).thenReturn(nodeGroupState);
+    when(xenonClient.get(ServiceUriPaths.DEFAULT_NODE_GROUP)).thenReturn(serviceOp);
   }
 
   private void mockClientPools() {

@@ -52,8 +52,6 @@ import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFa
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
@@ -79,20 +77,17 @@ import com.vmware.photon.controller.resource.gen.DatastoreType;
 import com.vmware.photon.controller.resource.gen.Network;
 import com.vmware.xenon.common.Service;
 
-import com.github.dockerjava.api.DockerException;
 import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.thrift.async.AsyncMethodCallback;
 import org.mockito.ArgumentMatcher;
-import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.powermock.api.mockito.PowerMockito;
+
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -185,21 +180,6 @@ public class MockHelper {
     return () -> returnCode;
   }
 
-  public static void mockCreateContainer(DockerProvisionerFactory dockerProvisionerFactory, boolean isSuccess) throws
-      Throwable {
-    DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
-    when(dockerProvisionerFactory.create(anyString())).thenReturn(dockerProvisioner);
-    if (isSuccess) {
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
-          Matchers.<String>anyVararg())).thenReturn("id");
-    } else {
-      when(dockerProvisioner.launchContainer(anyString(), anyString(), anyInt(), anyLong(), anyMap(), anyMap(),
-          anyString(), anyBoolean(), anyMap(), anyBoolean(), anyBoolean(),
-          Matchers.<String>anyVararg())).thenThrow(new DockerException("Start container " + "failed", 500));
-    }
-  }
-
   public static void mockAuthHelper(AuthClientHandler.ImplicitClient implicitClient,
                                     AuthHelperFactory authHelperFactory, boolean isSuccess) throws Throwable {
     AuthHelper authHelper = mock(AuthHelper.class);
@@ -227,7 +207,8 @@ public class MockHelper {
     PowerMockito.when(healthCheckHelper.getHealthChecker()).thenReturn(healthChecker);
 
     when(healthCheckHelperFactory.create(
-        any(Service.class), any(ContainersConfig.ContainerType.class), anyString())).thenReturn(healthCheckHelper);
+        any(Service.class), any(ContainersConfig.ContainerType.class), anyString(), anyBoolean()))
+      .thenReturn(healthCheckHelper);
   }
 
   public static void mockCreateScriptFile(DeployerContext deployerContext, String scriptName, boolean isSuccess) throws
@@ -277,7 +258,7 @@ public class MockHelper {
 
     return (invocation) -> {
       AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call> callback =
-          ((AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call>) invocation.getArguments()[13]);
+          ((AsyncMethodCallback<AgentControl.AsyncSSLClient.provision_call>) invocation.getArguments()[12]);
       AgentControl.AsyncSSLClient.provision_call provisionCall = mock(AgentControl.AsyncSSLClient.provision_call.class);
       ProvisionResponse provisionResponse = new ProvisionResponse(resultCode);
       doReturn(provisionResponse).when(provisionCall).getResult();
@@ -423,6 +404,7 @@ public class MockHelper {
     return mockCreateFlavorAsync(TestHelper.createTask(taskId, entityId, state));
   }
 
+  @SuppressWarnings("unchecked")
   public static Answer<Task> mockCreateFlavorAsync(Task returnValue) {
     return (invocation) -> {
       ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(returnValue);
@@ -434,6 +416,7 @@ public class MockHelper {
     return mockCreateProjectAsync(TestHelper.createTask(taskId, entityId, state));
   }
 
+  @SuppressWarnings("unchecked")
   public static Answer<Task> mockCreateProjectAsync(Task returnValue) {
     return (invocation) -> {
       ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(returnValue);
@@ -445,6 +428,7 @@ public class MockHelper {
     return mockCreateResourceTicketAsync(TestHelper.createTask(taskId, entityId, state));
   }
 
+  @SuppressWarnings("unchecked")
   public static Answer<Task> mockCreateResourceTicketAsync(Task returnValue) {
     return (invocation) -> {
       ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(returnValue);
@@ -456,6 +440,7 @@ public class MockHelper {
     return mockCreateTenantAsync(TestHelper.createTask(taskId, entityId, state));
   }
 
+  @SuppressWarnings("unchecked")
   public static Answer<Task> mockCreateTenantAsync(Task returnValue) {
     return (invocation) -> {
       ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(returnValue);
@@ -508,6 +493,7 @@ public class MockHelper {
     return mockGetTaskAsync(TestHelper.createTask(taskId, entityId, state));
   }
 
+  @SuppressWarnings("unchecked")
   public static Answer<Task> mockGetTaskAsync(Task returnValue) {
     return (invocation) -> {
       ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(returnValue);
@@ -527,6 +513,7 @@ public class MockHelper {
     };
   }
 
+  @SuppressWarnings("unchecked")
   public static void mockApiClient(ApiClientFactory apiClientFactory, MultiHostEnvironment<?> machine, boolean
       isSuccess) throws Throwable {
     ApiClient apiClient = mock(ApiClient.class);
@@ -583,7 +570,7 @@ public class MockHelper {
 
     if (isSuccess) {
       // Create project
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByCreateProject);
@@ -593,7 +580,7 @@ public class MockHelper {
           any(String.class), any(ProjectCreateSpec.class), any(FutureCallback.class));
 
       // Create resource ticket
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByCreateResourceTicket);
@@ -603,7 +590,7 @@ public class MockHelper {
           any(String.class), any(ResourceTicketCreateSpec.class), any(FutureCallback.class));
 
       // Create tenant
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByCreateTenant);
@@ -620,7 +607,7 @@ public class MockHelper {
         }
       };
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByCreateManagementVmFlavor);
@@ -637,7 +624,7 @@ public class MockHelper {
         }
       };
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByCreateClusterMasterVmFlavor);
@@ -653,7 +640,7 @@ public class MockHelper {
         }
       };
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByCreateClusterMasterVmFlavor);
@@ -670,7 +657,7 @@ public class MockHelper {
         }
       };
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByCreateManagementVmDiskFlavor);
@@ -687,7 +674,7 @@ public class MockHelper {
         }
       };
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByCreateClusterVmDiskFlavor);
@@ -696,7 +683,7 @@ public class MockHelper {
       }).when(flavorApi).createAsync(argThat(clusterVmDiskFlavorSpecMatcher), any(FutureCallback.class));
 
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByPerformVmOperation);
@@ -710,7 +697,7 @@ public class MockHelper {
       // Upload image
       doReturn(taskReturnedByUploadManagementImage).
           when(imagesApi).uploadImage(any(FileBody.class), anyString());
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Image>) invocation.getArguments()[1]).onSuccess(imageReturnedByGetImageAsync);
@@ -719,7 +706,7 @@ public class MockHelper {
       }).when(imagesApi).getImageAsync(anyString(), any(FutureCallback.class));
 
       // Create VM
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByCreateVm);
@@ -728,7 +715,7 @@ public class MockHelper {
       }).when(projectApi).createVmAsync(any(String.class), any(VmCreateSpec.class), any(FutureCallback.class));
 
       // Set metadata
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedBySetMetadata);
@@ -747,6 +734,7 @@ public class MockHelper {
     doReturn(apiClient).when(apiClientFactory).create(any(String.class));
   }
 
+  @SuppressWarnings("unchecked")
   public static void mockServiceConfigurator(ServiceConfiguratorFactory serviceConfiguratorFactory, boolean
       isSuccess) throws Throwable {
     ServiceConfigurator serviceConfigurator = mock(ServiceConfigurator.class);

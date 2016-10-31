@@ -728,7 +728,6 @@ public class RemoveDeploymentWorkflowServiceTest {
           .hostClientFactory(hostClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .apiClientFactory(apiClientFactory)
-          .dockerProvisionerFactory(null)
           .cloudServerSet(cloudStoreTestEnvironment.getServerSet())
           .hostCount(hostCount)
           .build();
@@ -753,6 +752,7 @@ public class RemoveDeploymentWorkflowServiceTest {
           NUMBER_OF_MGMT_AND_CLOUD_HOST);
     }
 
+    @SuppressWarnings("unchecked")
     private void mockApiClient(boolean isSuccess) throws Throwable {
 
       ApiClient apiClient = mock(ApiClient.class);
@@ -810,7 +810,7 @@ public class RemoveDeploymentWorkflowServiceTest {
 
       if (isSuccess) {
         // List all tenants
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<ResourceList<Tenant>>) invocation.getArguments()[0]).onSuccess
@@ -821,7 +821,7 @@ public class RemoveDeploymentWorkflowServiceTest {
             any(FutureCallback.class));
 
         // List all projects
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<ResourceList<Project>>) invocation.getArguments()[1]).onSuccess
@@ -831,7 +831,7 @@ public class RemoveDeploymentWorkflowServiceTest {
         }).when(tenantsApi).getProjectsAsync(any(String.class), any(FutureCallback.class));
 
         // List all vms
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<ResourceList<FlavoredCompact>>) invocation.getArguments()[1]).onSuccess
@@ -841,7 +841,7 @@ public class RemoveDeploymentWorkflowServiceTest {
         }).when(projectApi).getVmsInProjectAsync(any(String.class), any(FutureCallback.class));
 
         // List all disks
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<ResourceList<PersistentDisk>>) invocation.getArguments()[1]).onSuccess
@@ -851,7 +851,7 @@ public class RemoveDeploymentWorkflowServiceTest {
         }).when(projectApi).getDisksInProjectAsync(any(String.class), any(FutureCallback.class));
 
         // List all images
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<ResourceList<Image>>) invocation.getArguments()[0]).onSuccess
@@ -861,7 +861,7 @@ public class RemoveDeploymentWorkflowServiceTest {
         }).when(imagesApi).getImagesAsync(any(FutureCallback.class));
 
         // List all flavors
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<ResourceList<Flavor>>) invocation.getArguments()[0]).onSuccess
@@ -871,7 +871,7 @@ public class RemoveDeploymentWorkflowServiceTest {
         }).when(flavorApi).listAllAsync(any(FutureCallback.class));
 
         // Delete project
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByDeleteProject);
@@ -881,7 +881,7 @@ public class RemoveDeploymentWorkflowServiceTest {
             any(String.class), any(FutureCallback.class));
 
         // Delete tenant
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByDeleteTenant);
@@ -890,7 +890,7 @@ public class RemoveDeploymentWorkflowServiceTest {
         }).when(tenantsApi).deleteAsync(any(String.class), any(FutureCallback.class));
 
         // Perform start operation
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByStopVm);
@@ -900,7 +900,7 @@ public class RemoveDeploymentWorkflowServiceTest {
             .class));
 
         // Perform stop operation
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByStopVm);
@@ -910,7 +910,7 @@ public class RemoveDeploymentWorkflowServiceTest {
             .class));
 
         // Delete VM flavor
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByDeleteVmFlavor);
@@ -919,7 +919,7 @@ public class RemoveDeploymentWorkflowServiceTest {
         }).when(flavorApi).deleteAsync(any(String.class), any(FutureCallback.class));
 
         // Delete VM
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByDeleteVm);
@@ -928,7 +928,7 @@ public class RemoveDeploymentWorkflowServiceTest {
         }).when(vmApi).deleteAsync(any(String.class), any(FutureCallback.class));
 
         // Detach disk
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByDetachDiskOperation);
@@ -937,7 +937,7 @@ public class RemoveDeploymentWorkflowServiceTest {
         }).when(vmApi).detachDiskAsync(anyString(), any(VmDiskOperation.class), any(FutureCallback.class));
 
         // Delete disk
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByDeleteDisk);
@@ -947,7 +947,7 @@ public class RemoveDeploymentWorkflowServiceTest {
 
 
         // Delete image
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByDeleteImage);
@@ -955,7 +955,7 @@ public class RemoveDeploymentWorkflowServiceTest {
           }
         }).when(imagesApi).deleteAsync(anyString(), any(FutureCallback.class));
       } else {
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Object>() {
           @Override
           public Object answer(InvocationOnMock invocation) throws Throwable {
             ((FutureCallback<ResourceList<Tenant>>) invocation.getArguments()[0]).onFailure(new Exception

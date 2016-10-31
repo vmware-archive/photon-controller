@@ -42,6 +42,16 @@
     {
       "type": "shell",
       "inline": "/tmp/scripts/setup-root-user.sh"
+    },
+    {
+      "type": "file",
+      "source": "../scripts/check-docker.sh",
+      "destination": "/root/check-docker.sh"
+    },
+    {
+      "type": "file",
+      "source": "../scripts/setup-static-ip.sh",
+      "destination": "/root/setup-static-ip.sh"
     }
   ]
 }

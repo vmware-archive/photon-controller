@@ -32,7 +32,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
@@ -69,6 +68,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -612,7 +612,6 @@ public class AddManagementHostWorkflowServiceTest {
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private ListeningExecutorService listeningExecutorService;
     private ApiClientFactory apiClientFactory;
-    private DockerProvisionerFactory dockerProvisionerFactory;
     private AuthHelperFactory authHelperFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
     private ServiceConfiguratorFactory serviceConfiguratorFactory;
@@ -652,7 +651,6 @@ public class AddManagementHostWorkflowServiceTest {
       containersConfig = deployerTestConfig.getContainersConfig();
       authHelperFactory = mock(AuthHelperFactory.class);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
       MockHelper.mockServiceConfigurator(serviceConfiguratorFactory, true);
     }
@@ -665,7 +663,6 @@ public class AddManagementHostWorkflowServiceTest {
           .authHelperFactory(authHelperFactory)
           .containersConfig(containersConfig)
           .deployerContext(context)
-          .dockerProvisionerFactory(dockerProvisionerFactory)
           .apiClientFactory(apiClientFactory)
           .healthCheckerFactory(healthCheckHelperFactory)
           .agentControlClientFactory(agentControlClientFactory)
@@ -673,7 +670,7 @@ public class AddManagementHostWorkflowServiceTest {
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
-          .bindPort(20011)
+          .bindPort(60011)
           .hostCount(1)
           .build();
 
@@ -681,7 +678,6 @@ public class AddManagementHostWorkflowServiceTest {
           .authHelperFactory(authHelperFactory)
           .containersConfig(containersConfig)
           .deployerContext(context)
-          .dockerProvisionerFactory(dockerProvisionerFactory)
           .apiClientFactory(apiClientFactory)
           .healthCheckerFactory(healthCheckHelperFactory)
           .agentControlClientFactory(agentControlClientFactory)
@@ -689,7 +685,7 @@ public class AddManagementHostWorkflowServiceTest {
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
-          .bindPort(40011)
+          .bindPort(60015)
           .hostCount(remoteNodeCount)
           .build();
     }
@@ -708,7 +704,6 @@ public class AddManagementHostWorkflowServiceTest {
 
       authHelperFactory = null;
       containersConfig = null;
-      dockerProvisionerFactory = null;
       apiClientFactory = null;
       healthCheckHelperFactory = null;
       agentControlClientFactory = null;
@@ -743,7 +738,6 @@ public class AddManagementHostWorkflowServiceTest {
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
-      MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
 
@@ -841,7 +835,6 @@ public class AddManagementHostWorkflowServiceTest {
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
-      MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
 
@@ -874,7 +867,6 @@ public class AddManagementHostWorkflowServiceTest {
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
-      MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
 
@@ -907,7 +899,6 @@ public class AddManagementHostWorkflowServiceTest {
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
-      MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, false);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
 

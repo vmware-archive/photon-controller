@@ -99,6 +99,7 @@ apife:
     validateCerts: false
     supportedProtocols: [TLSv1.2]
     excludedProtocols: [TLSv1, SSLv2Hello, SSLv3, TLSv1.1]
+    allowRenegotiation: false
 {{/ENABLE_AUTH}}
 
 use_virtual_network: {{{USE_VIRTUAL_NETWORK}}}

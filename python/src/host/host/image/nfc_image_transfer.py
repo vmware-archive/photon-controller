@@ -13,7 +13,7 @@ import logging
 
 import os
 
-from agent.agent import SSL_CERT_FILE, NO_AUTH_CERT_FILE
+from agent.agent import SSL_CERT_FILE, SSL_KEY_FILE, CA_PATH, SSL_CIPHERS
 from common.photon_thrift.direct_client import DirectClient
 from gen.host import Host
 from gen.host.ttypes import CreateImageRequest
@@ -35,21 +35,23 @@ from host.hypervisor.esx.path_util import vmdk_add_suffix
 class NfcImageTransferer(object):
     """ Class for handling NFC-based image transfers between ESX hosts. """
 
-    def __init__(self, host_client):
+    def __init__(self, host_client, auth_enabled):
         self._logger = logging.getLogger(__name__)
         self._host_client = host_client
+        self._auth_enabled = auth_enabled
 
     def send_image_to_host(self, source_image_id, source_datastore,
                            destination_image_id, destination_datastore,
                            destination_host, destination_port):
         self._logger.info("transfer_image: connecting to remote agent")
-        if os.path.isfile(NO_AUTH_CERT_FILE):
+        if self._auth_enabled:
             remote_agent_client = DirectClient("Host", Host.Client, destination_host, destination_port, 60,
-                                               NO_AUTH_CERT_FILE, False)
+                                               certfile=SSL_CERT_FILE, keyfile=SSL_KEY_FILE, capath=CA_PATH,
+                                               ciphers=SSL_CIPHERS, validate=True)
         else:
-            # TODO: need to enable certificate validation
             remote_agent_client = DirectClient("Host", Host.Client, destination_host, destination_port, 60,
-                                               SSL_CERT_FILE, False)
+                                               validate=False)
+
         remote_agent_client.connect()
 
         self._logger.info("transfer_image: getting ticket")

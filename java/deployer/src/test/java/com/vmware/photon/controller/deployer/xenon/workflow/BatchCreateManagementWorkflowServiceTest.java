@@ -42,7 +42,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -75,6 +74,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -451,12 +451,9 @@ public class BatchCreateManagementWorkflowServiceTest {
     private static final String configFilePath = "/config.yml";
     private final File storageDirectory = new File("/tmp/createIso");
 
-    private static final String scriptFileName = "untar-image";
-
     private TestEnvironment machine;
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private ListeningExecutorService listeningExecutorService;
-    private DockerProvisionerFactory dockerProvisionerFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
 
     private BatchCreateManagementWorkflowService.State startState;
@@ -498,7 +495,6 @@ public class BatchCreateManagementWorkflowServiceTest {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
 
       deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine).documentSelfLink;
@@ -663,7 +659,7 @@ public class BatchCreateManagementWorkflowServiceTest {
     @Test(dataProvider = "hostCounts")
     public void testEndToEndSuccess(Integer hostCount) throws Throwable {
       machine = createTestEnvironment(deployerContext, listeningExecutorService, apiClientFactory,
-          dockerProvisionerFactory, healthCheckHelperFactory, serviceConfiguratorFactory, containersConfig, hostCount);
+          healthCheckHelperFactory, serviceConfiguratorFactory, containersConfig, hostCount);
 
       mockSuccessFulCreateManagementVmWorkFlow();
 
@@ -680,7 +676,7 @@ public class BatchCreateManagementWorkflowServiceTest {
     @Test(dataProvider = "hostCounts")
     public void testEndToEndFailsWhenUploadImageFails(Integer hostCount) throws Throwable {
       machine = createTestEnvironment(deployerContext, listeningExecutorService, apiClientFactory,
-          dockerProvisionerFactory, healthCheckHelperFactory, serviceConfiguratorFactory, containersConfig, hostCount);
+          healthCheckHelperFactory, serviceConfiguratorFactory, containersConfig, hostCount);
 
       BatchCreateManagementWorkflowService.State finalState =
           machine.callServiceAndWaitForState(
@@ -705,13 +701,13 @@ public class BatchCreateManagementWorkflowServiceTest {
       mockSuccessfulCreateIso();
       mockSuccessfulStartVm();
       mockSuccessfulVmCreate();
-      MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
     }
 
+    @SuppressWarnings("unchecked")
     private void mockSuccessfulUploadImage() throws Throwable {
       doReturn(taskReturnedByUploadImage).when(imagesApi).uploadImage(any(FileBody.class), anyString());
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByGetUploadImageTask);
@@ -723,9 +719,10 @@ public class BatchCreateManagementWorkflowServiceTest {
           .getImageAsync(anyString(), Matchers.<FutureCallback<Image>>any());
     }
 
+    @SuppressWarnings("unchecked")
     private void mockSuccessfulAllocateResources() throws Throwable {
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByCreateProject);
@@ -734,7 +731,7 @@ public class BatchCreateManagementWorkflowServiceTest {
       }).when(tenantsApi).createProjectAsync(
           any(String.class), any(ProjectCreateSpec.class), any(FutureCallback.class));
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByCreateResourceTicket);
@@ -743,7 +740,7 @@ public class BatchCreateManagementWorkflowServiceTest {
       }).when(tenantsApi).createResourceTicketAsync(
           any(String.class), any(ResourceTicketCreateSpec.class), any(FutureCallback.class));
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByCreateTenant);
@@ -759,7 +756,7 @@ public class BatchCreateManagementWorkflowServiceTest {
         }
       };
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByCreateVmFlavor);
@@ -767,7 +764,7 @@ public class BatchCreateManagementWorkflowServiceTest {
         }
       }).when(flavorApi).createAsync(argThat(vmFlavorSpecMatcher), any(FutureCallback.class));
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByGetCreateVmFlavorTask);
@@ -783,7 +780,7 @@ public class BatchCreateManagementWorkflowServiceTest {
         }
       };
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByCreateDiskFlavor);
@@ -791,7 +788,7 @@ public class BatchCreateManagementWorkflowServiceTest {
         }
       }).when(flavorApi).createAsync(argThat(diskFlavorSpecMatcher), any(FutureCallback.class));
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(taskReturnedByGetCreateDiskFlavorTask);
@@ -800,11 +797,12 @@ public class BatchCreateManagementWorkflowServiceTest {
       }).when(tasksApi).getTaskAsync(eq("createDiskFlavorTaskId"), any(FutureCallback.class));
     }
 
+    @SuppressWarnings("unchecked")
     private void mockSuccessfulStartVm() throws Throwable {
       final Task performOperationReturnValue = new Task();
       performOperationReturnValue.setState("COMPLETED");
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[1]).onSuccess(performOperationReturnValue);
@@ -813,6 +811,7 @@ public class BatchCreateManagementWorkflowServiceTest {
       }).when(vmApi).performStartOperationAsync(anyString(), any(FutureCallback.class));
     }
 
+    @SuppressWarnings("unchecked")
     private void mockSuccessfulCreateIso() throws Throwable {
       String scriptFileName = "esx-create-vm-iso";
       TestHelper.createSuccessScriptFile(deployerContext, scriptFileName);
@@ -824,8 +823,9 @@ public class BatchCreateManagementWorkflowServiceTest {
           .ContainerType.class), any(Map.class));
     }
 
+    @SuppressWarnings("unchecked")
     private void mockSuccessfulVmCreate() throws Throwable {
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedByCreateVm);
@@ -833,7 +833,7 @@ public class BatchCreateManagementWorkflowServiceTest {
         }
       }).when(projectApi).createVmAsync(any(String.class), any(VmCreateSpec.class), any(FutureCallback.class));
 
-      doAnswer(new Answer() {
+      doAnswer(new Answer<Object>() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           ((FutureCallback<Task>) invocation.getArguments()[2]).onSuccess(taskReturnedBySetMetadata);
@@ -869,7 +869,6 @@ public class BatchCreateManagementWorkflowServiceTest {
         DeployerContext deployerContext,
         ListeningExecutorService listeningExecutorService,
         ApiClientFactory apiClientFactory,
-        DockerProvisionerFactory dockerProvisionerFactory,
         HealthCheckHelperFactory healthCheckHelperFactory,
         ServiceConfiguratorFactory serviceConfiguratorFactory,
         ContainersConfig containersConfig,
@@ -878,7 +877,6 @@ public class BatchCreateManagementWorkflowServiceTest {
 
       return new TestEnvironment.Builder()
           .deployerContext(deployerContext)
-          .dockerProvisionerFactory(dockerProvisionerFactory)
           .apiClientFactory(apiClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .healthCheckerFactory(healthCheckHelperFactory)
