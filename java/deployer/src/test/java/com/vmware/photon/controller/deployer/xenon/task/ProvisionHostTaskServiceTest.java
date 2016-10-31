@@ -31,8 +31,6 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
-import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
@@ -82,8 +80,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.testng.Assert.assertTrue;
-
-import javax.net.ssl.HttpsURLConnection;
 
 import java.io.File;
 import java.io.IOException;
@@ -350,8 +346,6 @@ public class ProvisionHostTaskServiceTest {
     private HostClient hostClient;
     private HostClientFactory hostClientFactory;
     private HostService.State hostState;
-    private HttpFileServiceClient httpFileServiceClient;
-    private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private ListeningExecutorService listeningExecutorService;
     private NsxClientFactory nsxClientFactory;
     private ProvisionHostTaskService.State startState;
@@ -372,7 +366,6 @@ public class ProvisionHostTaskServiceTest {
       deployerContext = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource("/config.yml").getPath()).getDeployerContext();
       hostClientFactory = mock(HostClientFactory.class);
-      httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       nsxClientFactory = mock(NsxClientFactory.class);
 
@@ -386,7 +379,6 @@ public class ProvisionHostTaskServiceTest {
           .deployerContext(deployerContext)
           .hostClientFactory(hostClientFactory)
           .hostCount(1)
-          .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .nsxClientFactory(nsxClientFactory)
           .build();
@@ -401,6 +393,7 @@ public class ProvisionHostTaskServiceTest {
 
       TestHelper.createSuccessScriptFile(deployerContext, ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME);
       TestHelper.createSuccessScriptFile(deployerContext, ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME);
+      TestHelper.createSuccessScriptFile(deployerContext, UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME);
 
       TestHelper.createSourceFile("vib1.vib", vibDirectory);
       TestHelper.createSourceFile("vib2.vib", vibDirectory);
@@ -443,16 +436,6 @@ public class ProvisionHostTaskServiceTest {
           .doAnswer(MockHelper.mockGetTransportNodeState(TransportNodeState.SUCCESS))
           .when(fabricApi)
           .getTransportNodeState(eq("TRANSPORT_NODE_ID"), any());
-
-      httpFileServiceClient = mock(HttpFileServiceClient.class);
-
-      doReturn(httpFileServiceClient)
-          .when(httpFileServiceClientFactory)
-          .create(anyString(), anyString(), anyString());
-
-      doReturn(MockHelper.mockUploadFile(HttpsURLConnection.HTTP_OK))
-          .when(httpFileServiceClient)
-          .uploadFile(anyString(), anyString(), anyBoolean());
 
       agentControlClient = mock(AgentControlClient.class);
 
@@ -545,14 +528,6 @@ public class ProvisionHostTaskServiceTest {
       verify(fabricApi, times(3)).getTransportNodeState(eq("TRANSPORT_NODE_ID"), any());
       verifyNoMoreInteractions(fabricApi);
 
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib1.vib"), anyString(), eq(false));
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib2.vib"), anyString(), eq(false));
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib3.vib"), anyString(), eq(false));
-      verifyNoMoreInteractions(httpFileServiceClient);
-
       verify(agentControlClient, times(7))
           .setIpAndPort(eq(hostState.hostAddress), eq(hostState.agentPort));
 
@@ -604,14 +579,6 @@ public class ProvisionHostTaskServiceTest {
 
       verifyNoMoreInteractions(fabricApi);
 
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib1.vib"), anyString(), eq(false));
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib2.vib"), anyString(), eq(false));
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib3.vib"), anyString(), eq(false));
-      verifyNoMoreInteractions(httpFileServiceClient);
-
       verify(agentControlClient, times(7))
           .setIpAndPort(eq(hostState.hostAddress), eq(hostState.agentPort));
 
@@ -661,14 +628,6 @@ public class ProvisionHostTaskServiceTest {
 
       verifyNoMoreInteractions(fabricApi);
 
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib1.vib"), anyString(), eq(false));
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib2.vib"), anyString(), eq(false));
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib3.vib"), anyString(), eq(false));
-      verifyNoMoreInteractions(httpFileServiceClient);
-
       verify(agentControlClient, times(7))
           .setIpAndPort(eq(hostState.hostAddress), eq(hostState.agentPort));
 
@@ -716,11 +675,6 @@ public class ProvisionHostTaskServiceTest {
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
-
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib1.vib"), anyString(), eq(false));
-
-      verifyNoMoreInteractions(httpFileServiceClient);
     }
 
     @Test
@@ -904,9 +858,7 @@ public class ProvisionHostTaskServiceTest {
     @Test
     public void testUploadVibFailure() throws Throwable {
 
-      doReturn(MockHelper.mockUploadFile(HttpsURLConnection.HTTP_UNAUTHORIZED))
-          .when(httpFileServiceClient)
-          .uploadFile(anyString(), anyString(), anyBoolean());
+      TestHelper.createFailScriptFile(deployerContext, UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME);
 
       ProvisionHostTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -918,9 +870,8 @@ public class ProvisionHostTaskServiceTest {
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message,
-          containsString("Unexpected HTTP result 401 when uploading VIB file"));
-      assertThat(finalState.taskState.failure.message, containsString("to host hostAddress"));
+      assertThat(finalState.taskState.failure.message, containsString("Uploading VIB file"));
+      assertThat(finalState.taskState.failure.message, containsString("to host hostAddress failed with exit code 1"));
     }
 
     @Test

@@ -27,7 +27,6 @@ import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
@@ -37,6 +36,7 @@ import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.mock.AgentControlClientMock;
 import com.vmware.photon.controller.deployer.xenon.mock.HostClientMock;
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskService;
+import com.vmware.photon.controller.deployer.xenon.task.UploadVibTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
 import com.vmware.photon.controller.host.gen.HostConfig;
@@ -319,7 +319,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
     private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private NsxClientFactory nsxClientFactory;
-    private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private ListeningExecutorService listeningExecutorService;
     private BulkProvisionHostsWorkflowService.State startState;
     private TestEnvironment testEnvironment;
@@ -349,7 +348,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
       agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
-      httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
     }
 
     private void createTestEnvironment(int hostCount) throws Throwable {
@@ -360,7 +358,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
           .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .nsxClientFactory(nsxClientFactory)
-          .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .hostCount(hostCount)
           .build();
@@ -461,11 +458,12 @@ public class BulkProvisionHostsWorkflowServiceTest {
         Integer cloudHostCout,
         Integer mixedHostCount) throws Throwable {
 
-      MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
+          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
 
       createTestEnvironment(hostCount);
       startState.querySpecification = null;
@@ -492,11 +490,12 @@ public class BulkProvisionHostsWorkflowServiceTest {
         Integer mgmtHostCount,
         Integer cloudHostCout,
         Integer mixedHostCount) throws Throwable {
-      MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
+          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       createTestEnvironment(hostCount);
       startState.querySpecification = null;
       startState.deploymentServiceLink = TestHelper.createDeploymentService(testEnvironment, false, true)
@@ -519,11 +518,12 @@ public class BulkProvisionHostsWorkflowServiceTest {
 
     @Test(enabled = false)
     public void testEndToEndFailNoMgmtHost() throws Throwable {
-      MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
+          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       MockHelper.mockProvisionAgent(agentControlClientFactory, hostClientFactory, true);
       createTestEnvironment(1);
       startState.deploymentServiceLink = TestHelper.createDeploymentService(testEnvironment, false, true)
