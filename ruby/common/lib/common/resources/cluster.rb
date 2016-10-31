@@ -70,6 +70,10 @@ module EsxCloud
       Config.client.create_cluster(project_id, create_cluster_spec.to_hash)
     end
 
+    def self.delete(cluster_id)
+      Config.client.delete_cluster(cluster_id)
+    end
+
     # @param [String] json
     # @return [Cluster]
     def self.create_from_json(json)
