@@ -139,6 +139,10 @@ module EsxCloud
         delete_disk(disk, stat)
       end
 
+      client.get_project_clusters(project.id).items.flatten.each do |cluster|
+        delete_cluster(cluster, stat)
+      end
+
       client.find_all_vms(project.id).items.flatten.each do |vm|
         delete_vm(vm, stat)
       end
@@ -180,6 +184,16 @@ module EsxCloud
       vm.stop! if vm.state == "STARTED"
       update_stat stat, "vm", vm.id
       vm.delete
+      stat
+    end
+
+    # @param [Cluster] cluster
+    # @param [Hash] stat
+    # @return [Hash] stat
+    def delete_cluster(cluster, stat = {})
+      fail "delete_cluster: cluster is nil!" unless cluster
+      update_stat stat, "cluster", cluster.id
+      cluster.delete
       stat
     end
 
