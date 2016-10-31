@@ -29,6 +29,8 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
+import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
+import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.entity.VibService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.xenon.common.Operation;
@@ -40,11 +42,14 @@ import com.vmware.xenon.common.Utils;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
+import org.apache.commons.io.FileUtils;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -53,6 +58,11 @@ import java.util.concurrent.TimeoutException;
  * host.
  */
 public class UploadVibTaskService extends StatefulService {
+
+  /**
+   * This string specifies the script which is used to install a VIB.
+   */
+  public static final String UPLOAD_VIB_SCRIPT_NAME = "esx-upload-vib";
 
   /**
    * This class defines the state of a {@link UploadVibTaskService} task.
@@ -392,26 +402,47 @@ public class UploadVibTaskService extends StatefulService {
       throw new IllegalStateException("Invalid VIB source file " + sourceFile);
     }
 
-    HttpFileServiceClient httpFileServiceClient = HostUtils.getHttpFileServiceClientFactory(this)
-        .create(hostState.hostAddress, hostState.userName, hostState.password);
     String uploadPath = UriUtils.buildUriPath("tmp", "photon-controller-vibs",
         ServiceUtils.getIDFromDocumentSelfLink(vibState.documentSelfLink), sourceFile.getName());
-    ListenableFutureTask<Integer> futureTask = ListenableFutureTask.create(
-        httpFileServiceClient.uploadFile(sourceFile.getAbsolutePath(), uploadPath, false));
+
+    ServiceUtils.logInfo(this, "Uploading %s vib with following arguments : %s %s %s %s",
+        vibState.vibName,
+        hostState.hostAddress,
+        hostState.userName,
+        sourceFile.getAbsolutePath(),
+        uploadPath);
+
+    List<String> command = Arrays.asList(
+        "./" + UPLOAD_VIB_SCRIPT_NAME,
+        hostState.hostAddress,
+        hostState.userName,
+        hostState.password,
+        sourceFile.getAbsolutePath(),
+        uploadPath);
+
+    DeployerContext deployerContext = HostUtils.getDeployerContext(this);
+
+    File scriptLogFile = new File(deployerContext.getScriptLogDirectory(), UPLOAD_VIB_SCRIPT_NAME + "-" +
+        hostState.hostAddress + "-" + ServiceUtils.getIDFromDocumentSelfLink(vibState.documentSelfLink) + ".log");
+
+    ScriptRunner scriptRunner = new ScriptRunner.Builder(command, deployerContext.getScriptTimeoutSec())
+        .directory(deployerContext.getScriptDirectory())
+        .redirectOutput(ProcessBuilder.Redirect.to(scriptLogFile))
+        .redirectErrorStream(true)
+        .build();
+
+    ListenableFutureTask<Integer> futureTask = ListenableFutureTask.create(scriptRunner);
     HostUtils.getListeningExecutorService(this).submit(futureTask);
 
     Futures.addCallback(futureTask, new FutureCallback<Integer>() {
       @Override
       public void onSuccess(@javax.validation.constraints.NotNull Integer result) {
         try {
-          switch (result) {
-            case HttpsURLConnection.HTTP_OK:
-            case HttpsURLConnection.HTTP_CREATED:
-              setUploadPath(vibState.documentSelfLink, uploadPath);
-              break;
-            default:
-              throw new IllegalStateException("Unexpected HTTP result " + result + " when uploading VIB file " +
-                  vibState.vibName + " to host " + hostState.hostAddress);
+          if (result != 0) {
+            logFailureAndFail(vibState, hostState, result, scriptLogFile);
+          }
+          else {
+            setUploadPath(vibState.documentSelfLink, uploadPath);
           }
         } catch (Throwable t) {
           failTask(t);
@@ -423,6 +454,17 @@ public class UploadVibTaskService extends StatefulService {
         failTask(throwable);
       }
     });
+  }
+
+  private void logFailureAndFail(VibService.State vibState,
+                                                HostService.State hostState,
+                                                int result,
+                                                File scriptLogFile) throws Throwable {
+
+    ServiceUtils.logSevere(this, UPLOAD_VIB_SCRIPT_NAME + " returned " + result);
+    ServiceUtils.logSevere(this, "Script output: " + FileUtils.readFileToString(scriptLogFile));
+    throw new IllegalStateException("Uploading VIB file " + vibState.vibName + " to host " + hostState.hostAddress +
+        " failed with exit code " + result);
   }
 
   private void setUploadPath(String vibServiceLink, String uploadPath) {
