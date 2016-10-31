@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.HostNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpiredException;
+import com.vmware.photon.controller.api.model.AgentState;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.HostCreateSpec;
 import com.vmware.photon.controller.api.model.HostSetAvailabilityZoneOperation;
@@ -71,5 +72,5 @@ public interface HostBackend {
 
   TaskEntity exitMaintenance(String hostId) throws ExternalException;
 
-  ResourceList<Host> filterByState(HostState hostState, Optional<Integer> pageSize);
+  ResourceList<Host> filterByState(HostState hostState, Optional<AgentState> agentState, Optional<Integer> pageSize);
 }
