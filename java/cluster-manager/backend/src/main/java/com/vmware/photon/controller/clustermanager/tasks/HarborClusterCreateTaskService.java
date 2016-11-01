@@ -47,6 +47,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class implements a Xenon service representing a task to create a Harbor cluster.
@@ -238,7 +239,18 @@ public class HarborClusterCreateTaskService extends StatefulService {
 
           @Override
           public void onFailure(Throwable t) {
-            failTask(t);
+            if (currentState.updatePropsIterations >= currentState.updatePropsMaxIterations) {
+              failTask(t);
+            } else {
+              getHost().schedule(
+                  () -> {
+                    HarborClusterCreateTask patchState = buildPatch(TaskState.TaskStage.STARTED,
+                        TaskState.SubStage.UPDATE_EXTENDED_PROPERTIES);
+                    patchState.updatePropsIterations = currentState.updatePropsIterations + 1;
+                    TaskUtils.sendSelfPatch(HarborClusterCreateTaskService.this, patchState);
+                  },
+                  currentState.updatePropsPollDelay, TimeUnit.MILLISECONDS);
+            }
           }
         });
       } catch (IOException e) {
