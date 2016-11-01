@@ -164,6 +164,35 @@ function set_photon_password()
   fi
 }
 
+function configure_lightwave()
+{
+  echo "Starting required services"
+
+  systemctl start lwsmd
+
+  echo "Joining system to Lightwave domain $lw_domain"
+
+  exec 3<<<"$lw_password"
+
+  /opt/vmware/bin/ic-join --domain $lw_domain \
+                          --ssl-subject-alt-name $ip0 \
+                          <&3
+  exit_code=$?
+  if [ 0 -ne $exit_code ]
+  then
+    echo "Failed to join Lightwave domain $lw_domain with $exit_code"
+    exit $exit_code
+  fi
+
+  lw_host=`/opt/vmware/bin/vmafd-cli get-dc-name --server-name localhost`
+  exit_code=$?
+  if [ 0 -ne $exit_code ]
+  then
+    echo "Failed to get Lightwave Domain Controller. Exit code; $exit_code"
+    exit $exit_code
+  fi
+}
+
 function configure_photon()
 {
   pc_auth_enabled="true"
@@ -254,23 +283,25 @@ function parse_ovf_env()
 
   # lightwave config
   lw_domain=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_domain']/../@*[local-name()='value'])") # some.domain.com
-  lw_host=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_hostname']/../@*[local-name()='value'])")
+  lw_password=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_password']/../@*[local-name()='value'])")
   lw_port=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_port']/../@*[local-name()='value'])")
   pc_secret_password=$(date +%s | base64 | head -c 8)
   pc_keystore_password=$(date +%s | base64 | head -c 8)
 
   if [ -z "$lw_port" ]; then
-    missing_values = "Missing lw_port"
+    lw_port="443"
   fi
-  # default are meant for running test setup in fusion
-  if [ -z "$lw_host" ]; then
-    missing_values = ${missing_values}", lw_host"
+
+  missing_values=0
+  if [ -z "$lw_password" ]; then
+    missing_values=1
+    echo "Missing value [lw_password]"
   fi
   if [ -z "$lw_domain" ]; then
-    missing_values = ${missing_values}", lw_domain"
+    missing_values=1
+    echo "Missing value [lw_domain]"
   fi
-  if [ ! -z "$missing_values" ]; then
-    echo $missing_values
+  if [ $missing_values -ne 0 ]; then
     exit -1
   fi
 }
@@ -299,6 +330,7 @@ then
   set_network_properties
   set_root_password
   set_photon_password
+  configure_lightwave
   configure_photon
 
 fi
