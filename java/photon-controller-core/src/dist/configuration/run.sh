@@ -10,7 +10,29 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
 # specific language governing permissions and limitations under the License.
 
+ERROR_USAGE=1
+ERROR_NOT_JOINED_TO_LIGHTWAVE=2
+ERROR_FAILED_TO_GET_LIGHTWAVE_DC=3
+ERROR_LIGHTWAVE_STS_UNREACHABLE=4
 
+KEYS_ROOT_PATH=/etc/keys
+MACHINE_SSL_CERT=$KEYS_ROOT_PATH/machine.crt
+MACHINE_SSL_PRIVATE_KEY=$KEYS_ROOT_PATH/machine.privkey
+MACHINE_SSL_PUBLIC_KEY=$KEYS_ROOT_PATH/machine.pubkey
+CERT_TMP_PATH=$KEYS_ROOT_PATH/cacert.crt
+
+PC_KEY_ROOT=/etc/vmware/photon
+KEYSTORE_JKS_PATH=$PC_KEY_ROOT/keystore.jks
+KEYSTORE_P12_PATH=$PC_KEY_ROOT/keystore.p12
+
+function cleanup()
+{
+  if [ -f $MACHINE_SSL_PRIVATE_KEY ]
+  then
+    # Restrict permission on the key files
+    chmod 0400 $MACHINE_SSL_PRIVATE_KEY
+  fi
+}
 
 # Accept optional parameters for path of configuration and installation files
 # Example usages: ./run.sh
@@ -58,124 +80,62 @@ function print_warning_if_value_mssing ()
   fi
 }
 
-CONFIG_PATH_PARAM=$1
-INSTALLATION_PATH_PARAM=$2
-CONFIG_PATH=${CONFIG_PATH_PARAM:-"/etc/esxcloud"}
-PHOTON_CONTROLLER_CORE_CONFIG="${CONFIG_PATH}/photon-controller-core.yml"
+function setup_swagger()
+{
+  local config_path=$1
+  local install_path=$2
 
-memoryMb=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG memoryMb:`
-ENABLE_AUTH=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG enableAuth:`
-LIGHTWAVE_DOMAIN=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveDomain:`
-LIGHTWAVE_HOSTNAME=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveHostname:`
-LIGHTWAVE_PASSWORD=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwavePassword:`
-KEYSTORE_PASSWORD=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG keyStorePassword:`
-LIGHTWAVE_DOMAIN_CONTROLLER=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveDomainController:`
-LIGHTWAVE_MACHINE_ACCOUNT=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveMachineAccount:`
-LIGHTWAVE_DISABLE_VMAFD_LISTENER=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveDisableVmafdListener:`
-REGISTRATION_ADDRESS=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG registrationAddress:`
-PHOTON_CONTROLLER_CORE_INSTALL_DIRECTORY=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG installDirectory:`
-LOG_DIRECTORY=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG logDirectory:`
+  local API_BITS=$install_path
+  local API_BIN="$API_BITS/bin"
+  local API_LIB="$API_BITS/lib"
+  local API_SWAGGER_JS_FILE="swagger-config.js"
+  local API_SWAGGER_JS="$config_path/$API_SWAGGER_JS_FILE"
 
-print_warning_if_value_mssing "${REGISTRATION_ADDRESS}"    "registrationAddress"   "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LOG_DIRECTORY}"           "logDirectory"          "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${memoryMb}"                "memoryMb"              "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${ENABLE_AUTH}"             "enableAuth"            "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_PASSWORD}"      "lightwavePassword"      "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${KEYSTORE_PASSWORD}"      "keyStorePassword"      "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_DOMAIN}"        "lightwaveDomain"      "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_HOSTNAME}"      "lightwaveHostname"    "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_DOMAIN_CONTROLLER}"     "lightwaveDomainController"  "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_MACHINE_ACCOUNT}"       "lightwaveMachineAccount"    "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_DISABLE_VMAFD_LISTENER}" "lightwaveDisableVmafdListener"    "$PHOTON_CONTROLLER_CORE_CONFIG"
-
-API_BITS=${INSTALLATION_PATH_PARAM:-"/usr/lib/esxcloud/photon-controller-core"}
-API_BIN="$API_BITS/bin"
-API_LIB="$API_BITS/lib"
-API_SWAGGER_JS_FILE="swagger-config.js"
-API_SWAGGER_JS="$CONFIG_PATH/$API_SWAGGER_JS_FILE"
-PHOTON_CONTROLLER_CORE_BIN="${PHOTON_CONTROLLER_CORE_INSTALL_DIRECTORY}/bin"
-SCRIPT_LOG_DIRECTORY="${LOG_DIRECTORY}/script_logs"
-
-en_name=$(ip addr show label "en*" | head -n 1 | sed 's/^[0-9]*: \(en.*\): .*/\1/')
-container_ip=$(ifconfig $en_name | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }')
-
-# Add java home and other required binaries to path. We need this here even though we are doing this during container
-# build because systemd service does not seem to honor the environment variables set at container build time.
-export JAVA_HOME="/usr/java/default"
-export PATH=$PATH:$JAVA_HOME/bin:/opt/esxcli:/opt/vmware/bin:/opt/likewise/bin
-
-# Create script log directory
-mkdir -p $SCRIPT_LOG_DIRECTORY
-
-#
-# Add hosts entry to allow InetAddress.getLocalHost() to
-# succeed when running container with --net=host
-#
-myhostname="$(hostname)"
-if [ -z "$(grep $myhostname /etc/hosts)" ]
-then
-  echo "$container_ip     $myhostname" >> /etc/hosts
-fi
-
-# jvm heap size will be set to by default is 1024m
-jvm_mem=$(($memoryMb/2))
-
-
-# Use the JKS keystore which has our certificate as the default java keystore
-security_opts="-Djavax.net.ssl.trustStore=/keystore.jks"
-
-export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC ${security_opts} $JAVA_DEBUG"
-
-if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH,,}" == "true" ]
-then
-  printf "window.swaggerConfig = {\n  enableAuth: true,\n  swaggerLoginUrl: '%s',\n  swaggerLogoutUrl: '%s',\n};\n" \
-    $SWAGGER_LOGIN_URL $SWAGGER_LOGOUT_URL > $API_SWAGGER_JS
-fi
-
-#
-# Add parameters-modified swagger-config.js to the jar
-#
-mkdir -p $CONFIG_PATH/assets
-cp $API_SWAGGER_JS $CONFIG_PATH/assets
-$JAVA_HOME/bin/jar uf ${API_LIB}/swagger-ui*.jar -C $CONFIG_PATH assets/$API_SWAGGER_JS_FILE
-
-
-if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH,,}" == "true" ]
-then
-  ic_join_params=""
-  if [ -n "${LIGHTWAVE_DOMAIN_CONTROLLER}" ]
+  if [ ! -f $API_SWAGGER_JS ]
   then
-    ic_join_params="$ic_join_params --domain-controller ${LIGHTWAVE_DOMAIN_CONTROLLER}"
+    printf "window.swaggerConfig = {\n  enableAuth: true,\n  swaggerLoginUrl: '%s',\n  swaggerLogoutUrl: '%s',\n};\n" \
+           $SWAGGER_LOGIN_URL \
+           $SWAGGER_LOGOUT_URL \
+           > $API_SWAGGER_JS
+
+    #
+    # Add parameters-modified swagger-config.js to the jar
+    #
+    mkdir -p $config_path/assets
+    cp $API_SWAGGER_JS $config_path/assets
+
+    $JAVA_HOME/bin/jar uf \
+                       ${API_LIB}/swagger-ui*.jar \
+                       -C $config_path \
+                       assets/$API_SWAGGER_JS_FILE
+  fi
+}
+
+function check_lightwave()
+{
+  domain_name=`/opt/vmware/bin/domainjoin info | \
+                      awk -F ":" '{print $2;}' | \
+                      sed "s/^[[:space:]]*//"`
+  if [ -z "$domain_name"]
+  then
+    echo "Error: The system is not joined to Lightwave"
+    exit $ERROR_NOT_JOINED_TO_LIGHTWAVE
   fi
 
-  if [ -n "${LIGHTWAVE_MACHINE_ACCOUNT}" ]
-  then
-    ic_join_params="$ic_join_params --machine-account-name ${LIGHTWAVE_MACHINE_ACCOUNT}"
-  fi
+  lightwave_dc=`/opt/vmware/bin/vmafd-cli get-dc-name --server-name localhost`
 
-  if [ -n "$LIGHTWAVE_DISABLE_VMAFD_LISTENER" -a "${LIGHTWAVE_DISABLE_VMAFD_LISTENER,,}" == "true" ]
+  if [ -z "$lightwave_dc"]
   then
-    ic_join_params="$ic_join_params --disable-afd-listener"
+    echo "Error: Failed to get Lightwave Domain Controller"
+    exit $ERROR_FAILED_TO_GET_LIGHTWAVE_DC
   fi
-
-  if [ -n "${LIGHTWAVE_DOMAIN}" ]
-  then
-    ic_join_params="$ic_join_params --domain ${LIGHTWAVE_DOMAIN}"
-  fi
-
-  if [ -n "${LIGHTWAVE_PASSWORD}" ]
-  then
-    ic_join_params="$ic_join_params --password ${LIGHTWAVE_PASSWORD}"
-  fi
-
-  full_hostname="$(hostname -f)"
 
   # Check if lightwave server is up
   attempts=1
   reachable="false"
   total_attempts=50
   while [ $attempts -lt $total_attempts ] && [ $reachable != "true" ]; do
-    http_code=$(curl -w "%{http_code}" -s -X GET --insecure https://$LIGHTWAVE_HOSTNAME)
+    http_code=$(curl -w "%{http_code}" -s -X GET --insecure https://$lightwave_dc)
     # The curl returns 000 when it fails to connect to the lightwave server
     if [ $http_code -eq 000 ]; then
       echo "Lightwave REST server not reachable (attempt $attempts/$total_attempts), will try again."
@@ -188,55 +148,158 @@ then
   done
   if [ $attempts -eq $total_attempts ]; then
     echo "Could not connect to Lightwave REST client after $total_attempts attempts"
-    exit 1
+    exit $ERROR_LIGHTWAVE_STS_UNREACHABLE
+  fi
+}
+
+function setup_certificates()
+{
+  mkdir -p $KEYS_ROOT_PATH
+
+  if [ ! -f $MACHINE_SSL_PRIVATE_KEY ]
+  then
+    /opt/vmware/bin/vecs-cli entry getkey --store MACHINE_SSL_CERT \
+                                          --alias '__MACHINE_CERT' \
+                                          --output $MACHINE_SSL_PRIVATE_KEY
+
+    # Restrict permission on the key files
+    chmod 0400 $MACHINE_SSL_PRIVATE_KEY
+    chmod 0444 $MACHINE_SSL_PUBLIC_KEY
   fi
 
-  # Join lightwave domain
-  ic-join ${ic_join_params}
-
-  # Fill in the hostname and ip address for generating a machine certificate
-  sed -i s/IPAddress.*/"IPAddress = ${REGISTRATION_ADDRESS}"/ /opt/vmware/share/config/certool.cfg
-  sed -i s/Hostname.*/"Hostname = $full_hostname"/ /opt/vmware/share/config/certool.cfg
-
-  mkdir -p /etc/keys
-
-  # Generate keys if they don't exist
-  if [ ! -f /etc/keys/machine.privkey ] || [ ! -f /etc/keys/machine.pubkey ]; then
-    certool --genkey --privkey=/etc/keys/machine.privkey --pubkey=/etc/keys/machine.pubkey \
-      --srp-upn administrator@${LIGHTWAVE_DOMAIN} --srp-pwd ${LIGHTWAVE_PASSWORD} --server ${LIGHTWAVE_HOSTNAME}
+  if [ ! -f $MACHINE_SSL_CERT ]
+  then
+    /opt/vmware/bin/vecs-cli entry getcert --store MACHINE_SSL_CERT \
+                                           --alias '__MACHINE_CERT' \
+                                           --output $MACHINE_SSL_CERT
   fi
 
-  # Generate certificate if it doesn't exist
-  if [ ! -f /etc/keys/machine.crt ]; then
-    certool --gencert --privkey=/etc/keys/machine.privkey --cert=/etc/keys/machine.crt \
-      --srp-upn administrator@${LIGHTWAVE_DOMAIN} --srp-pwd ${LIGHTWAVE_PASSWORD} \
-      --server ${LIGHTWAVE_HOSTNAME} --config /opt/vmware/share/config/certool.cfg
+  if [ ! -f $KEYSTORE_JKS_PATH ]
+  then
+    mkdir -p $PC_KEY_ROOT
+
+    # Generate pkcs12 keystore
+    openssl pkcs12 -export \
+                   -in $MACHINE_SSL_CERT \
+                   -inkey $MACHINE_SSL_PRIVATE_KEY \
+                   -out $KEYSTORE_P12_PATH \
+                   -name __MACHINE_CERT \
+                   -password pass:${KEYSTORE_PASSWORD}
+
+    chmod 0600 $KEYSTORE_P12_PATH
+
+    # Convert it into JKS
+    keytool -importkeystore \
+            -deststorepass ${KEYSTORE_PASSWORD} \
+            -destkeypass ${KEYSTORE_PASSWORD} \
+            -destkeystore $KEYSTORE_JKS_PATH \
+            -srckeystore $KEYSTORE_P12_PATH \
+            -srcstoretype PKCS12 \
+            -srcstorepass ${KEYSTORE_PASSWORD} \
+            -alias __MACHINE_CERT
+
+    chmod 0600 $KEYSTORE_JKS_PATH
+
+    # Get the trusted roots certificates
+    cert_alias=$(/opt/vmware/bin/vecs-cli entry list --store TRUSTED_ROOTS | \
+                                                    grep "Alias" | \
+                                                    cut -d: -f2)
+
+    for cert in $cert_alias
+    do
+      echo "Processing cert $cert"
+
+      /opt/vmware/bin/vecs-cli entry getcert --store TRUSTED_ROOTS \
+                                             --alias $cert \
+                                             --output $CERT_TMP_PATH
+
+      keytool -import \
+              -trustcacerts \
+              -alias "$cert" \
+              -file $CERT_TMP_PATH \
+              -keystore $KEYSTORE_JKS_PATH \
+              -storepass ${KEYSTORE_PASSWORD} \
+              -noprompt
+    done
+
+    # Delete temporary cacert file.
+    # curl command should be passed with --capath /etc/ssl/certs.
+    rm -rf $CERT_TMP_PATH
+
   fi
+}
 
-  # Generate pkcs12 keystore
-  openssl pkcs12 -export -in /etc/keys/machine.crt -inkey /etc/keys/machine.privkey -out keystore.p12 -name MACHINE_CERT \
-    -password pass:${KEYSTORE_PASSWORD}
+#
+# main
+#
 
-  # Convert it into JKS
-  keytool -importkeystore -deststorepass ${KEYSTORE_PASSWORD} -destkeypass ${KEYSTORE_PASSWORD} \
-    -destkeystore /keystore.jks -srckeystore keystore.p12 -srcstoretype PKCS12 -srcstorepass ${KEYSTORE_PASSWORD} \
-    -alias MACHINE_CERT
+trap cleanup EXIT
 
-  # Get the trusted roots certificate
-  cert_alias=$(vecs-cli entry list --store TRUSTED_ROOTS | grep "Alias" | head -n1 | cut -d: -f2)
-  vecs-cli entry getcert --store TRUSTED_ROOTS --alias $cert_alias --output /etc/keys/cacert.crt
-  keytool -import -trustcacerts -alias TRUSTED_ROOTS -file /etc/keys/cacert.crt \
-  -keystore /keystore.jks -storepass ${KEYSTORE_PASSWORD} -noprompt
+set +e
 
-  # Restrict permission on the key files
-  chmod 0400 /etc/keys/machine.privkey
-  chmod 0444 /etc/keys/machine.pubkey
-  chmod 0600 /keystore.jks
-  chmod 0600 keystore.p12
+if [ $# -gt 0 ]
+then
+  CONFIG_PATH_PARAM=$1
 fi
 
-# Move vecs jar out of classpath
-mkdir -p ${API_LIB}/ext
+if [ $# -gt 1 ]
+then
+  INSTALLATION_PATH_PARAM=$2
+fi
+
+CONFIG_PATH=${CONFIG_PATH_PARAM:-"/etc/esxcloud"}
+INSTALL_PATH=${INSTALLATION_PATH_PARAM:-"/usr/lib/esxcloud/photon-controller-core"}
+PHOTON_CONTROLLER_CORE_CONFIG="${CONFIG_PATH}/photon-controller-core.yml"
+
+memoryMb=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG memoryMb:`
+KEYSTORE_PASSWORD=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG keyStorePassword:`
+REGISTRATION_ADDRESS=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG registrationAddress:`
+PHOTON_CONTROLLER_CORE_INSTALL_DIRECTORY=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG installDirectory:`
+LOG_DIRECTORY=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG logDirectory:`
+
+print_warning_if_value_mssing "${REGISTRATION_ADDRESS}"    "registrationAddress"   "$PHOTON_CONTROLLER_CORE_CONFIG"
+print_warning_if_value_mssing "${LOG_DIRECTORY}"           "logDirectory"          "$PHOTON_CONTROLLER_CORE_CONFIG"
+print_warning_if_value_mssing "${memoryMb}"                "memoryMb"              "$PHOTON_CONTROLLER_CORE_CONFIG"
+
+PHOTON_CONTROLLER_CORE_BIN="${PHOTON_CONTROLLER_CORE_INSTALL_DIRECTORY}/bin"
+SCRIPT_LOG_DIRECTORY="${LOG_DIRECTORY}/script_logs"
+
+# Use the JKS keystore which has our certificate as the default java keystore
+security_opts="-Djavax.net.ssl.trustStore=$KEYSTORE_JKS_PATH"
+
+# jvm heap size will be set to by default is 1024m
+jvm_mem=$(($memoryMb/2))
+
+export JAVA_HOME="/usr/java/default"
+export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC ${security_opts} $JAVA_DEBUG"
+
+# Add java home and other required binaries to path.
+# We need this here even though we are doing this during container build
+# because systemd service does not seem to honor the environment variables
+# set at container build time.
+export PATH=$PATH:$JAVA_HOME/bin:/opt/esxcli:/opt/vmware/bin:/opt/likewise/bin
+
+# Create script log directory
+mkdir -p $SCRIPT_LOG_DIRECTORY
+
+#
+# Add hosts entry to allow InetAddress.getLocalHost() to
+# succeed when running container with --net=host
+#
+en_name=$(ip addr show label "en*" | head -n 1 | sed 's/^[0-9]*: \(en.*\): .*/\1/')
+container_ip=$(ifconfig $en_name | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }')
+
+myhostname="$(hostname)"
+if [ -z "$(grep $myhostname /etc/hosts)" ]
+then
+  echo "$container_ip     $myhostname" >> /etc/hosts
+fi
+
+setup_swagger $CONFIG_PATH $INSTALL_PATH
+
+check_lightwave
+
+setup_certificates
 
 #
 # Start service
@@ -249,3 +312,5 @@ else
 fi
 
 $COMMAND $PHOTON_CONTROLLER_CORE_CONFIG
+
+set -e

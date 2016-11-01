@@ -51,7 +51,7 @@ deployer:
     installDirectory: "/usr/lib/esxcloud/photon-controller-core"
     logDirectory: {{{LOG_DIRECTORY}}}
 {{#ENABLE_AUTH}}
-    keyStorePath: /keystore.jks
+    keyStorePath: /etc/vmware/photon/keystore.jks
     keyStorePassword: "changeme"
     lightwavePassword: {{{LIGHTWAVE_PASSWORD}}}
     lightwaveDomain: {{{LIGHTWAVE_DOMAIN}}}
@@ -94,7 +94,7 @@ apife:
     type: https
     port: 9000
     bindHost: "0.0.0.0"
-    keyStorePath: /keystore.jks
+    keyStorePath: /etc/vmware/photon/keystore.jks
     keyStorePassword: "changeme"
     validateCerts: false
     supportedProtocols: [TLSv1.2]
