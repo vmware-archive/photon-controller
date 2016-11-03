@@ -303,6 +303,8 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     networkConfiguration.setNetworkManagerPassword(deploymentEntity.getNetworkManagerPassword());
     networkConfiguration.setNetworkZoneId(deploymentEntity.getNetworkZoneId());
     networkConfiguration.setNetworkTopRouterId(deploymentEntity.getNetworkTopRouterId());
+    networkConfiguration.setNetworkEdgeIpPoolId(deploymentEntity.getNetworkEdgeIpPoolId());
+    networkConfiguration.setNetworkHostUplinkPnic(deploymentEntity.getNetworkHostUplinkPnic());
     networkConfiguration.setEdgeClusterId(deploymentEntity.getEdgeClusterId());
     networkConfiguration.setIpRange(deploymentEntity.getIpRange());
     networkConfiguration.setFloatingIpRange(deploymentEntity.getFloatingIpRange());
@@ -503,6 +505,8 @@ public class DeploymentXenonBackend implements DeploymentBackend {
       deployment.networkManagerPassword = spec.getNetworkConfiguration().getNetworkManagerPassword();
       deployment.networkZoneId = spec.getNetworkConfiguration().getNetworkZoneId();
       deployment.networkTopRouterId = spec.getNetworkConfiguration().getNetworkTopRouterId();
+      deployment.networkEdgeIpPoolId = spec.getNetworkConfiguration().getNetworkEdgeIpPoolId();
+      deployment.networkHostUplinkPnic = spec.getNetworkConfiguration().getNetworkHostUplinkPnic();
       deployment.ipRange = spec.getNetworkConfiguration().getIpRange();
       deployment.dhcpServers = spec.getNetworkConfiguration().getDhcpServers();
 
@@ -550,6 +554,8 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     entity.setNetworkManagerPassword(deployment.networkManagerPassword);
     entity.setNetworkZoneId(deployment.networkZoneId);
     entity.setNetworkTopRouterId(deployment.networkTopRouterId);
+    entity.setNetworkEdgeIpPoolId(deployment.networkEdgeIpPoolId);
+    entity.setNetworkHostUplinkPnic(deployment.networkHostUplinkPnic);
     entity.setEdgeClusterId(deployment.edgeClusterId);
     entity.setIpRange(deployment.ipRange);
     entity.setFloatingIpRange(deployment.floatingIpRange);

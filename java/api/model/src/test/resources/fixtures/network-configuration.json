@@ -5,6 +5,8 @@
   "networkManagerPassword": "networkManagerPassword",
   "networkZoneId": "networkZoneId",
   "networkTopRouterId": "networkTopRouterId",
+  "networkEdgeIpPoolId": "networkEdgeIpPoolId",
+  "networkHostUplinkPnic": "networkHostUplinkPnic",
   "edgeClusterId": "edgeClusterId",
   "ipRange": "10.0.0.1/24",
   "floatingIpRange": {

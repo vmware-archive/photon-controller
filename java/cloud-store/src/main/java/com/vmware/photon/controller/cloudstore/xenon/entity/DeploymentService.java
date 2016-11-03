@@ -304,6 +304,16 @@ public class DeploymentService extends StatefulService {
     public String edgeClusterId;
 
     /**
+     * This value represents the ID of the Edge IP pool for connecting host to Edge.
+     */
+    public String networkEdgeIpPoolId;
+
+    /**
+     * This value represents the name of the physical nic that the host uses to connect to Edge.
+     */
+    public String networkHostUplinkPnic;
+
+    /**
      * This value represents the list of the DHCP servers.
      */
     public List<String> dhcpServers;

@@ -59,6 +59,16 @@ public class NetworkConfigurationBuilder {
     return this;
   }
 
+  public NetworkConfigurationBuilder networkEdgeIpPoolId(String networkEdgeIpPoolId) {
+    this.networkConfiguration.setNetworkEdgeIpPoolId(networkEdgeIpPoolId);
+    return this;
+  }
+
+  public NetworkConfigurationBuilder networkHostUplinkPnic(String networkHostUplinkPnic) {
+    this.networkConfiguration.setNetworkHostUplinkPnic(networkHostUplinkPnic);
+    return this;
+  }
+
   public NetworkConfigurationBuilder edgeClusterId(String edgeClusterId) {
     this.networkConfiguration.setEdgeClusterId(edgeClusterId);
     return this;
