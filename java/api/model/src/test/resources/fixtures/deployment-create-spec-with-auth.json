@@ -22,7 +22,9 @@
       "networkManagerAddress": "1.2.3.4",
       "networkManagerUsername": "networkManagerUsername",
       "networkManagerPassword": "networkManagerPassword",
-      "networkTopRouterId": "networkTopRouterId"
+      "networkTopRouterId": "networkTopRouterId",
+      "networkEdgeIpPoolId": "networkEdgeIpPoolId",
+      "networkHostUplinkPnic": "networkHostUplinkPnic"
     },
     "loadBalancerEnabled": true
 }

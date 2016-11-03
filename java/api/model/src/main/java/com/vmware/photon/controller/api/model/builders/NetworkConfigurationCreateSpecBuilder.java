@@ -59,6 +59,16 @@ public class NetworkConfigurationCreateSpecBuilder {
     return this;
   }
 
+  public NetworkConfigurationCreateSpecBuilder networkEdgeIpPoolId(String networkEdgeIpPoolId) {
+    this.networkConfigurationCreateSpec.setNetworkEdgeIpPoolId(networkEdgeIpPoolId);
+    return this;
+  }
+
+  public NetworkConfigurationCreateSpecBuilder networkHostUplinkPnic(String networkHostUplinkPnic) {
+    this.networkConfigurationCreateSpec.setNetworkHostUplinkPnic(networkHostUplinkPnic);
+    return this;
+  }
+
   public NetworkConfigurationCreateSpecBuilder ipRange(String ipRange) {
     this.networkConfigurationCreateSpec.setIpRange(ipRange);
     return this;

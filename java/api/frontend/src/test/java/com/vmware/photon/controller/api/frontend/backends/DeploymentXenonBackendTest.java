@@ -165,6 +165,8 @@ public class DeploymentXenonBackendTest {
         .networkManagerPassword("networkManagerPassword")
         .networkZoneId("networkZoneId")
         .networkTopRouterId("networkTopRouterId")
+        .networkEdgeIpPoolId("networkEdgeIpPoolId")
+        .networkHostUplinkPnic("networkHostUplinkPnic")
         .ipRange("10.0.0.1/24")
         .externalIpRange(externalIpRange)
         .build());
@@ -250,6 +252,8 @@ public class DeploymentXenonBackendTest {
       assertThat(deployment.getNetworkManagerPassword(), is("networkManagerPassword"));
       assertThat(deployment.getNetworkZoneId(), is("networkZoneId"));
       assertThat(deployment.getNetworkTopRouterId(), is("networkTopRouterId"));
+      assertThat(deployment.getNetworkEdgeIpPoolId(), is("networkEdgeIpPoolId"));
+      assertThat(deployment.getNetworkHostUplinkPnic(), is("networkHostUplinkPnic"));
       assertThat(deployment.getEdgeClusterId(), nullValue());
       assertThat(deployment.getIpRange(), is("10.0.0.1/24"));
       assertThat(ListUtils.isEqualList(deployment.getOauthSecurityGroups(),
@@ -755,6 +759,8 @@ public class DeploymentXenonBackendTest {
       assertThat(networkConfiguration.getNetworkManagerPassword(), is(entity.getNetworkManagerPassword()));
       assertThat(networkConfiguration.getNetworkZoneId(), is(entity.getNetworkZoneId()));
       assertThat(networkConfiguration.getNetworkTopRouterId(), is(entity.getNetworkTopRouterId()));
+      assertThat(networkConfiguration.getNetworkEdgeIpPoolId(), is(entity.getNetworkEdgeIpPoolId()));
+      assertThat(networkConfiguration.getNetworkHostUplinkPnic(), is(entity.getNetworkHostUplinkPnic()));
       assertThat(networkConfiguration.getEdgeClusterId(), is(entity.getEdgeClusterId()));
       assertThat(networkConfiguration.getIpRange(), is(entity.getIpRange()));
       assertThat(networkConfiguration.getFloatingIpRange(), is(entity.getFloatingIpRange()));
@@ -1143,6 +1149,8 @@ public class DeploymentXenonBackendTest {
       deployment2.networkManagerPassword = deploymentCreateSpec.getNetworkConfiguration().getNetworkManagerPassword();
       deployment2.networkZoneId = deploymentCreateSpec.getNetworkConfiguration().getNetworkZoneId();
       deployment2.networkTopRouterId = deploymentCreateSpec.getNetworkConfiguration().getNetworkTopRouterId();
+      deployment2.networkEdgeIpPoolId = deploymentCreateSpec.getNetworkConfiguration().getNetworkEdgeIpPoolId();
+      deployment2.networkHostUplinkPnic = deploymentCreateSpec.getNetworkConfiguration().getNetworkHostUplinkPnic();
       deployment2.ipRange = deploymentCreateSpec.getNetworkConfiguration().getIpRange();
 
       IpRange externalIpRange = deploymentCreateSpec.getNetworkConfiguration().getExternalIpRange();

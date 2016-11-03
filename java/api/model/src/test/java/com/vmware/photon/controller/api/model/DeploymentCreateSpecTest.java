@@ -56,6 +56,8 @@ public class DeploymentCreateSpecTest {
       .networkManagerUsername("networkManagerUsername")
       .networkManagerPassword("networkManagerPassword")
       .networkTopRouterId("networkTopRouterId")
+      .networkEdgeIpPoolId("networkEdgeIpPoolId")
+      .networkHostUplinkPnic("networkHostUplinkPnic")
       .build();
 
   private StatsInfo enabledStatsInfo = new StatsInfoBuilder()
