@@ -19,12 +19,14 @@ users:
 write_files:
   - content: |
         en_name=$(ip addr show label "e*" | head -n 1 | sed 's/^[0-9]*: \(e.*\): .*/\1/')
-        cat > "/etc/systemd/network/10-dhcp-${en_name}.network" << EOF
+        cat > "/etc/systemd/network/10-static-${en_name}.network" << EOF
         [Match]
         Name=$en_name
 
         [Network]
-        DHCP=yes
+        Address-192.168.1.1/24
+        Gateway=192.168.1.253
+        Netmask=255.255.255.0
     owner: root:root
     path: /tmp/init-network.sh
 
