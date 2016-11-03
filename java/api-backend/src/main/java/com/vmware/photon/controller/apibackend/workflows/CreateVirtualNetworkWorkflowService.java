@@ -461,7 +461,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
               case FAILED:
               case CANCELLED:
                 fail(state, new IllegalStateException(
-                    String.format("Failed to create logical switch: %s", result.taskState.failure.message)));
+                    String.format("Failed to create logical router: %s", result.taskState.failure.message)));
                 break;
             }
           }
