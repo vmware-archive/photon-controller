@@ -76,6 +76,18 @@ public class NetworkConfigurationCreateSpec {
   private String networkTopRouterId;
 
   @JsonProperty
+  @ApiModelProperty(value = "The ID of the Edge IP pool for connecting host to Edge")
+  @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
+  @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
+  private String networkEdgeIpPoolId;
+
+  @JsonProperty
+  @ApiModelProperty(value = "The name of the physical nic that the host uses to connect to Edge")
+  @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
+  @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
+  private String networkHostUplinkPnic;
+
+  @JsonProperty
   @ApiModelProperty(value = "The global IP range for allocating private IP range to virtual network")
   @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
   @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
@@ -144,6 +156,22 @@ public class NetworkConfigurationCreateSpec {
     this.networkTopRouterId = networkTopRouterId;
   }
 
+  public String getNetworkEdgeIpPoolId() {
+    return networkEdgeIpPoolId;
+  }
+
+  public void setNetworkEdgeIpPoolId(String networkEdgeIpPoolId) {
+    this.networkEdgeIpPoolId = networkEdgeIpPoolId;
+  }
+
+  public String getNetworkHostUplinkPnic() {
+    return networkHostUplinkPnic;
+  }
+
+  public void setNetworkHostUplinkPnic(String networkHostUplinkPnic) {
+    this.networkHostUplinkPnic = networkHostUplinkPnic;
+  }
+
   public String getIpRange() {
     return ipRange;
   }
@@ -184,6 +212,8 @@ public class NetworkConfigurationCreateSpec {
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
         && Objects.equals(this.getNetworkZoneId(), other.getNetworkZoneId())
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
+        && Objects.equals(this.getNetworkEdgeIpPoolId(), other.getNetworkEdgeIpPoolId())
+        && Objects.equals(this.getNetworkHostUplinkPnic(), other.getNetworkHostUplinkPnic())
         && Objects.equals(this.getIpRange(), other.getIpRange())
         && Objects.equals(this.getExternalIpRange(), other.getExternalIpRange())
         && Objects.deepEquals(this.getDhcpServers(), other.getDhcpServers());
@@ -199,6 +229,8 @@ public class NetworkConfigurationCreateSpec {
         this.getNetworkManagerPassword(),
         this.getNetworkZoneId(),
         this.getNetworkTopRouterId(),
+        this.getNetworkEdgeIpPoolId(),
+        this.getNetworkHostUplinkPnic(),
         this.getIpRange(),
         this.getExternalIpRange(),
         this.getDhcpServers());

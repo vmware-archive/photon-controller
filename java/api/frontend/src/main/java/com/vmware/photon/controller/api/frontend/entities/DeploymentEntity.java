@@ -71,6 +71,10 @@ public class DeploymentEntity extends BaseEntity {
 
   private String networkTopRouterId;
 
+  private String networkEdgeIpPoolId;
+
+  private String networkHostUplinkPnic;
+
   private String edgeClusterId;
 
   private String ipRange;
@@ -273,6 +277,22 @@ public class DeploymentEntity extends BaseEntity {
     this.networkTopRouterId = networkTopRouterId;
   }
 
+  public String getNetworkEdgeIpPoolId() {
+    return networkEdgeIpPoolId;
+  }
+
+  public void setNetworkEdgeIpPoolId(String networkEdgeIpPoolId) {
+    this.networkEdgeIpPoolId = networkEdgeIpPoolId;
+  }
+
+  public String getNetworkHostUplinkPnic() {
+    return networkHostUplinkPnic;
+  }
+
+  public void setNetworkHostUplinkPnic(String networkHostUplinkPnic) {
+    this.networkHostUplinkPnic = networkHostUplinkPnic;
+  }
+
   public String getEdgeClusterId() {
     return edgeClusterId;
   }
@@ -399,6 +419,8 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
         && Objects.equals(this.getNetworkZoneId(), other.getNetworkZoneId())
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
+        && Objects.equals(this.getNetworkEdgeIpPoolId(), other.getNetworkEdgeIpPoolId())
+        && Objects.equals(this.getNetworkHostUplinkPnic(), other.getNetworkHostUplinkPnic())
         && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId())
         && Objects.equals(this.getIpRange(), other.getIpRange())
         && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange())
@@ -434,6 +456,8 @@ public class DeploymentEntity extends BaseEntity {
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkZoneId", this.getNetworkZoneId())
         .add("networkTopRouterId", this.getNetworkTopRouterId())
+        .add("networkEdgeIpPoolId", this.getNetworkEdgeIpPoolId())
+        .add("networkHostUplinkPnic", this.getNetworkHostUplinkPnic())
         .add("edgeClusterId", this.getEdgeClusterId())
         .add("ipRange", this.getIpRange())
         .add("floatingIpRange", this.getFloatingIpRange())
