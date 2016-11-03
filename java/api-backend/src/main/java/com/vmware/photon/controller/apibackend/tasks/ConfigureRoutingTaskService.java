@@ -429,6 +429,8 @@ public class ConfigureRoutingTaskService extends StatefulService {
             .advertiseNatRoutes(true)
             .advertiseNsxConnectedRoutes(true)
             .advertiseNatRoutes(true)
+            .advertiseStaticRoutes(true)
+            .enabled(true)
             .revision(revision)
             .build();
 
