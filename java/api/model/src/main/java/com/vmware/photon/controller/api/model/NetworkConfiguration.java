@@ -69,6 +69,16 @@ public class NetworkConfiguration {
   private String networkTopRouterId;
 
   @JsonProperty
+  @ApiModelProperty(value = "The ID of the Edge IP pool for connecting host to Edge")
+  @NotNull
+  private String networkEdgeIpPoolId;
+
+  @JsonProperty
+  @ApiModelProperty(value = "The name of the physical nic that the host uses to connect to Edge")
+  @NotNull
+  private String networkHostUplinkPnic;
+
+  @JsonProperty
   @ApiModelProperty(value = "The ID of the edge cluster that connects virtual network to physical network",
       required = true)
   @NotNull
@@ -136,10 +146,6 @@ public class NetworkConfiguration {
     this.networkZoneId = networkZoneId;
   }
 
-  public String getNetworkTopRouterId() {
-    return networkTopRouterId;
-  }
-
   public String getIpRange() {
     return ipRange;
   }
@@ -164,8 +170,28 @@ public class NetworkConfiguration {
     this.snatIp = snatIp;
   }
 
+  public String getNetworkTopRouterId() {
+    return networkTopRouterId;
+  }
+
   public void setNetworkTopRouterId(String networkTopRouterId) {
     this.networkTopRouterId = networkTopRouterId;
+  }
+
+  public String getNetworkEdgeIpPoolId() {
+    return networkEdgeIpPoolId;
+  }
+
+  public void setNetworkEdgeIpPoolId(String networkEdgeIpPoolId) {
+    this.networkEdgeIpPoolId = networkEdgeIpPoolId;
+  }
+
+  public String getNetworkHostUplinkPnic() {
+    return networkHostUplinkPnic;
+  }
+
+  public void setNetworkHostUplinkPnic(String networkHostUplinkPnic) {
+    this.networkHostUplinkPnic = networkHostUplinkPnic;
   }
 
   public String getEdgeClusterId() {
@@ -201,6 +227,8 @@ public class NetworkConfiguration {
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
         && Objects.equals(this.getNetworkZoneId(), other.getNetworkZoneId())
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
+        && Objects.equals(this.getNetworkEdgeIpPoolId(), other.getNetworkEdgeIpPoolId())
+        && Objects.equals(this.getNetworkHostUplinkPnic(), other.getNetworkHostUplinkPnic())
         && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId())
         && Objects.equals(this.getIpRange(), other.getIpRange())
         && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange())
@@ -218,6 +246,8 @@ public class NetworkConfiguration {
         this.getNetworkManagerPassword(),
         this.getNetworkZoneId(),
         this.getNetworkTopRouterId(),
+        this.getNetworkEdgeIpPoolId(),
+        this.getNetworkHostUplinkPnic(),
         this.getEdgeClusterId(),
         this.getFloatingIpRange(),
         this.getDhcpServers(),
@@ -232,6 +262,8 @@ public class NetworkConfiguration {
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkZoneId", this.getNetworkZoneId())
         .add("networkTopRouterId", this.getNetworkTopRouterId())
+        .add("networkEdgeIpPoolId", this.getNetworkEdgeIpPoolId())
+        .add("networkHostUplinkPnic", this.getNetworkHostUplinkPnic())
         .add("ipRange", this.getIpRange())
         .add("floatingIpRange", this.getFloatingIpRange())
         .add("snatIp", this.getSnatIp())
