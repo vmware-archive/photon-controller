@@ -332,14 +332,21 @@ public class BatchCreateManagementWorkflowServiceTest {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.STARTED, BatchCreateManagementWorkflowService.TaskState.SubStage.UPLOAD_IMAGE},
           {TaskState.TaskStage.STARTED, BatchCreateManagementWorkflowService.TaskState.SubStage.UPLOAD_IMAGE,
+              TaskState.TaskStage.STARTED,
+              BatchCreateManagementWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_VMS},
+          {TaskState.TaskStage.STARTED, BatchCreateManagementWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_VMS,
               TaskState.TaskStage.STARTED, BatchCreateManagementWorkflowService.TaskState.SubStage.CREATE_VMS},
           {TaskState.TaskStage.STARTED, BatchCreateManagementWorkflowService.TaskState.SubStage.CREATE_VMS,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, BatchCreateManagementWorkflowService.TaskState.SubStage.UPLOAD_IMAGE,
               TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, BatchCreateManagementWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_VMS,
+              TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, BatchCreateManagementWorkflowService.TaskState.SubStage.CREATE_VMS,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, BatchCreateManagementWorkflowService.TaskState.SubStage.UPLOAD_IMAGE,
+              TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.STARTED, BatchCreateManagementWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_VMS,
               TaskState.TaskStage.CANCELLED, null},
           {TaskState.TaskStage.STARTED, BatchCreateManagementWorkflowService.TaskState.SubStage.CREATE_VMS,
               TaskState.TaskStage.CANCELLED, null},
@@ -633,6 +640,7 @@ public class BatchCreateManagementWorkflowServiceTest {
       startState.childPollInterval = 10;
       startState.taskPollDelay = 10;
       startState.deploymentServiceLink = deploymentServiceLink;
+      startState.oAuthServerAddress = "0.0.0.0";
 
       DeployerTestConfig deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath());
