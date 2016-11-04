@@ -107,6 +107,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     public enum SubStage {
       UPLOAD_IMAGE,
       ALLOCATE_RESOURCES,
+      CREATE_LIGHTWAVE_VMS,
       CREATE_VMS,
       CREATE_CONTAINERS,
       WAIT_FOR_NODE_GROUP_CONVERGANCE,
@@ -178,6 +179,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     @NotNull
     @Immutable
     public String deploymentServiceLink;
+
+    public String lightwaveVmServiceLink;
 
     /**
      * This value represents the NTP server configured at VM.
@@ -279,6 +282,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       switch (currentState.taskState.subStage) {
         case UPLOAD_IMAGE:
         case ALLOCATE_RESOURCES:
+        case CREATE_LIGHTWAVE_VMS:
         case CREATE_VMS:
         case CREATE_CONTAINERS:
         case WAIT_FOR_NODE_GROUP_CONVERGANCE:
@@ -347,6 +351,9 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         break;
       case ALLOCATE_RESOURCES:
         allocateResources(currentState);
+        break;
+      case CREATE_LIGHTWAVE_VMS:
+        createLightwaveVm(currentState);
         break;
       case CREATE_VMS:
         createVms(currentState);
@@ -608,7 +615,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     AllocateTenantResourcesTaskService.State startState = new AllocateTenantResourcesTaskService.State();
     startState.parentTaskServiceLink = getSelfLink();
     startState.parentPatchBody = Utils.toJson(false, false,
-        buildPatch(TaskStage.STARTED, TaskState.SubStage.CREATE_VMS));
+        buildPatch(TaskStage.STARTED, TaskState.SubStage.CREATE_LIGHTWAVE_VMS));
     startState.taskPollDelay = currentState.taskPollDelay;
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.quotaLineItems = Collections.singletonList(
@@ -625,9 +632,130 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
             }));
   }
 
-  private void createVms(State currentState) {
+  private void createLightwaveVm(State currentState) {
+
+    if (!currentState.isAuthEnabled) {
+      TaskUtils.sendSelfPatch(this, buildPatch(TaskStage.STARTED, TaskState.SubStage.CREATE_VMS));
+      return;
+    }
 
     QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(ContainerTemplateService.State.class)
+            .addFieldClause(ContainerTemplateService.State.FIELD_NAME_NAME,
+                ContainersConfig.ContainerType.Lightwave.name())
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                List<String> containerTemplateServiceDocumentLinks = o.getBody(QueryTask.class).results.documentLinks;
+                if (containerTemplateServiceDocumentLinks.size() == 0) {
+                  ServiceUtils.logInfo(this, "No container template found for Lightwave");
+                  TaskUtils.sendSelfPatch(this, buildPatch(TaskStage.STARTED, TaskState.SubStage.CREATE_VMS));
+                }
+                checkState(containerTemplateServiceDocumentLinks.size() == 1);
+                createLightwaveVm(currentState, containerTemplateServiceDocumentLinks.get(0));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void createLightwaveVm(State currentState, String lightwaveContainerTemplateServiceLink) {
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(ContainerService.State.class)
+            .addFieldClause(ContainerService.State.FIELD_NAME_CONTAINER_TEMPLATE_SERVICE_LINK,
+                lightwaveContainerTemplateServiceLink)
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                List<String> documentLinks = o.getBody(QueryTask.class).results.documentLinks;
+                checkState(documentLinks.size() == 1);
+                createLightwaveVm(currentState, documentLinks.get(0), TaskState.SubStage.CREATE_VMS);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void createLightwaveVm(State currentState, String lightwaveContainerServiceLink,
+                                 TaskState.SubStage subStage) {
+
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(lightwaveContainerServiceLink)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
+
+                  try {
+                    ContainerService.State containerServiceState = completedOp.getBody(ContainerService.State.class);
+                    createLightwaveVm(currentState, containerServiceState);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
+  }
+
+  private void createLightwaveVm(State currentState, ContainerService.State lightwaveContainerServiceState) {
+    CreateManagementVmTaskService.State startState = new CreateManagementVmTaskService.State();
+    startState.parentTaskServiceLink = getSelfLink();
+    startState.vmServiceLink = lightwaveContainerServiceState.vmServiceLink;
+    startState.parentPatchBody = Utils.toJson(false, false,
+        buildPatch(TaskStage.STARTED, TaskState.SubStage.CREATE_VMS, startState.vmServiceLink));
+    startState.ntpEndpoint = currentState.ntpEndpoint;
+    startState.taskPollDelay = currentState.childPollInterval;
+    startState.isAuthEnabled = currentState.isAuthEnabled;
+    startState.oAuthServerAddress = currentState.oAuthServerAddress;
+    startState.oAuthTenantName = currentState.oAuthTenantName;
+    startState.deploymentServiceLink = currentState.deploymentServiceLink;
+
+    sendRequest(Operation
+        .createPost(this, CreateManagementVmTaskFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              }
+            }));
+
+  }
+
+  private void createVms(State currentState) {
+
+    QueryTask queryTask;
+
+    queryTask = QueryTask.Builder.createDirectTask()
         .setQuery(QueryTask.Query.Builder.create()
             .addKindFieldClause(VmService.State.class)
             .build())
@@ -645,6 +773,10 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
               }
 
               try {
+                List<String> vmServiceDocumentLinks = o.getBody(QueryTask.class).results.documentLinks;
+                if (currentState.lightwaveVmServiceLink != null) {
+                  vmServiceDocumentLinks.remove(currentState.lightwaveVmServiceLink);
+                }
                 createVms(currentState, o.getBody(QueryTask.class).results.documentLinks);
               } catch (Throwable t) {
                 failTask(t);
@@ -654,6 +786,10 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
 
   private void createVms(State currentState, List<String> vmServiceLinks) {
 
+    if (vmServiceLinks.size() == 0) {
+      TaskUtils.sendSelfPatch(this, buildPatch(TaskStage.STARTED, TaskState.SubStage.CREATE_CONTAINERS));
+      return;
+    }
     ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
     startState.parentTaskLink = getSelfLink();
     startState.parentPatchBody = Utils.toJson(false, false,
@@ -819,6 +955,19 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
    *
    * @param stage
    * @param subStage
+   * @return
+   */
+  @VisibleForTesting
+  protected State buildPatch(TaskState.TaskStage stage, TaskState.SubStage subStage, String lightwaveVmServiceLink) {
+    return buildPatch(stage, subStage, lightwaveVmServiceLink, null);
+  }
+
+  /**
+   * This method builds a patch state object which can be used to submit a
+   * self-patch.
+   *
+   * @param stage
+   * @param subStage
    * @param t
    * @return
    */
@@ -826,6 +975,31 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
   protected State buildPatch(TaskState.TaskStage stage, TaskState.SubStage subStage, @Nullable Throwable t) {
     return buildPatch(stage, subStage, null == t ? null : Utils.toServiceErrorResponse(t));
   }
+
+  /**
+   * This method builds a patch state object which can be used to submit a
+   * self-patch.
+   *
+   * @param stage
+   * @param subStage
+   * @param errorResponse
+   * @return
+   */
+  protected State buildPatch(
+      TaskState.TaskStage stage,
+      TaskState.SubStage subStage,
+      String lightwaveVmServiceLink,
+      @Nullable ServiceErrorResponse errorResponse) {
+
+    State state = new State();
+    state.taskState = new TaskState();
+    state.taskState.stage = stage;
+    state.taskState.subStage = subStage;
+    state.lightwaveVmServiceLink = lightwaveVmServiceLink;
+    state.taskState.failure = errorResponse;
+    return state;
+  }
+
 
   /**
    * This method builds a patch state object which can be used to submit a
