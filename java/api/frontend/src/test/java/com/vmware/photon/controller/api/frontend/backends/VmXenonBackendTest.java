@@ -1014,19 +1014,13 @@ public class VmXenonBackendTest {
 
       assertThat(task, is(notNullValue()));
       assertThat(task.getState(), is(TaskEntity.State.QUEUED));
-      assertThat(task.getSteps().size(), is(3));
+      assertThat(task.getSteps().size(), is(2));
 
       assertThat(task.getSteps().get(0).getOperation(),
           is(com.vmware.photon.controller.api.model.Operation.RELEASE_VM_IP));
       assertThat(task.getSteps().get(0).getTransientResource(ResourceReserveStepCmd.VM_ID), is(vmId));
       assertThat(task.getSteps().get(1).getOperation(),
           is(com.vmware.photon.controller.api.model.Operation.DELETE_VM));
-
-      assertThat(task.getSteps().get(2).getOperation(),
-          is(com.vmware.photon.controller.api.model.Operation.DISCONNECT_VM_SWITCH));
-      assertThat(task.getSteps().get(2).getTransientResource(ResourceReserveStepCmd.VM_ID), is(vmId));
-      assertThat(task.getSteps().get(2).getTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID),
-          is(vm.getNetworks().get(0)));
 
       assertThat(task.getToBeLockedEntities().size(), is(1));
       assertThat(task.getToBeLockedEntities().get(0).getId(), is(vmId));

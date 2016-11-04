@@ -1056,17 +1056,6 @@ public class VmXenonBackend implements VmBackend {
     step.addResources(entityList);
     step.setOperation(Operation.DELETE_VM);
 
-    // Conditional step. If virtual network is being used, the vm connection
-    // to logical switch needs to be released.
-    if (networkHelper.isSdnEnabled()) {
-      step = new StepEntity();
-      step.setOperation(Operation.DISCONNECT_VM_SWITCH);
-      step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, vm.getId());
-      step.createOrUpdateTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID, vm.getNetworks().get(0));
-
-      stepEntities.add(step);
-    }
-
     TaskEntity task = taskBackend.createTaskWithSteps(vm, Operation.DELETE_VM, false, stepEntities);
     task.getToBeLockedEntities().add(vm);
     return task;
