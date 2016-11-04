@@ -48,6 +48,7 @@ public class VmService extends StatefulService {
 
     public static final String FIELD_NAME_HOST_SERVICE_LINK = "hostServiceLink";
     public static final String FIELD_NAME_VM_ID = "vmId";
+    public static final String FIELD_NAME_IP_ADDRESS = "ipAddress";
 
     /**
      * This value represents the name of the VM.
