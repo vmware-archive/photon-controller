@@ -69,6 +69,16 @@ public class SubnetConfigurationTask extends ServiceDocument {
     public String subnetCidr;
 
     /**
+     * The IP of the low range of the subnet.
+     */
+    public String subnetLowIp;
+
+    /**
+     * The IP of the high range of the subnet.
+     */
+    public String subnetHighIp;
+
+    /**
      * The operation for subnet configuration.
      */
     public SubnetOperation subnetOperation;
