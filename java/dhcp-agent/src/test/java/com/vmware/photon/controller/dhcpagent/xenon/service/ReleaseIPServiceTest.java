@@ -296,6 +296,7 @@ public class ReleaseIPServiceTest {
                     ReleaseIPServiceTest.class.getResource(scriptPath).getPath(),
                     Constants.DNSMASQ_HOST_DIR_PATH,
                     Constants.DNSMASQ_OPTION_DIR_PATH,
+                    Constants.DNSMASQ_CONF_PATH,
                     Constants.DNSMASQ_PID_PATH);
             testEnvironment = TestEnvironment.create(dnsmasqDriver, 1, listeningExecutorService);
         }
