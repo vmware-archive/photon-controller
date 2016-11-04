@@ -41,8 +41,6 @@ import com.vmware.photon.controller.deployer.xenon.task.ChildTaskAggregatorFacto
 import com.vmware.photon.controller.deployer.xenon.task.ChildTaskAggregatorService;
 import com.vmware.photon.controller.deployer.xenon.task.CreateContainerTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.CreateContainerTaskService;
-import com.vmware.photon.controller.deployer.xenon.task.RegisterAuthClientTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.RegisterAuthClientTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -77,19 +75,8 @@ import java.util.List;
  */
 public class CreateContainersWorkflowService extends StatefulService {
 
-  private static final String MGMT_UI_LOGIN_REDIRECT_URL_TEMPLATE = "https://%s:4343/oauth_callback.html";
-  private static final String MGMT_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s:4343/logout_callback";
-  private static final String SWAGGER_UI_LOGIN_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
-  private static final String SWAGGER_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
   public static final String GENERATE_CERTIFICATE_SCRIPT_NAME = "generate-certificate";
 
-  /**
-   * This enum lists the services which require authentication.
-   */
-  public enum AuthenticationServiceType {
-    SWAGGER,
-    MGMT_UI
-  }
 
   /**
    * This class defines the state of a {@link CreateContainersWorkflowService} task.
@@ -102,8 +89,6 @@ public class CreateContainersWorkflowService extends StatefulService {
     public enum SubStage {
       CREATE_LIGHTWAVE_CONTAINER,
       GENERATE_CERTIFICATE,
-      REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
-      REGISTER_AUTH_CLIENT_FOR_MGMT_UI,
       CREATE_CORE_CONTAINERS,
       PREEMPTIVE_PAUSE_BACKGROUND_TASKS,
       CREATE_SERVICE_CONTAINERS,
@@ -258,8 +243,6 @@ public class CreateContainersWorkflowService extends StatefulService {
         switch (taskState.subStage) {
           case CREATE_LIGHTWAVE_CONTAINER:
           case GENERATE_CERTIFICATE:
-          case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
-          case REGISTER_AUTH_CLIENT_FOR_MGMT_UI:
           case CREATE_CORE_CONTAINERS:
           case PREEMPTIVE_PAUSE_BACKGROUND_TASKS:
           case CREATE_SERVICE_CONTAINERS:
@@ -285,14 +268,6 @@ public class CreateContainersWorkflowService extends StatefulService {
         break;
       case GENERATE_CERTIFICATE:
         generateCertificate(currentState, TaskState.TaskStage.STARTED,
-            TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
-        break;
-      case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
-        registerAuthClient(currentState, AuthenticationServiceType.SWAGGER, TaskState.TaskStage.STARTED,
-            TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_MGMT_UI);
-        break;
-      case REGISTER_AUTH_CLIENT_FOR_MGMT_UI:
-        registerAuthClient(currentState, AuthenticationServiceType.MGMT_UI, TaskState.TaskStage.STARTED,
             TaskState.SubStage.CREATE_CORE_CONTAINERS);
         break;
       case CREATE_CORE_CONTAINERS:
@@ -652,9 +627,6 @@ public class CreateContainersWorkflowService extends StatefulService {
                       "Regenerating the SSL Context for thrift failed, ignoring to make tests pass, it fail later");
                   ServiceUtils.logSevere(CreateContainersWorkflowService.this, t);
                 }
-
-
-
                 sendStageProgressPatch(nextStage, nextSubStage);
               }
             } catch (Throwable t) {
@@ -675,103 +647,6 @@ public class CreateContainersWorkflowService extends StatefulService {
     failTask(new IllegalStateException("Generating certificate failed with exit code " + result.toString()));
   }
 
-  private void registerAuthClient(State currentState,
-                                  AuthenticationServiceType serviceType,
-                                  TaskState.TaskStage nextStage,
-                                  TaskState.SubStage nextSubStage) {
-
-    if (!currentState.isNewDeployment) {
-      ServiceUtils.logInfo(this, "Skipping auth client registration for " + serviceType + " (not a new deployment");
-      sendStageProgressPatch(nextStage, nextSubStage);
-      return;
-    }
-
-    if (!currentState.isAuthEnabled) {
-      ServiceUtils.logInfo(this, "Skipping auth client registration for " + serviceType + " (auth is disabled");
-      sendStageProgressPatch(nextStage, nextSubStage);
-      return;
-    }
-
-    RegisterAuthClientTaskService.State startState = new RegisterAuthClientTaskService.State();
-    startState.deploymentServiceLink = currentState.deploymentServiceLink;
-
-    switch (serviceType) {
-      case SWAGGER:
-        startState.loginRedirectUrlTemplate = SWAGGER_UI_LOGIN_REDIRECT_URL_TEMPLATE;
-        startState.logoutRedirectUrlTemplate = SWAGGER_UI_LOGOUT_REDIRECT_URL_TEMPLATE;
-        break;
-      case MGMT_UI:
-        startState.loginRedirectUrlTemplate = MGMT_UI_LOGIN_REDIRECT_URL_TEMPLATE;
-        startState.logoutRedirectUrlTemplate = MGMT_UI_LOGOUT_REDIRECT_URL_TEMPLATE;
-        break;
-    }
-
-    TaskUtils.startTaskAsync(this,
-        RegisterAuthClientTaskFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        RegisterAuthClientTaskService.State.class,
-        currentState.taskPollDelay,
-        new FutureCallback<RegisterAuthClientTaskService.State>() {
-          @Override
-          public void onSuccess(@Nullable RegisterAuthClientTaskService.State state) {
-            switch (state.taskState.stage) {
-              case FINISHED: {
-                DeploymentService.State patchState = new DeploymentService.State();
-                switch (serviceType) {
-                  case SWAGGER:
-                    patchState.oAuthSwaggerLoginEndpoint = state.loginUrl;
-                    patchState.oAuthSwaggerLogoutEndpoint = state.logoutUrl;
-                    break;
-                  case MGMT_UI:
-                    patchState.oAuthMgmtUiLoginEndpoint = state.loginUrl;
-                    patchState.oAuthMgmtUiLogoutEndpoint = state.logoutUrl;
-                    break;
-                }
-
-                updateDeploymentLoginEndpoints(currentState, patchState, nextStage, nextSubStage);
-                break;
-              }
-
-              case FAILED: {
-                State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-                patchState.taskState.failure = state.taskState.failure;
-                TaskUtils.sendSelfPatch(CreateContainersWorkflowService.this, patchState);
-                break;
-              }
-
-              case CANCELLED: {
-                State patchState = buildPatch(TaskState.TaskStage.CANCELLED, null, null);
-                TaskUtils.sendSelfPatch(CreateContainersWorkflowService.this, patchState);
-                break;
-              }
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            failTask(throwable);
-          }
-        });
-  }
-
-  private void updateDeploymentLoginEndpoints(State currentState,
-                                              DeploymentService.State patchState,
-                                              TaskState.TaskStage nextStage,
-                                              TaskState.SubStage nextSubStage) {
-
-    sendRequest(HostUtils.getCloudStoreHelper(this)
-        .createPatch(currentState.deploymentServiceLink)
-        .setBody(patchState)
-        .setCompletion(
-            (o, e) -> {
-              if (e != null) {
-                failTask(e);
-              } else {
-                sendStageProgressPatch(nextStage, nextSubStage);
-              }
-            }));
-  }
 
   private void sendStageProgressPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
     ServiceUtils.logTrace(this, "Sending self-patch to stage %s:%s", taskStage, subStage);
