@@ -160,6 +160,8 @@ To enable virtual network in Photon Controller, some NSX parameters are needed t
 * `NETWORK_MANAGER_PASSWORD` - password of the NSX manager
 * `NETWORK_TOP_ROUTER_ID` - ID of the NSX tier-0 router
 * `NETWORK_ZONE_ID` - ID of the NSX transport zone
+* `NETWORK_EDGE_IP_POOL_ID` - ID of the NSX Edge IP pool
+* `NETWORK_HOST_UPLINK_PNIC` - Name of the host uplink physical nic
 * `NETWORK_EDGE_CLUSTER_ID` - ID of the NSX Edge Cluster
 * `NETWORK_DHCP_RELAY_PROFILE_ID` - ID of the NSX DHCP relay profile
 * `NETWORK_DHCP_RELAY_SERVICE_ID` - ID of the NSX DHCP relay service
