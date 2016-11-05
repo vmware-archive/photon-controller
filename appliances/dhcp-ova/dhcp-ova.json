@@ -24,11 +24,7 @@
     },
     {
       "type": "shell",
-      "inline": "mkdir -p /usr/local/sbin && wget -nv {{ user `dnsmasq_url` }} -O /usr/local/sbin/dnsmasq && chmod +x /usr/local/sbin/dnsmasq"
-    },
-    {
-      "type": "shell",
-      "inline": "wget -nv {{ user `dnsmasq_dhcp_release_url` }} -O /usr/local/bin/dhcp_release && chmod +x /usr/local/bin/dhcp_release"
+      "inline": "tdnf -y install dnsmasq"
     },
     {
       "type": "shell",
