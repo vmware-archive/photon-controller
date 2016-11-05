@@ -317,7 +317,6 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
                 CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_IP_ADDRESS_SPACE);
             patchState.taskServiceEntity = state.taskServiceEntity;
             patchState.taskServiceEntity.isIpAddressSpaceConsumed = true;
-
             progress(state, patchState);
           } catch (Throwable t) {
             fail(state, t);
@@ -622,6 +621,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
     virtualNetworkPatchState.state = subnetState;
     virtualNetworkPatchState.isSizeQuotaConsumed = state.taskServiceEntity.isSizeQuotaConsumed;
+    virtualNetworkPatchState.isIpAddressSpaceConsumed = state.taskServiceEntity.isIpAddressSpaceConsumed;
     virtualNetworkPatchState.logicalSwitchId = state.taskServiceEntity.logicalSwitchId;
     virtualNetworkPatchState.logicalRouterId = state.taskServiceEntity.logicalRouterId;
     virtualNetworkPatchState.logicalSwitchUplinkPortId = state.taskServiceEntity.logicalSwitchUplinkPortId;

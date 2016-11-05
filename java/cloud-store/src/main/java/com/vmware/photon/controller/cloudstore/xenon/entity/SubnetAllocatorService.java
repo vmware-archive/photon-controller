@@ -278,35 +278,23 @@ public class SubnetAllocatorService extends StatefulService {
           Operation.createDelete(this, subnetState.documentSelfLink);
       ServiceUtils.doServiceOperation(this, deleteOperation);
 
-      IpV4Range mergeToRange = null;
-
-      List<IpV4Range> ipV4RangeListLow = currentState.freeList.stream()
-          .filter(ipV4Range -> ipV4Range.high + 1 == subnetState.lowIp)
-          .collect(Collectors.toList());
-
-      List<IpV4Range> ipV4RangeListHigh = currentState.freeList.stream()
-          .filter(ipV4Range -> ipV4Range.low - 1 == subnetState.highIp)
-          .collect(Collectors.toList());
-
-      if (ipV4RangeListLow != null && !ipV4RangeListLow.isEmpty()) {
-        mergeToRange = ipV4RangeListLow.get(0);
-        mergeToRange.high = subnetState.highIp;
-      }
-
-      if (ipV4RangeListHigh != null && !ipV4RangeListHigh.isEmpty()) {
-        if (mergeToRange != null) {
-          mergeToRange.high = ipV4RangeListHigh.get(0).high;
-          currentState.freeList.remove(ipV4RangeListHigh.get(0));
+      IpV4Range targetRange = new IpV4Range(subnetState.lowIp, subnetState.highIp);
+      List<IpV4Range> newFreeList = new ArrayList<>();
+      // Merge range
+      for (IpV4Range freeRange : currentState.freeList) {
+        if (freeRange.high < targetRange.low - 1) {
+          newFreeList.add(freeRange);
+        } else if (freeRange.low > targetRange.high + 1) {
+          newFreeList.add(targetRange);
+          targetRange = freeRange;
         } else {
-          mergeToRange = ipV4RangeListHigh.get(0);
-          mergeToRange.low = subnetState.lowIp;
+          targetRange =
+              new IpV4Range(Math.min(targetRange.low, freeRange.low), Math.max(targetRange.high, freeRange.high));
         }
       }
 
-      if (mergeToRange == null) {
-        IpV4Range returnedRange = new IpV4Range(subnetState.lowIp, subnetState.highIp);
-        currentState.freeList.add(returnedRange);
-      }
+      newFreeList.add(targetRange);
+      currentState.freeList = newFreeList;
 
       patch.complete();
     } catch (Throwable t) {
