@@ -39,6 +39,8 @@ import com.vmware.photon.controller.deployer.xenon.task.AllocateTenantResourcesT
 import com.vmware.photon.controller.deployer.xenon.task.AllocateTenantResourcesTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.ChildTaskAggregatorFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.ChildTaskAggregatorService;
+import com.vmware.photon.controller.deployer.xenon.task.CreateContainerTaskFactoryService;
+import com.vmware.photon.controller.deployer.xenon.task.CreateContainerTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.RegisterAuthClientTaskFactoryService;
@@ -124,6 +126,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       UPLOAD_IMAGE,
       ALLOCATE_RESOURCES,
       CREATE_LIGHTWAVE_VMS,
+      WAIT_FOR_LIGHTWAVE_SERVICE,
       REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
       REGISTER_AUTH_CLIENT_FOR_MGMT_UI,
       CREATE_VMS,
@@ -301,6 +304,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         case UPLOAD_IMAGE:
         case ALLOCATE_RESOURCES:
         case CREATE_LIGHTWAVE_VMS:
+        case WAIT_FOR_LIGHTWAVE_SERVICE:
         case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
         case REGISTER_AUTH_CLIENT_FOR_MGMT_UI:
         case CREATE_VMS:
@@ -373,7 +377,11 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         allocateResources(currentState);
         break;
       case CREATE_LIGHTWAVE_VMS:
-        createLightwaveVm(currentState, TaskStage.STARTED, TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
+        createLightwaveVm(currentState, TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_LIGHTWAVE_SERVICE);
+        break;
+      case WAIT_FOR_LIGHTWAVE_SERVICE:
+        waitForLightwaveService(currentState, TaskStage.STARTED,
+            TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
         break;
       case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
         registerAuthClient(currentState, AuthenticationServiceType.SWAGGER, TaskStage.STARTED,
@@ -725,7 +733,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
                 List<String> documentLinks = o.getBody(QueryTask.class).results.documentLinks;
                 checkState(documentLinks.size() == 1);
                 createLightwaveVm(currentState, documentLinks.get(0),
-                    TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
+                    TaskState.SubStage.WAIT_FOR_LIGHTWAVE_SERVICE);
               } catch (Throwable t) {
                 failTask(t);
               }
@@ -761,7 +769,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     startState.vmServiceLink = lightwaveContainerServiceState.vmServiceLink;
     startState.parentPatchBody = Utils.toJson(false, false,
         buildPatch(TaskStage.STARTED,
-            TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI, startState.vmServiceLink));
+            TaskState.SubStage.WAIT_FOR_LIGHTWAVE_SERVICE, startState.vmServiceLink));
     startState.ntpEndpoint = currentState.ntpEndpoint;
     startState.taskPollDelay = currentState.childPollInterval;
     startState.isAuthEnabled = currentState.isAuthEnabled;
@@ -779,6 +787,96 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
               }
             }));
 
+  }
+
+  private void waitForLightwaveService(State currentState, TaskStage stage, TaskState.SubStage subStage) {
+
+    if (!currentState.isAuthEnabled) {
+      TaskUtils.sendSelfPatch(this, buildPatch(stage, subStage));
+      return;
+    }
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(ContainerTemplateService.State.class)
+            .addFieldClause(ContainerTemplateService.State.FIELD_NAME_NAME,
+                ContainersConfig.ContainerType.Lightwave.name())
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                List<String> containerTemplateServiceDocumentLinks = o.getBody(QueryTask.class).results.documentLinks;
+                if (containerTemplateServiceDocumentLinks.size() == 0) {
+                  ServiceUtils.logInfo(this, "No container template found for Lightwave");
+                  TaskUtils.sendSelfPatch(this, buildPatch(stage, subStage));
+                  return;
+                }
+                checkState(containerTemplateServiceDocumentLinks.size() == 1);
+                waitForLightwaveService(currentState, containerTemplateServiceDocumentLinks.get(0), stage, subStage);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+
+  }
+
+  private void waitForLightwaveService(State currentState, String lightwaveContainerTemplateLink,
+                                       TaskStage stage, TaskState.SubStage subStage) {
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(ContainerService.State.class)
+            .addFieldClause(ContainerService.State.FIELD_NAME_CONTAINER_TEMPLATE_SERVICE_LINK,
+                lightwaveContainerTemplateLink)
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                List<String> documentLinks = o.getBody(QueryTask.class).results.documentLinks;
+                checkState(documentLinks.size() == 1);
+                waitForLightwaveService(currentState, documentLinks.get(0), subStage);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void waitForLightwaveService(State currentState, String lightwaveContainerLink, TaskState.SubStage subStage) {
+    CreateContainerTaskService.State startState = new CreateContainerTaskService.State();
+    startState.parentTaskServiceLink = getSelfLink();
+    startState.deploymentServiceLink = currentState.deploymentServiceLink;
+    startState.containerServiceLink = lightwaveContainerLink;
+    startState.parentPatchBody = Utils.toJson(false, false, buildPatch(TaskStage.STARTED, subStage));
+    sendRequest(Operation
+        .createPost(this, CreateContainerTaskFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              }
+            }));
   }
 
   private void createVms(State currentState) {
