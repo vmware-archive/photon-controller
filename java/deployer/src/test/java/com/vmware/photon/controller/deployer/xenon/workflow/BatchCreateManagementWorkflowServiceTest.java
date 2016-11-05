@@ -337,7 +337,7 @@ public class BatchCreateManagementWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               BatchCreateManagementWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_VMS,
               TaskState.TaskStage.STARTED,
-              BatchCreateManagementWorkflowService.TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI},
+              BatchCreateManagementWorkflowService.TaskState.SubStage.WAIT_FOR_LIGHTWAVE_SERVICE},
           {TaskState.TaskStage.STARTED, BatchCreateManagementWorkflowService.TaskState.SubStage.CREATE_VMS,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, BatchCreateManagementWorkflowService.TaskState.SubStage.UPLOAD_IMAGE,
