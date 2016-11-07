@@ -13,6 +13,7 @@ LIGHTWAVE_HOST_IP=$4
 LOAD_BALANCER_IP=$5
 LIGHTWAVE_LOAD_BALANCER_IP=$LOAD_BALANCER_IP
 NUMBER=$6
+MULTI=$7
 
 LIGHTWAVE_USERNAME=Administrator
 LIGHTWAVE_PASSWORD='Admin!23'
@@ -29,6 +30,12 @@ LOG_DIRECTORY=${PC_TMP_DIR}/log/photon-controller
 mkdir -p $PHOTON_CONTROLLER_CONFIG_DIR
 mkdir -p $LOG_DIRECTORY
 
+if [ "$MULTI" == "multi" ]; then
+  PEERS="  - https://${HOST_IP}:19000\n  - https://${PEER1_IP}:19000\n  - https://${PEER2_IP}:19000"
+else
+  PEERS="  - https://${HOST_IP}:19000"
+fi
+
 cat << EOF > $PHOTON_CONTROLLER_CONFIG_DIR/photon-controller-core.yml
 
 xenon:
@@ -40,9 +47,7 @@ xenon:
   registrationAddress: "${HOST_IP}"
   storagePath: "/etc/esxcloud/cloud-store/sandbox_19000"
   peerNodes:
-  - https://${HOST_IP}:19000
-  - https://${PEER1_IP}:19000
-  - https://${PEER2_IP}:19000
+${PEERS}
 
 deployer:
   deployer:
@@ -113,11 +118,6 @@ logging:
       archivedLogFilenamePattern: /var/log/photon-controller/photon-controller-%d.log.gz
       archivedFileCount: 5
       logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
-# if you are using syslog
-#    - type: syslog
-#      host: "${SYSLOG_ENDPOINT}"
-#      logFormat: "%-5p [%d{ISO8601}] [photon-controller] %X{request}%X{task} %c: %m\n%ex"
-#      facility: LOCAL0
 
 image:
   use_esx_store: true
@@ -135,11 +135,6 @@ auth:
     - ${LIGHTWAVE_SECURITY_GROUPS}
 EOF
 
-if [ "$EXPORT_KEYS" -eq "1" ]; then
-  mkdir -p keys
-  EXPORT_OPTS="-v $PWD/keys:/etc/keys/"
-fi
-
 echo "Starting Photon-Controller container #$NUMBER..."
 docker run -d \
   --name photon-controller-${NUMBER} \
@@ -149,7 +144,6 @@ docker run -d \
   --ip=$HOST_IP \
   --entrypoint=/usr/sbin/init \
   -v ${PHOTON_CONTROLLER_CONFIG_DIR}:/etc/photon-controller \
-  $EXPORT_OPTS \
   vmware/photon-controller-lightwave-client
 
 sleep 15

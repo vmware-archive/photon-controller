@@ -29,7 +29,6 @@
 rc=$?
 
 # Clean up
-./delete-pc-cluster.sh
-./delete-lw-cluster.sh
+./delete-all-containers.sh
 
 exit $rc

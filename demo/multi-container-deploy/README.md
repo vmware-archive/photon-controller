@@ -22,35 +22,29 @@ the Lightwave nodes and creates a auth-enabled deployment.
 * PC Container Node IPs: 192.168.114.11 - 192.168.114.13
 * Docker network name: lightwave
 
-## Running the scripts
-Following steps are for Linux with Docker. For Macbook you need to first prepare using `docker-machine` as mentioned at the end of this section.
+## Running the scripts on Mac OS
+Following script will start the VM and create one Lightwave container, one Photon container, and one HAProxy container.
 
-1. Create three docker host VMs using `./make-vms.sh` or use `docker-machine create -d vmwarefusion default` to create one VM that will host all the containers being created.
-2. Load docker images of Photon-Contorller and Lightwave by running `./load-images.sh`
-3. Create LW cluster by running `./make-lw-cluster.sh`
-4. Start Load Balancer by runnig `./run-haproxy-container.sh`
-5. Create PC cluster by running `./make-pc-cluster.sh`
-6. Create demo users and groups by running `./make-users.sh`
-7. Deploy UI container by running `./make-ui-container.sh`
-8. Go to https://load-balancer-ip:4343 to login to Photon-Controlelr UI.
+```bash
+./up.sh
+```
 
-For running above scripts in *MacBook* you would need to have `docker-machine` and `virtualbox` installed.
-Use following steps to prepare your MacBook to run the scripts listed above.
-* `docker-machine create -d virtualbox --virtualbox-memory 4096 default`
-* `eval $(docker-machine eval default)`
-* `docker-machine scp ./prepare-docker-machine.sh default:/tmp`
-* `docker-machien ssh default:/tmp/prepare-docker-machine.sh`
+or to demo multi-host, multi-container scenario run the script with 'multi' parameter.
 
-# Multi-Host Multi-Container Photon-Controller and Lightwave cluster.
-To create all containers in different VMs, we can leverage docker-machine and its swarm feature.
-Make sure your have latest `docker-machine` installed. Then run following script to create three
-swarm nodes (VMs).
+```bash
+./up.sh multi
 ```
-./make-vms.sh
+
+If above script was successfull, then use following command to get the IP address of load balancer.
+
+```bash
+LOAD_BALANCER_IP=$(docker inspect --format '{{ .Node.IP }}' haproxy)
 ```
-After VMs are created, you can run following command to set your docker client to point to swarm cluster
-just created.
+
+Now connect `photon` CLI to the load balancer and verify the deployment.
+
+```bash
+photon target set https://$LOAD_BALANCER_IP:28080 -c
+photon target login --username photon@photon.local --password Photon123$
+photon deployment show default
 ```
-eval $(docker-machine env --swarm mhs-demo0)
-```
-Now you are ready to run all the scripts mentioned in section "Runngin the scripts" above.

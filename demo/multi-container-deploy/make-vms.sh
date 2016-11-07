@@ -22,6 +22,8 @@ docker-machine create \
     --engine-opt="cluster-advertise=$IF:2376" \
     mhs-demo0
 
+if [ "$1" == "multi" ]; then
+
 docker-machine create \
     -d $VM_DRIVER \
     --swarm \
@@ -37,5 +39,7 @@ docker-machine create \
     --engine-opt="cluster-store=consul://$(docker-machine ip mh-keystore):8500" \
     --engine-opt="cluster-advertise=$IF:2376" \
   mhs-demo2
+
+fi
 
 eval $(docker-machine env --swarm mhs-demo0)
