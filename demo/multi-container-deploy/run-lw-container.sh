@@ -10,7 +10,8 @@ CONTAINER_NAME=lightwave-$NUMBER
 LIGHTWAVE_DOMAIN=photon.local
 LIGHTWAVE_SITE=Default-first-site
 
-LW_TMP_DIR=$(mktemp -d "$PWD/lw_tmp.XXXXX")
+mkdir -p tmp
+LW_TMP_DIR=$(mktemp -d "$PWD/tmp/lw_tmp.XXXXX")
 trap "rm -rf $LW_TMP_DIR" EXIT
 
 LIGHTWAVE_CONFIG_DIR=${LW_TMP_DIR}/config

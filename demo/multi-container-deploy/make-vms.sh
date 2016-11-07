@@ -1,9 +1,16 @@
 #!/bin/bash -xe
 
-VM_DRIVER=vmwarefusion
+VM_DRIVER=${VM_DRIVER:-vmwarefusion}
 
-# If virtualbox is used VM_DRIVER then change following to eth1
-IF=eth0
+if [ "$VM_DRIVER" == "vmwarefusion" ]; then
+  IF=eth0
+  MEMORY_OPT="--vmwarefusion-memory-size=4096"
+else
+  # Assume VirtualBox is available. IF should be eth1 for VirtualBox
+  IF=eth1
+  MEMORY_OPT="--virtualbox-memory=4096"
+fi
+
 
 docker-machine create -d $VM_DRIVER mh-keystore
 
@@ -20,7 +27,10 @@ docker-machine create \
     --swarm-discovery="consul://$(docker-machine ip mh-keystore):8500" \
     --engine-opt="cluster-store=consul://$(docker-machine ip mh-keystore):8500" \
     --engine-opt="cluster-advertise=$IF:2376" \
-    mhs-demo0
+    $MEMORY_OPT \
+    vm-0
+
+if [ "$1" == "multi" ]; then
 
 docker-machine create \
     -d $VM_DRIVER \
@@ -28,7 +38,8 @@ docker-machine create \
     --swarm-discovery="consul://$(docker-machine ip mh-keystore):8500" \
     --engine-opt="cluster-store=consul://$(docker-machine ip mh-keystore):8500" \
     --engine-opt="cluster-advertise=$IF:2376" \
-  mhs-demo1
+    $MEMORY_OPT \
+  vm-1
 
 docker-machine create \
     -d $VM_DRIVER \
@@ -36,6 +47,9 @@ docker-machine create \
     --swarm-discovery="consul://$(docker-machine ip mh-keystore):8500" \
     --engine-opt="cluster-store=consul://$(docker-machine ip mh-keystore):8500" \
     --engine-opt="cluster-advertise=$IF:2376" \
-  mhs-demo2
+    $MEMORY_OPT \
+  vm-2
 
-eval $(docker-machine env --swarm mhs-demo0)
+fi
+
+eval $(docker-machine env --swarm vm-0)
