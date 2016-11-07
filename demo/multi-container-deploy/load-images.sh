@@ -10,5 +10,5 @@ if [ "$(find . -iname esxcloud-management-ui.tar | wc -l)" -eq "1" ]; then
 fi
 
 find . -iname photon-controller-*.tar | xargs docker load -i
-docker load < ./vmware-lightwave-sts.tar
 docker tag vmware/photon-controller vmware/photon-controller-lightwave-client || true
+docker load < ./vmware-lightwave-sts.tar

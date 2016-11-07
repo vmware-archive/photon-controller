@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/sh -xe
 
 # boot2docker VMs do not have this directory present. Create it for systemd in lightwave container.
 sudo mkdir -p /sys/fs/cgroup/systemd

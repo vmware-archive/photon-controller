@@ -1,5 +1,5 @@
 #!/bin/bash -xe
 
-docker cp ./make-users-helper.sh photon-controller-1:/
+docker cp ./make-users-helper.sh photon-controller-0:/
 
-docker exec -t photon-controller-1 /make-users-helper.sh
+docker exec -t photon-controller-0 /make-users-helper.sh
