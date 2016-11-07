@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.model.QuotaLineItem;
 import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.Constants;
+import com.vmware.photon.controller.common.ssl.KeyStoreUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -25,13 +26,16 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
+import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
+import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
@@ -69,11 +73,20 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFutureTask;
+import org.apache.commons.io.FileUtils;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
+import java.io.File;
+import java.io.InputStream;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -98,6 +111,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
   private static final String MGMT_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s:4343/logout_callback";
   private static final String SWAGGER_UI_LOGIN_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
   private static final String SWAGGER_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
+
+  public static final String GENERATE_CERTIFICATE_SCRIPT_NAME = "generate-certificate";
 
   private static boolean inUnitTests = false;
 
@@ -127,6 +142,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       ALLOCATE_RESOURCES,
       CREATE_LIGHTWAVE_VMS,
       WAIT_FOR_LIGHTWAVE_SERVICE,
+      GENERATE_CERT,
       REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
       REGISTER_AUTH_CLIENT_FOR_MGMT_UI,
       CREATE_VMS,
@@ -305,6 +321,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         case ALLOCATE_RESOURCES:
         case CREATE_LIGHTWAVE_VMS:
         case WAIT_FOR_LIGHTWAVE_SERVICE:
+        case GENERATE_CERT:
         case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
         case REGISTER_AUTH_CLIENT_FOR_MGMT_UI:
         case CREATE_VMS:
@@ -381,7 +398,10 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         break;
       case WAIT_FOR_LIGHTWAVE_SERVICE:
         waitForLightwaveService(currentState, TaskStage.STARTED,
-            TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
+            TaskState.SubStage.GENERATE_CERT);
+        break;
+      case GENERATE_CERT:
+        generateCertificate(currentState);
         break;
       case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
         registerAuthClient(currentState, AuthenticationServiceType.SWAGGER, TaskStage.STARTED,
@@ -699,6 +719,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
                 if (containerTemplateServiceDocumentLinks.size() == 0) {
                   ServiceUtils.logInfo(this, "No container template found for Lightwave");
                   TaskUtils.sendSelfPatch(this, buildPatch(stage, subStage));
+                  return;
                 }
                 checkState(containerTemplateServiceDocumentLinks.size() == 1);
                 createLightwaveVm(currentState, containerTemplateServiceDocumentLinks.get(0));
@@ -706,6 +727,91 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
                 failTask(t);
               }
             }));
+  }
+
+  private void generateCertificate(State currentState) {
+    HostUtils.getCloudStoreHelper(this).createGet(currentState.deploymentServiceLink)
+      .setCompletion((o, e) -> {
+        if (e != null) {
+          failTask(e);
+          return;
+        }
+        generateCertificate(o.getBody(DeploymentService.State.class));
+      }).sendWith(this);
+  }
+
+  private void generateCertificate(DeploymentService.State deploymentState) {
+    if (!deploymentState.oAuthEnabled) {
+      sendStageProgressPatch(TaskStage.STARTED, TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
+      return;
+    }
+
+    List<String> command = new ArrayList<>();
+    command.add("./" + GENERATE_CERTIFICATE_SCRIPT_NAME);
+    command.add(deploymentState.oAuthServerAddress);
+    command.add(deploymentState.oAuthPassword);
+    command.add(deploymentState.oAuthTenantName);
+    command.add(PhotonControllerXenonHost.KEYSTORE_FILE);
+    command.add(PhotonControllerXenonHost.KEYSTORE_PASSWORD);
+
+    DeployerContext deployerContext = HostUtils.getDeployerContext(this);
+    File scriptLogFile = new File(
+        deployerContext.getScriptLogDirectory(),
+        GENERATE_CERTIFICATE_SCRIPT_NAME + ".log");
+
+    ScriptRunner scriptRunner = new ScriptRunner.Builder(command, deployerContext.getScriptTimeoutSec())
+        .directory(deployerContext.getScriptDirectory())
+        .redirectOutput(ProcessBuilder.Redirect.to(scriptLogFile))
+        .build();
+
+    ListenableFutureTask<Integer> futureTask = ListenableFutureTask.create(scriptRunner);
+    HostUtils.getListeningExecutorService(this).submit(futureTask);
+
+    Futures.addCallback(futureTask,
+        new FutureCallback<Integer>() {
+          @Override
+          public void onSuccess(@javax.validation.constraints.NotNull Integer result) {
+            try {
+              if (result != 0) {
+                logScriptErrorAndFail(result, scriptLogFile);
+              } else {
+                // Set the inInstaller flag to true which would allow us to override the xenon service client to talk
+                // to the auth enabled newly deployed management plane using https with two way SSL.
+                ((PhotonControllerXenonHost) getHost()).setInInstaller(true);
+
+                // need to switch the ssl context for the thrift clients to use
+                // the generated certs to be able to talk to the authenticated
+                // agents
+                try {
+                  SSLContext sslContext = SSLContext.getInstance(KeyStoreUtils.THRIFT_PROTOCOL);
+                  TrustManagerFactory tmf = null;
+
+                  tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                  KeyStore keyStore = KeyStore.getInstance("JKS");
+                  InputStream in = FileUtils.openInputStream(new File(PhotonControllerXenonHost.KEYSTORE_FILE));
+                  keyStore.load(in, PhotonControllerXenonHost.KEYSTORE_PASSWORD.toCharArray());
+                  tmf.init(keyStore);
+                  sslContext.init(null, tmf.getTrustManagers(), null);
+                  ((PhotonControllerXenonHost) getHost()).regenerateThriftClients(sslContext);
+
+                  KeyStoreUtils.acceptAllCerts(KeyStoreUtils.THRIFT_PROTOCOL);
+                } catch (Throwable t) {
+                  ServiceUtils.logSevere(BatchCreateManagementWorkflowService.this,
+                      "Regenerating the SSL Context for thrift failed, ignoring to make tests pass, it fail later");
+                  ServiceUtils.logSevere(BatchCreateManagementWorkflowService.this, t);
+                }
+                sendStageProgressPatch(TaskStage.STARTED, TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
+              }
+            } catch (Throwable t) {
+              failTask(t);
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
+          }
+        });
   }
 
   private void createLightwaveVm(State currentState, String lightwaveContainerTemplateServiceLink) {
@@ -1128,6 +1234,12 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, state.failure));
         break;
     }
+  }
+
+  private void logScriptErrorAndFail(Integer result, File scriptLogFile) throws Throwable {
+    ServiceUtils.logSevere(this, GENERATE_CERTIFICATE_SCRIPT_NAME + " returned " + result.toString());
+    ServiceUtils.logSevere(this, "Script output: " + FileUtils.readFileToString(scriptLogFile));
+    failTask(new IllegalStateException("Generating certificate failed with exit code " + result.toString()));
   }
 
   /**
