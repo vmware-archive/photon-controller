@@ -142,8 +142,6 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER},
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE},
-          {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS},
@@ -291,14 +289,6 @@ public class CreateContainersWorkflowServiceTest {
               TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER},
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER,
-              TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE},
-          {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE,
-              TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
-          {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS,
               TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS},
@@ -328,16 +318,6 @@ public class CreateContainersWorkflowServiceTest {
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE,
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED,
@@ -411,22 +391,9 @@ public class CreateContainersWorkflowServiceTest {
               null},
 
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE,
-              TaskState.TaskStage.CREATED,
-              null},
-          {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE,
-              TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER},
-
-          {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS,
               TaskState.TaskStage.CREATED,
               null},
-          {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS,
-              TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS,
               TaskState.TaskStage.STARTED,
@@ -440,10 +407,6 @@ public class CreateContainersWorkflowServiceTest {
               CreateContainersWorkflowService.TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS,
               TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
-          {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS,
-              TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS,
               TaskState.TaskStage.STARTED,
@@ -464,10 +427,6 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_SERVICE_CONTAINERS,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE},
-          {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_SERVICE_CONTAINERS,
-              TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER},
 
           {TaskState.TaskStage.STARTED,
@@ -485,10 +444,6 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE},
-          {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER,
-              TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER},
 
           {TaskState.TaskStage.FINISHED,
@@ -499,10 +454,6 @@ public class CreateContainersWorkflowServiceTest {
               null,
               TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER},
-          {TaskState.TaskStage.FINISHED,
-              null,
-              TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE},
           {TaskState.TaskStage.FINISHED,
               null,
               TaskState.TaskStage.STARTED,
@@ -543,10 +494,6 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.FAILED,
               null,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE},
-          {TaskState.TaskStage.FAILED,
-              null,
-              TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
           {TaskState.TaskStage.FAILED,
               null,
@@ -581,10 +528,6 @@ public class CreateContainersWorkflowServiceTest {
               null,
               TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER},
-          {TaskState.TaskStage.CANCELLED,
-              null,
-              TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.GENERATE_CERTIFICATE},
           {TaskState.TaskStage.CANCELLED,
               null,
               TaskState.TaskStage.STARTED,
@@ -704,7 +647,6 @@ public class CreateContainersWorkflowServiceTest {
      *
      * @throws Throwable Throws an exception if any error is encountered.
      */
-    @SuppressWarnings("unchecked")
     @Test(dataProvider = "hostCounts")
     public void testTaskFailureInsideCreateContainer(Integer hostCount) throws Throwable {
       machine = createTestEnvironment(deployerTestConfig, listeningExecutorService,
@@ -731,7 +673,6 @@ public class CreateContainersWorkflowServiceTest {
      *
      * @throws Throwable Throws an exception if any error is encountered.
      */
-    @SuppressWarnings("unchecked")
     @Test(dataProvider = "hostCounts")
     public void testTaskSuccess(Integer hostCount) throws Throwable {
       machine = createTestEnvironment(deployerTestConfig, listeningExecutorService,
