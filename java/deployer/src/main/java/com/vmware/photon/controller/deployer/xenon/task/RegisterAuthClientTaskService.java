@@ -28,6 +28,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
@@ -60,6 +61,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -110,6 +112,29 @@ public class RegisterAuthClientTaskService extends StatefulService {
 
     @WriteOnce
     public String logoutUrl;
+
+    /**
+     * This value represents the number of "register auth client" call cycles which have been performed.
+     */
+    @DefaultInteger(value = 0)
+    public Integer registerAuthClientIterations;
+
+    /**
+     * This value represents the number of polling iterations to perform before giving up.
+     */
+    @DefaultInteger(value = 5)
+    @Positive
+    @Immutable
+    public Integer registerAuthClientMaxIterations;
+
+    /**
+     * This value represents the delay interval to use between the completion of one register auth client call cycle and
+     * the beginning of another. It is defined in milliseconds
+     */
+    @DefaultInteger(value = 500)
+    @Positive
+    @Immutable
+    public Integer registerAuthClientPollDelay;
   }
 
   public RegisterAuthClientTaskService() {
@@ -493,7 +518,17 @@ public class RegisterAuthClientTaskService extends StatefulService {
 
           @Override
           public void onFailure(Throwable t) {
-            failTask(t);
+            if (currentState.registerAuthClientIterations >= currentState.registerAuthClientMaxIterations) {
+              failTask(t);
+            } else {
+              getHost().schedule(
+                  () -> {
+                    State patchState = buildPatch(TaskState.TaskStage.STARTED, null);
+                    patchState.registerAuthClientIterations = currentState.registerAuthClientIterations + 1;
+                    TaskUtils.sendSelfPatch(RegisterAuthClientTaskService.this, patchState);
+                  },
+                  currentState.registerAuthClientPollDelay, TimeUnit.MILLISECONDS);
+            }
           }
         };
 
