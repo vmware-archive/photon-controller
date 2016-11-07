@@ -133,7 +133,7 @@ function check_lightwave()
   # Check if lightwave server is up
   attempts=1
   reachable="false"
-  total_attempts=50
+  total_attempts=500
   while [ $attempts -lt $total_attempts ] && [ $reachable != "true" ]; do
     http_code=$(curl -w "%{http_code}" -s -X GET --insecure https://$lightwave_dc)
     # The curl returns 000 when it fails to connect to the lightwave server

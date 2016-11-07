@@ -19,7 +19,6 @@ describe "Image Cleaner", housekeeper: true, auth_disabled: true do
 
   it "runs succesfully" do
     payload = {
-      imageWatermarkTime: Time.now.to_i,
       imageDeleteWatermarkTime: Time.now.to_i
     }
 

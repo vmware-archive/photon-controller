@@ -45,13 +45,17 @@ public interface DHCPDriver {
      * @param subnetId
      * @param gateway
      * @param cidr
+     * @param lowIp
+     * @param highIp
      * @return
      * @throws Exception
      */
     Response createSubnetConfiguration(
         String subnetId,
         String gateway,
-        String cidr) throws Exception;
+        String cidr,
+        String lowIp,
+        String highIp) throws Exception;
 
     /**
      * This method deletes subnet configuration.

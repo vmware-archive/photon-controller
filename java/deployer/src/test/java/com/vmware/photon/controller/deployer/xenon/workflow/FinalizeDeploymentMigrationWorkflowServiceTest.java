@@ -14,9 +14,13 @@
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.RestApiClient;
 import com.vmware.photon.controller.api.client.resource.DeploymentApi;
+import com.vmware.photon.controller.api.client.resource.DeploymentRestApi;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.TasksRestApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
+import com.vmware.photon.controller.api.client.resource.VmRestApi;
 import com.vmware.photon.controller.api.model.AuthInfo;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentState;
@@ -50,7 +54,6 @@ import com.vmware.photon.controller.common.xenon.migration.UpgradeInformation;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
@@ -63,6 +66,7 @@ import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskService;
+import com.vmware.photon.controller.deployer.xenon.task.UploadVibTaskService;
 import com.vmware.photon.controller.resource.gen.DatastoreType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -739,7 +743,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
     private DeployerContext deployerContext;
     private ListeningExecutorService listeningExecutorService;
-    private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private ApiClientFactory apiClientFactory;
@@ -768,7 +771,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     @BeforeMethod
     public void setUpTest() throws Throwable {
       apiClientFactory = mock(ApiClientFactory.class);
-      httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
     }
@@ -808,7 +810,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .apiClientFactory(apiClientFactory)
           .cloudServerSet(sourceCloudStore.getServerSet())
           .zookeeperServersetBuilderFactory(sourceZKFactory)
-          .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .hostCount(1)
@@ -821,7 +822,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .listeningExecutorService(listeningExecutorService)
           .bindPort(60001)
           .zookeeperServersetBuilderFactory(destinationZKFactory)
-          .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .build();
@@ -865,10 +865,10 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void mockApiClient(boolean isSuccess) throws Throwable {
 
-      ApiClient apiClient = mock(ApiClient.class);
-      DeploymentApi deploymentApi = mock(DeploymentApi.class);
-      VmApi vmApi = mock(VmApi.class);
-      TasksApi tasksApi = mock(TasksApi.class);
+      ApiClient apiClient = mock(RestApiClient.class);
+      DeploymentApi deploymentApi = mock(DeploymentRestApi.class);
+      VmApi vmApi = mock(VmRestApi.class);
+      TasksApi tasksApi = mock(TasksRestApi.class);
 
       DeploymentService.State deploymentService = TestHelper.getDeploymentServiceStartState(false, false);
       deploymentService = TestHelper.createDeploymentService(destinationEnvironment, deploymentService);
@@ -997,12 +997,13 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
 
       mockApiClient(true);
-      MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
+          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
 

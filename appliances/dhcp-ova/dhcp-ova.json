@@ -24,11 +24,7 @@
     },
     {
       "type": "shell",
-      "inline": "mkdir -p /usr/local/sbin && wget -nv {{ user `dnsmasq_url` }} -O /usr/local/sbin/dnsmasq && chmod +x /usr/local/sbin/dnsmasq"
-    },
-    {
-      "type": "shell",
-      "inline": "wget -nv {{ user `dnsmasq_dhcp_release_url` }} -O /usr/local/bin/dhcp_release && chmod +x /usr/local/bin/dhcp_release"
+      "inline": "tdnf -y install dnsmasq"
     },
     {
       "type": "shell",
@@ -36,15 +32,19 @@
     },
     {
       "type": "shell",
-      "inline": "for port in {{ user `dnsmasq_public_tcp_ports` }}; do echo iptables -I INPUT -p tcp --dport $port -j ACCEPT >> /etc/systemd/scripts/iptables; done"
-    },
-    {
-      "type": "shell",
-      "inline": "for port in {{ user `dnsmasq_public_udp_ports` }}; do echo iptables -I INPUT -p udp --dport $port -j ACCEPT >> /etc/systemd/scripts/iptables; done"
-    },
-    {
-      "type": "shell",
       "inline": "systemctl restart systemd-networkd"
+    },
+    {
+      "type": "shell",
+      "inline": "sed -i 's/DROP/ACCEPT/g' /etc/systemd/scripts/iptables"
+    },
+    {
+      "type": "shell",
+      "inline": "systemctl enable iptables"
+    },
+    {
+      "type": "shell",
+      "inline": "systemctl start iptables"
     },
     {
       "type": "shell",

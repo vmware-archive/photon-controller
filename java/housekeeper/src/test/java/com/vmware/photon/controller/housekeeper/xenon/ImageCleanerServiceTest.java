@@ -100,7 +100,6 @@ public class ImageCleanerServiceTest {
 
     state.isSelfProgressionDisabled = true;
     state.queryPollDelay = 50;
-    state.imageWatermarkTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
     state.imageDeleteWatermarkTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 
     if (stage != null) {
@@ -316,21 +315,6 @@ public class ImageCleanerServiceTest {
       assertThat(savedState.queryPollDelay, is(startState.queryPollDelay));
     }
 
-    /**
-     * Test that imageWatermarkTime value is not change on startup if present.
-     *
-     * @throws Throwable
-     */
-    @Test
-    public void testImageWatermarkTimeIsNotChanged() throws Throwable {
-      ImageCleanerService.State startState = buildValidStartupState();
-      startState.imageWatermarkTime = 500L;
-      host.startServiceSynchronously(service, startState);
-
-      ImageCleanerService.State savedState = host.getServiceState(ImageCleanerService.State.class);
-      assertThat(savedState.imageWatermarkTime, is(startState.imageWatermarkTime));
-    }
-
     @Test(dataProvider = "ExpirationTime")
     public void testExpirationTimeInitialization(long time,
                                                  BigDecimal expectedTime,
@@ -392,12 +376,6 @@ public class ImageCleanerServiceTest {
       return new Object[][]{
           {"queryPollDelay", 0},
           {"queryPollDelay", -10},
-
-          {"imageWatermarkTime", 0L},
-          {"imageWatermarkTime", -10L},
-
-          {"imageDeleteWatermarkTime", 0L},
-          {"imageDeleteWatermarkTime", -10L},
       };
     }
   }
@@ -687,11 +665,10 @@ public class ImageCleanerServiceTest {
     @Test
     public void testInvalidPatchUpdateImageWatermarkTimeField() throws Throwable {
       ImageCleanerService.State startState = buildValidStartupState();
-      startState.imageWatermarkTime = 300L;
       host.startServiceSynchronously(service, startState);
 
       ImageCleanerService.State patchState = new ImageCleanerService.State();
-      patchState.imageWatermarkTime = 500L;
+      patchState.imageDeleteWatermarkTime = 500L;
 
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
@@ -701,11 +678,8 @@ public class ImageCleanerServiceTest {
         host.sendRequestAndWait(patch);
         fail("Exception expected.");
       } catch (BadRequestException e) {
-        assertThat(e.getMessage(), is("imageWatermarkTime cannot be changed."));
+        assertThat(e.getMessage(), is("imageDeleteWatermarkTime cannot be changed."));
       }
-
-      ImageCleanerService.State savedState = host.getServiceState(ImageCleanerService.State.class);
-      assertThat(savedState.imageWatermarkTime, is(startState.imageWatermarkTime));
     }
 
     /**
@@ -924,8 +898,6 @@ public class ImageCleanerServiceTest {
       for (Map.Entry<String, Object> document : response.results.documents.entrySet()) {
         ImageDatastoreSweeperService.State docState =
             Utils.fromJson(document.getValue(), ImageDatastoreSweeperService.State.class);
-        assertThat(docState.imageCreateWatermarkTime, is(startState.imageWatermarkTime));
-        assertThat(docState.imageDeleteWatermarkTime, is(startState.imageDeleteWatermarkTime));
         assertThat(docState.hostPollIntervalMilliSeconds, is(startState.queryPollDelay));
         if (docState.isImageDatastore) {
           hadIsImageDatastoreFlag++;
@@ -1012,7 +984,6 @@ public class ImageCleanerServiceTest {
         throws Throwable {
       ImageDatastoreSweeperService.State task = new ImageDatastoreSweeperService.State();
       task.parentLink = TestHost.SERVICE_URI;
-      task.imageCreateWatermarkTime = System.currentTimeMillis();
       task.imageDeleteWatermarkTime = System.currentTimeMillis();
       task.datastore = "data-store-id";
       task.isSelfProgressionDisabled = true;

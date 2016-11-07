@@ -53,6 +53,7 @@ import com.vmware.photon.controller.nsxclient.models.FabricNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeState;
 import com.vmware.photon.controller.nsxclient.models.HostNodeLoginCredential;
 import com.vmware.photon.controller.nsxclient.models.HostSwitch;
+import com.vmware.photon.controller.nsxclient.models.PhysicalNic;
 import com.vmware.photon.controller.nsxclient.models.TransportNode;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeState;
@@ -216,6 +217,18 @@ public class ProvisionHostTaskService extends StatefulService {
     public String networkZoneId;
 
     /**
+     * This value represents the ID of the Edge IP pool for connecting host to Edge.
+     */
+    @WriteOnce
+    public String networkEdgeIpPoolId;
+
+    /**
+     * This value represents the name of the physical nic that the host uses to connect to Edge.
+     */
+    @WriteOnce
+    public String networkHostUplinkPnic;
+
+    /**
      * This value represents the interval, in milliseconds, to wait before starting to poll the
      * status of a task object in the NSX REST API.
      */
@@ -245,7 +258,7 @@ public class ProvisionHostTaskService extends StatefulService {
      * This value represents the maximum number of polling iterations which should be attempted
      * while waiting for the agent to become ready after VIB installation.
      */
-    @DefaultInteger(value = 120)
+    @DefaultInteger(value = 60)
     @Immutable
     public Integer agentStartMaxPollCount;
 
@@ -268,7 +281,7 @@ public class ProvisionHostTaskService extends StatefulService {
      * This value represents the maximum number of polling iterations which should be attempted
      * while waiting for the agent to become ready after provisioning.
      */
-    @DefaultInteger(value = 120)
+    @DefaultInteger(value = 60)
     @Immutable
     public Integer agentRestartMaxPollCount;
 
@@ -527,6 +540,8 @@ public class ProvisionHostTaskService extends StatefulService {
     patchState.networkManagerUserName = deploymentState.networkManagerUsername;
     patchState.networkManagerPassword = deploymentState.networkManagerPassword;
     patchState.networkZoneId = deploymentState.networkZoneId;
+    patchState.networkEdgeIpPoolId = deploymentState.networkEdgeIpPoolId;
+    patchState.networkHostUplinkPnic = deploymentState.networkHostUplinkPnic;
     sendStageProgressPatch(patchState);
   }
 
@@ -768,6 +783,13 @@ public class ProvisionHostTaskService extends StatefulService {
 
     HostSwitch hostSwitch = new HostSwitch();
     hostSwitch.setName(hostSwitchName);
+    hostSwitch.setStaticIpPoolId(currentState.networkEdgeIpPoolId);
+    List<PhysicalNic> hostUplinkPnics = new ArrayList<>();
+    PhysicalNic hostUplinkPnic = new PhysicalNic();
+    hostUplinkPnic.setDeviceName(currentState.networkHostUplinkPnic);
+    hostUplinkPnic.setUplinkName("uplink-1");
+    hostUplinkPnics.add(hostUplinkPnic);
+    hostSwitch.setPhysicalNics(hostUplinkPnics);
 
     TransportNodeCreateSpec request = new TransportNodeCreateSpec();
     request.setDisplayName(NameUtils.getTransportNodeName(hostState.hostAddress));

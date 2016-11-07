@@ -110,13 +110,13 @@ public class XenonRestClient implements XenonClient {
   // This method is no longer needed, will be removed in a future change
   @Override
   public void start() {
-    logger.info("client started");
+    logger.debug("client started");
   }
 
   // This method is no longer needed, will be removed in a future change
   @Override
   public void stop() {
-    logger.info("client stopped");
+    logger.debug("client stopped");
   }
 
   public int getServerSetSize() {
@@ -578,7 +578,7 @@ public class XenonRestClient implements XenonClient {
   @VisibleForTesting
   protected Operation send(Operation requestedOperation)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    logger.info("send: STARTED {}", OperationUtils.createLogMessage(requestedOperation));
+    logger.debug("send: STARTED {}", OperationUtils.createLogMessage(requestedOperation));
     OperationLatch operationLatch = createOperationLatch(requestedOperation);
     serviceHost.sendRequest(requestedOperation);
 
@@ -603,7 +603,7 @@ public class XenonRestClient implements XenonClient {
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
 
     for (Operation requestedOperation : requestedOperations.values()) {
-      logger.info("send: STARTED {}", OperationUtils.createLogMessage(requestedOperation));
+      logger.debug("send: STARTED {}", OperationUtils.createLogMessage(requestedOperation));
     }
 
     OperationJoin operationJoin = OperationJoin.create(requestedOperations.values());
@@ -729,11 +729,11 @@ public class XenonRestClient implements XenonClient {
 
   private void logCompletedOperation(Operation completedOperation) {
     if (completedOperation.getStatusCode() == Operation.STATUS_CODE_OK) {
-      logger.info("send: SUCCESS {}",
+      logger.debug("send: SUCCESS {}",
           OperationUtils.createLogMessage(completedOperation));
     } else {
       if (completedOperation.getStatusCode() == Operation.STATUS_CODE_NOT_FOUND) {
-        logger.info("send: COMPLETED {}", OperationUtils.createLogMessageWithStatus(completedOperation));
+        logger.debug("send: COMPLETED {}", OperationUtils.createLogMessageWithStatus(completedOperation));
       } else {
         logger.warn("send: WARN {}", OperationUtils.createLogMessageWithStatus(completedOperation));
       }

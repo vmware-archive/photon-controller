@@ -41,9 +41,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests {@link TenantsApi}.
+ * Tests {@link TenantsRestApi}.
  */
-public class TenantsApiTest extends ApiTestBase {
+public class TenantsRestApiTest extends ApiTestBase {
 
   @Test
   public void testCreate() throws IOException {
@@ -57,7 +57,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     Task task = tenantsApi.create("foo");
     assertEquals(task, responseTask);
@@ -75,7 +75,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -113,7 +113,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     ResourceList<Tenant> response = tenantsApi.listByName("foo");
     assertEquals(response.getItems().size(), tenantResourceList.getItems().size());
@@ -145,7 +145,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     ResourceList<Tenant> response = tenantsApi.listByName("foo");
     assertEquals(response.getItems().size(), tenantResourceList.getItems().size() + tenantResourceListNextPage
@@ -171,7 +171,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -218,7 +218,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -254,7 +254,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     Task task = tenantsApi.delete("foo");
     assertEquals(task, responseTask);
@@ -272,7 +272,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -305,7 +305,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     Task task = tenantsApi.createResourceTicket("foo", new ResourceTicketCreateSpec());
     assertEquals(task, responseTask);
@@ -323,7 +323,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -362,7 +362,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     ResourceList<ResourceTicket> response = tenantsApi.getResourceTickets("foo");
     assertEquals(response.getItems().size(), resourceTicketResourceList.getItems().size());
@@ -395,7 +395,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     ResourceList<ResourceTicket> response = tenantsApi.getResourceTickets("foo");
     assertEquals(response.getItems().size(), resourceTicketResourceList.getItems().size() +
@@ -422,7 +422,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     tenantsApi.getResourceTicketsAsync("foo", new FutureCallback<ResourceList<ResourceTicket>>() {
@@ -468,7 +468,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     tenantsApi.getResourceTicketsAsync("foo", new FutureCallback<ResourceList<ResourceTicket>>() {
@@ -503,7 +503,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     Task task = tenantsApi.createProject("foo", new ProjectCreateSpec());
     assertEquals(task, responseTask);
@@ -521,7 +521,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -559,7 +559,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     ResourceList<Project> response = tenantsApi.getProjects("foo");
     assertEquals(response.getItems().size(), projectResourceList.getItems().size());
@@ -589,7 +589,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     ResourceList<Project> response = tenantsApi.getProjects("foo");
     assertEquals(response.getItems().size(), projectResourceList.getItems().size() + projectResourceListNextPage
@@ -615,7 +615,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     tenantsApi.getProjectsAsync("foo", new FutureCallback<ResourceList<Project>>() {
@@ -658,7 +658,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
     tenantsApi.getProjectsAsync("foo", new FutureCallback<ResourceList<Project>>() {
@@ -692,7 +692,7 @@ public class TenantsApiTest extends ApiTestBase {
 
     setupMocks(serializedResponse, HttpStatus.SC_OK);
 
-    TenantsApi tenantsApi = new TenantsApi(restClient);
+    TenantsApi tenantsApi = new TenantsRestApi(restClient);
 
     Tenant response = tenantsApi.getTenant("tenant1");
     assertEquals(response, tenant);

@@ -25,45 +25,46 @@ import java.util.logging.LogManager;
  * This class implements helper routines used to test service hosts in isolation.
  */
 public class TestHost extends BasicServiceHost {
-    private static final String successScript = "/scripts/success.sh";
+  private static final String successScript = "/scripts/success.sh";
 
-    private DHCPDriver dhcpDriver = new DnsmasqDriver(TestHost.class.getResource("/dnsmasq.leases").getPath(),
-            Constants.DHCP_RELEASE_PATH,
-            TestHost.class.getResource(successScript).getPath(),
-            TestHost.class.getResource("/hosts/subnet1").getPath(),
-            TestHost.class.getResource("/options/subnet1").getPath(),
-            TestHost.class.getResource(successScript).getPath());
+  private DHCPDriver dhcpDriver = new DnsmasqDriver(TestHost.class.getResource("/dnsmasq.leases").getPath(),
+      Constants.DHCP_RELEASE_PATH,
+      TestHost.class.getResource(successScript).getPath(),
+      TestHost.class.getResource("/hosts/subnet1").getPath(),
+      TestHost.class.getResource("/options/subnet1").getPath(),
+      TestHost.class.getResource("/config/dnsmasq.conf").getPath(),
+      TestHost.class.getResource(successScript).getPath());
 
-    public TestHost() {
-        super();
+  public TestHost() {
+    super();
+  }
+
+  public static TestHost create() throws Throwable {
+    TestHost host = new TestHost();
+    host.initialize();
+    host.startWithCoreServices();
+    return host;
+  }
+
+  @Override
+  public void destroy() throws Throwable {
+    super.destroy();
+    LogManager.getLogManager().reset();
+  }
+
+  @Override
+  public Operation sendRequestAndWait(Operation op) throws Throwable {
+    Operation operation = super.sendRequestAndWait(op);
+    // For tests we check status code 200 to see if the response is OK
+    // If nothing is changed in patch, it returns 304 which means not modified.
+    // We will treat 304 as 200
+    if (operation.getStatusCode() == 304) {
+      operation.setStatusCode(200);
     }
+    return operation;
+  }
 
-    public static TestHost create() throws Throwable {
-        TestHost host = new TestHost();
-        host.initialize();
-        host.startWithCoreServices();
-        return host;
-    }
-
-    @Override
-    public void destroy() throws Throwable {
-        super.destroy();
-        LogManager.getLogManager().reset();
-    }
-
-    @Override
-    public Operation sendRequestAndWait(Operation op) throws Throwable {
-        Operation operation = super.sendRequestAndWait(op);
-        // For tests we check status code 200 to see if the response is OK
-        // If nothing is changed in patch, it returns 304 which means not modified.
-        // We will treat 304 as 200
-        if (operation.getStatusCode() == 304) {
-            operation.setStatusCode(200);
-        }
-        return operation;
-    }
-
-    public DHCPDriver getDHCPDriver() {
-        return this.dhcpDriver;
-    }
+  public DHCPDriver getDHCPDriver() {
+    return this.dhcpDriver;
+  }
 }

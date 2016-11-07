@@ -27,7 +27,6 @@ import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeExceptio
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
@@ -37,6 +36,7 @@ import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskService;
+import com.vmware.photon.controller.deployer.xenon.task.UploadVibTaskService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
@@ -401,7 +401,6 @@ public class AddCloudHostWorkflowServiceTest {
     private DeployerContext deployerContext;
     private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
-    private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private ListeningExecutorService listeningExecutorService;
     private TestEnvironment testEnvironment;
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
@@ -430,7 +429,6 @@ public class AddCloudHostWorkflowServiceTest {
     public void setUpTest() throws Throwable {
       agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
-      httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
     }
 
     private void createTestEnvironment() throws Throwable {
@@ -438,7 +436,6 @@ public class AddCloudHostWorkflowServiceTest {
           .deployerContext(deployerContext)
           .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
-          .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .cloudServerSet(cloudStoreMachine.getServerSet())
           .hostCount(1)
@@ -454,7 +451,6 @@ public class AddCloudHostWorkflowServiceTest {
 
       agentControlClientFactory = null;
       hostClientFactory = null;
-      httpFileServiceClientFactory = null;
     }
 
     @AfterClass
@@ -471,9 +467,9 @@ public class AddCloudHostWorkflowServiceTest {
     @Test
     public void testSuccess() throws Throwable {
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
-      MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockCreateScriptFile(deployerContext, ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerContext, ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerContext, UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       createTestEnvironment();
 
       startState.hostServiceLink =

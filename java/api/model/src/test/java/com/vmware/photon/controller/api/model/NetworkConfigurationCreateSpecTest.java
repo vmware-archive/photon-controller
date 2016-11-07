@@ -54,6 +54,8 @@ public class NetworkConfigurationCreateSpecTest {
           .networkManagerPassword("networkManagerPassword")
           .networkZoneId("networkZoneId")
           .networkTopRouterId("networkTopRouterId")
+          .networkEdgeIpPoolId("networkEdgeIpPoolId")
+          .networkHostUplinkPnic("networkHostUplinkPnic")
           .ipRange("10.0.0.1/24")
           .externalIpRange(sampleIpRange)
           .dhcpServers(new ArrayList<>(Arrays.asList("192.10.0.1", "192.20.0.1")))
@@ -75,6 +77,8 @@ public class NetworkConfigurationCreateSpecTest {
         "networkManagerPassword may not be null (was null)",
         "networkManagerUsername may not be null (was null)",
         "networkTopRouterId may not be null (was null)",
+        "networkEdgeIpPoolId may not be null (was null)",
+        "networkHostUplinkPnic may not be null (was null)",
         "networkZoneId may not be null (was null)",
         "externalIpRange.start s is invalid IPv4 Address (was s)"
     };
@@ -87,7 +91,9 @@ public class NetworkConfigurationCreateSpecTest {
         "networkManagerPassword must be null (was p)",
         "networkManagerUsername must be null (was u)",
         "networkTopRouterId must be null (was r)",
-        "networkZoneId must be null (was z)"
+        "networkZoneId must be null (was z)",
+        "networkEdgeIpPoolId must be null (was p)",
+        "networkHostUplinkPnic must be null (was u)"
     };
 
     private Validator validator = new Validator();
@@ -146,6 +152,8 @@ public class NetworkConfigurationCreateSpecTest {
               .networkManagerPassword("p")
               .networkTopRouterId("r")
               .networkZoneId("z")
+              .networkEdgeIpPoolId("p")
+              .networkHostUplinkPnic("u")
               .ipRange("i")
               .externalIpRange(new IpRange())
               .dhcpServers(Arrays.asList("d"))
@@ -165,6 +173,7 @@ public class NetworkConfigurationCreateSpecTest {
       String expectedString =
           "NetworkConfigurationCreateSpec{sdnEnabled=true, networkManagerAddress=1.2.3.4, " +
           "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, " +
+          "networkEdgeIpPoolId=networkEdgeIpPoolId, networkHostUplinkPnic=networkHostUplinkPnic, " +
           "ipRange=10.0.0.1/24, externalIpRange=IpRange{start=192.168.0.1, end=192.168.0.254}, " +
           "dhcpServers=192.10.0.1,192.20.0.1}";
       assertThat(sampleNetworkConfigurationCreateSpec.toString(), is(expectedString));

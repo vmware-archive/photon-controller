@@ -461,7 +461,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
               case FAILED:
               case CANCELLED:
                 fail(state, new IllegalStateException(
-                    String.format("Failed to create logical switch: %s", result.taskState.failure.message)));
+                    String.format("Failed to create logical router: %s", result.taskState.failure.message)));
                 break;
             }
           }
@@ -548,6 +548,8 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     subnetConfigurationTask.subnetConfiguration.subnetGateway =
         state.taskServiceEntity.reservedIpList.get(ReservedIpType.GATEWAY);
     subnetConfigurationTask.subnetConfiguration.subnetCidr = state.taskServiceEntity.cidr;
+    subnetConfigurationTask.subnetConfiguration.subnetLowIp = state.taskServiceEntity.lowIpDynamic;
+    subnetConfigurationTask.subnetConfiguration.subnetHighIp = state.taskServiceEntity.highIpDynamic;
     subnetConfigurationTask.subnetConfiguration.subnetOperation = SubnetConfigurationTask.SubnetOperation.CREATE;
 
     Operation.createPost(UriUtils.buildUri(state.dhcpAgentEndpoint + SubnetConfigurationService.FACTORY_LINK))
