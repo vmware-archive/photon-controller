@@ -743,7 +743,7 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
-          CreateContainersWorkflowService.GENERATE_CERTIFICATE_SCRIPT_NAME, true);
+          BatchCreateManagementWorkflowService.GENERATE_CERTIFICATE_SCRIPT_NAME, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
 
