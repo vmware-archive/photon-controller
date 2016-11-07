@@ -15,7 +15,6 @@ package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
-import com.vmware.photon.controller.common.ssl.KeyStoreUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -23,7 +22,6 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
-import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
@@ -31,10 +29,8 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
-import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig.ContainerType;
-import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.task.ChildTaskAggregatorFactoryService;
@@ -50,23 +46,12 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFutureTask;
-import org.apache.commons.io.FileUtils;
 
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
 
-import java.io.File;
-import java.io.InputStream;
-import java.security.KeyStore;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -74,9 +59,6 @@ import java.util.List;
  * This class implements a Xenon task service which creates service containers for a deployment.
  */
 public class CreateContainersWorkflowService extends StatefulService {
-
-  public static final String GENERATE_CERTIFICATE_SCRIPT_NAME = "generate-certificate";
-
 
   /**
    * This class defines the state of a {@link CreateContainersWorkflowService} task.
@@ -88,7 +70,6 @@ public class CreateContainersWorkflowService extends StatefulService {
      */
     public enum SubStage {
       CREATE_LIGHTWAVE_CONTAINER,
-      GENERATE_CERTIFICATE,
       CREATE_CORE_CONTAINERS,
       PREEMPTIVE_PAUSE_BACKGROUND_TASKS,
       CREATE_SERVICE_CONTAINERS,
@@ -242,7 +223,6 @@ public class CreateContainersWorkflowService extends StatefulService {
         checkState(taskState.subStage != null);
         switch (taskState.subStage) {
           case CREATE_LIGHTWAVE_CONTAINER:
-          case GENERATE_CERTIFICATE:
           case CREATE_CORE_CONTAINERS:
           case PREEMPTIVE_PAUSE_BACKGROUND_TASKS:
           case CREATE_SERVICE_CONTAINERS:
@@ -265,10 +245,6 @@ public class CreateContainersWorkflowService extends StatefulService {
     switch (currentState.taskState.subStage) {
       case CREATE_LIGHTWAVE_CONTAINER:
         processCreateLightwaveContainerSubStage(currentState);
-        break;
-      case GENERATE_CERTIFICATE:
-        generateCertificate(currentState, TaskState.TaskStage.STARTED,
-            TaskState.SubStage.CREATE_CORE_CONTAINERS);
         break;
       case CREATE_CORE_CONTAINERS:
         createContainers(currentState,
@@ -347,20 +323,20 @@ public class CreateContainersWorkflowService extends StatefulService {
 
     if (!currentState.isNewDeployment) {
       ServiceUtils.logInfo(this, "Skipping creation of Lightwave container (not a new deployment");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GENERATE_CERTIFICATE);
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_CORE_CONTAINERS);
       return;
     }
 
     if (!currentState.isAuthEnabled) {
       ServiceUtils.logInfo(this, "Skipping creation of Lightwave container (auth is disabled)");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GENERATE_CERTIFICATE);
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_CORE_CONTAINERS);
       return;
     }
 
     createContainers(currentState,
         Collections.singletonList(ContainersConfig.ContainerType.Lightwave),
         TaskState.TaskStage.STARTED,
-        TaskState.SubStage.GENERATE_CERTIFICATE);
+        TaskState.SubStage.CREATE_CORE_CONTAINERS);
   }
 
   //
@@ -418,6 +394,7 @@ public class CreateContainersWorkflowService extends StatefulService {
                 List<String> documentLinks = o.getBody(QueryTask.class).results.documentLinks;
                 if (skipContainerCreation(documentLinks, containerTypes, currentState)) {
                   sendStageProgressPatch(nextStage, nextSubStage);
+                  return;
                 }
                 checkState(documentLinks.size() == containerTypes.size());
                 queryContainersForTemplates(currentState, documentLinks, nextStage, nextSubStage);
@@ -537,117 +514,6 @@ public class CreateContainersWorkflowService extends StatefulService {
     }
   }
 
-  private void generateCertificate(State currentState,
-                                  TaskState.TaskStage nextStage,
-                                  TaskState.SubStage nextSubStage) {
-
-    if (!currentState.isNewDeployment) {
-      ServiceUtils.logInfo(this, "Skipping certificate generation - not a new deployment");
-      sendStageProgressPatch(nextStage, nextSubStage);
-      return;
-    }
-
-    if (!currentState.isAuthEnabled) {
-      ServiceUtils.logInfo(this, "Skipping certificate generation - auth is disabled");
-      sendStageProgressPatch(nextStage, nextSubStage);
-      return;
-    }
-
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createGet(currentState.deploymentServiceLink)
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
-                  }
-
-                  try {
-                    DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
-                    generateCertificate(deploymentState, nextStage, nextSubStage);
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-                }
-            ));
-  }
-
-  private void generateCertificate(DeploymentService.State deploymentState,
-                                   TaskState.TaskStage nextStage,
-                                   TaskState.SubStage nextSubStage) {
-    List<String> command = new ArrayList<>();
-    command.add("./" + GENERATE_CERTIFICATE_SCRIPT_NAME);
-    command.add(deploymentState.oAuthServerAddress);
-    command.add(deploymentState.oAuthPassword);
-    command.add(deploymentState.oAuthTenantName);
-    command.add(PhotonControllerXenonHost.KEYSTORE_FILE);
-    command.add(PhotonControllerXenonHost.KEYSTORE_PASSWORD);
-
-    DeployerContext deployerContext = HostUtils.getDeployerContext(this);
-    File scriptLogFile = new File(deployerContext.getScriptLogDirectory(), GENERATE_CERTIFICATE_SCRIPT_NAME + ".log");
-
-    ScriptRunner scriptRunner = new ScriptRunner.Builder(command, deployerContext.getScriptTimeoutSec())
-        .directory(deployerContext.getScriptDirectory())
-        .redirectOutput(ProcessBuilder.Redirect.to(scriptLogFile))
-        .build();
-
-    ListenableFutureTask<Integer> futureTask = ListenableFutureTask.create(scriptRunner);
-    HostUtils.getListeningExecutorService(this).submit(futureTask);
-    Futures.addCallback(futureTask,
-        new FutureCallback<Integer>() {
-          @Override
-          public void onSuccess(@javax.validation.constraints.NotNull Integer result) {
-            try {
-              if (result != 0) {
-                logScriptErrorAndFail(result, scriptLogFile);
-              } else {
-                // Set the inInstaller flag to true which would allow us to override the xenon service client to talk
-                // to the auth enabled newly deployed management plane using https with two way SSL.
-                ((PhotonControllerXenonHost) getHost()).setInInstaller(true);
-
-                // need to switch the ssl context for the thrift clients to use
-                // the generated certs to be able to talk to the authenticated
-                // agents
-                try {
-                  SSLContext sslContext = SSLContext.getInstance(KeyStoreUtils.THRIFT_PROTOCOL);
-                  TrustManagerFactory tmf = null;
-
-                  tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                  KeyStore keyStore = KeyStore.getInstance("JKS");
-                  InputStream in = FileUtils.openInputStream(new File(PhotonControllerXenonHost.KEYSTORE_FILE));
-                  keyStore.load(in, PhotonControllerXenonHost.KEYSTORE_PASSWORD.toCharArray());
-                  tmf.init(keyStore);
-                  sslContext.init(null, tmf.getTrustManagers(), null);
-                  ((PhotonControllerXenonHost) getHost()).regenerateThriftClients(sslContext);
-
-                  KeyStoreUtils.acceptAllCerts(KeyStoreUtils.THRIFT_PROTOCOL);
-                } catch (Throwable t) {
-                  ServiceUtils.logSevere(CreateContainersWorkflowService.this,
-                      "Regenerating the SSL Context for thrift failed, ignoring to make tests pass, it fail later");
-                  ServiceUtils.logSevere(CreateContainersWorkflowService.this, t);
-                }
-                sendStageProgressPatch(nextStage, nextSubStage);
-              }
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            failTask(throwable);
-          }
-        });
-  }
-
-  private void logScriptErrorAndFail(Integer result, File scriptLogFile) throws Throwable {
-    ServiceUtils.logSevere(this, GENERATE_CERTIFICATE_SCRIPT_NAME + " returned " + result.toString());
-    ServiceUtils.logSevere(this, "Script output: " + FileUtils.readFileToString(scriptLogFile));
-    failTask(new IllegalStateException("Generating certificate failed with exit code " + result.toString()));
-  }
-
-
   private void sendStageProgressPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
     ServiceUtils.logTrace(this, "Sending self-patch to stage %s:%s", taskStage, subStage);
     TaskUtils.sendSelfPatch(this, buildPatch(taskStage, subStage, null));
@@ -656,11 +522,6 @@ public class CreateContainersWorkflowService extends StatefulService {
   private void failTask(Throwable failure) {
     ServiceUtils.logSevere(this, failure);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failure));
-  }
-
-  private void failTask(Collection<Throwable> failures) {
-    ServiceUtils.logSevere(this, failures);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
   }
 
   @VisibleForTesting
