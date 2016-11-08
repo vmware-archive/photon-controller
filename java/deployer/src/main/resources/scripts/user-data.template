@@ -61,6 +61,7 @@ runcmd:
   - sh /tmp/init-network.sh
   - sh /tmp/update-hostname.sh
   - sh /tmp/update-ntp.sh $NTP
+  - mkdir -p /tmp/empty
   - systemctl restart systemd-networkd
   - systemctl enable docker
   - systemctl start docker

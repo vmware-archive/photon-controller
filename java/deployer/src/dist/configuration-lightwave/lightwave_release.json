@@ -25,7 +25,8 @@
   },
   "volumeBindings": {
     "/var/log/esxcloud": "/var/log/vmware",
-    "/sys/fs/cgroup": "/sys/fs/cgroup"
+    "/sys/fs/cgroup": "/sys/fs/cgroup",
+    "/tmp/empty": "/etc/systemd/network"
   },
   "dynamicParameters": {
   }
