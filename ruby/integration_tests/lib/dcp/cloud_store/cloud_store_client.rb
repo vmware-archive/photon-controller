@@ -35,8 +35,8 @@ module EsxCloud
               ENV["API_ADDRESS"] ||
               ENV["PUBLIC_NETWORK_IP"] ||
               ENV["PRIVATE_NETWORK_IP"] ||
-              raise("Could not determine Housekeeper IP." +
-                    "Please set one of HOUSEKEEPER_ADDRESS, API_ADDRESS, PUBLIC_NETWORK_IP or PRIVATE_NETWORK_IP.")
+              raise("Could not determine Cloudstore IP." +
+                    "Please set one of CLOUD_STORE_ADDRESS, API_ADDRESS, PUBLIC_NETWORK_IP or PRIVATE_NETWORK_IP.")
         end
 
         def self.port

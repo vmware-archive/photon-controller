@@ -45,6 +45,7 @@ import javax.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class implements a Xenon task service which calls agent to perform upgrade.
@@ -246,7 +247,7 @@ public class UpgradeAgentTaskService extends StatefulService {
           }
 
           try {
-            processUpgradeAgentSubStage(currentState, op.getBody(HostService.State.class));
+            processUpgradeAgentSubStage(currentState, op.getBody(HostService.State.class), 5);
           } catch (Throwable t) {
             failTask(t);
           }
@@ -254,7 +255,8 @@ public class UpgradeAgentTaskService extends StatefulService {
         .sendWith(this);
   }
 
-  private void processUpgradeAgentSubStage(State currentState, HostService.State hostState) {
+  private void processUpgradeAgentSubStage(State currentState, HostService.State hostState, int counter) {
+
 
     try {
       AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
@@ -273,7 +275,14 @@ public class UpgradeAgentTaskService extends StatefulService {
 
             @Override
             public void onError(Exception e) {
-              logErrorAndFail(hostState, e);
+              if (counter <= 0) {
+                logErrorAndFail(hostState, e);
+              } else {
+               getHost().schedule(
+                   () -> processUpgradeAgentSubStage(currentState, hostState, counter - 1),
+                   500,
+                   TimeUnit.MILLISECONDS);
+              }
             }
           });
 
