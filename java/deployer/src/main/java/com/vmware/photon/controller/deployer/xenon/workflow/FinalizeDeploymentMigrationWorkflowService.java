@@ -589,6 +589,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     startState.deploymentServiceLink = deploymentState.documentSelfLink;
     startState.usageTag = UsageTag.CLOUD.name();
     startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.CLOUD.name());
+    startState.createCert = deploymentState.oAuthEnabled;
     // only reprovision hosts that are actually in ready state, otherwise this might fail due to trying
     // to provision a bad host
     startState.querySpecification.query.addBooleanClause(Query.Builder.create()
