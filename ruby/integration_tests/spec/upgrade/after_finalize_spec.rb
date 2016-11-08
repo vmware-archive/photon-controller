@@ -14,6 +14,7 @@ require 'thrift/thrift_helper'
 
 require 'uri'
 require 'net/http'
+require 'net/ssh'
 
 require 'agent_control'
 
@@ -51,8 +52,7 @@ describe "migrate finalize", upgrade: true do
         destination_uri.host, nil) }
 
     def self.get_service_map(uri)
-      source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
-      json = source_cloud_store.get "/"
+      json = EsxCloud::TestHelpers.remote_get(uri.host, "/")
       result = {}
       json["documentLinks"].map do |item|
         result[item] = item
@@ -63,32 +63,38 @@ describe "migrate finalize", upgrade: true do
     def self.get_upgrade_cloudstore_map
       uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
       map = self.get_service_map uri
+
       map.select { |key,_| key.include? "photon" }
     end
 
     self.get_upgrade_cloudstore_map.each do |k, v|
-      it " (#{k}) facotry at destination contains all the cloudstore content of the source" do
+      xit " (#{k}) facotry at destination contains all the cloudstore content of the source" do
 
         exclusion_list = ["/photon/cloudstore/deployments",
                           "/photon/cloudstore/availabilityzones",
                           "/photon/cloudstore/cluster-configurations",
                           "/photon/cloudstore/clusters",
                           "/photon/cloudstore/entity-locks",
-                          "/photon/cloudstore/groomers/availability-zone-entity-cleaners",
-                          "/photon/cloudstore/groomers/entity-lock-cleaners",
-                          "/photon/cloudstore/groomers/tombstone-entity-cleaners",
                           "/photon/task-triggers",
                           "/photon/cloudstore/virtual-networks",
-                          "/photon/cloudstore/portgroups"]
-        if !exclusion_list.include?(k)
+                          "/photon/cloudstore/portgroups",
+                          "/photon/vms",
+                          "/photon/change-host-mode-tasks"]
+        exclusion_paths = ["/photon/housekeeper",
+                           "/photon/scheduler",
+                           "/photon/container",
+                           "/photon/delete",
+                           "/photon/cloudstore/groomers",
+                           "/photon/workflow"]
+        if !exclusion_list.include?(k) and !exclusion_paths.any? { |w| k =~ /#{w}/ }
           begin
-            source_json = source_cloud_store.get k
+            source_json = EsxCloud::TestHelpers.remote_get(uri.host, k)
           rescue StandardError => e
             next if e.message.include? "404"
             raise e
           end
           source_service_docs = parse_id_set(source_json).to_a
-          destination_json = destination_cloud_store.get v
+          destination_json = EsxCloud::TestHelpers.remote_get(destination_uri.host, v)
           destination_service_docs = parse_id_set(destination_json).to_a
           expect(destination_service_docs).to include(*source_service_docs)
         end
@@ -99,8 +105,7 @@ describe "migrate finalize", upgrade: true do
   describe "#old plane state" do
 
     def self.get_service_map(uri)
-      source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
-      json = source_cloud_store.get "/"
+      json = EsxCloud::TestHelpers.remote_get(uri.host, "/")
       result = {}
       json["documentLinks"].map do |item|
         result[item] = item
@@ -112,15 +117,6 @@ describe "migrate finalize", upgrade: true do
       uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
       map = self.get_service_map uri
       map.select { |key,_| key.include? "photon" }
-    end
-
-    it "is paused" do
-      uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
-      zk_address = uri.host
-      zk = Zookeeper.new("#{zk_address}:2181")
-      value = zk.get(path: "/config/apife/status")
-      expect(value).to_not be_nil
-      expect(value[:data]).to eq "PAUSED"
     end
 
     self.get_upgrade_cloudstore_map.each do |k, v|
@@ -132,10 +128,37 @@ describe "migrate finalize", upgrade: true do
                           "/photon/cloudstore/cluster-configurations",
                           "/photon/cloudstore/clusters",
                           "/photon/cloudstore/virtual-networks",
-                          "/photon/cloudstore/portgroups"]
-        if !exclusion_list.include?(k)
+                          "/photon/cloudstore/portgroups",
+                          "/photon/wait-for-network-tasks",
+                          "/photon/vib-uploads",
+                          "/photon/validate-host-tasks",
+                          "/photon/set-datastore-tags-tasks",
+                          "/photon/schedule-container-allocation",
+                          "/photon/register-auth-tasks",
+                          "/photon/provision-host-tasks",
+                          "/photon/migration-status-update",
+                          "/photon/initialize-deployment-migration-tasks",
+                          "/photon/finalize-deployment-migration-tasks",
+                          "/photon/cloudstore/availabilityzones",
+                          "/photon/cloudstore/subnet-allocators"]
+        exclusion_paths = ["/photon/housekeeper",
+                           "/photon/scheduler",
+                           "/photon/container",
+                           "/photon/delete",
+                           "/photon/cloudstore/groomers",
+                           "/photon/workflow",
+                           "/photon/apibackend",
+                           "/photon/clustermanager",
+                           "/photon/create",
+                           "/photon/deployer",
+                           "/photon/add-",
+                           "/photon/allocate",
+                           "/photon/cloudstore/dhcp",
+                           "/photon/cloudstore/ip",
+                           "/photon/task"]
+        if !exclusion_list.include?(k) and !exclusion_paths.any? { |w| k =~ /#{w}/ }
           begin
-            source_json = source_cloud_store.get k
+            source_json = EsxCloud::TestHelpers.remote_get(uri.host, k)
           rescue StandardError => e
             next if e.message.include? "404"
             raise e
@@ -150,14 +173,16 @@ describe "migrate finalize", upgrade: true do
   describe "agent roll out" do
     it "rolls out the new agent to all hosts" do
       client.get_deployment_hosts(destination_deployment.id).items.each do |host|
-        protocol = Photon::ThriftHelper.get_protocol(host.address, 8835, "AgentControl")
-        agent_client = AgentControl::Client.new(protocol)
-
-        req = VersionRequest.new
-        res = agent_client.get_version req
         puts host.address
+        agent_version = `sshpass -p '#{host.password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@#{host.address} "esxcli software vib list" | grep photon-controller | awk '{print $2}'`
+        agent_version.delete!("\n")
+
         expected_version = ENV["AGENT_VERSION"] || "#{`git rev-parse --abbrev-ref HEAD`.strip()}-#{`git rev-parse --short HEAD`.strip()}"
-        expect(res.version).to eq expected_version
+        expect(agent_version).to eq expected_version
+
+        support_level = `sshpass -p '#{host.password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@#{host.address} "esxcli software vib list" | grep photon-controller | awk '{print $4}'`
+        support_level.delete!("\n")
+        expect(support_level).to eq "VMwareCertified"
       end
     end
   end
@@ -274,9 +299,10 @@ describe "migrate finalize", upgrade: true do
   def get_all_hosts(cloud_store_client, uri)
     hosts = []
     begin
-      json = cloud_store_client.get uri
+      server = URI.parse(cloud_store_client.endpoint).host
+      json = EsxCloud::TestHelpers.remote_get(server, uri)
       json["documentLinks"].map do |link|
-        hosts << cloud_store_client.get(link)
+        hosts << EsxCloud::TestHelpers.remote_get(server, link)
       end
     rescue StandardError => _
     end
@@ -284,8 +310,7 @@ describe "migrate finalize", upgrade: true do
   end
 
   def get_service_map(uri)
-    source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
-    json = source_cloud_store.get "/"
+    json = EsxCloud::TestHelpers.remote_get(uri.host, "/")
     result = {}
     json["documentLinks"].map do |item|
       result[item] = item
