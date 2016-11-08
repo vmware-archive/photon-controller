@@ -68,7 +68,7 @@ describe "migrate finalize", upgrade: true do
     end
 
     self.get_upgrade_cloudstore_map.each do |k, v|
-      xit " (#{k}) facotry at destination contains all the cloudstore content of the source" do
+      it " (#{k}) facotry at destination contains all the cloudstore content of the source" do
 
         exclusion_list = ["/photon/cloudstore/deployments",
                           "/photon/cloudstore/availabilityzones",
@@ -140,7 +140,9 @@ describe "migrate finalize", upgrade: true do
                           "/photon/initialize-deployment-migration-tasks",
                           "/photon/finalize-deployment-migration-tasks",
                           "/photon/cloudstore/availabilityzones",
-                          "/photon/cloudstore/subnet-allocators"]
+                          "/photon/cloudstore/subnet-allocators",
+                          "/photon/change-host-mode-tasks",
+                          "/photon/cloudstore/tombstones"]
         exclusion_paths = ["/photon/housekeeper",
                            "/photon/scheduler",
                            "/photon/container",
