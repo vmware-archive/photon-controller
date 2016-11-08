@@ -24,7 +24,8 @@
     "88": 88
   },
   "volumeBindings": {
-    "/var/log/esxcloud": "/var/log/vmware"
+    "/var/log/esxcloud": "/var/log/vmware",
+     "/tmp/empty": "/etc/systemd/network"
   },
   "dynamicParameters": {
   }
