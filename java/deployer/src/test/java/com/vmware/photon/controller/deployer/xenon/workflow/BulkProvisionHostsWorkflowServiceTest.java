@@ -516,6 +516,44 @@ public class BulkProvisionHostsWorkflowServiceTest {
       }
     }
 
+    @DataProvider(name = "SdnEnabled")
+    public Object[][] getSdnEnabled() {
+      return new Object[][]{
+          {true},
+          {false},
+      };
+    }
+
+    @Test(dataProvider = "SdnEnabled")
+    public void testEndToEndProvisionHostTaskFailed(Boolean sdnEnabled)
+        throws Throwable {
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
+          ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
+          ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, false);
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
+          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, false);
+      MockHelper.mockProvisionAgent(agentControlClientFactory, hostClientFactory, true);
+      createTestEnvironment(1);
+      startState.querySpecification = null;
+      startState.deploymentServiceLink =
+          TestHelper.createDeploymentService(testEnvironment, false, sdnEnabled).documentSelfLink;
+      createHostEntities(1, 2, 0, startState.deploymentServiceLink);
+
+      for (String usageTage : Arrays.asList(UsageTag.MGMT.name(), UsageTag.CLOUD.name())) {
+        startState.usageTag = usageTage;
+
+        BulkProvisionHostsWorkflowService.State finalState =
+            testEnvironment.callServiceAndWaitForState(
+                BulkProvisionHostsWorkflowFactoryService.SELF_LINK,
+                startState,
+                BulkProvisionHostsWorkflowService.State.class,
+                (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+        assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      }
+    }
+
     @Test(enabled = false)
     public void testEndToEndFailNoMgmtHost() throws Throwable {
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
