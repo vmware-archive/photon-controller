@@ -11,4 +11,4 @@ runcmd:
   - systemctl enable docker
   - systemctl start docker
   - sh /root/check-docker.sh >> /var/log/start-harbor.log 2>&1
-  - sh /root/start-harbor.sh $ADMIN_PASSWORD > /var/log/start-harbor.log 2>&1
+  - sh /root/start-harbor.sh $ADMIN_PASSWORD >> /var/log/start-harbor.log 2>&1
