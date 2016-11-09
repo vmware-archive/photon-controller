@@ -186,6 +186,10 @@ module EsxCloud
                 res = ssh.exec!("cat /var/log/start-kubernetes-node.log")
                 puts res
               end
+              if cluster.type === "HARBOR"
+                res = ssh.exec!("cat /var/log/start-harbor.log")
+                puts res
+              end
               puts "=============== journalctl ==============="
               res = ssh.exec!("journalctl")
               puts res
