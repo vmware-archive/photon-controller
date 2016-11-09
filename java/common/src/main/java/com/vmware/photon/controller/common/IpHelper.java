@@ -133,6 +133,44 @@ public class IpHelper {
   }
 
   /**
+   * Calculates the netmask from a given CIDR.
+   * @param cidr
+   * @return
+   */
+  public static InetAddress calculateNetmaskFromCidr(String cidr) {
+    String[] cidrParts = cidr.split("/");
+    Preconditions.checkState(cidrParts.length == 2, "Invalid cidr: " + cidr);
+
+    int prefix = Integer.parseInt(cidrParts[1]);
+    Preconditions.checkState(prefix > 0 && prefix <= 32, "Invalid prefix: " + prefix);
+    int mask = 0xffffffff << (32 - prefix);
+
+    int value = mask;
+    byte[] bytes = new byte[] {
+        (byte)(value >> 24),
+        (byte)(value >> 16 & 0xff),
+        (byte)(value >> 8 & 0xff),
+        (byte)(value & 0xff)
+    };
+
+    try {
+      return InetAddress.getByAddress(bytes);
+    } catch (UnknownHostException e) {
+      throw new IllegalArgumentException("Invalid cidr " + cidr);
+    }
+  }
+
+  /**
+   * Calculates the netmask from a given CIDR.
+   * @param cidr
+   * @return
+   */
+  public static String calculateNetmaskStringFromCidr(String cidr) {
+    InetAddress netmask = calculateNetmaskFromCidr(cidr);
+    return netmask.getHostAddress();
+  }
+
+  /**
    * Converts a long to int only if the long value is small enough to fit into an int.
    *
    * @param l
