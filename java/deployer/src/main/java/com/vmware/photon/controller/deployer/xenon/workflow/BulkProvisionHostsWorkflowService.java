@@ -365,7 +365,16 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
           new FutureCallback<ProvisionHostTaskService.State>() {
             @Override
             public void onSuccess(@Nullable ProvisionHostTaskService.State state) {
-              processProvisionHostsSubStage(currentState, hostServiceLinks);
+              switch (state.taskState.stage) {
+                case FINISHED:
+                  processProvisionHostsSubStage(currentState, hostServiceLinks);
+                  break;
+                case FAILED:
+                case CANCELLED:
+                  failTask(new IllegalStateException(
+                      String.format("Failed to provision host: %s", state.taskState.failure.message)));
+                  break;
+              }
             }
 
             @Override
