@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.dhcpagent.dhcpdrivers;
 
+import com.vmware.photon.controller.common.IpHelper;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -196,6 +198,8 @@ public class DnsmasqDriver implements DHCPDriver {
       String lowIp,
       String highIp) throws Exception {
 
+    String netmask = IpHelper.calculateNetmaskStringFromCidr(cidr);
+
     // Create option file for the new subnet.
     String newOptionFilePath = dhcpOptionFileCopyDir + "/" + subnetId;
 
@@ -205,7 +209,8 @@ public class DnsmasqDriver implements DHCPDriver {
     }
 
     PrintWriter newOptionFileWriter = new PrintWriter(newOptionFile, "UTF-8");
-    newOptionFileWriter.println("tag:" + subnetId + ",3," + gateway + ",1," + cidr);
+    newOptionFileWriter.println("tag:" + subnetId + ",3," + gateway);
+    newOptionFileWriter.println("tag:" + subnetId + ",1," + netmask);
     newOptionFileWriter.close();
 
     String oldOptionFilePath = dhcpOptionFileDir + "/" + subnetId;

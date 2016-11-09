@@ -140,10 +140,22 @@ public class DnsmasqDriverTest {
       BufferedReader optionFileBufferedReader = new BufferedReader(optionFileReader);
 
       String optionFileLine;
+      boolean hasGatewayLine = false;
+      boolean hasNetmaskLine = false;
       while ((optionFileLine = optionFileBufferedReader.readLine()) != null) {
-        if (!optionFileLine.equals("tag:subnet1,3,192.168.1.1,1,192.168.1.0/8")) {
-          fail("Wrong content of the option file: " + optionFileLine);
+        if (optionFileLine.contains("tag:subnet1,3,192.168.1.1")) {
+          hasGatewayLine = true;
+        } else if (optionFileLine.contains("tag:subnet1,1,255.0.0.0")) {
+          hasNetmaskLine = true;
         }
+      }
+
+      if (!hasGatewayLine) {
+        fail("Missing gateway line in option file");
+      }
+
+      if (!hasNetmaskLine) {
+        fail("Missing netmask line in option file");
       }
 
       FileReader configFileReader = new FileReader(
