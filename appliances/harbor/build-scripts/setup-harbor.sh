@@ -10,6 +10,9 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
 # specific language governing permissions and limitations under the License.
 
+#
+tdnf downgrade -y docker
+
 systemctl daemon-reload
 systemctl enable docker
 systemctl start docker
@@ -22,7 +25,7 @@ mv docker-compose-Linux-x86_64 /usr/bin/docker-compose
 
 # Install harbor
 wget https://github.com/vmware/harbor/releases/download/0.3.0/harbor-0.3.0.tgz
-tar -xzvf harbor-0.3.0.tgz
+tar -xzvf harbor-0.4.5.tgz
 cd harbor
 ./prepare
 docker-compose pull
