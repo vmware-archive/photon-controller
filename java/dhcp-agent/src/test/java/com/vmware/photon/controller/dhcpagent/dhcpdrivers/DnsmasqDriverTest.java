@@ -157,7 +157,7 @@ public class DnsmasqDriverTest {
           continue;
         }
 
-        if (!configFileLine.equals("dhcp-range:tag:subnet1,192.168.1.0,192.168.1.16")) {
+        if (!configFileLine.equals("dhcp-range=tag:subnet1,192.168.1.0,192.168.1.16")) {
           fail("Wrong content of the config file: " + configFileLine);
         }
 
