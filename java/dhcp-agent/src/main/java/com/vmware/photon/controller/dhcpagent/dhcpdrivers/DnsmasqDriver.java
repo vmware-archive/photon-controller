@@ -215,7 +215,7 @@ public class DnsmasqDriver implements DHCPDriver {
 
     // Add range to dnsmasq configuration file.
     PrintWriter configFileWriter = new PrintWriter(new FileWriter(dhcpConfigFilePath, true));
-    configFileWriter.println("dhcp-range:tag:" + subnetId + "," + lowIp + "," + highIp);
+    configFileWriter.println("dhcp-range=tag:" + subnetId + "," + lowIp + "," + highIp);
     configFileWriter.close();
 
     Response response = new Response();
