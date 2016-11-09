@@ -18,7 +18,8 @@
     "/var/esxcloud/packages":"/var/esxcloud/packages",
     "/etc/esxcloud-deployer":"/etc/esxcloud-deployer",
     "/usr/lib/esxcloud/photon-controller-core/scripts":"/usr/lib/esxcloud/photon-controller-core/scripts",
-    "/sys/fs/cgroup": "/sys/fs/cgroup"
+    "/sys/fs/cgroup": "/sys/fs/cgroup",
+    "/tmp/empty": "/etc/systemd/network"
   },
   "dynamicParameters": {
     "CLOUD-STORE_XENON_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
