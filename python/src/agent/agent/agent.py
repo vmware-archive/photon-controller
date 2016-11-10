@@ -48,7 +48,7 @@ from common.plugin import load_plugins, thrift_services
 from common.service_name import ServiceName
 from common.state import State
 
-SSL_CERT_FILE = "/etc/vmware/ssl/rui.pem"
+SSL_CERT_FILE = "/etc/opt/vmware/photon/controller/rui.pem"
 
 
 class Agent:
@@ -136,7 +136,7 @@ class Agent:
             processor = plugin.service.Processor(handler)
             mux_processor.registerProcessor(plugin.name, processor)
 
-        if os.path.isfile(SSL_CERT_FILE):
+        if os.path.isfile(SSL_CERT_FILE) and os.path.getsize(SSL_CERT_FILE) > 0:
             self._logger.info("Initialize SSLSocket using %s" % SSL_CERT_FILE)
             transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=SSL_CERT_FILE)
         else:

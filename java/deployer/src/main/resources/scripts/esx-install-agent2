@@ -79,6 +79,7 @@ else
   cert_dir="./host_cert_no_auth_${host_address}"
 fi
 
+config_dir="/etc/opt/vmware/photon/controller"
 host_cert_dir="/etc/vmware/ssl"
 priv_key_name="rui.key"
 pub_key_name="rui.pubkey"
@@ -90,7 +91,7 @@ host_crt_path="${cert_dir}/${crt_name}"
 host_pem_path="${cert_dir}/${pem_name}"
 esxi_priv_key_path="${host_cert_dir}/${priv_key_name}"
 esxi_host_crt_path="${host_cert_dir}/${crt_name}"
-esxi_host_pem_path="${host_cert_dir}/${pem_name}"
+esxi_host_pem_path="${config_dir}/${pem_name}"
 
 function create_certificate() {
 
@@ -161,16 +162,24 @@ function copy_certificate() {
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls /etc/vmware/ssl
 
   sshpass -p "$password" scp $SSH_OPTS ${host_crt_path} ${username}@${host_address}:/etc/vmware/ssl
-  sshpass -p "$password" scp $SSH_OPTS ${host_pem_path} ${username}@${host_address}:/etc/vmware/ssl
+  sshpass -p "$password" scp $SSH_OPTS ${host_pem_path} ${username}@${host_address}:${config_dir}
   sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:/etc/vmware/ssl
 
   # listing /etc/vmware/ssl contents after copying
   echo "listing /etc/vmware/ssl contents after copying"
   sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls /etc/vmware/ssl
 
+  # listing /etc/vmware/ssl contents after copying
+  echo "listing ${config_dir} contents after creating"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls ${config_dir}
+
   # restart all services to load new cert
-  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} /bin/services.sh restart
+  echo "restarting all services"
+  sshpass -p "$password" ssh -tt $SSH_OPTS ${username}@${host_address} /bin/services.sh restart
+  echo "copy certificate done"
 }
+
+install_vib
 
 if [[ "$vib_path" == *"photon-controller-agent"* ]]
 then
@@ -191,8 +200,6 @@ fi
 
 sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} date
 sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} esxcli software vib list
-
-install_vib
 
 sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} esxcli software vib list
 sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} date
