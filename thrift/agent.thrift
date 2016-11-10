@@ -78,20 +78,6 @@ struct VersionResponse {
   4: optional string revision
 }
 
-
-// Structure describing the refcount preserved with the image.
-// All fields are optional for future compatibility reasons.
-struct RefCount {
-  // The generation number of the ref count file.
-  1: optional i16 generation_num
-  // Version of refcount implementation.
-  // If unset assume initial version.
-  2: optional byte version
-  3: optional bool tombstone
-  4: optional i16 ref_count
-  5: optional binary vm_ids
-}
-
 // Struct describing the provisioning configuration of the esx agent.
 struct ProvisionRequest {
   // The datastores to use for cloud virtual machine workloads
@@ -107,9 +93,6 @@ struct ProvisionRequest {
   // i.e. no overcommit
   8: optional double memory_overcommit
 
-  // The information about the image datastore configuration
-  10: optional resource.ImageDatastore image_datastore_info
-
   // The cpu overcommit for this host. If unspecified it defaults to 1.0,
   // i.e. no overcommit
   11: optional double cpu_overcommit
@@ -124,7 +107,6 @@ struct ProvisionRequest {
   14: optional string ntp_endpoint
 
   // A set of image datastores for this host.
-  // The image_datastore_info field will be deprecated.
   15: optional set<resource.ImageDatastore> image_datastores
 
   // Configuration of the Stats Plugin
@@ -157,6 +139,31 @@ enum ProvisionResultCode {
 // Provisioning response
 struct ProvisionResponse {
   1: required ProvisionResultCode result
+  2: optional string error
+}
+
+// Struct describing the updating configuration of the esx agent.
+struct UpdateConfigRequest {
+  // A set of image datastores for this host.
+  1: optional set<resource.ImageDatastore> image_datastores
+
+  99: optional tracing.TracingInfo tracing_info
+}
+
+// Update config result code
+enum UpdateConfigResultCode {
+  // Update config was successful.
+  OK = 0
+  // The configuration provided is invalid.
+  INVALID_CONFIG = 1
+
+  // Catch all error
+  SYSTEM_ERROR = 15
+}
+
+// Update config response
+struct UpdateConfigResponse {
+  1: required UpdateConfigResultCode result
   2: optional string error
 }
 
@@ -204,6 +211,9 @@ service AgentControl {
 
   // Method to provision an agent for esxcloud purposes.
   ProvisionResponse provision(1: ProvisionRequest request)
+
+  // Method to update agent's configuration.
+  UpdateConfigResponse update_config(1: UpdateConfigRequest request)
 
   // Method to upgrade an agent.
   UpgradeResponse upgrade(1: UpgradeRequest request)

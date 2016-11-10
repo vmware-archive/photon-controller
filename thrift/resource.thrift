@@ -111,11 +111,6 @@ struct ImageDatastore {
   2: required bool used_for_vms
 }
 
-// FaultDomain
-struct FaultDomain {
-  1: required string id
-}
-
 // ResourceConstraint
 struct ResourceConstraint {
   1: required ResourceConstraintType type
