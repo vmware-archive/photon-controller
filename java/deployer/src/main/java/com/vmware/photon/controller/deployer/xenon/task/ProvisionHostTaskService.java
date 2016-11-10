@@ -303,7 +303,7 @@ public class ProvisionHostTaskService extends StatefulService {
      * This value represents the maximum number of polling iterations which should be attempted
      * while waiting for the host to become ready after provisioning.
      */
-    @DefaultInteger(value = 12)
+    @DefaultInteger(value = 120)
     @Immutable
     public Integer hostStatusMaxPollCount;
 
