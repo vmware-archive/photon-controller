@@ -95,7 +95,7 @@ public class CopyStateTriggerTaskService extends StatefulService {
     public String taskStateFieldName;
 
     @Immutable
-    @DefaultInteger(value = 500)
+    @DefaultInteger(value = 50)
     public Integer queryResultLimit;
 
     @DefaultLong(value = 0)
