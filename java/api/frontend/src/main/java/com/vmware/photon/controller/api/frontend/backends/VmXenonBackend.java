@@ -383,6 +383,9 @@ public class VmXenonBackend implements VmBackend {
     vm.datastore = datastoreId;
     vm.datastoreName = datastoreName;
     vm.networkInfo = networkInfo;
+    if (networkInfo != null && !networkInfo.isEmpty()) {
+      vm.networks = new ArrayList<>(networkInfo.keySet());
+    }
 
     patchVmService(vmEntity.getId(), vm);
     vmEntity.setState(state);
