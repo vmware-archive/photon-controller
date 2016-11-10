@@ -144,6 +144,13 @@ public class CopyStateTaskService extends StatefulService {
     super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
+  public static State buildStartPatch() {
+    State s = new State();
+    s.taskState = new TaskState();
+    s.taskState.stage = TaskState.TaskStage.STARTED;
+    return s;
+  }
+
   @Override
   public void handleStart(Operation startOperation) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
@@ -164,22 +171,21 @@ public class CopyStateTaskService extends StatefulService {
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
     }
 
-    startOperation.setBody(startState).complete();
 
     if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
       ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
+      startOperation.setBody(startState).complete();
       return;
     }
 
     try {
       if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
         String destinationTemplate = findDestinationServiceClassName(startState);
-        State patchState = buildPatch(TaskState.TaskStage.STARTED, null);
         if (destinationTemplate != null) {
-          patchState.destinationServiceClassName = destinationTemplate;
+          startState.destinationServiceClassName = destinationTemplate;
         }
-        sendStageProgressPatch(patchState);
       }
+      startOperation.setBody(startState).complete();
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(startOperation)) {

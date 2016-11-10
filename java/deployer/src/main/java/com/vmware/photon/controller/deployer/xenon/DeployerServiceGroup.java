@@ -22,6 +22,9 @@ import com.vmware.photon.controller.common.xenon.XenonServiceGroup;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.scheduler.RateLimitedWorkQueueFactoryService;
 import com.vmware.photon.controller.common.xenon.scheduler.RateLimitedWorkQueueService;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerService;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.xenon.service.UpgradeInformationService;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactoryProvider;
@@ -89,10 +92,14 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.util.Map;
 
 /**
  * Class to initialize the Deployer Xenon services.
@@ -111,6 +118,8 @@ public class DeployerServiceGroup
     HostManagementVmAddressValidatorFactoryProvider,
     ClusterManagerFactoryProvider {
 
+  public static final String COPY_STATE_SCHEDULER_SERVICE = TaskSchedulerServiceFactory.SELF_LINK + "/copy-state";
+
   private static final Logger logger = LoggerFactory.getLogger(DeployerServiceGroup.class);
 
   public static final String FACTORY_SERVICE_FIELD_NAME_SELF_LINK = "SELF_LINK";
@@ -120,6 +129,11 @@ public class DeployerServiceGroup
   @VisibleForTesting
   public static final String UPLOAD_VIB_WORK_QUEUE_SELF_LINK = UriUtils.buildUriPath(
       RateLimitedWorkQueueFactoryService.SELF_LINK, UPLOAD_VIB_WORK_QUEUE_NAME);
+
+  public static final Map<String, TaskSchedulerServiceStateBuilder> TASK_SCHEDULERS = ImmutableMap.of(
+      COPY_STATE_SCHEDULER_SERVICE,
+        new TaskSchedulerServiceStateBuilder(CopyStateTaskService.class, 5)
+  );
 
   private static final String DEPLOYER_URI = "deployer";
 
@@ -133,6 +147,7 @@ public class DeployerServiceGroup
 
       // Infrastructure Services
       RateLimitedWorkQueueFactoryService.class,
+      TaskSchedulerServiceFactory.class,
 
       // Entity Services
       ContainerFactoryService.class,
@@ -353,6 +368,7 @@ public class DeployerServiceGroup
     ServiceHostUtils.startServices(photonControllerXenonHost, getFactoryServices());
     photonControllerXenonHost.addPrivilegedService(CopyStateTaskService.class);
     startWorkQueueServices();
+    startTaskSchedulerServices();
   }
 
   /**
@@ -365,6 +381,12 @@ public class DeployerServiceGroup
 
     if (!photonControllerXenonHost.checkServiceAvailable(UPLOAD_VIB_WORK_QUEUE_SELF_LINK)) {
       return false;
+    }
+
+    for (String selfLink : TASK_SCHEDULERS.keySet()) {
+      if (!photonControllerXenonHost.checkServiceAvailable(selfLink)) {
+        return false;
+      }
     }
 
     try {
@@ -380,6 +402,33 @@ public class DeployerServiceGroup
     return ObjectArrays.concat(
         FACTORY_SERVICES, ClusterManagerFactory.FACTORY_SERVICES,
         Class.class);
+  }
+
+  private void startTaskSchedulerServices() {
+    photonControllerXenonHost.registerForServiceAvailability(
+        (Operation operation, Throwable throwable) -> {
+          for (String link : TASK_SCHEDULERS.keySet()) {
+            try {
+              startTaskSchedulerService(link, TASK_SCHEDULERS.get(link));
+            } catch (Exception ex) {
+              // This method gets executed on a background thread so since we cannot make return the
+              // error to the caller, we swallow the exception here to allow the other the other schedulers
+              // to start
+              logger.warn("Could not register {}", link, ex);
+            }
+          }
+        }, TaskSchedulerServiceFactory.SELF_LINK);
+  }
+
+  private void startTaskSchedulerService(final String selfLink, TaskSchedulerServiceStateBuilder builder)
+      throws IllegalAccessException, InstantiationException {
+    TaskSchedulerService.State state = builder.build();
+    state.documentSelfLink = TaskSchedulerServiceStateBuilder.getSuffixFromSelfLink(selfLink);
+
+    URI uri = UriUtils.buildUri(photonControllerXenonHost, TaskSchedulerServiceFactory.SELF_LINK, null);
+    Operation post = Operation.createPost(uri).setBody(state);
+    post.setReferer(UriUtils.buildUri(photonControllerXenonHost, DEPLOYER_URI));
+    photonControllerXenonHost.sendRequest(post);
   }
 
   private void startWorkQueueServices() {
