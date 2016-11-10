@@ -10,8 +10,9 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
 # specific language governing permissions and limitations under the License.
 
-#
-tdnf downgrade -y docker
+# Downgrading docker on photon os to docker-1.11.2 because harbor-0.3.0 does not
+# work with docker-1.12.1 and thats the latest version installed.
+tdnf downgrade -y docker-1.11.2
 
 systemctl daemon-reload
 systemctl enable docker
