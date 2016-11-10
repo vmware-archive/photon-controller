@@ -25,6 +25,8 @@ from gen.agent.ttypes import AgentStatusResponse
 from gen.agent.ttypes import AgentStatusCode
 from gen.agent.ttypes import ProvisionResponse
 from gen.agent.ttypes import ProvisionResultCode
+from gen.agent.ttypes import UpdateConfigResponse
+from gen.agent.ttypes import UpdateConfigResultCode
 from gen.agent.ttypes import UpgradeResponse
 from gen.agent.ttypes import UpgradeResultCode
 from gen.agent.ttypes import VersionResponse
@@ -60,7 +62,7 @@ class AgentControlHandler(AgentControl.Iface):
 
         try:
             agent_config = common.services.get(ServiceName.AGENT_CONFIG)
-            agent_config.update_config(request)
+            agent_config.provision(request)
         except InvalidConfig as e:
             return ProvisionResponse(ProvisionResultCode.INVALID_CONFIG, str(e))
         except Exception, e:
@@ -68,6 +70,24 @@ class AgentControlHandler(AgentControl.Iface):
             return ProvisionResponse(ProvisionResultCode.SYSTEM_ERROR, str(e))
 
         return ProvisionResponse(ProvisionResultCode.OK)
+
+    @log_request
+    @error_handler(UpdateConfigResponse, UpdateConfigResultCode)
+    def update_config(self, request):
+        """
+        Update agent's configuration.
+        :type request: UpdateConfigRequest
+        :rtype: UpdateConfigResponse
+        """
+
+        try:
+            agent_config = common.services.get(ServiceName.AGENT_CONFIG)
+            agent_config.update(request)
+        except Exception, e:
+            self._logger.warning("Unexpected exception", exc_info=True)
+            return UpdateConfigResponse(UpdateConfigResultCode.SYSTEM_ERROR, str(e))
+
+        return UpdateConfigResponse(UpdateConfigResultCode.OK)
 
     @log_request
     @error_handler(UpgradeResponse, UpgradeResultCode)

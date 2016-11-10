@@ -144,7 +144,7 @@ class AgentConfig(object):
         return True
 
     @locked
-    def update_config(self, provision_req):
+    def provision(self, provision_req):
         """
         Update the agent configuration using the provisioning request
         configuration.
@@ -237,6 +237,13 @@ class AgentConfig(object):
                 self._logger.warning("Agent not fully configured %s" %
                                      str(self._options))
             self._reboot_required = True
+
+    @locked
+    def update(self, update_config_req):
+        image_datastores = self._convert_image_datastores(update_config_req.image_datastores)
+        if self._check_and_set_attr(self.IMAGE_DATASTORES, image_datastores):
+            self._persist_config()
+            self._trigger_callbacks(self.IMAGE_DATASTORES, image_datastores)
 
     @property
     @locked
