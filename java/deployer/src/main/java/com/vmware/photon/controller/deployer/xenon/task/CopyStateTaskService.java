@@ -65,6 +65,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -292,28 +293,27 @@ public class CopyStateTaskService extends StatefulService {
       Map<URI, String> nextPageLinks,
       long lastUpdateQueryTime) {
 
-    OperationJoin.create(
-        nextPageLinks.entrySet().stream()
-            .map(entry -> {
-              Operation o = Operation.createGet(UriUtils.buildUri(entry.getKey(), entry.getValue()));
-              AuthenticationUtils.addSystemUserAuthcontext(o, getSystemAuthorizationContext());
-              return o;
-            })
-    )
-        .setCompletion((os, ts) -> {
-          if (ts != null && ts.isEmpty()) {
-            failTask(ts);
-            return;
-          }
-          Map<URI, ServiceDocumentQueryResult> results = os.values().stream()
-              .map(o -> {
-                QueryTask qt = o.getBody(QueryTask.class);
-                return new AbstractMap.SimpleEntry<>(extractBaseURI(o), qt.results);
-              })
-              .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-          storeDocuments(currentState, results, lastUpdateQueryTime);
-        })
-        .sendWith(this);
+    getHost().schedule(() ->
+      OperationJoin.create(
+          nextPageLinks.entrySet().stream()
+              .map(entry -> {
+                Operation o = Operation.createGet(UriUtils.buildUri(entry.getKey(), entry.getValue()));
+                AuthenticationUtils.addSystemUserAuthcontext(o, getSystemAuthorizationContext());
+                return o;
+              })).setCompletion((os, ts) -> {
+            if (ts != null && ts.isEmpty()) {
+              failTask(ts);
+              return;
+            }
+            Map<URI, ServiceDocumentQueryResult> results = os.values().stream()
+                .map(o -> {
+                  QueryTask qt = o.getBody(QueryTask.class);
+                  return new AbstractMap.SimpleEntry<>(extractBaseURI(o), qt.results);
+                })
+                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+            storeDocuments(currentState, results, lastUpdateQueryTime);
+          })
+        .sendWith(this), 300, TimeUnit.MILLISECONDS);
   }
 
   private void storeDocuments(
