@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+# Copyright (c) 2015 VMware, Inc. All Rights Reserved.
+import sys
+
+from eccli.format import print_request
+from eccli.format import print_response
+from eccli.optparser import default_parser
+from eccli.thrift import get_client
+from gen.agent.ttypes import UpdateConfigRequest
+from gen.resource.ttypes import ImageDatastore
+
+parser = default_parser(usage="eccli-config-update [options]",
+                        add_help=True)
+parser.add_option("-d", "--image_datastores",
+                  action="store", type="string", dest="imageds",
+                  help="list of image datastore names (e.g. ds1,ds2)")
+(options, args) = parser.parse_args()
+
+if not options.imageds:
+    print >> sys.stderr, "Error: image datastores are required\n"
+    parser.print_help()
+    exit(1)
+
+client = get_client(options.host, "AgentControl")
+
+request = UpdateConfigRequest()
+request.image_datastores = set([ImageDatastore(name=ds, used_for_vms=True) for ds in options.imageds.split(',')])
+
+print_request(request)
+response = client.update_config(request)
+print_response(response)
