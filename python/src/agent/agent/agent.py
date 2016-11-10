@@ -48,7 +48,10 @@ from common.plugin import load_plugins, thrift_services
 from common.service_name import ServiceName
 from common.state import State
 
-SSL_CERT_FILE = "/etc/opt/vmware/photon/controller/rui.pem"
+CA_PATH = "/etc/vmware/ssl/"
+SSL_CERT_FILE = CA_PATH + "rui.crt"
+SSL_KEY_FILE = CA_PATH + "rui.key"
+SSL_CIPHERS = "!aNULL:kECDH+AESGCM:ECDH+AESGCM:RSA+AESGCM:kECDH+AES:ECDH+AES:RSA+AES"
 
 
 class Agent:
