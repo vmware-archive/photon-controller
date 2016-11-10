@@ -42,6 +42,8 @@ fi
 # git loses the sticky bit on rebase ops let's add it back
 chmod a+w $SRC_VIB_LAYOUT/payloads/agent/etc/opt/vmware/photon/controller/{config,state}.json
 chmod +t $SRC_VIB_LAYOUT/payloads/agent/etc/opt/vmware/photon/controller/{config,state}.json
+chmod a+w $SRC_VIB_LAYOUT/payloads/agent/etc/opt/vmware/photon/controller/rui.pem
+chmod +t $SRC_VIB_LAYOUT/payloads/agent/etc/opt/vmware/photon/controller/rui.pem
 
 # tar -p is needed here to preserve the attributes and permissions of the
 # layout files
