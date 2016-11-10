@@ -33,6 +33,7 @@ import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.nsxclient.apis.LogicalRouterApi;
+import com.vmware.photon.controller.nsxclient.datatypes.NatActionType;
 import com.vmware.photon.controller.nsxclient.models.NatRule;
 import com.vmware.photon.controller.nsxclient.models.NatRuleCreateSpec;
 import com.vmware.photon.controller.nsxclient.utils.NameUtils;
@@ -375,6 +376,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
         .getLogicalRouterApi();
 
     NatRuleCreateSpec natRuleCreateSpec = new NatRuleCreateSpec();
+    natRuleCreateSpec.setNatAction(NatActionType.DNAT);
     natRuleCreateSpec.setDisplayName(NameUtils.getDnatRuleName(state.vmPrivateIpAddress));
     natRuleCreateSpec.setDescription(NameUtils.getDnatRuleDescription(state.vmPrivateIpAddress));
     natRuleCreateSpec.setMatchDestinationNetwork(state.vmFloatingIpAddress);
