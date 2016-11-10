@@ -32,10 +32,9 @@ class HostPlugin(common.plugin.Plugin):
         hv = hypervisor.Hypervisor(config)
 
         # When configuration changes, notify hypervisor
-        config.on_config_change(config.CPU_OVERCOMMIT,
-                                hv.set_cpu_overcommit)
-        config.on_config_change(config.MEMORY_OVERCOMMIT,
-                                hv.set_memory_overcommit)
+        config.on_config_change(config.CPU_OVERCOMMIT, hv.set_cpu_overcommit)
+        config.on_config_change(config.MEMORY_OVERCOMMIT, hv.set_memory_overcommit)
+        config.on_config_change(config.IMAGE_DATASTORES, hv.set_image_datastores)
 
         # Register hypervisor in services
         common.services.register(ServiceName.HYPERVISOR, hv)

@@ -169,6 +169,10 @@ class DatastoreManager(UpdateListener):
         """vim client callback for datastore change"""
         self._initialize_datastores()
 
+    def set_image_datastores(self, image_datastores):
+        self._configured_image_datastores = image_datastores
+        self._initialize_datastores()
+
     def datastore_type(self, datastore_id):
         """ Get datastore_type from datastore_id
 

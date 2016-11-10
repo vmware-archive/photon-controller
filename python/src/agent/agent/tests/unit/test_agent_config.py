@@ -23,7 +23,7 @@ from common.file_util import mkdtemp
 from common.mode import Mode
 from common.service_name import ServiceName
 from common.state import State
-from gen.agent.ttypes import ProvisionRequest
+from gen.agent.ttypes import ProvisionRequest, UpdateConfigRequest
 from gen.common.ttypes import ServerAddress
 from gen.resource.ttypes import ImageDatastore
 from gen.stats.plugin.ttypes import StatsPluginConfig
@@ -138,7 +138,7 @@ class TestUnitAgent(unittest.TestCase):
 
         req.host_id = "host1"
         req.deployment_id = "deployment1"
-        self.agent.update_config(req)
+        self.agent.provision(req)
 
         assert_that(self.agent.stats_store_endpoint, equal_to("10.0.0.100"))
         assert_that(self.agent.stats_store_port, equal_to(8081))
@@ -158,7 +158,7 @@ class TestUnitAgent(unittest.TestCase):
         # Verify we are able to unset all the configuration.
         req = ProvisionRequest()
 
-        self.agent.update_config(req)
+        self.agent.provision(req)
         assert_that(self.agent.hostname, equal_to(None))
         assert_that(self.agent.host_port, equal_to(8835))
         assert_that(self.agent.datastores, equal_to([]))
@@ -178,7 +178,7 @@ class TestUnitAgent(unittest.TestCase):
         req.address = addr
 
         # Verify an exception is raised.
-        self.assertRaises(InvalidConfig, self.agent.update_config, req)
+        self.assertRaises(InvalidConfig, self.agent.provision, req)
         assert_that(self.agent.hostname, equal_to(None))
         assert_that(self.agent.host_port, equal_to(8835))
         assert_that(self.agent.datastores, equal_to([]))
@@ -200,7 +200,7 @@ class TestUnitAgent(unittest.TestCase):
         req.stats_plugin_config.enabled = False
         addr = ServerAddress(host="localhost", port=2345)
         req.address = addr
-        self.agent.update_config(req)
+        self.agent.provision(req)
         # Verify that the bootstrap is still false as zk config is not
         # specified.
         self.assertFalse(self.agent.bootstrap_ready)
@@ -210,7 +210,7 @@ class TestUnitAgent(unittest.TestCase):
         req.datastores = ["ds3", "ds4"]
         addr = ServerAddress(host="localhost", port=2345)
         req.address = addr
-        self.agent.update_config(req)
+        self.agent.provision(req)
         self.assertTrue(self.agent.reboot_required)
 
     def test_thrift_thread_settings(self):
@@ -253,15 +253,28 @@ class TestUnitAgent(unittest.TestCase):
             {"name": "ds2", "used_for_vms": False},
         ]
         req = ProvisionRequest()
-        req.datastores = ["ds1", "ds2", "ds3"]
-        req.image_datastores = set([ImageDatastore("ds1", True),
-                                    ImageDatastore("ds2", False)])
-        self.agent.update_config(req)
-        self.agent._persist_config()
+        req.datastores = ["ds1", "ds2", "ds3", "ds4"]
+        req.image_datastores = {ImageDatastore("ds1", True), ImageDatastore("ds2", False)}
+        self.agent.provision(req)
         self.agent._load_config()
-        assert_that(self.agent.datastores, equal_to(["ds1", "ds2", "ds3"]))
-        assert_that(self.agent.image_datastores,
-                    contains_inanyorder(*expected_image_ds))
+        assert_that(self.agent.datastores, equal_to(["ds1", "ds2", "ds3", "ds4"]))
+        assert_that(self.agent.image_datastores, contains_inanyorder(*expected_image_ds))
+
+        imageds_callback = mock.MagicMock()
+        self.agent.on_config_change(self.agent.IMAGE_DATASTORES, imageds_callback)
+        req = UpdateConfigRequest()
+        req.image_datastores = {ImageDatastore("ds1", True), ImageDatastore("ds2", False), ImageDatastore("ds3", True)}
+        self.agent.update(req)
+        expected_image_ds = [
+            {"name": "ds1", "used_for_vms": True},
+            {"name": "ds2", "used_for_vms": False},
+            {"name": "ds3", "used_for_vms": True},
+        ]
+        assert_that(self.agent.image_datastores, contains_inanyorder(*expected_image_ds))
+        imageds_callback.assert_called_once_with(self.agent.image_datastores)
+        self.agent._load_config()
+        assert_that(self.agent.image_datastores, contains_inanyorder(*expected_image_ds))
+
 
     def test_config_change(self):
         # Test cpu_overcommit and memory_overcommit config change
@@ -273,10 +286,9 @@ class TestUnitAgent(unittest.TestCase):
         provision.memory_overcommit = 6.0
         self.agent.on_config_change(self.agent.CPU_OVERCOMMIT, cpu_callback)
         self.agent.on_config_change(self.agent.MEMORY_OVERCOMMIT, mem_callback)
-        self.agent.update_config(provision)
+        self.agent.provision(provision)
         cpu_callback.assert_called_once_with(5.0)
         mem_callback.assert_called_once_with(6.0)
-
 
 if __name__ == "__main__":
     unittest.main()
