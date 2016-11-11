@@ -49,6 +49,12 @@ public class DeploymentEntity extends BaseEntity {
 
   private String oauthEndpoint;
 
+  private String oauthUiLoginEndpoint;
+
+  private String oauthUiLogoutEndpoint;
+
+  private String oauthLoadBalancerEndpoint;
+
   private Integer oauthPort;
 
   private String oauthTenant;
@@ -185,6 +191,14 @@ public class DeploymentEntity extends BaseEntity {
 
   public void setOauthEndpoint(String endpoint) {
     this.oauthEndpoint = endpoint;
+  }
+
+  public String getOauthLoadBalancerEndpoint() {
+    return this.oauthLoadBalancerEndpoint;
+  }
+
+  public void setOauthLoadBalancerEndpoint(String endpoint) {
+    this.oauthLoadBalancerEndpoint = endpoint;
   }
 
   public Integer getOauthPort() {
@@ -379,6 +393,22 @@ public class DeploymentEntity extends BaseEntity {
     this.migrationProgress = migrationProgress;
   }
 
+  public String getOauthUiLoginEndpoint() {
+    return oauthUiLoginEndpoint;
+  }
+
+  public void setOauthUiLoginEndpoint(String uiLoginEndpoint) {
+    this.oauthUiLoginEndpoint = uiLoginEndpoint;
+  }
+
+  public String getOauthUiLogoutEndpoint() {
+    return oauthUiLogoutEndpoint;
+  }
+
+  public void setOauthUiLogoutEndpoint(String uiLogoutEndpoint) {
+    this.oauthUiLogoutEndpoint = uiLogoutEndpoint;
+  }
+
   @Override
   public Object clone() throws CloneNotSupportedException {
     return super.clone();
@@ -398,10 +428,13 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getStatsStoreType(), other.getStatsStoreType())
         && Objects.equals(this.getAuthEnabled(), other.getAuthEnabled())
         && Objects.equals(this.getOauthEndpoint(), other.getOauthEndpoint())
+        && Objects.equals(this.getOauthLoadBalancerEndpoint(), other.getOauthLoadBalancerEndpoint())
         && Objects.equals(this.getOauthPort(), other.getOauthPort())
         && Objects.equals(this.getOauthTenant(), other.getOauthTenant())
         && Objects.equals(this.getOauthUsername(), other.getOauthUsername())
         && Objects.equals(this.getOauthPassword(), other.getOauthPassword())
+        && Objects.equals(this.getOauthUiLoginEndpoint(), other.getOauthUiLoginEndpoint())
+        && Objects.equals(this.getOauthUiLogoutEndpoint(), other.getOauthUiLogoutEndpoint())
         && ListUtils.isEqualList(this.getOauthSecurityGroups(), other.getOauthSecurityGroups())
         && Objects.equals(this.getSdnEnabled(), other.getSdnEnabled())
         && Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
@@ -437,9 +470,12 @@ public class DeploymentEntity extends BaseEntity {
         .add("statsStoreType", this.getStatsStoreType())
         .add("authEnabled", this.getAuthEnabled())
         .add("oauthEndpoint", this.getOauthEndpoint())
+        .add("oauthLoadBalancerEndpoint", this.getOauthLoadBalancerEndpoint())
         .add("oauthPort", this.getOauthPort())
         .add("oauthTenant", this.getOauthTenant())
         .add("oauthSecurityGroups", StringUtils.join(this.getOauthSecurityGroups(), ','))
+        .add("oauthUiLoginEndpoint", this.getOauthUiLoginEndpoint())
+        .add("oauthUiLogoutEndpoint", this.getOauthUiLogoutEndpoint())
         .add("sdnEnabled", this.getSdnEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkZoneId", this.getNetworkZoneId())

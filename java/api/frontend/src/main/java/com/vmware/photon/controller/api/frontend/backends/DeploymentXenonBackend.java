@@ -288,9 +288,16 @@ public class DeploymentXenonBackend implements DeploymentBackend {
 
     AuthInfo authInfo = new AuthInfo();
     authInfo.setEnabled(deploymentEntity.getAuthEnabled());
-    authInfo.setEndpoint(deploymentEntity.getOauthEndpoint());
     authInfo.setPort(deploymentEntity.getOauthPort());
+    String authInfoEndpoint = deploymentEntity.getOauthLoadBalancerEndpoint();
+    if (authInfoEndpoint == null) {
+      authInfoEndpoint = deploymentEntity.getOauthEndpoint();
+    }
+
+    authInfo.setEndpoint(authInfoEndpoint);
     authInfo.setTenant(deploymentEntity.getOauthTenant());
+    authInfo.setUiLoginEndpoint(deploymentEntity.getOauthUiLoginEndpoint());
+    authInfo.setUiLogoutEndpoint(deploymentEntity.getOauthUiLogoutEndpoint());
     authInfo.setSecurityGroups(deploymentEntity.getOauthSecurityGroups());
     deployment.setAuth(authInfo);
 
@@ -533,10 +540,13 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     entity.setNtpEndpoint(deployment.ntpEndpoint);
     entity.setAuthEnabled(deployment.oAuthEnabled);
     entity.setOauthEndpoint(deployment.oAuthServerAddress);
+    entity.setOauthLoadBalancerEndpoint(deployment.oAuthLoadBalancerAddress);
     entity.setOauthPort(deployment.oAuthServerPort);
     entity.setOauthTenant(deployment.oAuthTenantName);
     entity.setOauthUsername(deployment.oAuthUserName);
     entity.setOauthPassword(deployment.oAuthPassword);
+    entity.setOauthUiLoginEndpoint(deployment.oAuthMgmtUiLoginEndpoint);
+    entity.setOauthUiLogoutEndpoint(deployment.oAuthMgmtUiLogoutEndpoint);
     entity.setOauthSecurityGroups(deployment.oAuthSecurityGroups);
     entity.setSdnEnabled(deployment.sdnEnabled);
     entity.setNetworkManagerAddress(deployment.networkManagerAddress);
