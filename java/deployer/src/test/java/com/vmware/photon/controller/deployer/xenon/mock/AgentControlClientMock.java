@@ -18,6 +18,8 @@ import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.AgentStatusResponse;
 import com.vmware.photon.controller.agent.gen.ProvisionResponse;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
+import com.vmware.photon.controller.agent.gen.UpdateConfigResponse;
+import com.vmware.photon.controller.agent.gen.UpdateConfigResultCode;
 import com.vmware.photon.controller.agent.gen.UpgradeResponse;
 import com.vmware.photon.controller.agent.gen.UpgradeResultCode;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
@@ -44,6 +46,8 @@ public class AgentControlClientMock extends AgentControlClient {
 
   private ProvisionResultCode provisionResultCode;
   private Exception provisionFailure;
+  private UpdateConfigResultCode updateConfigResultCode;
+  private Exception updateConfigFailure;
   private UpgradeResultCode upgradeResultCode;
   private Exception upgradeFailure;
   private AgentStatusCode agentStatusCode;
@@ -55,6 +59,8 @@ public class AgentControlClientMock extends AgentControlClient {
     this.provisionFailure = builder.provisionFailure;
     this.upgradeResultCode = builder.upgradeResultCode;
     this.upgradeFailure = builder.upgradeFailure;
+    this.updateConfigResultCode = builder.updateConfigResultCode;
+    this.updateConfigFailure = builder.updateConfigFailure;
     this.agentStatusCode = builder.agentStatusCode;
     this.getAgentStatusFailure = builder.getAgentStatusFailure;
   }
@@ -95,6 +101,36 @@ public class AgentControlClientMock extends AgentControlClient {
 
     } else {
       throw new IllegalStateException("No result or failure specified for provision");
+    }
+  }
+
+  @Override
+  public void updateConfig(
+      Set<String> imageDataStores,
+      boolean usedForVMs,
+      AsyncMethodCallback<AgentControl.AsyncSSLClient.update_config_call> handler) {
+
+    logger.info("Host update config complete invocation");
+
+    if (null != updateConfigFailure) {
+      handler.onError(updateConfigFailure);
+
+    } else if (null != updateConfigResultCode) {
+      AgentControl.AsyncSSLClient.update_config_call updateConfigCall =
+          mock(AgentControl.AsyncSSLClient.update_config_call.class);
+      UpdateConfigResponse updateConfigResponse = new UpdateConfigResponse();
+      updateConfigResponse.setResult(updateConfigResultCode);
+
+      try {
+        when(updateConfigCall.getResult()).thenReturn(updateConfigResponse);
+      } catch (TException e) {
+        throw new RuntimeException("Failed to mock updateConfigCall.getResult");
+      }
+
+      handler.onComplete(updateConfigCall);
+
+    } else {
+      throw new IllegalStateException("No result or failure specified for update config");
     }
   }
 
@@ -160,6 +196,8 @@ public class AgentControlClientMock extends AgentControlClient {
 
     private ProvisionResultCode provisionResultCode;
     private Exception provisionFailure;
+    private UpdateConfigResultCode updateConfigResultCode;
+    private Exception updateConfigFailure;
     private UpgradeResultCode upgradeResultCode;
     private Exception upgradeFailure;
     private AgentStatusCode agentStatusCode;
@@ -172,6 +210,16 @@ public class AgentControlClientMock extends AgentControlClient {
 
     public Builder provisionFailure(Exception provisionFailure) {
       this.provisionFailure = provisionFailure;
+      return this;
+    }
+
+    public Builder updateConfigResultCode(UpdateConfigResultCode updateConfigResultCode) {
+      this.updateConfigResultCode = updateConfigResultCode;
+      return this;
+    }
+
+    public Builder updateConfigFailure(Exception updateConfigFailure) {
+      this.updateConfigFailure = updateConfigFailure;
       return this;
     }
 
