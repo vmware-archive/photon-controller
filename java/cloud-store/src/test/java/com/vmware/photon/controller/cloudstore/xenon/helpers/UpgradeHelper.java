@@ -92,10 +92,13 @@ public class UpgradeHelper {
       }
 
       HashMap<String, String> fieldNames = new HashMap<>();
-      for (Field field : serviceClass.getDeclaredFields()) {
-        // Get only public non static fields
-        if (!Modifier.isStatic(field.getModifiers()) && Modifier.isPublic(field.getModifiers())) {
-          fieldNames.put(field.getName(), field.getType().getCanonicalName());
+
+      if (serviceClass != null) {
+        for (Field field : serviceClass.getDeclaredFields()) {
+          // Get only public non static fields
+          if (!Modifier.isStatic(field.getModifiers()) && Modifier.isPublic(field.getModifiers())) {
+            fieldNames.put(field.getName(), field.getType().getCanonicalName());
+          }
         }
       }
       currentServices.put(instance.getClass().getSimpleName(), fieldNames);

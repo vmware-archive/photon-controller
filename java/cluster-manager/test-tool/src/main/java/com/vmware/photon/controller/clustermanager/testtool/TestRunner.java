@@ -223,8 +223,13 @@ public class TestRunner {
     }
 
     if (!step.passed) {
-      throw new RuntimeException("Cluster failed to reach the READY state. Current clusterState: " +
-          cluster.getState());
+      if (cluster != null) {
+        throw new RuntimeException("Cluster failed to reach the READY state. Current clusterState: " +
+            cluster.getState());
+      } else {
+        throw new RuntimeException("Cluster failed to reach the READY state. Current Cluster is null");
+      }
+
     }
 
     stats.testStepList.add(step);
