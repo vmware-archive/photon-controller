@@ -65,7 +65,7 @@ public class AuthConfigTest {
   }
 
   /**
-   * Tests for auth_server_address property.
+   * Tests for AuthServerAddress property.
    */
   public class AuthServerAddressTests {
 
