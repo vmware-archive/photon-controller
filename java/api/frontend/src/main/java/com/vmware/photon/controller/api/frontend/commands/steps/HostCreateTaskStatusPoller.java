@@ -47,7 +47,7 @@ public class HostCreateTaskStatusPoller implements XenonTaskStatusStepCmd.XenonT
   private final HostEntity entity;
 
   public HostCreateTaskStatusPoller(TaskCommand taskCommand, HostXenonBackend hostBackend,
-                                    TaskBackend taskBackend) {
+                                    TaskBackend taskBackend) throws ApiFeException{
     this.taskCommand = taskCommand;
     this.hostBackend = hostBackend;
     this.taskBackend = taskBackend;
@@ -58,7 +58,11 @@ public class HostCreateTaskStatusPoller implements XenonTaskStatusStepCmd.XenonT
         break;
       }
     }
-    this.entity = entityList.get(0);
+    if (entityList != null) {
+      this.entity = entityList.get(0);
+    } else {
+      throw new ApiFeException("EntityList is null");
+    }
   }
 
   @Override

@@ -150,7 +150,11 @@ public class DeploymentStatusStepCmd extends XenonTaskStatusStepCmd {
           break;
         }
       }
-      this.entity = deploymentEntityList.get(0);
+      if (deploymentEntityList != null) {
+        this.entity = deploymentEntityList.get(0);
+      } else {
+        throw new ApiFeException("Deployment entity list null");
+      }
       DeploymentWorkflowService.State serviceDocument = deploymentBackend.getDeployerClient()
           .getDeploymentStatus(remoteTaskLink);
       if (serviceDocument.taskState.stage == TaskState.TaskStage.FINISHED) {

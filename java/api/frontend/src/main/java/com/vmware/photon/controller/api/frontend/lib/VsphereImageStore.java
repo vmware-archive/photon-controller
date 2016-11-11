@@ -247,7 +247,8 @@ public class VsphereImageStore implements ImageStore {
         null != hostList && null != hostList.getItems() && hostList.getItems().size() > 0,
         "Could not find any host to upload image.");
 
-    logger.info("Host candidates for uploading image: {}.", hostList.getItems());
+    logger.info("Host candidates for uploading image: {}.", hostList == null ? "None" : hostList.getItems());
+
     this.host = hostList.getItems().get(0);
     logger.info(
         "Using host = [{}] with datastores = [{}] to upload image.",
