@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
+import com.vmware.photon.controller.agent.gen.UpdateConfigResponse;
 import com.vmware.photon.controller.api.model.AgentState;
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.UsageTag;
@@ -60,6 +61,7 @@ import org.apache.thrift.async.AsyncMethodCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -429,17 +431,19 @@ public class HostService extends StatefulService {
     }
 
     // Update datastore state
-    setDatastoreState(operation, datastores, imageDatastoreIds);
+    setDatastoreState(operation, hostState, datastores, imageDatastoreIds, hostConfig.getDeployment_id());
   }
 
   /**
    * This method creates or updates datastore state that was sent as a part of host config.
    *
+   * @param operation
    * @param datastores
    * @param imageDatastores
-   * @param operation
+   * @param deploymentId
    */
-  private void setDatastoreState(Operation operation, List<Datastore> datastores, Set<String> imageDatastores) {
+  private void setDatastoreState(Operation operation, State hostState, List<Datastore> datastores,
+                                 Set<String> imageDatastores, String deploymentId) {
     if (datastores != null) {
       // Create datastore documents.
       final AtomicInteger latch = new AtomicInteger(datastores.size());
@@ -462,8 +466,8 @@ public class HostService extends StatefulService {
                 if (ex != null) {
                   ServiceUtils.logWarning(this, "Set datastore state failed " + ex.getMessage());
                 }
-                if (0 == latch.decrementAndGet() && operation != null) {
-                  operation.complete();
+                if (0 == latch.decrementAndGet()) {
+                  getDeployment(operation, hostState, datastores, imageDatastores, deploymentId);
                 }
               });
           sendRequest(post);
@@ -474,6 +478,113 @@ public class HostService extends StatefulService {
           }
         }
       }
+    }
+  }
+
+  /**
+   * This method gets deployment service state.
+   */
+  private void getDeployment(Operation operation, State hostState, List<Datastore> datastores,
+                             Set<String> imageDatastores, String deploymentId) {
+    URI deploymentServiceLink = UriUtils.buildUri(getHost(), DeploymentServiceFactory.SELF_LINK + "/" + deploymentId);
+
+    sendRequest(Operation
+        .createGet(deploymentServiceLink)
+        .setUri(deploymentServiceLink)
+        .setReferer(getHost().getUri())
+        .setCompletion((op, ex) -> {
+          try {
+            if (ex == null) {
+              final DeploymentService.State deploymentState = op.getBody(DeploymentService.State.class);
+              checkHostConfigAgainstDeployment(operation, hostState, datastores, imageDatastores, deploymentState);
+            } else {
+              ServiceUtils.logWarning(this, "get deployment state failed " + deploymentServiceLink +
+                  " " + ex.getMessage());
+              if (operation != null) {
+                operation.complete();
+              }
+            }
+          } catch (Throwable t) {
+            ServiceUtils.logWarning(this, "get deployment state failed " + deploymentServiceLink +
+                " " + t.getMessage());
+            if (operation != null) {
+              operation.complete();
+            }
+          }
+        }));
+  }
+
+  /**
+   * This method compares reported HostConfig with deployment service state to determine whether
+   * update is needed.
+   */
+  private void checkHostConfigAgainstDeployment(
+      Operation operation, State hostState, List<Datastore> reportedDatastores,
+      Set<String> reportedImageDatastores, DeploymentService.State deployment) {
+    // Comparing configured image datastores from deployment and reported image datastores from host to determine
+    // whether we need to update host's configuration.
+    // If an image datastore exists in deployment, and is reported by host as a regular datastore
+    // (in hostConfig.reportedDatastores but not in hostConfig.reportedImageDatastores), we need to update
+    // host's configuration.
+    boolean updateNeeded = false;
+    for (String imageDsName : deployment.imageDataStoreNames) {
+      String imageDsId = null;
+      for (Datastore ds: reportedDatastores) {
+        if (ds.getName().equals(imageDsName)) {
+          imageDsId = ds.getId();
+          break;
+        }
+      }
+      if (imageDsId != null && !reportedImageDatastores.contains(imageDsId)) {
+        updateNeeded = true;
+        ServiceUtils.logInfo(this, "Need to update host config because " + imageDsName +
+            " is not in reportedImageDatastores");
+        break;
+      }
+    }
+
+    if (updateNeeded) {
+      updateHostConfig(operation, hostState, deployment);
+    } else if (operation != null) {
+      ServiceUtils.logInfo(this, "Do not need to update host config");
+      operation.complete();
+    }
+  }
+
+  /**
+   * This method updates host's configuration.
+   */
+  private void updateHostConfig(Operation operation, State hostState, DeploymentService.State deployment) {
+    try {
+      final Service service = this;
+
+      AgentControlClient agentControlClient = ((AgentControlClientProvider) getHost()).getAgentControlClient();
+      agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
+      agentControlClient.updateConfig(deployment.imageDataStoreNames, deployment.imageDataStoreUsedForVMs,
+          new AsyncMethodCallback<AgentControl.AsyncSSLClient.update_config_call>() {
+        @Override
+        public void onComplete(AgentControl.AsyncSSLClient.update_config_call getHostConfigCall) {
+          try {
+            UpdateConfigResponse response = getHostConfigCall.getResult();
+            AgentControlClient.ResponseValidator.checkUpdateConfigResponse(response);
+          } catch (Throwable t) {
+            ServiceUtils.logWarning(service, "Failed to update host config. Exception:" + t.getMessage());
+          }
+          if (operation != null) {
+            operation.complete();
+          }
+        }
+
+        @Override
+        public void onError(Exception e) {
+          ServiceUtils.logWarning(service, "Failed to update host config. Exception:" + e.getMessage());
+          if (operation != null) {
+            operation.complete();
+          }
+        }
+      });
+    } catch (Exception e) {
+      ServiceUtils.logWarning(this, "Failed to update host config. Exception:" + e.getMessage());
     }
   }
 
