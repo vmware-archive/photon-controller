@@ -28,6 +28,7 @@ import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.XenonServiceGroup;
+import com.vmware.photon.controller.common.xenon.serializer.KryoSerializerCustomization;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
@@ -199,6 +200,13 @@ public class PhotonControllerXenonHost
          * this issue.
          */
         LuceneDocumentIndexService.setSearcherCountThreshold(INDEX_SEARCHER_COUNT_THRESHOLD);
+
+        /**
+         * Add customized Kryo serialization for both object and document serializers.
+         */
+        KryoSerializerCustomization kryoSerializerCustomization = new KryoSerializerCustomization();
+        Utils.registerCustomKryoSerializer(kryoSerializerCustomization, true);
+        Utils.registerCustomKryoSerializer(kryoSerializerCustomization, false);
 
         this.getClient().setConnectionLimitPerHost(DEFAULT_CONNECTION_LIMIT_PER_HOST);
         startDefaultCoreServicesSynchronously();
