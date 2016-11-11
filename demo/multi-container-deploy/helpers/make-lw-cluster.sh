@@ -21,9 +21,9 @@ if [ $(docker network ls | grep lightwave | wc -l) -ne 1 ]; then
   fi
 fi
 
-./run-lw-container.sh $LIGHTWAVE_PARTNER_0 $LIGHTWAVE_PARTNER_0 $LIGHTWAVE_PASSWORD standalone 0
+./helpers/run-lw-container.sh $LIGHTWAVE_PARTNER_0 $LIGHTWAVE_PARTNER_0 $LIGHTWAVE_PASSWORD standalone 0
 
 if [ "$1" == "multi" ]; then
-  ./run-lw-container.sh $LIGHTWAVE_PARTNER_1 $LIGHTWAVE_PARTNER_0 $LIGHTWAVE_PASSWORD partner 1
-  ./run-lw-container.sh $LIGHTWAVE_PARTNER_2 $LIGHTWAVE_PARTNER_0 $LIGHTWAVE_PASSWORD partner 2
+  ./helpers/run-lw-container.sh $LIGHTWAVE_PARTNER_1 $LIGHTWAVE_PARTNER_0 $LIGHTWAVE_PASSWORD partner 1
+  ./helpers/run-lw-container.sh $LIGHTWAVE_PARTNER_2 $LIGHTWAVE_PARTNER_0 $LIGHTWAVE_PASSWORD partner 2
 fi

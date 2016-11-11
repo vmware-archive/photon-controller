@@ -142,9 +142,8 @@ public class AuthPolicyProviderTest {
     @Test
     public void testMatchDefaultAdminGroup() throws Throwable {
       doReturn(ImmutableSet.of()).when(fetcher).fetchSecurityGroups(authorizationObject);
-      token = AuthTestHelper.generateResourceServerAccessToken(ImmutableSet.of(config.getAuthDomain() +
-          AuthPolicyProvider
-          .DEFAULT_ADMIN_GROUP_NAME));
+      token = AuthTestHelper.generateResourceServerAccessToken(
+          ImmutableSet.of(config.getAuthDomain() + AuthPolicyProvider.DEFAULT_ADMIN_GROUP_NAME));
 
       policyProvider.checkAccessPermissions(request, token);
     }

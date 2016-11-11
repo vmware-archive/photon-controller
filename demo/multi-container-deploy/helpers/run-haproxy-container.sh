@@ -13,7 +13,7 @@ mkdir -p keys
 # To export the keys from the container we need to export following.
 docker kill photon-controller-key-generator || true
 docker rm photon-controller-key-generator || true
-./run-pc-container.sh $HOST_IP I ROCK $LIGHTWAVE_IP x key-generator
+./helpers/run-pc-container.sh $HOST_IP I ROCK $LIGHTWAVE_IP x key-generator
 
 # Create pem file for haproxy use
 docker exec -t photon-controller-key-generator cat /etc/keys/machine.crt /etc/keys/machine.privkey > keys/machine.pem

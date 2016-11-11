@@ -4,11 +4,11 @@ VM_DRIVER=${VM_DRIVER:-vmwarefusion}
 
 if [ "$VM_DRIVER" == "vmwarefusion" ]; then
   IF=eth0
-  MEMORY_OPT="--vmwarefusion-memory-size=4096"
+  MEMORY_OPT="--vmwarefusion-memory-size=2096"
 else
   # Assume VirtualBox is available. IF should be eth1 for VirtualBox
   IF=eth1
-  MEMORY_OPT="--virtualbox-memory=4096"
+  MEMORY_OPT="--virtualbox-memory=2096"
 fi
 
 
