@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2015 VMware, Inc. All Rights Reserved.
+# Copyright 2016 VMware, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License.  You may obtain a copy of
@@ -46,7 +46,7 @@ function get_config_value ()
   file=$1
 
   # Key to find in the config file.
-  # It would be provided with ':' at the end. Pass 'memoryMb:' to find memroyMB in container.
+  # It would be provided with ':' at the end. Pass 'memoryMb:' to find memoryMB in container.
   key=$2
 
   # Extract the "key: value" from the config file
@@ -76,7 +76,7 @@ function print_warning_if_value_mssing ()
   config_file=$3
   if [ -z "${value}" ]
   then
-    echo "WARNING: Missing value for '${key}' in ${PHOTON_CONTROLLER_CORE_CONFIG}"
+    echo "INFO: Missing value for '${key}' in ${PHOTON_CONTROLLER_CORE_CONFIG}. Will continue without it."
   fi
 }
 
@@ -314,3 +314,5 @@ fi
 $COMMAND $PHOTON_CONTROLLER_CORE_CONFIG
 
 set -e
+
+$COMMAND $PHOTON_CONTROLLER_CORE_CONFIG

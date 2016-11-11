@@ -75,18 +75,12 @@ fi
 
 memoryMb=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG memoryMb:`
 ENABLE_AUTH=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG enableAuth:`
-LIGHTWAVE_DOMAIN=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveDomain:`
-LIGHTWAVE_HOSTNAME=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveHostname:`
-LIGHTWAVE_PASSWORD=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwavePassword:`
-KEYSTORE_PASSWORD=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG keyStorePassword:`
-LIGHTWAVE_DOMAIN_CONTROLLER=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveDomainController:`
-LIGHTWAVE_MACHINE_ACCOUNT=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveMachineAccount:`
-LIGHTWAVE_SUBJECT_ALT_NAME=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveSubjectAltName:`
-LIGHTWAVE_DISABLE_VMAFD_LISTENER=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG lightwaveDisableVmafdListener:`
+LIGHTWAVE_DOMAIN=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG authDomain:`
+LIGHTWAVE_HOST_ADDRESS=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG authServerAddress:`
+LIGHTWAVE_PASSWORD=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG keyStorePassword:`
 REGISTRATION_ADDRESS=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG registrationAddress:`
 PHOTON_CONTROLLER_CORE_INSTALL_DIRECTORY=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG installDirectory:`
 LOG_DIRECTORY=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG logDirectory:`
-JAVA_DEBUG=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG javaDebug:`
 
 print_warning_if_value_mssing "${REGISTRATION_ADDRESS}"    "registrationAddress"   "$PHOTON_CONTROLLER_CORE_CONFIG"
 print_warning_if_value_mssing "${LOG_DIRECTORY}"           "logDirectory"          "$PHOTON_CONTROLLER_CORE_CONFIG"
@@ -94,12 +88,8 @@ print_warning_if_value_mssing "${memoryMb}"                "memoryMb"           
 print_warning_if_value_mssing "${ENABLE_AUTH}"             "enableAuth"            "$PHOTON_CONTROLLER_CORE_CONFIG"
 print_warning_if_value_mssing "${LIGHTWAVE_PASSWORD}"      "lightwavePassword"      "$PHOTON_CONTROLLER_CORE_CONFIG"
 print_warning_if_value_mssing "${KEYSTORE_PASSWORD}"      "keyStorePassword"      "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_DOMAIN}"        "lightwaveDomain"      "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_HOSTNAME}"      "lightwaveHostname"    "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_DOMAIN_CONTROLLER}"     "lightwaveDomainController"  "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_MACHINE_ACCOUNT}"       "lightwaveMachineAccount"    "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_SUBJECT_ALT_NAME}"       "lightwaveSubjectAltName"    "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_DISABLE_VMAFD_LISTENER}" "lightwaveDisableVmafdListener"    "$PHOTON_CONTROLLER_CORE_CONFIG"
+print_warning_if_value_mssing "${LIGHTWAVE_DOMAIN}"        "authDomain"            "$PHOTON_CONTROLLER_CORE_CONFIG"
+print_warning_if_value_mssing "${LIGHTWAVE_HOST_ADDRESS}"  "authServerAddress"     "$PHOTON_CONTROLLER_CORE_CONFIG"
 
 API_BITS=${INSTALLATION_PATH_PARAM:-"/usr/lib/esxcloud/photon-controller-core"}
 API_BIN="$API_BITS/bin"
@@ -150,27 +140,13 @@ mkdir -p $CONFIG_PATH/assets
 cp $API_SWAGGER_JS $CONFIG_PATH/assets
 $JAVA_HOME/bin/jar uf ${API_LIB}/swagger-ui*.jar -C $CONFIG_PATH assets/$API_SWAGGER_JS_FILE
 
-if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH,,}" == "true" ]
+# Check if Auth is enbaled or if we already joined previously or created certs.
+if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH,,}" == "true" -a ! -f /etc/keys/machine.privkey ]
 then
   ic_join_params=""
-  if [ -n "${LIGHTWAVE_DOMAIN_CONTROLLER}" ]
+  if [ -n "${LIGHTWAVE_HOST_ADDRESS}" ]
   then
-    ic_join_params="$ic_join_params --domain-controller ${LIGHTWAVE_DOMAIN_CONTROLLER}"
-  fi
-
-  if [ -n "${LIGHTWAVE_MACHINE_ACCOUNT}" ]
-  then
-    ic_join_params="$ic_join_params --machine-account-name ${LIGHTWAVE_MACHINE_ACCOUNT}"
-  fi
-
-  if [ -n "${LIGHTWAVE_SUBJECT_ALT_NAME}" ]
-  then
-    ic_join_params="$ic_join_params --ssl-subject-alt-name ${LIGHTWAVE_SUBJECT_ALT_NAME}"
-  fi
-
-  if [ "${LIGHTWAVE_DISABLE_VMAFD_LISTENER,,}" == "true" ]
-  then
-    ic_join_params="$ic_join_params --disable-afd-listener"
+    ic_join_params="$ic_join_params --domain-controller ${LIGHTWAVE_HOST_ADDRESS}"
   fi
 
   if [ -n "${LIGHTWAVE_DOMAIN}" ]
@@ -183,6 +159,9 @@ then
     ic_join_params="$ic_join_params --password ${LIGHTWAVE_PASSWORD}"
   fi
 
+  ic_join_params="$ic_join_params --ssl-subject-alt-name ${REGISTRATION_ADDRESS}"
+  ic_join_params="$ic_join_params --disable-afd-listener"
+
   full_hostname="$(hostname -f)"
 
   # Check if lightwave server is up
@@ -190,9 +169,9 @@ then
   reachable="false"
   total_attempts=500
   while [ $attempts -lt $total_attempts ] && [ $reachable != "true" ]; do
-    http_code=$(curl -w "%{http_code}" -s -X GET --insecure https://$LIGHTWAVE_HOSTNAME)
+    http_code=$(curl -w "%{http_code}" -s -X GET --insecure https://$LIGHTWAVE_HOST_ADDRESS)
     # The curl returns 000 when it fails to connect to the lightwave server
-    if [ $http_code == "000" ]; then
+    if [ "$http_code" == "000" ]; then
       echo "Lightwave REST server not reachable (attempt $attempts/$total_attempts), will try again."
       attempts=$[$attempts+1]
       sleep 5
@@ -238,6 +217,9 @@ then
     keytool -import -trustcacerts -alias "$cert" -file /etc/keys/cacert.crt \
        -keystore /keystore.jks -storepass ${KEYSTORE_PASSWORD} -noprompt
   done
+
+  # Delete temporary cacert file. For test purpose, curl command should be passed with --capath /etc/ssl/certs.
+  rm -rf /etc/keys/cacert.crt
 
   # Restrict permission on the key files
   chmod 0400 /etc/keys/machine.privkey

@@ -154,6 +154,29 @@ module EsxCloud
       ENV["UPGRADE_SOURCE_ADDRESS"]
     end
 
+    def self.get_mgmt_host_user
+      ENV["MGMT_USER"] || "esxcloud"
+    end
+
+    def self.get_mgmt_host_password
+      ENV["MGMT_PASSWORD"] || "vmware"
+    end
+
+    def self.remote_get(server, uri)
+      user_name = get_mgmt_host_user
+      password = get_mgmt_host_password
+      container_id=`sshpass -p '#{password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null #{user_name}@#{server} "docker ps | grep controller" | awk '{print $1}'`
+      container_id.delete!("\n")
+      # puts uri
+      full_uri = "https://#{server}:19000#{uri}"
+      # puts full_uri
+      docker_cmd = "docker exec #{container_id} curl -Ss --cert /etc/keys/machine.crt --key /etc/keys/machine.privkey --cacert --capath /etc/ssl/certs #{full_uri}"
+      ssh_cmd = "sshpass -p '#{password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null #{user_name}@#{server} \"#{docker_cmd}\""
+      curl_json = `#{ssh_cmd}`
+      # puts curl_json
+      JSON.parse curl_json
+    end
+
     def logger
       Config.logger
     end

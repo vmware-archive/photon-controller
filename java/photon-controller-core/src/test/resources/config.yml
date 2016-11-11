@@ -63,3 +63,6 @@ deployer:
     scanPeriodMs: 5000
     hostConfigPoolSize: 10
     enableScan: true
+
+auth:
+  enableAuth: false
