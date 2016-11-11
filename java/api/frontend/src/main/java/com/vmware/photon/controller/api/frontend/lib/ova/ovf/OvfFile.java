@@ -50,6 +50,12 @@ public class OvfFile {
   public OvfFile(InputStream stream) throws InvalidOvfException {
     try {
       DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      // Disable DTD to prevent XML External Entity Injection
+      String feature = "http://apache.org/xml/features/disallow-doctype-decl";
+      dbf.setFeature(feature, true);
+      dbf.setXIncludeAware(false);
+      dbf.setExpandEntityReferences(false);
+
       DocumentBuilder db = dbf.newDocumentBuilder();
       document = db.parse(stream);
       vmPath = getVmPath();
