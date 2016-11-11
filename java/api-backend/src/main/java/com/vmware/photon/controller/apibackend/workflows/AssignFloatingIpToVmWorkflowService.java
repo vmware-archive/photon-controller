@@ -381,9 +381,10 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
     natRuleCreateSpec.setDescription(NameUtils.getDnatRuleDescription(state.vmPrivateIpAddress));
     natRuleCreateSpec.setMatchDestinationNetwork(state.vmFloatingIpAddress);
     natRuleCreateSpec.setTranslatedNetwork(state.vmPrivateIpAddress);
+    natRuleCreateSpec.setTranslatedPorts(""); // Do not delete this, as NSX would create a rule but has no effect.
     natRuleCreateSpec.setLoggingEnabled(false);
     natRuleCreateSpec.setRulePriority(1024);
-    natRuleCreateSpec.setTranslatedPorts("");
+    natRuleCreateSpec.setEnabled(true);
 
     logicalRouterApi.createNatRule(state.taskServiceEntity.logicalRouterId,
         natRuleCreateSpec,

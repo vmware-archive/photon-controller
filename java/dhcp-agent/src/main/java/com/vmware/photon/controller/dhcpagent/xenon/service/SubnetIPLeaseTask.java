@@ -81,7 +81,6 @@ public class SubnetIPLeaseTask extends ServiceDocument {
      * Step state.
      */
     public enum SubnetOperation {
-        UPDATE,
-        DELETE,
+        UPDATE
     }
 }
