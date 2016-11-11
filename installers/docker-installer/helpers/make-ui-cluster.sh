@@ -1,0 +1,12 @@
+#!/bin/bash +xe
+
+if [ "$DEBUG" == "1" ]; then
+  set -xe
+fi
+
+UI_CONTAINER_VERSION=$1
+LOAD_BALANCER_IP=$2
+PC_CONTAINER_IP=192.168.114.11
+UI_HOST_IP=192.168.114.15
+
+./helpers/run-ui-container.sh $UI_HOST_IP https://$PC_CONTAINER_IP:9000 9000 4343 $UI_CONTAINER_VERSION
