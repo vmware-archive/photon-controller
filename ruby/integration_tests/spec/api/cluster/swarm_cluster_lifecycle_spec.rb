@@ -29,7 +29,7 @@ describe "Swarm cluster-service lifecycle", cluster: true do
     @cleaner.delete_image(@swarm_image)
   end
 
-  it 'should create, delete and resize Swarm cluster successfully' do
+  xit 'should create, delete and resize Swarm cluster successfully' do
     fail("MESOS_ZK_DNS is not defined") unless ENV["MESOS_ZK_DNS"]
     fail("MESOS_ZK_GATEWAY is not defined") unless ENV["MESOS_ZK_GATEWAY"]
     fail("MESOS_ZK_NETMASK is not defined") unless ENV["MESOS_ZK_NETMASK"]
