@@ -15,11 +15,6 @@ package com.vmware.photon.controller.dhcpagent.dhcpdrivers;
 
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.hamcrest.Matchers.not;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -56,12 +51,9 @@ public class DnsmasqDriverTest {
   public void setUpDriver(String scriptPath, String leaseFilePath) {
     dnsmasqDriver = new DnsmasqDriver(
         leaseFilePath,
-        Constants.DHCP_RELEASE_PATH,
-        DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
         DnsmasqDriverTest.class.getResource("/hosts").getPath(),
         DnsmasqDriverTest.class.getResource("/options").getPath(),
-        DnsmasqDriverTest.class.getResource("/config/dnsmasq.conf").getPath(),
-        DnsmasqDriverTest.class.getResource(scriptPath).getPath());
+        DnsmasqDriverTest.class.getResource("/config/dnsmasq.conf").getPath());
   }
 
   /**
@@ -72,68 +64,13 @@ public class DnsmasqDriverTest {
   }
 
   @Test
-  public void testReleaseIPSuccess() {
-    setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
-
-    DHCPDriver.Response response = dnsmasqDriver.releaseIP("VMLAN", "01:23:45:67:89:ab");
-
-    assertThat(response.stdError, isEmptyOrNullString());
-    assertThat(response.exitCode, is(0));
-
-  }
-
-  @Test
-  public void testReleaseIPFailure() {
-    setUpDriver(failureScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
-
-    DHCPDriver.Response response = dnsmasqDriver.releaseIP("VMLAN", "01:23:45:67:89:ab");
-
-    assertThat(response.exitCode, is(113));
-    assertThat(response.stdError, is("error"));
-  }
-
-  @Test
-  public void testFindIPSuccess() {
-    try {
-      setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
-      String ipAddress = dnsmasqDriver.findIP("08:00:27:d8:7d:8e");
-      assertThat(ipAddress, not(isEmptyOrNullString()));
-      assertThat(ipAddress, is("192.168.0.2"));
-    } catch (Throwable e) {
-      fail(String.format("Failed with exception: %s", e.toString()));
-    }
-  }
-
-  @Test
-  public void testFindIPFailureWithIPNotFound() {
-    try {
-      setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
-      String ipAddress = dnsmasqDriver.findIP("08:00:27:d8:7d:8d");
-      assertThat(ipAddress, isEmptyOrNullString());
-    } catch (Throwable e) {
-      fail(String.format("Failed with exception: %s", e.toString()));
-    }
-  }
-
-  @Test
-  public void testFindIPFailureWithLeaseFileNotFound() {
-    try {
-      setUpDriver(successScript, "/var/lib/misc/dnsmasq.leases");
-
-      dnsmasqDriver.findIP("08:00:27:d8:7d:8e");
-      fail("Failed to get file not found exception.");
-    } catch (Throwable e) {
-    }
-  }
-
-  @Test
-  public void testCreateSubnetConfiguration() {
+  public void testCreateSubnet() {
     try {
       setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
       String gateway = "192.168.1.1";
       String cidr = "192.168.1.0/8";
 
-      dnsmasqDriver.createSubnetConfiguration("subnet1", gateway, cidr, "192.168.1.0", "192.168.1.16");
+      dnsmasqDriver.createSubnet("subnet1", gateway, cidr, "192.168.1.0", "192.168.1.16");
 
       FileReader optionFileReader = new FileReader(
           DnsmasqDriverTest.class.getResource("/options").getPath() + "/subnet1");
@@ -186,10 +123,10 @@ public class DnsmasqDriverTest {
   }
 
   @Test
-  public void testDeleteSubnetConfiguration() {
+  public void testDeleteSubnet() {
     try {
       setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
-      dnsmasqDriver.deleteSubnetConfiguration("subnet1");
+      dnsmasqDriver.deleteSubnet("subnet1");
 
       File file = new File(DnsmasqDriverTest.class.getResource("/options").getPath() + "/subnet1");
       if (file.exists() && !file.isDirectory()) {
@@ -217,7 +154,7 @@ public class DnsmasqDriverTest {
 
       // We need to create a subnet configuration file so that other tests can have this file when setting
       // up the dnsmasq driver.
-      dnsmasqDriver.createSubnetConfiguration("subnet1", "192.168.1.1", "192.168.1.0/8", "192.168.1.0", "192.168.1.16");
+      dnsmasqDriver.createSubnet("subnet1", "192.168.1.1", "192.168.1.0/8", "192.168.1.0", "192.168.1.16");
     } catch (Throwable e) {
       fail("Failed with exception: " + e.getMessage());
     }
@@ -232,7 +169,7 @@ public class DnsmasqDriverTest {
       Map<String, String> macAddressIPMap = new HashMap<>();
       macAddressIPMap.put(ipAddress, macAddress);
 
-      dnsmasqDriver.updateSubnetIPLease("subnet1", macAddressIPMap, 1L);
+      dnsmasqDriver.updateSubnet("subnet1", macAddressIPMap, 1L);
 
       FileReader subnetHostFile = new FileReader(
           DnsmasqDriverTest.class.getResource("/hosts").getPath() + "/subnet1");
@@ -255,29 +192,6 @@ public class DnsmasqDriverTest {
         }
       }
 
-    } catch (Throwable e) {
-      fail(String.format("Failed with exception: %s", e.toString()));
-    }
-  }
-
-  @Test
-  public void testDeleteSubnetIPAllocation() {
-    try {
-      setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
-      dnsmasqDriver.deleteSubnetIPLease("subnet1");
-
-      File hostFile = new File(DnsmasqDriverTest.class.getResource("/hosts").getPath() + "/subnet1");
-      if (hostFile.exists() && !hostFile.isDirectory()) {
-        fail("Host file not deleted found in host file:");
-      }
-
-      // We need to create a subnet host file so that other tests can have this file when setting
-      // up the dnsmasq driver.
-      String ipAddress = "192.168.0.2";
-      String macAddress = "08:00:27:d8:7d:8e";
-      Map<String, String> macAddressIPMap = new HashMap<>();
-      macAddressIPMap.put(ipAddress, macAddress);
-      dnsmasqDriver.updateSubnetIPLease("subnet1", macAddressIPMap, 1L);
     } catch (Throwable e) {
       fail(String.format("Failed with exception: %s", e.toString()));
     }

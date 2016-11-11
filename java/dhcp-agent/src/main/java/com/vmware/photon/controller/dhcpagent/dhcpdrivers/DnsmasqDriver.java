@@ -15,51 +15,51 @@ package com.vmware.photon.controller.dhcpagent.dhcpdrivers;
 
 import com.vmware.photon.controller.common.IpHelper;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.InputStreamReader;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Class implements Driver interface for Dnsmasq DHCP server.
  */
 public class DnsmasqDriver implements DHCPDriver {
-  private String dhcpLeaseFilePath = "/var/lib/misc/dnsmasq.leases";
-  private String dhcpReleaseUtilityPath = Constants.DHCP_RELEASE_PATH;
-  private String releaseIPPath = "/script/release-ip.sh";
+
+  private static final Logger logger = LoggerFactory.getLogger(DnsmasqDriver.class);
+
+  private String dhcpLeaseFilePath = Constants.DNSMASQ_LEASE_PATH;
   private String dhcpHostFileDir = Constants.DNSMASQ_HOST_DIR_PATH;
   private String dhcpHostFileCopyDir = Constants.DNSMASQ_HOST_DIR_PATH + "-copy";
   private String dhcpOptionFileDir = Constants.DNSMASQ_OPTION_DIR_PATH;
   private String dhcpOptionFileCopyDir = Constants.DNSMASQ_OPTION_DIR_PATH + "-copy";
   private String dhcpConfigFilePath = Constants.DNSMASQ_CONF_PATH;
-  private String dhcpPidFilePath = Constants.DNSMASQ_PID_PATH;
 
   public DnsmasqDriver(
       String dhcpLeaseFilePath,
-      String dhcpReleaseUtilityPath,
-      String releaseIPPath,
       String dhcpHostFileDir,
       String dhcpOptionFileDir,
-      String dhcpConfigFilePath,
-      String dhcpPidFilePath) {
+      String dhcpConfigFilePath) {
     this.dhcpLeaseFilePath = dhcpLeaseFilePath;
-    this.dhcpReleaseUtilityPath = dhcpReleaseUtilityPath;
-    this.releaseIPPath = releaseIPPath;
     this.dhcpHostFileDir = dhcpHostFileDir;
     this.dhcpHostFileCopyDir = dhcpHostFileDir + "-copy";
     this.dhcpOptionFileDir = dhcpOptionFileDir;
     this.dhcpOptionFileCopyDir = dhcpOptionFileDir + "-copy";
     this.dhcpConfigFilePath = dhcpConfigFilePath;
-    this.dhcpPidFilePath = dhcpPidFilePath;
 
     for (String directory : new String[]{
         this.dhcpHostFileDir, this.dhcpHostFileCopyDir,
@@ -72,44 +72,6 @@ public class DnsmasqDriver implements DHCPDriver {
   }
 
   /**
-   * This method calls DHCP driver to release IP
-   * for cleanup of network resources.
-   *
-   * @param networkInterface
-   * @param macAddress
-   * @return
-   */
-  @Override
-  public Response releaseIP(String networkInterface, String macAddress) {
-    Response response = new Response();
-
-    try {
-      String ipAddress = findIP(macAddress);
-      String command = String.format("%s %s %s %s %s", releaseIPPath, dhcpReleaseUtilityPath, networkInterface,
-          ipAddress, macAddress);
-      Process p = Runtime.getRuntime().exec(command);
-      boolean result = p.waitFor(Constants.TIMEOUT, TimeUnit.SECONDS);
-
-      int exitValue = p.exitValue();
-      if (!result || exitValue != 0) {
-        response.exitCode = exitValue;
-
-        String s;
-        BufferedReader stdError = new BufferedReader(new
-            InputStreamReader(p.getErrorStream()));
-
-        while ((s = stdError.readLine()) != null) {
-          response.stdError += s;
-        }
-      }
-    } catch (Throwable t) {
-      response.exitCode = -1;
-      response.stdError = t.toString();
-    }
-    return response;
-  }
-
-  /**
    * This method attempt to reload the DHCP server's cache.
    * Return true if it was reloaded.
    *
@@ -117,9 +79,11 @@ public class DnsmasqDriver implements DHCPDriver {
    */
   @Override
   public boolean reload() {
+    logger.info("Reloading dhcp-agent");
+
     boolean response = false;
-    try (BufferedReader pid = new BufferedReader(new FileReader(dhcpPidFilePath))) {
-      String command = "kill -SIGHUP \"$(< " + pid + " )\" ";
+    try {
+      String command = "systemctl restart dnsmasq.service";
       Process p = Runtime.getRuntime().exec(command);
       boolean result = p.waitFor(Constants.TIMEOUT, TimeUnit.SECONDS);
 
@@ -157,30 +121,7 @@ public class DnsmasqDriver implements DHCPDriver {
   }
 
   /**
-   * This method parses Dnsmasq lease file to
-   * get IP for the macaddress provided.
-   *
-   * @param macAddress
-   * @return
-   */
-  public String findIP(String macAddress) throws Throwable {
-    String ipAddress = "";
-
-    try (BufferedReader br = new BufferedReader(new FileReader(dhcpLeaseFilePath))) {
-      String line;
-      while ((line = br.readLine()) != null) {
-        String[] leaseInfo = line.split("\\s+");
-        if (leaseInfo[1].equalsIgnoreCase(macAddress)) {
-          return leaseInfo[2];
-        }
-      }
-    }
-
-    return ipAddress;
-  }
-
-  /**
-   * This method creates subnet configuration.
+   * This method creates subnet related configurations.
    *
    * @param subnetId
    * @param gateway
@@ -191,12 +132,19 @@ public class DnsmasqDriver implements DHCPDriver {
    * @throws Exception
    */
   @Override
-  public Response createSubnetConfiguration(
+  public Response createSubnet(
       String subnetId,
       String gateway,
       String cidr,
       String lowIp,
       String highIp) throws Exception {
+    logger.info(String.format(
+        "Creating subnet configuration files for [%s], cidr [%s], gateway [%s], lowIp [%s], highIp [%s]",
+        subnetId,
+        cidr,
+        gateway,
+        lowIp,
+        highIp));
 
     String netmask = IpHelper.calculateNetmaskStringFromCidr(cidr);
 
@@ -229,15 +177,18 @@ public class DnsmasqDriver implements DHCPDriver {
   }
 
   /**
-   * This method deletes subnet configuration.
+   * This method deletes subnet related configurations.
    *
    * @param subnetId
    * @return
    * @throws Exception
    */
   @Override
-  public Response deleteSubnetConfiguration(
+  public Response deleteSubnet(
       String subnetId) throws Exception {
+    logger.info(String.format(
+        "Deleting subnet configuration files for [%s]",
+        subnetId));
 
     // Delete option file for the subnet.
     String optionFilePath = dhcpOptionFileDir + "/" + subnetId;
@@ -245,22 +196,16 @@ public class DnsmasqDriver implements DHCPDriver {
     Files.deleteIfExists(optionFile.toPath());
 
     // Remove range from dnsmasq configuration file.
-    File configFile = new File(dhcpConfigFilePath);
-    File tmpConfigFile = new File(dhcpConfigFilePath + ".tmp");
-    BufferedReader configFileReader = new BufferedReader(new FileReader(configFile));
-    PrintWriter tmpConfigFileWriter = new PrintWriter(new FileWriter(tmpConfigFile));
-    String line = null;
+    removeLinesFromFile(
+        dhcpConfigFilePath,
+        Arrays.asList(subnetId));
 
-    while ((line = configFileReader.readLine()) != null) {
-      if (!line.contains(subnetId)) {
-        tmpConfigFileWriter.println(line);
-      }
+    // Remove host file if exist.
+    String hostFilePath = dhcpHostFileDir + "/" + subnetId;
+    File hostFile = new File(hostFilePath);
+    if (hostFile.exists()) {
+      hostFile.delete();
     }
-
-    configFileReader.close();
-    tmpConfigFileWriter.close();
-
-    Files.move(tmpConfigFile.toPath(), configFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
     Response response = new Response();
     response.exitCode = 0;
@@ -268,7 +213,7 @@ public class DnsmasqDriver implements DHCPDriver {
   }
 
   /**
-   * This method update subnet leases of
+   * This method updates subnet leases of
    * IP for MAC address.
    *
    * @param subnetId
@@ -277,45 +222,64 @@ public class DnsmasqDriver implements DHCPDriver {
    * @return
    */
   @Override
-  public Response updateSubnetIPLease(
+  public Response updateSubnet(
       String subnetId,
       Map<String, String> ipAddressToMACAddressMap,
       Long version) throws Exception {
+    logger.info(String.format(
+        "Updating subnet leases for [%s]: new mapping is [%s]",
+        subnetId,
+        ipAddressToMACAddressMap.toString()));
+
     Response response = new Response();
 
+    // Read the old subnet file, compare the version, and get a list of IP-MAC mapping that needs
+    // to be removed.
     String oldSubnetFilename = dhcpHostFileDir + "/" + subnetId;
     File oldSubnetHostFile = new File(oldSubnetFilename);
+    Map<String, String> ipToMacToRemove = new HashMap<>();
+
     if (oldSubnetHostFile.exists()) {
-      FileInputStream inputStream = new FileInputStream(oldSubnetFilename);
-      BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+      BufferedReader reader = new BufferedReader(new FileReader(oldSubnetHostFile));
 
       try {
-        String line = reader.readLine();
-        if (line != null && !line.isEmpty()) {
-          Pattern pattern = Pattern.compile("^# Version=(?<version>[0-9]+)$");
-          Matcher matcher = pattern.matcher(line);
-          if (matcher.matches()) {
-            Long oldVersion = Long.parseLong(matcher.group("version"));
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+          Pattern versionPattern = Pattern.compile("^# Version=(?<version>[0-9]+)$");
+          Matcher versionMatcher = versionPattern.matcher(line);
+          if (versionMatcher.matches()) {
+            Long oldVersion = Long.parseLong(versionMatcher.group("version"));
 
             if (oldVersion > version) {
               response.exitCode = 1;
               return response;
             }
 
-            if (oldVersion == version) {
+            if (oldVersion.equals(version)) {
               response.exitCode = 0;
               return response;
+            }
+          } else {
+            String[] ipToMacParts = line.split(",");
+            if (ipToMacParts.length != 3) {
+              continue;
+            }
+
+            String ip = ipToMacParts[0];
+            String mac = ipToMacParts[1];
+            if (!ipAddressToMACAddressMap.containsKey(ip) ||
+                !ipAddressToMACAddressMap.get(ip).equalsIgnoreCase(mac)) {
+              ipToMacToRemove.put(ip, mac);
             }
           }
         }
       } finally {
         reader.close();
-        inputStream.close();
       }
     }
 
+    // Update the subnet file with new version and IP-MAC mapping.
     String newSubnetFilename = dhcpHostFileCopyDir + "/" + subnetId;
-
     PrintWriter writer = new PrintWriter(newSubnetFilename, "UTF-8");
     writer.println("# Version=" + version);
     for (Map.Entry<String, String> pair : ipAddressToMACAddressMap.entrySet()) {
@@ -325,26 +289,54 @@ public class DnsmasqDriver implements DHCPDriver {
 
     writer.close();
     File newSubnetHostFile = new File(newSubnetFilename);
-
     Files.move(newSubnetHostFile.toPath(), oldSubnetHostFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+    // Remove obsolete IP-MAC lease.
+    logger.info(String.format(
+        "Updating subnet leases for [%s]: mapping to be removed is [%s]",
+        subnetId,
+        ipToMacToRemove.toString()));
+
+    if (!ipToMacToRemove.isEmpty()) {
+      removeLinesFromFile(dhcpLeaseFilePath,
+          ipToMacToRemove.entrySet().stream()
+              .map(entry -> entry.getValue() + " " + entry.getKey()).collect(Collectors.toList()));
+    }
 
     response.exitCode = 0;
     return response;
   }
 
-  /**
-   * This method deletes subnet IP leases.
-   *
-   * @param subnetId
-   * @return
-   */
-  @Override
-  public Response deleteSubnetIPLease(String subnetId) throws Exception {
-    Response response = new Response();
-    String subnetFilename = dhcpHostFileDir + "/" + subnetId;
-    File subnetHostFile = new File(subnetFilename);
-    Files.deleteIfExists(subnetHostFile.toPath());
-    response.exitCode = 0;
-    return response;
+  private void removeLinesFromFile(String filePath,
+                                  List<String> excludeLineContents) throws IOException {
+    File file = new File(filePath);
+    File tmpFile = new File(filePath + ".tmp");
+    BufferedReader fileReader = new BufferedReader(new FileReader(file));
+    PrintWriter tmpFileWriter = new PrintWriter(new FileWriter(tmpFile));
+    String line = null;
+
+    while ((line = fileReader.readLine()) != null) {
+      boolean excludeLine = false;
+      for (String excludeLineContent : excludeLineContents) {
+        if (line.contains(excludeLineContent)) {
+          excludeLine = true;
+          break;
+        }
+      }
+
+      if (excludeLine) {
+        continue;
+      }
+
+      tmpFileWriter.println(line);
+    }
+
+    fileReader.close();
+    tmpFileWriter.close();
+
+    Files.move(tmpFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    if (tmpFile.exists()) {
+      tmpFile.delete();
+    }
   }
 }

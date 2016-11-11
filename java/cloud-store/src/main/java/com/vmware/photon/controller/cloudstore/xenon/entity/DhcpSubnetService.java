@@ -22,7 +22,6 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
-import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
@@ -134,7 +133,7 @@ public class DhcpSubnetService extends StatefulService {
       ipOperationPatch.ipAddress = null;
       Long dynamicRangeSize = currentState.highIpDynamic - currentState.lowIpDynamic + 1;
 
-      while (currentState.ipAllocations.length() < dynamicRangeSize) {
+      if (currentState.ipAllocations.length() < dynamicRangeSize) {
         int cur = currentState.ipAllocations.nextClearBit(0);
         currentState.ipAllocations.set(cur);
 
@@ -165,20 +164,10 @@ public class DhcpSubnetService extends StatefulService {
               .createPost(this, IpLeaseService.FACTORY_LINK)
               .setBody(ipLease);
           ServiceUtils.doServiceOperation(this, postOperation);
-        } catch (BadRequestException be) {
-          IpLeaseService.LeaseAlreadyAcquiredError leaseAlreadyAcquiredError = be.getCompletedOperation()
-              .getBody(IpLeaseService.LeaseAlreadyAcquiredError.class);
-          if (leaseAlreadyAcquiredError != null) {
-            ServiceUtils.logWarning(this, leaseAlreadyAcquiredError.getMessage());
-            continue;
-          }
-          throw be;
         }
-        ipOperationPatch.ipAddress = allocatedIp;
-        break;
-      }
 
-      if (StringUtils.isBlank(ipOperationPatch.ipAddress)) {
+        ipOperationPatch.ipAddress = allocatedIp;
+      } else {
         ServiceUtils.failOperationAsBadRequest(this, patch, new IllegalArgumentException("range is full"),
             new RangeFullyAllocatedError(currentState, ipOperationPatch.ownerVmId));
         return;

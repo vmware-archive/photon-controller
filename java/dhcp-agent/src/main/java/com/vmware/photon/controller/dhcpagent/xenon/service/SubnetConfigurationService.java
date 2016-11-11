@@ -125,14 +125,19 @@ public class SubnetConfigurationService extends StatefulService {
     try {
       DHCPDriver dhcpDriver = ((DHCPAgentXenonHost) getHost()).getDHCPDriver();
 
-      dhcpDriver.createSubnetConfiguration(
+      dhcpDriver.createSubnet(
           currentState.subnetConfiguration.subnetId,
           currentState.subnetConfiguration.subnetGateway,
           currentState.subnetConfiguration.subnetCidr,
           currentState.subnetConfiguration.subnetLowIp,
           currentState.subnetConfiguration.subnetHighIp);
 
-      SubnetConfigurationTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+      SubnetConfigurationTask patchState;
+      if (dhcpDriver.reload()) {
+        patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+      } else {
+        patchState = buildPatch(TaskState.TaskStage.FAILED, null);
+      }
 
       if (operation == null) {
         TaskUtils.sendSelfPatch(this, patchState);
@@ -150,10 +155,15 @@ public class SubnetConfigurationService extends StatefulService {
     try {
       DHCPDriver dhcpDriver = ((DHCPAgentXenonHost) getHost()).getDHCPDriver();
 
-      dhcpDriver.deleteSubnetConfiguration(
+      dhcpDriver.deleteSubnet(
           currentState.subnetConfiguration.subnetId);
 
-      SubnetConfigurationTask patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+      SubnetConfigurationTask patchState;
+      if (dhcpDriver.reload()) {
+        patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+      } else {
+        patchState = buildPatch(TaskState.TaskStage.FAILED, null);
+      }
 
       if (operation == null) {
         TaskUtils.sendSelfPatch(this, patchState);
