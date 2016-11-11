@@ -329,46 +329,6 @@ public class SubnetIPLeaseServiceTest {
 
             assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
         }
-
-        /**
-         * Test subnet IP lease delete success.
-         */
-        @Test
-        public void testSubnetLeaseIPDeleteSuccess() throws Throwable {
-            setUpEnvironment();
-            doReturn(true).when(dnsmasqDriver).reload();
-            SubnetIPLeaseService.buildPatch(TaskState.TaskStage.FINISHED, null);
-
-            SubnetIPLeaseTask subnetIPLeaseTask = buildValidState(TaskState.TaskStage.CREATED, false,
-                    SubnetIPLeaseTask.SubnetOperation.DELETE);
-            SubnetIPLeaseTask finalState = testEnvironment.callServiceAndWaitForState(
-                    SubnetIPLeaseService.FACTORY_LINK,
-                    subnetIPLeaseTask,
-                    SubnetIPLeaseTask.class,
-                    (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-            assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FINISHED));
-        }
-
-        /**
-         * Test subnet IP lease delete failure.
-         */
-        @Test
-        public void testSubnetLeaseIPDeleteFailure() throws Throwable {
-            // Setting some invalid path to generate failure case.
-            setUpEnvironment("/etc/hosts");
-
-            SubnetIPLeaseTask subnetIPLeaseTask = buildValidState(TaskState.TaskStage.CREATED, false,
-                    SubnetIPLeaseTask.SubnetOperation.DELETE);
-
-            SubnetIPLeaseTask finalState = testEnvironment.callServiceAndWaitForState(
-                    SubnetIPLeaseService.FACTORY_LINK,
-                    subnetIPLeaseTask,
-                    SubnetIPLeaseTask.class,
-                    (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-            assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-        }
     }
 
     private SubnetIPLeaseTask buildValidState(TaskState.TaskStage stage, boolean isProcessingDisabled,

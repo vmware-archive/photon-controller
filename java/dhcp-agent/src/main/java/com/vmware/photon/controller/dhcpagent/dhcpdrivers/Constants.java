@@ -18,33 +18,28 @@ package com.vmware.photon.controller.dhcpagent.dhcpdrivers;
  */
 public class Constants {
 
-    /**
-     * Dnsmasq host directory path.
-     */
-    public static final String DNSMASQ_HOST_DIR_PATH = "/etc/dhcp-hosts";
+  /**
+   * Dnsmasq host directory path.
+   */
+  public static final String DNSMASQ_HOST_DIR_PATH = "/etc/dhcp-hosts";
 
-    /**
-     * Dnsmasq option directory path.
-     */
-    public static final String DNSMASQ_OPTION_DIR_PATH = "/etc/dhcp-options";
+  /**
+   * Dnsmasq option directory path.
+   */
+  public static final String DNSMASQ_OPTION_DIR_PATH = "/etc/dhcp-options";
 
-    /**
-     * The file path for dnsmasq configuration file.
-     */
-    public static final String DNSMASQ_CONF_PATH = "/etc/dnsmasq.conf";
+  /**
+   * The file path for dnsmasq configuration file.
+   */
+  public static final String DNSMASQ_CONF_PATH = "/etc/dnsmasq.conf";
 
-    /**
-     * The file path for dnsmasq process Id file.
-     */
-    public static final String DNSMASQ_PID_PATH = "/var/run/dnsmasq.pid";
+  /**
+   * The file path for dnsmasq lease file.
+   */
+  public static final String DNSMASQ_LEASE_PATH = "/var/lib/misc/dnsmasq.leases";
 
-    /**
-     * The path for dhcp release utility.
-     */
-    public static final String DHCP_RELEASE_PATH = "/usr/local/bin/dhcp_release";
-
-    /**
-     * The 5 second timeout to wait for a process to finish running a command.
-     */
-    public static final long TIMEOUT = 5;
+  /**
+   * The 5 second timeout to wait for a process to finish running a command.
+   */
+  public static final long TIMEOUT = 5;
 }

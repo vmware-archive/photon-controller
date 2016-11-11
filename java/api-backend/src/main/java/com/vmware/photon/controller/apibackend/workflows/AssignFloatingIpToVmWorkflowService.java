@@ -381,6 +381,8 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
     natRuleCreateSpec.setDescription(NameUtils.getDnatRuleDescription(state.vmPrivateIpAddress));
     natRuleCreateSpec.setMatchDestinationNetwork(state.vmFloatingIpAddress);
     natRuleCreateSpec.setTranslatedNetwork(state.vmPrivateIpAddress);
+    natRuleCreateSpec.setRulePriority(1024);
+    natRuleCreateSpec.setEnabled(true);
 
     logicalRouterApi.createNatRule(state.taskServiceEntity.logicalRouterId,
         natRuleCreateSpec,

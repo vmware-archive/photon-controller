@@ -86,8 +86,6 @@ public class SubnetIPLeaseService extends StatefulService {
 
             if (startState.subnetIPLease.subnetOperation == SubnetIPLeaseTask.SubnetOperation.UPDATE) {
                 handleUpdateSubnetIPLease(startState, startOperation);
-            } else if (startState.subnetIPLease.subnetOperation == SubnetIPLeaseTask.SubnetOperation.DELETE) {
-                handleDeleteSubnetIPLease(startState, startOperation);
             }
         } catch (Throwable t) {
             failTask(buildPatch(TaskState.TaskStage.FAILED, t), t, startOperation);
@@ -114,9 +112,6 @@ public class SubnetIPLeaseService extends StatefulService {
             if (TaskState.TaskStage.STARTED == currentState.taskState.stage
                     && SubnetIPLeaseTask.SubnetOperation.UPDATE == currentState.subnetIPLease.subnetOperation) {
                 handleUpdateSubnetIPLease(currentState, patchOperation);
-            } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage
-                    && SubnetIPLeaseTask.SubnetOperation.DELETE == currentState.subnetIPLease.subnetOperation) {
-                handleDeleteSubnetIPLease(currentState, patchOperation);
             }
         } catch (Throwable t) {
             failTask(buildPatch(TaskState.TaskStage.FAILED, t), t, null);
@@ -147,41 +142,10 @@ public class SubnetIPLeaseService extends StatefulService {
     public void handleUpdateSubnetIPLease(SubnetIPLeaseTask currentState, Operation operation) {
         try {
             DHCPDriver dhcpDriver = ((DHCPAgentXenonHost) getHost()).getDHCPDriver();
-            dhcpDriver.updateSubnetIPLease(
-                    currentState.subnetIPLease.subnetId,
-                    currentState.subnetIPLease.ipToMACAddressMap,
-                    currentState.subnetIPLease.version);
-
-            SubnetIPLeaseTask patchState;
-            if (dhcpDriver.reload()) {
-                patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-            } else {
-                patchState = buildPatch(TaskState.TaskStage.FAILED, null);
-            }
-
-            if (operation == null) {
-                TaskUtils.sendSelfPatch(this, patchState);
-            } else {
-                operation.setBody(patchState).complete();
-            }
-
-        } catch (Throwable ex) {
-            SubnetIPLeaseTask patchState = buildPatch(TaskState.TaskStage.FAILED, null);
-            failTask(patchState, ex, operation);
-        }
-    }
-
-    /**
-     * This method generates request to DHCP server for
-     * deleting IP leases for subnet to cleanup network resources.
-     *
-     * @param currentState
-     * @param operation
-     */
-    public void handleDeleteSubnetIPLease(SubnetIPLeaseTask currentState, Operation operation) {
-        try {
-            DHCPDriver dhcpDriver = ((DHCPAgentXenonHost) getHost()).getDHCPDriver();
-            dhcpDriver.deleteSubnetIPLease(currentState.subnetIPLease.subnetId);
+            dhcpDriver.updateSubnet(
+                currentState.subnetIPLease.subnetId,
+                currentState.subnetIPLease.ipToMACAddressMap,
+                currentState.subnetIPLease.version);
 
             SubnetIPLeaseTask patchState;
             if (dhcpDriver.reload()) {

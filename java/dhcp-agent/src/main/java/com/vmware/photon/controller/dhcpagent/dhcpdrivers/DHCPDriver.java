@@ -21,17 +21,6 @@ import java.util.Map;
 public interface DHCPDriver {
 
     /**
-     * This method calls DHCP driver to release IP
-     * for cleanup of network resources.
-     *
-     * @param networkInterface
-     * @param macAddress
-     *
-     * @return
-     */
-    Response releaseIP(String networkInterface, String macAddress);
-
-    /**
      * This method returns true with DHCP server
      * is up and running.
      *
@@ -50,7 +39,7 @@ public interface DHCPDriver {
      * @return
      * @throws Exception
      */
-    Response createSubnetConfiguration(
+    Response createSubnet(
         String subnetId,
         String gateway,
         String cidr,
@@ -64,11 +53,11 @@ public interface DHCPDriver {
      * @return
      * @throws Exception
      */
-    Response deleteSubnetConfiguration(
+    Response deleteSubnet(
         String subnetId) throws Exception;
 
     /**
-     * This method update subnet allocation of
+     * This method updates subnet allocation of
      * IP for MAC address.
      *
      * @param subnetId
@@ -77,19 +66,10 @@ public interface DHCPDriver {
      *
      * @return
      */
-    Response updateSubnetIPLease(
+    Response updateSubnet(
         String subnetId,
         Map<String, String> ipAddressToMACAddressMap,
         Long version) throws Exception;
-
-    /**
-     * This method deletes subnet.
-     *
-     * @param subnetId
-     *
-     * @return
-     */
-     Response deleteSubnetIPLease(String subnetId) throws Exception;
 
     /**
      * This method attempt to reload the DHCP server's cache.

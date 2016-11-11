@@ -49,13 +49,11 @@ public class Main {
 
     new LoggingFactory(dhcpAgentConfig.getLogging(), "dhcpagent").configure();
 
-    DnsmasqDriver dnsmasqDriver = new DnsmasqDriver("/var/lib/misc/dnsmasq.leases",
-        Constants.DHCP_RELEASE_PATH,
-        DnsmasqDriver.class.getResource("/scripts/release-ip.sh").getPath(),
+    DnsmasqDriver dnsmasqDriver = new DnsmasqDriver(
+        Constants.DNSMASQ_LEASE_PATH,
         Constants.DNSMASQ_HOST_DIR_PATH,
         Constants.DNSMASQ_OPTION_DIR_PATH,
-        Constants.DNSMASQ_CONF_PATH,
-        Constants.DNSMASQ_PID_PATH);
+        Constants.DNSMASQ_CONF_PATH);
 
     Injector injector = Guice.createInjector(new DHCPAgentModule(dhcpAgentConfig, dnsmasqDriver));
 

@@ -20,7 +20,6 @@ import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DHCPDriver;
-import com.vmware.photon.controller.dhcpagent.xenon.service.ReleaseIPService;
 import com.vmware.photon.controller.dhcpagent.xenon.service.StatusService;
 import com.vmware.photon.controller.dhcpagent.xenon.service.SubnetConfigurationService;
 import com.vmware.photon.controller.dhcpagent.xenon.service.SubnetIPLeaseService;
@@ -86,7 +85,6 @@ public class DHCPAgentXenonHost
     startDefaultCoreServicesSynchronously();
 
     // Start all the factories
-    super.startFactory(ReleaseIPService.class, ReleaseIPService::createFactory);
     super.startFactory(SubnetIPLeaseService.class, SubnetIPLeaseService::createFactory);
     super.startFactory(SubnetConfigurationService.class, SubnetConfigurationService::createFactory);
     ServiceHostUtils.startServices(this, FACTORY_SERVICES);
