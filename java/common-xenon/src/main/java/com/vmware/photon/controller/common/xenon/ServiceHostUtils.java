@@ -129,7 +129,7 @@ public class ServiceHostUtils {
         true);
   }
 
-  public static void waitForNodeGroupConvergence(
+  public static void  waitForNodeGroupConvergence(
       ServiceHost localHost,
       Collection<URI> nodeGroupUris,
       int healthyMemberCount,

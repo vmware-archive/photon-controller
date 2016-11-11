@@ -17,23 +17,23 @@ package com.vmware.photon.controller.core;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
 import com.vmware.xenon.common.ServiceHost;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for the DefaultDeployment method.
  */
 public class DefaultDeploymentTest {
-
-  private static final long SERVICES_STARTUP_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
 
   private TestEnvironment testEnvironment;
   private PhotonControllerConfig photonControllereConfig;
@@ -73,30 +73,35 @@ public class DefaultDeploymentTest {
       peers.add(host.getUri().toString());
     }
 
-    String defaultDeploymentSelfLink =
-        DeploymentServiceFactory.SELF_LINK + "/" + DeployerDefaults.DEFAULT_DEPLOYMENT_ID;
+    DefaultDeployment defaultDeployment = new DefaultDeployment();
 
-    ServiceHostUtils.waitForServiceAvailability(
-        testEnvironment.getHosts()[0], SERVICES_STARTUP_TIMEOUT, DeploymentServiceFactory.SELF_LINK);
-
-    DefaultDeployment.createDefaultDeployment(
-        peers.toArray(new String[peers.size()]),
+    defaultDeployment.createDefaultDeployment(
         photonControllereConfig.getDeployerConfig(),
+        photonControllereConfig.getAuth(),
         testEnvironment.getHosts()[0]);
 
     // Other host might create the default deployment as well with same name. Xenon should converge them as one.
-    DefaultDeployment.createDefaultDeployment(
-        peers.toArray(new String[peers.size()]),
+    defaultDeployment.createDefaultDeployment(
         photonControllereConfig.getDeployerConfig(),
+        photonControllereConfig.getAuth(),
         testEnvironment.getHosts()[1]);
 
-    DefaultDeployment.createDefaultDeployment(
-        peers.toArray(new String[peers.size()]),
+    defaultDeployment.createDefaultDeployment(
         photonControllereConfig.getDeployerConfig(),
+        photonControllereConfig.getAuth(),
         testEnvironment.getHosts()[2]);
 
-    ServiceHostUtils.waitForServiceAvailability(
-        testEnvironment.getHosts()[0],
-        SERVICES_STARTUP_TIMEOUT, defaultDeploymentSelfLink);
+    ServiceHostUtils.waitForNodeGroupConvergence(
+       testEnvironment.getHosts(),
+        ServiceUriPaths.DEFAULT_NODE_GROUP);
+
+    String selfLink = DeploymentServiceFactory.SELF_LINK + "/" + DeployerDefaults.DEFAULT_DEPLOYMENT_ID;
+
+    try {
+      ServiceHostUtils.waitForServiceAvailability(testEnvironment.getHosts()[0],
+          MultiHostEnvironment.WAIT_ITERATION_COUNT, selfLink);
+    } catch (Exception ex) {
+      fail("Failed to create default deployment.");
+    }
   }
 }

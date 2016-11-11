@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.core;
 
 import com.vmware.photon.controller.api.frontend.ApiFeService;
-import com.vmware.photon.controller.api.frontend.clients.api.LocalApiClient;
+import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
@@ -56,6 +56,7 @@ import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerServiceGroup;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceClient;
+import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.common.http.netty.NettyHttpServiceClient;
 
@@ -81,6 +82,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
@@ -102,7 +104,6 @@ public class Main {
   public static final String CLUSTER_SCRIPTS_DIRECTORY = "clusters";
 
   public static void main(String[] args) throws Throwable {
-    try {
     LoggingFactory.bootstrap();
 
     logger.info("args: " + Arrays.toString(args));
@@ -111,15 +112,13 @@ public class Main {
         .defaultHelp(true)
         .description("Photon Controller Core");
     parser.addArgument("config-file").help("photon controller configuration file");
-    parser.addArgument("--manual")
-        .type(Boolean.class)
-        .setDefault(false)
-        .help("If true, create default deployment.");
 
     Namespace namespace = parser.parseArgsOrFail(args);
 
     PhotonControllerConfig photonControllerConfig = getPhotonControllerConfig(namespace);
     DeployerConfig deployerConfig = photonControllerConfig.getDeployerConfig();
+    AuthConfig authConfig = photonControllerConfig.getAuth();
+    File apiFeTempConfig = makeApiFeConfigFile(args[0]);
 
     new LoggingFactory(photonControllerConfig.getLogging(), "photon-controller-core").configure();
 
@@ -139,21 +138,58 @@ public class Main {
       sslContext = KeyStoreUtils.acceptAllCerts(KeyStoreUtils.THRIFT_PROTOCOL);
     }
 
-    ThriftModule thriftModule = new ThriftModule(sslContext);
-    PhotonControllerXenonHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig,
-        sslContext);
 
-    if ((Boolean) namespace.get("manual")) {
-      DefaultDeployment.createDefaultDeployment(
-          photonControllerConfig.getXenonConfig().getPeerNodes(),
+    ThriftModule thriftModule = new ThriftModule(sslContext);
+
+    ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig, sslContext);
+
+    if (deployerConfig.getDeployerContext().getDefaultDeploymentEnabled()) {
+      DefaultDeployment defaultDeployment = new DefaultDeployment();
+      String loadbalancer = deployerConfig.getDeployerContext().getLoadBalancerAddress();
+      if (loadbalancer == null) {
+        loadbalancer = photonControllerConfig.getXenonConfig().getRegistrationAddress();
+      }
+
+      defaultDeployment.createDefaultDeployment(
+          xenonHost,
+          authConfig,
           deployerConfig,
-          xenonHost);
+          loadbalancer);
     }
 
+    // This approach can be simplified once the apife container is gone, but for the time being
+    // it expects the first arg to be the string "server".
+    String[] apiFeArgs = new String[2];
+    apiFeArgs[0] = "server";
+    apiFeArgs[1] = apiFeTempConfig.getAbsolutePath();
+    ApiFeService.setupApiFeConfigurationForServerCommand(apiFeArgs);
+    ApiFeService.addServiceHost(xenonHost);
+    ApiFeService.setSSLContext(sslContext);
+
+    new ApiFeService().run(apiFeArgs);
+    apiFeTempConfig.deleteOnExit();
+
+    // in the non-auth enabled scenario we need to be able to accept any self-signed certificate
+    if (!deployerConfig.getDeployerContext().isAuthEnabled()) {
+      KeyStoreUtils.acceptAllCerts(KeyStoreUtils.THRIFT_PROTOCOL);
+    }
+
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+      @Override
+      public void run() {
+        logger.info("Shutting down");
+        xenonHost.stop();
+        logger.info("Done");
+        LoggingFactory.detachAndStop();
+      }
+    });
+  }
+
+  private static File makeApiFeConfigFile(String arg) throws IOException {
     // Creating a temp configuration file for apife with modification to some named sections in photon-controller-config
     // so that it can match the Configuration class of dropwizard.
     File apiFeTempConfig = File.createTempFile("apiFeTempConfig", ".tmp");
-    File source = new File(args[0]);
+    File source = new File(arg);
     FileInputStream fis = new FileInputStream(source);
     BufferedReader in = new BufferedReader(new InputStreamReader(fis));
 
@@ -170,44 +206,10 @@ public class Main {
     }
     in.close();
     out.close();
-
-    // This approach can be simplified once the apife container is gone, but for the time being
-    // it expects the first arg to be the string "server".
-    String[] apiFeArgs = new String[2];
-    apiFeArgs[0] = "server";
-    apiFeArgs[1] = apiFeTempConfig.getAbsolutePath();
-    ApiFeService.setupApiFeConfigurationForServerCommand(apiFeArgs);
-    ApiFeService.addServiceHost(xenonHost);
-    ApiFeService.setSSLContext(sslContext);
-
-    ApiFeService apiFeService = new ApiFeService();
-    apiFeService.run(apiFeArgs);
-    apiFeTempConfig.deleteOnExit();
-
-    LocalApiClient localApiClient = apiFeService.getInjector().getInstance(LocalApiClient.class);
-    xenonHost.setApiClient(localApiClient);
-
-    // in the non-auth enabled scenario we need to be able to accept any self-signed certificate
-    if (!deployerConfig.getDeployerContext().isAuthEnabled()) {
-      KeyStoreUtils.acceptAllCerts(KeyStoreUtils.THRIFT_PROTOCOL);
-    }
-
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-      @Override
-      public void run() {
-        logger.info("Shutting down");
-        xenonHost.stop();
-        logger.info("Done");
-        LoggingFactory.detachAndStop();
-      }
-    });
-   } catch (Exception e) {
-      logger.error("Failed to start photon controller ", e);
-      throw e;
-     }
+    return apiFeTempConfig;
   }
 
-  private static PhotonControllerXenonHost startXenonHost(PhotonControllerConfig photonControllerConfig,
+  private static ServiceHost startXenonHost(PhotonControllerConfig photonControllerConfig,
                                             ThriftModule thriftModule,
                                             DeployerConfig deployerConfig,
                                             SSLContext sslContext) throws Throwable {
