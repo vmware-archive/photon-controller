@@ -12,7 +12,7 @@ DHCP=yes
 EOF
 ip addr flush label "${eno_name}"
 systemctl restart systemd-networkd
-timeout=120
+timeout=20
 second=0
 DEFAULT_INTERFACE=$(ip -o -4 route show to default | awk '{print $5}' | head -1)
 # wait for the interface to be not loopback
