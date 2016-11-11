@@ -237,6 +237,11 @@ public class DeploymentService extends StatefulService {
     public String oAuthServerAddress;
 
     /**
+     * This value represents the OAuth server load balancer address.
+     */
+    public String oAuthLoadBalancerAddress;
+
+    /**
      * This value represents the OAuth server port.
      */
     public Integer oAuthServerPort;
