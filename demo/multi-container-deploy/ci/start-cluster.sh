@@ -6,29 +6,24 @@
 #  * Linux
 #  * Docker >= 1.12.0 daemon running locally.
 
-./prepare-docker-machine-helper.sh || true
+if [ $(uname) == "Darwin" ]; then
+  ./helpers/prepare-docker-machine.sh || true
+else
+  ./helpers/prepare-docker-machine-helper.sh || true
+fi
 
-# Cleanup old deployment
-./delete-pc-cluster.sh || true
-./delete-lw-cluster.sh || true
+docker build -t vmware/photon-controller-seed .
 
-# Start Lightwave cluster
-./make-lw-cluster.sh
-
-# Start load balancer
-./run-haproxy-container.sh
-
-# Start Photon Cluster
-./make-pc-cluster.sh
-
-# Make Photon users
-./make-users.sh
+docker run --rm --net=host -it \
+       -v /var/run/docker.sock:/var/run/docker.sock \
+       vmware/photon-controller-seed \
+       start-pc.sh -p 'Photon123$'
 
 # Basic sanity test. Need to extend.
-./basic-test-helper.sh
+./helpers/basic-test-helper.sh
 rc=$?
 
 # Clean up
-./delete-all-containers.sh
+./helpers/delete-all-containers.sh
 
 exit $rc

@@ -1,60 +1,55 @@
-# Multi-Container Photon-Controller and Lightwave cluster
-These scripts use docker to create a network on which 3+3 Photon-Controller and Lighwtave containers
-are created and form a 3 node clusters of Lightwave and Photon-Controller. Photon-Controller joins
-the Lightwave nodes and creates a auth-enabled deployment.
-
+# Photon Controller Deployment 2.0
+These scripts use docker to launch Photon Controller and Lighwtave containers.
+The purpose of these scripts is to have easiest way to deploy Photon Controller with all
+battries included. No need to have OVAs, heavy installers and separate host. Just run one
+docker command that will launch everything Photon Controller with necessary things included.
+After launching in your Laptop, you can start adding cloud hosts and managing them.
 
 ## Requirements
-1. You need following tools installed
+1. You need following tools pre-installed
   * [docker](https://docs.docker.com/engine/installation/) (Version >= 1.12.1)
-  * For running these scripts on *MacBook* you need
+  * [Photon CLI](https://github.com/vmware/photon-controller-cli)
+  * One ESXi cloud host to manage. Host is not required for deployment of Photon Controller in this method.
+  * For running these scripts on *macOS* you need
     * [docker-machine](https://docs.docker.com/machine/install-machine/)
     * VMware Fusion (or VirtualBox)
 
-2. You need following docker image files present in current directory
-  * photon-controller-docker-*.tar
-  * esxcloud-management-ui.tar (optional if Photon Controller UI is not desired)
-  * vmware-lightwave-sts.tar (optional because if not available latest lightwave container from hub.docker.com will be pulled.)
+## Starting Photon Controller
 
-## IP address distribution in docker overlay network.
-
-* Subnet: 192.168.114/27
-* LW Container Node IPs: 192.168.114.2 - 192.168.114.4
-* PC Container Node IPs: 192.168.114.11 - 192.168.114.13
-* Docker network name: lightwave
-
-## Running the scripts on Mac OS
-Following script will start the VM and create one Lightwave container, one Photon container, and one HAProxy container.
+### On MacOS you need to prepare the environment to launch the Photon Controller containers.
+These two lines of bash create VM and set docker client to talk with docker daemon in that VM.
 
 ```bash
-./up.sh
+# Not required on Linux
+docker-machine create -d virtualbox --virtualbox-memory 4096 vm-0
+eval $(docker-machine env vm-0)
 ```
 
-or to demo multi-host, multi-container scenario run the script with 'multi' parameter.
+### Launch command
+
+Following docker command start a seed container that will create one container each for Lightwave, Photon Controller and HAProxy.
+Yes! battaries are included.
 
 ```bash
-./up.sh multi
+docker run --rm --net=host -it \
+       -v /var/run/docker.sock:/var/run/docker.sock \
+       vmware/photon-controller-seed:1.0.3 start-pc.sh
 ```
 
-If above script was successfull, then use following command to get the IP address of load balancer.
+If above script was successful, then it will display IP address of load balancer and commands to try out.
+
+You can see the different paramters to start-pc.sh script by passing `-h` parameter to it.
+
+## Building
+
+The scripts are packaged into a docker image and that image is available in docker hub.
+You only need to build this docker image if want to do modifications in the scripts.
 
 ```bash
-LOAD_BALANCER_IP=$(docker inspect --format '{{ .Node.IP }}' haproxy)
+docker build --no-cache -t vmware/photon-controller-seed .
 ```
 
-Now connect `photon` CLI to the load balancer and verify the deployment.
-
-```bash
-photon target set https://$LOAD_BALANCER_IP:9000 -c
-photon target login --username photon@photon.local --password Photon123$
-photon deployment show default
-```
-
-If Photon Controller UI container tar file was present then UI container will be started and UI can be viewed at following URL.
-
-https://$LOAD_BALANCER_IP:4343
-
-# Upgrading
+# Upgrading Scripts
 
 To upgrade Photon Controller from OLD version to NEW version we support Blue-Green Upgrades.
 
