@@ -170,7 +170,7 @@ module EsxCloud
       # puts uri
       full_uri = "https://#{server}:19000#{uri}"
       # puts full_uri
-      docker_cmd = "docker exec #{container_id} curl -Ss --cert /etc/keys/machine.crt --key /etc/keys/machine.privkey --cacert /etc/keys/cacert.crt #{full_uri}"
+      docker_cmd = "docker exec #{container_id} curl -Ss --cert /etc/keys/machine.crt --key /etc/keys/machine.privkey --cacert --capath /etc/ssl/certs #{full_uri}"
       ssh_cmd = "sshpass -p '#{password}' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null #{user_name}@#{server} \"#{docker_cmd}\""
       curl_json = `#{ssh_cmd}`
       # puts curl_json

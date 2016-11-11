@@ -72,51 +72,6 @@ public class DeployerContext {
   private String ntpEndpoint;
 
   /**
-   * The tenant name on LightWave.
-   */
-  private String oAuthTenantName;
-
-  /**
-   * LightWave user name.
-   */
-  private String oAuthUserName;
-
-  /**
-   * Password for the given LightWave user.
-   */
-  private String oAuthPassword;
-
-  /**
-   * This value represents the OAuth server address.
-   */
-  private String oAuthServerAddress;
-
-  /**
-   * This value represents the OAuth server port.
-   */
-  private Integer oAuthServerPort;
-
-  /**
-   * Endpoint to the oAuth login service for Swagger.
-   */
-  private String oAuthSwaggerLoginEndpoint;
-
-  /**
-   * Endpoint to the oAuth logout service for Swagger.
-   */
-  private String oAuthSwaggerLogoutEndpoint;
-
-  /**
-   * Endpoint to the oAuth login service for Mgmt UI.
-   */
-  private String oAuthMgmtUiLoginEndpoint;
-
-  /**
-   * Endpoint to the oAuth logout service for Mgmt UI.
-   */
-  private String oAuthMgmtUiLogoutEndpoint;
-
-  /**
    * This value represents whether virtual network support is enabled for this deployment.
    */
   private Boolean sdnEnabled = false;
@@ -298,6 +253,11 @@ public class DeployerContext {
 
   private final String keyStorePassword;
 
+  /**
+   * Create default deployment flag.
+   */
+  private Boolean defaultDeploymentEnabled = false;
+
   @VisibleForTesting
   public DeployerContext() {
     corePoolSize = DeployerDefaults.CORE_POOL_SIZE;
@@ -326,6 +286,7 @@ public class DeployerContext {
     keyStorePath = null;
     keyStorePassword = null;
     isInstaller = false;
+    defaultDeploymentEnabled = false;
   }
 
   public int getCorePoolSize() {
@@ -468,42 +429,6 @@ public class DeployerContext {
     return ntpEndpoint;
   }
 
-  public String getoAuthTenantName() {
-    return oAuthTenantName;
-  }
-
-  public String getoAuthUserName() {
-    return oAuthUserName;
-  }
-
-  public String getoAuthPassword() {
-    return oAuthPassword;
-  }
-
-  public String getoAuthServerAddress() {
-    return oAuthServerAddress;
-  }
-
-  public Integer getoAuthServerPort() {
-    return oAuthServerPort;
-  }
-
-  public String getoAuthSwaggerLoginEndpoint() {
-    return oAuthSwaggerLoginEndpoint;
-  }
-
-  public String getoAuthSwaggerLogoutEndpoint() {
-    return oAuthSwaggerLogoutEndpoint;
-  }
-
-  public String getoAuthMgmtUiLoginEndpoint() {
-    return oAuthMgmtUiLoginEndpoint;
-  }
-
-  public String getoAuthMgmtUiLogoutEndpoint() {
-    return oAuthMgmtUiLogoutEndpoint;
-  }
-
   public Boolean getSdnEnabled() {
     return sdnEnabled;
   }
@@ -578,5 +503,13 @@ public class DeployerContext {
 
   public boolean getIsInstaller() {
     return isInstaller;
+  }
+
+  public Boolean getDefaultDeploymentEnabled() {
+    return defaultDeploymentEnabled;
+  }
+
+  public void setDefaultDeploymentEnabled(Boolean defaultDeploymentEnabled) {
+    this.defaultDeploymentEnabled = defaultDeploymentEnabled;
   }
 }
