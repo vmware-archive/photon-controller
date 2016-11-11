@@ -58,7 +58,11 @@ public class HostCreateTaskStatusPoller implements XenonTaskStatusStepCmd.XenonT
         break;
       }
     }
-    this.entity = entityList.get(0);
+    if (entityList != null) {
+      this.entity = entityList.get(0);
+    } else {
+      this.entity = null;
+    }
   }
 
   @Override
