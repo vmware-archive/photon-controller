@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash +xe
 
 MEMORY_MB=1024
 
@@ -7,31 +7,50 @@ SYSLOG_ENDPOINT=
 NTP_ENDPOINT=
 
 HOST_IP=$1
-PEER1_IP=$2
-PEER2_IP=$3
-LIGHTWAVE_HOST_IP=$4
-LOAD_BALANCER_IP=$5
+HOSTNAME=$2
+PEER0_IP=$2
+PEER1_IP=$3
+PEER2_IP=$4
+LIGHTWAVE_HOST_IP=$5
+LOAD_BALANCER_IP=$6
 LIGHTWAVE_LOAD_BALANCER_IP=$LOAD_BALANCER_IP
-NUMBER=$6
-MULTI=$7
+NUMBER=$7
+MULTI_CONTAINER=$8
+LIGHTWAVE_PASSWORD=$9
+LIGHTWAVE_DOMAIN=${10}
+ENABLE_FQDN=${11}
+PC_CONTAINER_VERSION=${12}
 
 LIGHTWAVE_USERNAME=Administrator
-LIGHTWAVE_PASSWORD='Admin!23'
-LIGHTWAVE_DOMAIN=photon.local
 LIGHTWAVE_SECURITY_GROUPS="${LIGHTWAVE_DOMAIN}\\admins"
+FQDN_SETTING=""
+if [ $ENABLE_FQDN -eq 1 ]; then
+  FQDN_SETTING="--hostname ${HOSTNAME} --dns ${LIGHTWAVE_HOST_IP} --dns-search ${LIGHTWAVE_DOMAIN}"
+fi
 
 mkdir -p tmp
 rm -rf "($PWD)/tmp/pc_tmp*"
 PC_TMP_DIR=$(mktemp -d "$PWD/tmp/pc_tmp.XXXXX")
 
+(set -x;
+# Create data container for sharing config data between containers.
+docker create \
+  -v /etc/photon-controller \
+  -v /usr/local/etc/haproxy \
+  -v /etc/ssl/private \
+  --name photon-config-${NUMBER} \
+   vmware/photon-controller-seed:$PC_CONTAINER_VERSION /bin/true)
+
 PHOTON_CONTROLLER_CONFIG_DIR=${PC_TMP_DIR}/config
-LOG_DIRECTORY=${PC_TMP_DIR}/log/photon-controller
+PHOTON_CONTROLLER_CONFIG_DIR_DATA_VOLUME="/etc/photon-controller"
+VOLUME_CONFIG="--volumes-from photon-config-${NUMBER}"
 
 mkdir -p $PHOTON_CONTROLLER_CONFIG_DIR
-mkdir -p $LOG_DIRECTORY
 
-if [ "$MULTI" == "multi" ]; then
-  PEERS="  - https://${HOST_IP}:19000\n  - https://${PEER1_IP}:19000\n  - https://${PEER2_IP}:19000"
+if [ "$MULTI_CONTAINER" == "1" ]; then
+  PEERS="  - https://${PEER0_IP}:19000
+  - https://${PEER1_IP}:19000
+  - https://${PEER2_IP}:19000"
 else
   PEERS="  - https://${HOST_IP}:19000"
 fi
@@ -57,7 +76,7 @@ deployer:
     imageDataStoreNames:
     - datastore1
     imageDataStoreUsedForVMs: "True"
-    apifeEndpoint: "https://${HOST_IP}:9000"
+    apifeEndpoint: "https://${PEER0_IP}:9000"
     configDirectory: "/etc/esxcloud-deployer/configurations/"
     maxMemoryGb: 10000
     maxVmCount: 1000
@@ -135,15 +154,27 @@ auth:
     - ${LIGHTWAVE_SECURITY_GROUPS}
 EOF
 
-echo "Starting Photon-Controller container #$NUMBER..."
+(set -x;
+docker run -d --volumes-from photon-config-${NUMBER} --name volume-helper busybox /bin/sh -c "while true; do ping 8.8.8.8; done")
+
+docker cp $PHOTON_CONTROLLER_CONFIG_DIR/photon-controller-core.yml volume-helper:$PHOTON_CONTROLLER_CONFIG_DIR_DATA_VOLUME
+docker kill volume-helper > /dev/null 2>&1
+docker rm volume-helper > /dev/null 2>&1
+
+rm -rf $PHOTON_CONTROLLER_CONFIG_DIR
+rm -rf tmp
+
+echo "Starting Photon-Controller container $NUMBER..."
+(set -x;
 docker run -d \
   --name photon-controller-${NUMBER} \
   --privileged \
   -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
   --net=lightwave \
+  $FQDN_SETTING \
   --ip=$HOST_IP \
   --entrypoint=/usr/sbin/init \
-  -v ${PHOTON_CONTROLLER_CONFIG_DIR}:/etc/photon-controller \
-  vmware/photon-controller-lightwave-client
+  ${VOLUME_CONFIG} \
+  vmware/photon-controller:$PC_CONTAINER_VERSION)
 
 sleep 15
