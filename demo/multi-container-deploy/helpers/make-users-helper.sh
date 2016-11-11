@@ -1,10 +1,14 @@
-#!/bin/bash -xe
+#!/bin/bash +xe
 
-PHOTON_USER=photon
-PHOTON_USER_PASSWORD='Photon123$'
-PHOTON_USER_FIRST_NAME="Light"
-PHOTON_USER_LAST_NAME="Wave"
-LIGHTWAVE_PASSWORD='Admin!23'
+if [ "$DEBUG" == "1" ]; then
+  set -xe
+fi
+
+PHOTON_USER=$1
+PHOTON_USER_PASSWORD=$2
+PHOTON_USER_FIRST_NAME=$PHOTON_USER
+PHOTON_USER_LAST_NAME=$PHOTON_USER
+LIGHTWAVE_PASSWORD=$3
 
 echo "Creating Groups in Lightwave Directory"
 /opt/vmware/bin/dir-cli ssogroup create --name admins --password $LIGHTWAVE_PASSWORD
