@@ -27,6 +27,9 @@ mv $DS.new $DS
 # before the docker service.
 sed -i s/Requires.*/"Requires=docker-containerd.service docker-bootstrap.service"/ $DS
 
+# Downgrading docker on photon os to docker-1.11.2
+tdnf downgrade -y docker-1.11.2
+
 systemctl daemon-reload
 systemctl enable docker-bootstrap
 systemctl start docker-bootstrap
