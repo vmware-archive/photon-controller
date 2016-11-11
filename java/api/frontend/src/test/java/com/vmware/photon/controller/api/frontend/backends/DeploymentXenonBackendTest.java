@@ -242,6 +242,7 @@ public class DeploymentXenonBackendTest {
       assertThat(deployment.getUseImageDatastoreForVms(), is(true));
       assertThat(deployment.getAuthEnabled(), is(true));
       assertThat(deployment.getOauthEndpoint(), nullValue());
+      assertThat(deployment.getOauthLoadBalancerEndpoint(), nullValue());
       assertThat(deployment.getOauthPort(), nullValue());
       assertThat(deployment.getOauthTenant(), is("t"));
       assertThat(deployment.getOauthUsername(), is(DeploymentXenonBackend.AUTH_ADMIN_USER_NAME));

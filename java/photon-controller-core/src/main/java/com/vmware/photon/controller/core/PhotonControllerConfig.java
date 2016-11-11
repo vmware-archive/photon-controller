@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.core;
 
+import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -51,6 +52,10 @@ public class PhotonControllerConfig {
   @JsonProperty("photon_controller_logging")
   private LoggingConfiguration logging = new LoggingConfiguration();
 
+  @Valid
+  @NotNull
+  private AuthConfig auth;
+
   public XenonConfig getXenonConfig() {
     return this.xenonConfig;
   }
@@ -65,5 +70,13 @@ public class PhotonControllerConfig {
 
   public LoggingConfiguration getLogging() {
     return checkNotNull(logging);
+  }
+
+  public AuthConfig getAuth() {
+    return auth;
+  }
+
+  public void setAuth(AuthConfig auth) {
+    this.auth = auth;
   }
 }
