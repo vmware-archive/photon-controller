@@ -135,7 +135,12 @@ public class DeploymentDeleteStatusStepCmd extends XenonTaskStatusStepCmd {
           break;
         }
       }
-      this.entity = deploymentEntityList.get(0);
+
+      if (deploymentEntityList != null) {
+        this.entity = deploymentEntityList.get(0);
+      } else {
+        throw new ApiFeException("Deployment entity list null");
+      }
 
       RemoveDeploymentWorkflowService.State serviceDocument = deploymentBackend.getDeployerClient()
           .getRemoveDeploymentStatus(remoteTaskLink);

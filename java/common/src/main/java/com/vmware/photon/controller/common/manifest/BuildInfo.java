@@ -60,10 +60,18 @@ public class BuildInfo {
         if (urlConn instanceof JarURLConnection) {
           JarURLConnection jarUrlConn = (JarURLConnection) urlConn;
           Manifest manifest = jarUrlConn.getManifest();
-          Attributes attributes = manifest.getMainAttributes();
-          String version = attributes.getValue(SPECIFICATION_VERSION);
-          String date = attributes.getValue(BUILT_DATE);
-          String commit = attributes.getValue(GIT_COMMIT);
+          Attributes attributes = null;
+          if (manifest != null) {
+            attributes = manifest.getMainAttributes();
+          }
+          String version = null;
+          String date = null;
+          String commit = null;
+          if (attributes != null) {
+            version = attributes.getValue(SPECIFICATION_VERSION);
+            date = attributes.getValue(BUILT_DATE);
+            commit = attributes.getValue(GIT_COMMIT);
+          }
           return new BuildInfo(version, date, commit);
         }
       }
