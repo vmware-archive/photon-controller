@@ -69,7 +69,7 @@ public class AuthPolicyProvider implements PolicyProvider {
                             AuthConfig config) {
     this.resolver = resolver;
     this.fetcher = fetcher;
-    this.defaultAdminGroup = config.getTenant() + DEFAULT_ADMIN_GROUP_NAME;
+    this.defaultAdminGroup = config.getAuthDomain() + DEFAULT_ADMIN_GROUP_NAME;
   }
 
   @Override
