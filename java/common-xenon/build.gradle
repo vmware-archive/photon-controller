@@ -16,7 +16,6 @@ dependencies {
     exclude group: 'org.mockito', module: 'mockito-all'
   }
   testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
-  testCompile "commons-collections:commons-collections:3.2.1"
   testCompile "com.vmware.xenon:xenon-common:${versions.xenon_common}:tests"
 }
 
