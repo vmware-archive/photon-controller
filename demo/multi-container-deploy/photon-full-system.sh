@@ -21,11 +21,11 @@ HAPROXY_DOCKER_ID=haproxy
 # List of each Photon Controller config directory
 PC_CONFIG_DIRS=()
 # List of each Photon Controller docker container id or name
-PC_DOCKER_IDS=(photon-controller-0 photon-controller-1 photon-controller-2)
+PC_DOCKER_IDS=(photon-controller-1 photon-controller-2 photon-controller-3)
 # List of each Photon Controller IP
 PC_IPS=()
 # List of each Lightwave docker container id or name
-LW_DOCKER_IDS=(lightwave-0 lightwave-1 lightwave-2)
+LW_DOCKER_IDS=(lightwave-1 lightwave-2 lightwave-3)
 
 if [ -z ${USERNAME} ]; then
     echo "USERNAME for photon login needs to be set"

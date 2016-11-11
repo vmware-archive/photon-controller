@@ -1,15 +1,16 @@
 # Multi-Container Photon-Controller and Lightwave cluster
-These scripts use docker to create a network on which 3+3 Photon-Controller and Lighwtave containers
-are created and form a 3 node clusters of Lightwave and Photon-Controller. Photon-Controller joins
-the Lightwave nodes and creates a auth-enabled deployment.
-
+These scripts use docker to create a network on which Photon Controller containers and Lighwtave containers
+are created. Photon Controller joins the Lightwave nodes and creates a auth-enabled deployment.
+A laod balancer container is also created that let users access this deployment.
 
 ## Requirements
 1. You need following tools installed
   * [docker](https://docs.docker.com/engine/installation/) (Version >= 1.12.1)
-  * For running these scripts on *MacBook* you need
+  * For running these scripts on *Mac* you need
     * [docker-machine](https://docs.docker.com/machine/install-machine/)
     * VMware Fusion (or VirtualBox)
+  * [Photon CLI](https://github.com/vmware/photon-controller-cli)
+  * At-least one ESXi cloud host to manage.
 
 2. You need following docker image files present in current directory
   * photon-controller-docker-*.tar
@@ -36,17 +37,18 @@ or to demo multi-host, multi-container scenario run the script with 'multi' para
 ./up.sh multi
 ```
 
-If above script was successfull, then use following command to get the IP address of load balancer.
+If above script was successful, then it will display IP address of load balancer.
+You can also use following command later if ever want to get the IP address of the load balancer.
 
 ```bash
 LOAD_BALANCER_IP=$(docker inspect --format '{{ .Node.IP }}' haproxy)
 ```
 
-Now connect `photon` CLI to the load balancer and verify the deployment.
+Now connect `photon` CLI to the load balancer and have fun with it.
 
 ```bash
 photon target set https://$LOAD_BALANCER_IP:9000 -c
-photon target login --username photon@photon.local --password Photon123$
+photon target login --username photon@photon.local --password <password>
 photon deployment show default
 ```
 

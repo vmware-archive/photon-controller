@@ -6,29 +6,29 @@
 #  * Linux
 #  * Docker >= 1.12.0 daemon running locally.
 
-./prepare-docker-machine-helper.sh || true
+../helpers/prepare-docker-machine-helper.sh || true
 
 # Cleanup old deployment
-./delete-pc-cluster.sh || true
-./delete-lw-cluster.sh || true
+../helpers/delete-pc-cluster.sh || true
+../helpers/delete-lw-cluster.sh || true
 
 # Start Lightwave cluster
-./make-lw-cluster.sh
+../helpers/make-lw-cluster.sh
 
 # Start load balancer
-./run-haproxy-container.sh
+../helpers/run-haproxy-container.sh
 
 # Start Photon Cluster
-./make-pc-cluster.sh
+../helpers/make-pc-cluster.sh
 
 # Make Photon users
-./make-users.sh
+../helpers/make-users.sh
 
 # Basic sanity test. Need to extend.
-./basic-test-helper.sh
+../helpers/basic-test-helper.sh
 rc=$?
 
 # Clean up
-./delete-all-containers.sh
+../helpers/delete-all-containers.sh
 
 exit $rc
