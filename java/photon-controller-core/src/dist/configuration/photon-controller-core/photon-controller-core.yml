@@ -51,14 +51,7 @@ deployer:
     javaDebug: {{{JAVA_DEBUG}}}
 {{#ENABLE_AUTH}}
     keyStorePath: /keystore.jks
-    keyStorePassword: "changeme"
-    lightwavePassword: {{{LIGHTWAVE_PASSWORD}}}
-    lightwaveDomain: {{{LIGHTWAVE_DOMAIN}}}
-    lightwaveHostname: {{{LIGHTWAVE_HOSTNAME}}}
-    lightwaveDomainController: {{{LIGHTWAVE_DOMAIN_CONTROLLER}}}
-    lightwaveMachineAccount:  {{{LIGHTWAVE_MACHINE_ACCOUNT}}}
-    lightwaveDisableVmafdListener: {{{LIGHTWAVE_DISABLE_VMAFD_LISTENER}}}
-    lightwaveSubjectAltName: {{{REGISTRATION_ADDRESS}}}
+    keyStorePassword: {{{LIGHTWAVE_PASSWORD}}}
 {{/ENABLE_AUTH}}
 
 photon_controller_logging:
@@ -95,7 +88,7 @@ apife:
     port: 9000
     bindHost: "0.0.0.0"
     keyStorePath: /keystore.jks
-    keyStorePassword: "changeme"
+    keyStorePassword: {{{LIGHTWAVE_PASSWORD}}}
     validateCerts: false
     supportedProtocols: [TLSv1.2]
     excludedProtocols: [TLSv1, SSLv2Hello, SSLv3, TLSv1.1]
@@ -141,16 +134,29 @@ status:
 {{/ENABLE_INSTALLER_STATUS_FILTER}}
 
 auth:
-  enable_auth: {{{ENABLE_AUTH}}}
+  enableAuth: {{{ENABLE_AUTH}}}
 {{#ENABLE_AUTH}}
   sharedSecret: {{{SHARED_SECRET}}}
 {{#AUTH_SERVER_ADDRESS}}
-  auth_server_address: {{{AUTH_SERVER_ADDRESS}}}
+  authServerAddress: {{{AUTH_SERVER_ADDRESS}}}
 {{/AUTH_SERVER_ADDRESS}}
+{{#AUTH_LOAD_BALANCER_ADDRESS}}
+  authLoadBalancerAddress: {{{AUTH_LOAD_BALANCER_ADDRESS}}}
+{{/AUTH_LOAD_BALANCER_ADDRESS}}
 {{#AUTH_SERVER_PORT}}
-  auth_server_port: {{{AUTH_SERVER_PORT}}}
+  authServerPort: {{{AUTH_SERVER_PORT}}}
 {{/AUTH_SERVER_PORT}}
 {{#AUTH_SERVER_TENANT}}
-  tenant: {{{AUTH_SERVER_TENANT}}}
+  authDomain: {{{AUTH_SERVER_TENANT}}}
 {{/AUTH_SERVER_TENANT}}
+{{#LIGHTWAVE_USERNAME}}
+  authUserName: {{{LIGHTWAVE_USERNAME}}}
+{{/LIGHTWAVE_USERNAME}}
+{{#LIGHTWAVE_PASSWORD}}
+  authPassword: {{{LIGHTWAVE_PASSWORD}}}
+{{/LIGHTWAVE_PASSWORD}}
+{{#LIGHTWAVE_SECURITY_GROUPS}}
+  authSecurityGroups:
+    - {{{LIGHTWAVE_SECURITY_GROUPS}}}
+{{/LIGHTWAVE_SECURITY_GROUPS}}
 {{/ENABLE_AUTH}}
