@@ -68,7 +68,7 @@ public class AuthPolicyProviderTest {
     fetcher = mock(MultiplexedSecurityGroupFetcher.class);
 
     config = new AuthConfig();
-    config.setTenant("esxcloud");
+    config.setAuthDomain("esxcloud");
     policyProvider = new AuthPolicyProvider(resolver, fetcher, config);
   }
 
@@ -151,8 +151,8 @@ public class AuthPolicyProviderTest {
     @Test
     public void testMatchDefaultAdminGroup() throws Throwable {
       doReturn(ImmutableSet.of()).when(fetcher).fetchSecurityGroups(authorizationObject);
-      token = AuthTestHelper.generateResourceServerAccessToken(ImmutableSet.of(config.getTenant() + AuthPolicyProvider
-          .DEFAULT_ADMIN_GROUP_NAME));
+      token = AuthTestHelper.generateResourceServerAccessToken(
+          ImmutableSet.of(config.getAuthDomain() + AuthPolicyProvider.DEFAULT_ADMIN_GROUP_NAME));
 
       policyProvider.checkAccessPermissions(request, token);
     }
@@ -233,7 +233,7 @@ public class AuthPolicyProviderTest {
       policyProvider.checkAccessPermissions(request, token);
 
       String defaultAdminGroup = (String) request.getProperty(AuthFilter.DEFAULT_ADMIN_GROUP_PROPERTY_NAME);
-      assertThat(defaultAdminGroup, is(config.getTenant() + AuthPolicyProvider.DEFAULT_ADMIN_GROUP_NAME));
+      assertThat(defaultAdminGroup, is(config.getAuthDomain() + AuthPolicyProvider.DEFAULT_ADMIN_GROUP_NAME));
     }
 
     private ContainerRequest buildRequest(String path, MultivaluedMap<String, String> headers)
