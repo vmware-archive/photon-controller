@@ -60,7 +60,11 @@ public class HostProvisionTaskStatusPoller implements XenonTaskStatusStepCmd.Xen
         break;
       }
     }
-    this.hostEntity = entityList.get(0);
+    if (entityList != null) {
+      this.hostEntity = entityList.get(0);
+    } else {
+      throw new ApiFeException("Entity List is null");
+    }
 
     Pair<TaskState, String> pair = hostBackend.getDeployerClient()
         .getHostProvisionStatus(remoteTaskLink);
