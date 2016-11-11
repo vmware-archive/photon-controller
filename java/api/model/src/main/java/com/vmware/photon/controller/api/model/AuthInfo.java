@@ -66,6 +66,18 @@ public class AuthInfo extends Auth {
   @Size(min = 1, groups = {AuthEnabled.class})
   private List<String> securityGroups;
 
+  @JsonProperty
+  @ApiModelProperty(value = "The UI login URL on LightWave", required = false)
+  @Null(groups = {AuthDisabled.class})
+  @Size(min = 1, groups = {AuthEnabled.class})
+  private String uiLoginEndpoint;
+
+  @JsonProperty
+  @ApiModelProperty(value = "The UI logout URL on LightWave", required = false)
+  @Null(groups = {AuthDisabled.class})
+  @Size(min = 1, groups = {AuthEnabled.class})
+  private String uiLogoutEndpoint;
+
   public String getTenant() {
     return tenant;
   }
@@ -98,6 +110,23 @@ public class AuthInfo extends Auth {
     this.securityGroups = securityGroups;
   }
 
+
+  public String getUiLoginEndpoint() {
+    return uiLoginEndpoint;
+  }
+
+  public void setUiLoginEndpoint(String uiLoginEndpoint) {
+    this.uiLoginEndpoint = uiLoginEndpoint;
+  }
+
+  public String getUiLogoutEndpoint() {
+    return uiLogoutEndpoint;
+  }
+
+  public void setUiLogoutEndpoint(String uiLogoutEndpoint) {
+    this.uiLogoutEndpoint = uiLogoutEndpoint;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -113,6 +142,8 @@ public class AuthInfo extends Auth {
         && Objects.equals(this.getTenant(), other.getTenant())
         && Objects.equals(this.getUsername(), other.getUsername())
         && Objects.equals(this.getPassword(), other.getPassword())
+        && Objects.equals(this.getUiLoginEndpoint(), other.getUiLoginEndpoint())
+        && Objects.equals(this.getUiLogoutEndpoint(), other.getUiLogoutEndpoint())
         && Objects.deepEquals(this.getSecurityGroups(), other.getSecurityGroups());
   }
 
@@ -123,7 +154,9 @@ public class AuthInfo extends Auth {
         this.getTenant(),
         this.getUsername(),
         this.getPassword(),
-        this.getSecurityGroups());
+        this.getSecurityGroups(),
+        this.getUiLoginEndpoint(),
+        this.getUiLogoutEndpoint());
   }
 
   @Override
