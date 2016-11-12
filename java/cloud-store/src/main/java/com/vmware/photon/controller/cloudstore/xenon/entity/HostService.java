@@ -257,9 +257,12 @@ public class HostService extends StatefulService {
   @Override
   public void handlePeriodicMaintenance(Operation maintenance) {
     if (HostService.inUnitTests) {
+      maintenance.complete();
       return;
     }
     if (SystemConfig.getInstance().isBackgroundPaused()) {
+      ServiceUtils.logWarning(this, "Maintenance skipped because system in background pause.");
+      maintenance.complete();
       return;
     }
     try {
