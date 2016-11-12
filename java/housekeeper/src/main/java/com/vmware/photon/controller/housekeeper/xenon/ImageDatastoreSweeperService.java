@@ -636,11 +636,20 @@ public class ImageDatastoreSweeperService extends StatefulService {
           }
         };
 
+    List<InactiveImageDescriptor> imagesToDelete = filterInactiveImages(current, inactiveImages, referenceImages);
+
+    if (imagesToDelete.isEmpty()) {
+      State patch = buildPatch(TaskState.TaskStage.FINISHED, null, null);
+      patch.deletedImagesCount = 0;
+      sendSelfPatch(patch);
+      return;
+    }
+
     HostClient hostClient = getHostClient();
     hostClient.setHostIp(current.host);
     hostClient.startImageSweep(
         current.datastore,
-        this.filterInactiveImages(current, inactiveImages, referenceImages),
+        imagesToDelete,
         current.sweepRate,
         current.sweepTimeout,
         callback);

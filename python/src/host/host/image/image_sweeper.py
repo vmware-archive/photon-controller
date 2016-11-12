@@ -126,7 +126,7 @@ class DatastoreImageSweeper:
 
     @locked
     def start(self, target_image_list, timeout=None, sweep_rate=None, grace_period=None):
-        self.logger.info("IMAGE SCANNER: starting sweeper: %s, %s, %s" % (target_image_list, timeout, sweep_rate))
+        self.logger.info("IMAGE SWEEPER: starting sweeper: %s, %s, %s" % (target_image_list, timeout, sweep_rate))
 
         if self._state != DatastoreImageSweeper.State.IDLE:
             self.logger.info("Image sweeper thread already running: %s" % self._state)
