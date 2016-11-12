@@ -254,11 +254,13 @@ public class HostService extends StatefulService {
    */
   @Override
   public void handlePeriodicMaintenance(Operation maintenance) {
-    ServiceUtils.logInfo(this, "handlePeriodicMaintenance started");
     if (HostService.inUnitTests) {
+      maintenance.complete();
       return;
     }
     if (SystemConfig.getInstance().isBackgroundPaused()) {
+      ServiceUtils.logWarning(this, "Maintenance skipped because system in background pause.");
+      maintenance.complete();
       return;
     }
     try {
@@ -275,10 +277,8 @@ public class HostService extends StatefulService {
               // Retrieve host metadata if the interval has elapsed. Otherwise, just ping the
               // host to perform a health-check.
               if (System.currentTimeMillis() - lastHostMetadataUpdateTime >= UPDATE_HOST_METADATA_INTERVAL) {
-                ServiceUtils.logInfo(this, "getHostConfig started");
                 getHostConfig(maintenance, hostState);
               } else {
-                ServiceUtils.logInfo(this, "pingHost started");
                 pingHost(maintenance, hostState);
               }
             });
