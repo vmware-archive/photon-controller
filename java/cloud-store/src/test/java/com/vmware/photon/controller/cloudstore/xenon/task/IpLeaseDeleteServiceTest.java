@@ -56,7 +56,7 @@ import java.util.concurrent.TimeUnit;
 public class IpLeaseDeleteServiceTest {
 
   private static final int TEST_PAGE_LIMIT = 100;
-  private static final Logger logger = LoggerFactory.getLogger(DhcpSubnetDeleteServiceTest.class);
+  private static final Logger logger = LoggerFactory.getLogger(IpLeaseDeleteServiceTest.class);
 
   private BasicServiceHost host;
   private IpLeaseDeleteService service;

@@ -38,7 +38,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.security.InvalidParameterException;
@@ -728,7 +728,7 @@ public class ServiceHostUtils {
           FileUtils.forceDelete(sandbox);
         }
         break;
-      } catch (FileNotFoundException ex) {
+      } catch (IOException ex) {
         if (i == maxAttempts - 1) {
           // If all previous attempts fail then we may see leak of
           // some sandbox files in the sandbox folder. This could happen
