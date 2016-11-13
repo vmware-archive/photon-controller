@@ -303,7 +303,7 @@ public class ProjectXenonBackend implements ProjectBackend {
 
     xenonClient.delete(ProjectServiceFactory.SELF_LINK + "/" + projectEntity.getId(),
         new ProjectService.State());
-    logger.info("Project {} has been cleared", projectEntity.getId());
+    logger.info("Project {} has been deleted", projectEntity.getId());
 
     resourceTicketBackend.delete(projectTicket.getId());
     return projectEntity;

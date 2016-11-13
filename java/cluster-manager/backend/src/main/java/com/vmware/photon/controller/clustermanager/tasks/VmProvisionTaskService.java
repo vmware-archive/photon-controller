@@ -292,7 +292,10 @@ public class VmProvisionTaskService extends StatefulService {
         StandardCharsets.UTF_8);
 
     for (Map.Entry<String, String> parameter : template.parameters.entrySet()) {
-      content = content.replace(parameter.getKey(), parameter.getValue());
+      // Some parameters (like the SSH key) are optional, so the value may be null
+      if (parameter.getKey() != null && parameter.getValue() != null) {
+        content = content.replace(parameter.getKey(), parameter.getValue());
+      }
     }
 
     Files.write(isoFile.toPath(), content.getBytes(StandardCharsets.UTF_8));
