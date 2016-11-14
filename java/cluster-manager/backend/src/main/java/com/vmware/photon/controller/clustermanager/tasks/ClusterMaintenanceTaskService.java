@@ -116,9 +116,7 @@ public class ClusterMaintenanceTaskService extends StatefulService {
       if (patchState.taskState.stage == TaskState.TaskStage.FINISHED) {
         // The previous maintenance task succeeded. We increment the maintenanceOperation, reset the patch error state
         // to null
-        ServiceUtils.logInfo(this, "Not running maintenance for cluster %s because patching the task from %s to %s",
-            clusterId, currentState.taskState.stage.toString(),
-            patchState.taskState.stage.toString());
+        ServiceUtils.logInfo(this, "Maintainence finished for cluster with ID %s", clusterId);
         patchState.maintenanceIteration = currentState.maintenanceIteration + 1;
         patchState.error = "";
 
