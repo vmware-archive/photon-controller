@@ -177,7 +177,7 @@ public class ClusterWaitTaskService extends StatefulService {
     if (!isReady) {
 
       if (currentState.apiCallPollIterations >= currentState.maxApiCallPollIterations) {
-        failTask(new IllegalStateException("Wait period expired"));
+        failTask(new IllegalStateException("Wait period expired for cluster with id " + currentState.clusterId));
         return;
       }
 
@@ -227,7 +227,7 @@ public class ClusterWaitTaskService extends StatefulService {
         .setBody(patchState)
         .setCompletion((Operation operation, Throwable throwable) -> {
           if (null != throwable) {
-            ServiceUtils.logWarning(service, "Failed to send self-patch: %s", throwable.toString());
+            ServiceUtils.logWarning(service, "Failed to send self-patch for cluster: %s", throwable.toString());
           }
         }));
   }
@@ -253,6 +253,11 @@ public class ClusterWaitTaskService extends StatefulService {
     @NotNull
     @Immutable
     public NodeType nodeType;
+
+    /**
+     * This value represents the ID of the current cluster.
+     */
+    public String clusterId;
 
     /**
      * This value represents the server address to query the status of the node type.
