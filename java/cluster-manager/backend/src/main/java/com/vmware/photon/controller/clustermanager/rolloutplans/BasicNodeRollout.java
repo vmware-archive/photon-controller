@@ -152,12 +152,14 @@ public class BasicNodeRollout implements NodeRollout {
               break;
             case CANCELLED:
               exceptions.add(new IllegalStateException(String.format(
-                  "ClusterWaitTaskService was canceled. %s",
+                  "ClusterWaitTaskService was canceled for cluster with ID %s. %s",
+                  input.clusterId,
                   result.documentSelfLink)));
               break;
             case FAILED:
               exceptions.add(new IllegalStateException(String.format(
-                  "ClusterWaitTaskService failed with error %s. %s",
+                  "ClusterWaitTaskService failed for cluster with ID %s with error %s. %s",
+                  input.clusterId,
                   result.taskState.failure.message,
                   result.documentSelfLink)));
               break;
@@ -188,6 +190,7 @@ public class BasicNodeRollout implements NodeRollout {
       ClusterWaitTaskService.State startState = new ClusterWaitTaskService.State();
       startState.nodeType = input.nodeType;
       startState.serverAddress = nodeAddresses.get(i);
+      startState.clusterId = input.clusterId;
 
       TaskUtils.startTaskAsync(
           service,
