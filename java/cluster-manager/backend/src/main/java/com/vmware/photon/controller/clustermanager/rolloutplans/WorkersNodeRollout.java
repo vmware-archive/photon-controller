@@ -107,12 +107,14 @@ public class WorkersNodeRollout implements NodeRollout {
             break;
           case CANCELLED:
             responseFutureCallback.onFailure(new IllegalStateException(String.format(
-                "VmProvisionTaskService was canceled. %s",
+                "VmProvisionTaskService for clusterID %s was canceled. %s",
+                input.clusterId,
                 result.documentSelfLink)));
             break;
           case FAILED:
             responseFutureCallback.onFailure(new IllegalStateException(String.format(
-                "VmProvisionTaskService failed with error %s. %s",
+                "VmProvisionTaskService failed for clusterID %s with error %s. %s",
+                input.clusterId,
                 result.taskState.failure.message,
                 result.documentSelfLink)));
             break;
@@ -169,12 +171,14 @@ public class WorkersNodeRollout implements NodeRollout {
             break;
           case CANCELLED:
             responseFutureCallback.onFailure(new IllegalStateException(String.format(
-                "ClusterWaitTaskService was canceled. %s",
+                "ClusterWaitTaskService for clusterID %s was canceled. %s",
+                input.clusterId,
                 result.documentSelfLink)));
             break;
           case FAILED:
             responseFutureCallback.onFailure(new IllegalStateException(String.format(
-                "ClusterWaitTaskService failed with error %s. %s",
+                "ClusterWaitTaskService for clusterID %s failed with error %s. %s",
+                input.clusterId,
                 result.taskState.failure.message,
                 result.documentSelfLink)));
             break;
@@ -191,6 +195,7 @@ public class WorkersNodeRollout implements NodeRollout {
     startState.nodeType = input.nodeType;
     startState.serverAddress = input.serverAddress;
     startState.nodeAddresses = nodeAddresses;
+    startState.clusterId = input.clusterId;
 
     TaskUtils.startTaskAsync(
         service,
