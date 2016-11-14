@@ -17,6 +17,6 @@ package com.vmware.photon.controller.api.model;
  * Replication type used by {@link Image}.
  */
 public enum ImageReplicationType {
-  ON_DEMAND,
-  EAGER
+  EAGER,
+  ON_DEMAND
 }

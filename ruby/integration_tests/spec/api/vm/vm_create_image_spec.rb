@@ -144,7 +144,7 @@ describe "vm#create_image", management: true, image: true do
         expect(e.errors.first.code).to eq "InvalidEntity"
         expect(e.errors.first.message).to match("replicationType may not be null")
       rescue EsxCloud::CliError => e
-        expect(e.message).to include("was not one of [ON_DEMAND, EAGER]")
+        expect(e.message).to include("was not one of [EAGER, ON_DEMAND]")
       end
     end
   end
@@ -159,9 +159,9 @@ describe "vm#create_image", management: true, image: true do
         expect(e.response_code).to eq 400
         expect(e.errors.size).to eq 1
         expect(e.errors.first.code).to eq "InvalidJson"
-        expect(e.errors.first.message).to include("INVALID_TYPE was not one of [ON_DEMAND, EAGER]")
+        expect(e.errors.first.message).to include("INVALID_TYPE was not one of [EAGER, ON_DEMAND]")
       rescue EsxCloud::CliError => e
-        expect(e.message).to include("INVALID_TYPE was not one of [ON_DEMAND, EAGER]")
+        expect(e.message).to include("INVALID_TYPE was not one of [EAGER, ON_DEMAND]")
       end
     end
   end
