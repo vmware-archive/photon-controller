@@ -712,6 +712,10 @@ public class ImageDatastoreSweeperService extends StatefulService {
       ServiceUtils.logInfo(this, "Image id: %s, CloudStore state of inactive image: %s", image.getImage_id(),
           Utils.toJson(false, false, referenceImage));
 
+      ServiceUtils.logInfo(this, "ImageDatastoreSweeperService state: %s", Utils.toJson(false, false, current));
+
+      ServiceUtils.logInfo(this, "Image timestamp: %s, current image delete watermark time: %s", image.getTimestamp(),
+          current.imageDeleteWatermarkTime);
       if (image.getTimestamp() > current.imageDeleteWatermarkTime) {
         // we only want to delete images that have been not used for a
         // period longer than the watermark time
@@ -722,26 +726,35 @@ public class ImageDatastoreSweeperService extends StatefulService {
         // cloud store has the image reference
 
         if (referenceImage.state == ImageState.PENDING_DELETE) {
+          ServiceUtils.logInfo(this, "Image is in pending delete: %s", referenceImage.state);
           // if image is tombstoned then we delete the un-used image right away
           imagesToDelete.add(image);
           continue;
         }
 
-        if (referenceImage.replicationType == ImageReplicationType.EAGER || current.isImageDatastore) {
+        if (referenceImage.replicationType == ImageReplicationType.EAGER) {
+          ServiceUtils.logInfo(this, "Image is EAGER");
           // we do not delete unused images:
           // a) of replication type EAGER
           // b) stored on image datastore
           continue;
         }
 
+        if (current.isImageDatastore) {
+          ServiceUtils.logInfo(this, "Image is not EAGER, but is on an image datastore");
+          continue;
+        }
       }
 
+      ServiceUtils.logInfo(this, "Image is not EAGER and not on an image datastore");
       // image is:
       //  - ON_DEMAND and not used on a regular datastore
       imagesToDelete.add(image);
     }
 
-    ServiceUtils.logInfo(this, "Deleting images: %s", imagesToDelete);
+    if (!imagesToDelete.isEmpty()) {
+      ServiceUtils.logInfo(this, "Deleting images: %s", imagesToDelete);
+    }
 
     return imagesToDelete;
   }
