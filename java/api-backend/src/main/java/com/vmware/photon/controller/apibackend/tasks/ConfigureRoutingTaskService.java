@@ -363,6 +363,8 @@ public class ConfigureRoutingTaskService extends StatefulService {
     NatRuleCreateSpec spec = new NatRuleCreateSpec();
     spec.setNatAction(NatActionType.SNAT);
     spec.setTranslatedNetwork(currentState.snatIp);
+    spec.setRulePriority(1024);
+    spec.setTranslatedPorts("");
     spec.setEnabled(true);
 
     logicalRouterApi.createNatRule(currentState.logicalTier1RouterId, spec,
