@@ -81,10 +81,10 @@ public interface XenonClient {
   Operation delete(String documentSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
-  Operation patch(String serviceSelfLink, ServiceDocument body)
+  Operation patch(String serviceSelfLink, Object body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
-  Operation patch(String serviceSelfLink, ServiceDocument body, EnumSet<HeaderOption> headerOptions)
+  Operation patch(String serviceSelfLink, Object body, EnumSet<HeaderOption> headerOptions)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
   Operation query(QueryTask.QuerySpecification spec, boolean isDirect)
