@@ -25,7 +25,7 @@ RUN sed -i 's/#Storage=auto/Storage=persistent/' /etc/systemd/journald.conf
 RUN tdnf install -y procps-ng; \
     tdnf install -y likewise-open; \
     tdnf install -y boost; \
-    tdnf install -y vmware-lightwave-clients-6.6.0
+    tdnf install -y vmware-lightwave-clients-6.6.2
 
 ADD *.rpm /tmp/
 RUN find /tmp -iname "*.rpm" | xargs rpm -Uvh
