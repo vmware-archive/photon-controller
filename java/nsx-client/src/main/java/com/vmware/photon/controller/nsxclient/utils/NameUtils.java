@@ -69,12 +69,6 @@ public class NameUtils {
   public static final String DHCP_RELAY_SERVICE_DESCRIPTION_PREFIX =
       "Photon Controller DHCP Relay Service in Deployment ";
 
-  ///
-  /// NAT Naming Constants
-  ///
-  public static final String DNAT_RULE_NAME_PREFIX = "PC-Dnat-";
-  public static final String DNAT_RULE_DESCRIPTION_PREFIX = "Photon Controller DNAT ";
-
   public static String getFabricNodeName(String id) {
     return FABRIC_NODE_NAME_PREFIX + id;
   }
@@ -165,13 +159,5 @@ public class NameUtils {
 
   public static String getDhcpRelayServiceDescription(String id) {
     return DHCP_RELAY_SERVICE_DESCRIPTION_PREFIX + id;
-  }
-
-  public static String getDnatRuleName(String id) {
-    return DNAT_RULE_NAME_PREFIX + id;
-  }
-
-  public static String getDnatRuleDescription(String id) {
-    return DNAT_RULE_DESCRIPTION_PREFIX + id;
   }
 }

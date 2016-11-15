@@ -49,7 +49,8 @@ public class AssignFloatingIpToVmWorkflowDocument extends ServiceDocument {
       GET_VM_PRIVATE_IP_AND_MAC,
       ALLOCATE_VM_FLOATING_IP,
       GET_NSX_CONFIGURATION,
-      CREATE_NAT_RULE,
+      CREATE_DNAT_RULE,
+      CREATE_SNAT_RULE,
       UPDATE_VM,
       UPDATE_VIRTUAL_NETWORK
     }

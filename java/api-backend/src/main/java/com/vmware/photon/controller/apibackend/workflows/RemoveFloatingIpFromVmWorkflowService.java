@@ -165,8 +165,11 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
         case GET_NSX_CONFIGURATION:
           getNsxConfiguration(state);
           break;
-        case REMOVE_NAT_RULE:
-          removeNatRule(state);
+        case REMOVE_DNAT_RULE:
+          removeDnatRule(state);
+          break;
+        case REMOVE_SNAT_RULE:
+          removeSnatRule(state);
           break;
         case RELEASE_VM_FLOATING_IP:
           releaseVmFloatingIp(state);
@@ -230,7 +233,7 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
           try {
             RemoveFloatingIpFromVmWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
-                RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_NAT_RULE);
+                RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_DNAT_RULE);
             patchState.nsxAddress = deploymentState.networkManagerAddress;
             patchState.nsxUsername = deploymentState.networkManagerUsername;
             patchState.nsxPassword = deploymentState.networkManagerPassword;
@@ -246,9 +249,9 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
 
   }
 
-  private void removeNatRule(RemoveFloatingIpFromVmWorkflowDocument state) throws Throwable {
-    if (!state.taskServiceEntity.vmIdToNatRuleIdMap.containsKey(state.vmId)) {
-      throw new RemoveFloatingIpFromVmException("VM " + state.vmId + " does not have a NAT rule associated");
+  private void removeDnatRule(RemoveFloatingIpFromVmWorkflowDocument state) throws Throwable {
+    if (!state.taskServiceEntity.vmIdToDnatRuleIdMap.containsKey(state.vmId)) {
+      throw new RemoveFloatingIpFromVmException("VM " + state.vmId + " does not have a DNAT rule associated");
     }
 
     LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(),
@@ -258,7 +261,43 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
         .getLogicalRouterApi();
 
     logicalRouterApi.deleteNatRule(state.taskServiceEntity.logicalRouterId,
-        state.taskServiceEntity.vmIdToNatRuleIdMap.get(state.vmId),
+        state.taskServiceEntity.vmIdToDnatRuleIdMap.get(state.vmId),
+        new FutureCallback<Void>() {
+          @Override
+          public void onSuccess(Void result) {
+            try {
+              RemoveFloatingIpFromVmWorkflowDocument patchState = buildPatch(
+                  TaskState.TaskStage.STARTED,
+                  RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.REMOVE_SNAT_RULE);
+              patchState.taskServiceEntity = state.taskServiceEntity;
+              patchState.taskServiceEntity.vmIdToDnatRuleIdMap.remove(state.vmId);
+
+              progress(state, patchState);
+            } catch (Throwable t) {
+              fail(state, t);
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            fail(state, t);
+          }
+        });
+  }
+
+  private void removeSnatRule(RemoveFloatingIpFromVmWorkflowDocument state) throws Throwable {
+    if (!state.taskServiceEntity.vmIdToSnatRuleIdMap.containsKey(state.vmId)) {
+      throw new RemoveFloatingIpFromVmException("VM " + state.vmId + " does not have a SNAT rule associated");
+    }
+
+    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(),
+        state.nsxAddress,
+        state.nsxUsername,
+        state.nsxPassword)
+        .getLogicalRouterApi();
+
+    logicalRouterApi.deleteNatRule(state.taskServiceEntity.logicalRouterId,
+        state.taskServiceEntity.vmIdToSnatRuleIdMap.get(state.vmId),
         new FutureCallback<Void>() {
           @Override
           public void onSuccess(Void result) {
@@ -267,7 +306,7 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
                   TaskState.TaskStage.STARTED,
                   RemoveFloatingIpFromVmWorkflowDocument.TaskState.SubStage.RELEASE_VM_FLOATING_IP);
               patchState.taskServiceEntity = state.taskServiceEntity;
-              patchState.taskServiceEntity.vmIdToNatRuleIdMap.remove(state.vmId);
+              patchState.taskServiceEntity.vmIdToSnatRuleIdMap.remove(state.vmId);
 
               progress(state, patchState);
             } catch (Throwable t) {
@@ -407,7 +446,8 @@ public class RemoveFloatingIpFromVmWorkflowService extends BaseWorkflowService<R
 
   private void updateVirtualNetwork(RemoveFloatingIpFromVmWorkflowDocument state) {
     VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
-    virtualNetworkPatchState.vmIdToNatRuleIdMap = state.taskServiceEntity.vmIdToNatRuleIdMap;
+    virtualNetworkPatchState.vmIdToDnatRuleIdMap = state.taskServiceEntity.vmIdToDnatRuleIdMap;
+    virtualNetworkPatchState.vmIdToSnatRuleIdMap = state.taskServiceEntity.vmIdToSnatRuleIdMap;
 
     CloudStoreUtils.patchAndProcess(
         this,

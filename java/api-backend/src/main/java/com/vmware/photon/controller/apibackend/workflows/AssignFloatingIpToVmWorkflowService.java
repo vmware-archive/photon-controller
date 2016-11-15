@@ -36,7 +36,6 @@ import com.vmware.photon.controller.nsxclient.apis.LogicalRouterApi;
 import com.vmware.photon.controller.nsxclient.datatypes.NatActionType;
 import com.vmware.photon.controller.nsxclient.models.NatRule;
 import com.vmware.photon.controller.nsxclient.models.NatRuleCreateSpec;
-import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.TaskState;
@@ -175,8 +174,11 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
         case GET_NSX_CONFIGURATION:
           getNsxConfiguration(state);
           break;
-        case CREATE_NAT_RULE:
-          createNatRule(state);
+        case CREATE_DNAT_RULE:
+          createDnatRule(state);
+          break;
+        case CREATE_SNAT_RULE:
+          createSnatRule(state);
           break;
         case UPDATE_VM:
           updateVm(state);
@@ -352,7 +354,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
           try {
             AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
-                AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.CREATE_NAT_RULE);
+                AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.CREATE_DNAT_RULE);
             patchState.nsxAddress = deploymentState.networkManagerAddress;
             patchState.nsxUsername = deploymentState.networkManagerUsername;
             patchState.nsxPassword = deploymentState.networkManagerPassword;
@@ -368,7 +370,7 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
     );
   }
 
-  private void createNatRule(AssignFloatingIpToVmWorkflowDocument state) throws Throwable {
+  private void createDnatRule(AssignFloatingIpToVmWorkflowDocument state) throws Throwable {
     LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(),
         state.nsxAddress,
         state.nsxUsername,
@@ -377,8 +379,6 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
 
     NatRuleCreateSpec natRuleCreateSpec = new NatRuleCreateSpec();
     natRuleCreateSpec.setNatAction(NatActionType.DNAT);
-    natRuleCreateSpec.setDisplayName(NameUtils.getDnatRuleName(state.vmPrivateIpAddress));
-    natRuleCreateSpec.setDescription(NameUtils.getDnatRuleDescription(state.vmPrivateIpAddress));
     natRuleCreateSpec.setMatchDestinationNetwork(state.vmFloatingIpAddress);
     natRuleCreateSpec.setTranslatedNetwork(state.vmPrivateIpAddress);
     natRuleCreateSpec.setTranslatedPorts(""); // Do not delete this, as NSX would create a rule but has no effect.
@@ -394,13 +394,59 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
             try {
               AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
                   TaskState.TaskStage.STARTED,
-                  AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.UPDATE_VM);
+                  AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.CREATE_SNAT_RULE);
               patchState.taskServiceEntity = state.taskServiceEntity;
-              if (patchState.taskServiceEntity.vmIdToNatRuleIdMap == null) {
-                patchState.taskServiceEntity.vmIdToNatRuleIdMap = new HashMap<>();
+              if (patchState.taskServiceEntity.vmIdToDnatRuleIdMap == null) {
+                patchState.taskServiceEntity.vmIdToDnatRuleIdMap = new HashMap<>();
               }
 
-              patchState.taskServiceEntity.vmIdToNatRuleIdMap.put(state.vmId, result.getId());
+              patchState.taskServiceEntity.vmIdToDnatRuleIdMap.put(state.vmId, result.getId());
+
+              progress(state, patchState);
+            } catch (Throwable t) {
+              fail(state, t);
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            fail(state, t);
+          }
+        }
+    );
+  }
+
+  private void createSnatRule(AssignFloatingIpToVmWorkflowDocument state) throws Throwable {
+    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(),
+        state.nsxAddress,
+        state.nsxUsername,
+        state.nsxPassword)
+        .getLogicalRouterApi();
+
+    NatRuleCreateSpec natRuleCreateSpec = new NatRuleCreateSpec();
+    natRuleCreateSpec.setNatAction(NatActionType.SNAT);
+    natRuleCreateSpec.setMatchSourceNetwork(state.vmPrivateIpAddress);
+    natRuleCreateSpec.setTranslatedNetwork(state.vmFloatingIpAddress);
+    natRuleCreateSpec.setTranslatedPorts(""); // Do not delete this, as NSX would create a rule but has no effect.
+    natRuleCreateSpec.setLoggingEnabled(false);
+    natRuleCreateSpec.setRulePriority(1024);
+    natRuleCreateSpec.setEnabled(true);
+
+    logicalRouterApi.createNatRule(state.taskServiceEntity.logicalRouterId,
+        natRuleCreateSpec,
+        new FutureCallback<NatRule>() {
+          @Override
+          public void onSuccess(NatRule result) {
+            try {
+              AssignFloatingIpToVmWorkflowDocument patchState = buildPatch(
+                  TaskState.TaskStage.STARTED,
+                  AssignFloatingIpToVmWorkflowDocument.TaskState.SubStage.UPDATE_VM);
+              patchState.taskServiceEntity = state.taskServiceEntity;
+              if (patchState.taskServiceEntity.vmIdToSnatRuleIdMap == null) {
+                patchState.taskServiceEntity.vmIdToSnatRuleIdMap = new HashMap<>();
+              }
+
+              patchState.taskServiceEntity.vmIdToSnatRuleIdMap.put(state.vmId, result.getId());
 
               progress(state, patchState);
             } catch (Throwable t) {
@@ -454,7 +500,8 @@ public class AssignFloatingIpToVmWorkflowService extends BaseWorkflowService<Ass
 
   private void updateVirtualNetwork(AssignFloatingIpToVmWorkflowDocument state) {
     VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
-    virtualNetworkPatchState.vmIdToNatRuleIdMap = state.taskServiceEntity.vmIdToNatRuleIdMap;
+    virtualNetworkPatchState.vmIdToDnatRuleIdMap = state.taskServiceEntity.vmIdToDnatRuleIdMap;
+    virtualNetworkPatchState.vmIdToSnatRuleIdMap = state.taskServiceEntity.vmIdToSnatRuleIdMap;
 
     CloudStoreUtils.patchAndProcess(
         this,
