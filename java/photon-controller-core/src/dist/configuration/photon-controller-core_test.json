@@ -35,6 +35,7 @@
     "LOG_DIRECTORY": "/vagrant/log",
     "MANAGEMENT-API_INSTALL_DIRECTORY": "/usr/lib/esxcloud/management-api",
     "USE_ESX_STORE": true,
+    "IS_INSTALLER": false,
     "PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/photon-controller-core",
     "ROOT-SCHEDULER_XENON_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13010",
     "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler",

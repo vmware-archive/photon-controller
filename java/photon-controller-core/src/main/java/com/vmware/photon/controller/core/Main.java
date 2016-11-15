@@ -261,7 +261,7 @@ public class Main {
     final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper, photonControllerXenonHost);
 
     logger.info("Creating Cloud Store Xenon Service Group");
-    CloudStoreServiceGroup cloudStoreServiceGroup = createCloudStoreServiceGroup();
+    CloudStoreServiceGroup cloudStoreServiceGroup = createCloudStoreServiceGroup(deployerConfig.isInstaller());
     logger.info("Created Cloud Store Xenon Service Group");
 
     logger.info("Registering Cloud Store Xenon Service Group");
@@ -336,8 +336,8 @@ public class Main {
     return photonControllerXenonHost;
   }
 
-  private static CloudStoreServiceGroup createCloudStoreServiceGroup() throws Throwable {
-    return new CloudStoreServiceGroup();
+  private static CloudStoreServiceGroup createCloudStoreServiceGroup(boolean isInstaller) throws Throwable {
+    return new CloudStoreServiceGroup(isInstaller);
   }
 
   private static SchedulerServiceGroup createSchedulerServiceGroup(SchedulerConfig root,

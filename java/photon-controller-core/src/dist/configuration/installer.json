@@ -17,5 +17,6 @@
     "USE_ESX_STORE": true,
     "ENABLE_INSTALLER_STATUS_FILTER": true,
     "USE_VIRTUAL_NETWORK": false,
-    "memoryMb": 4096
+    "memoryMb": 4096,
+    "IS_INSTALLER": true
 }
