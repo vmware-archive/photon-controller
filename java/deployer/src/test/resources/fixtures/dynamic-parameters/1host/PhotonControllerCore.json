@@ -1,5 +1,6 @@
 {
   "APIFE_PORT": "28080",
+  "IS_INSTALLER": false,
   "APIFE_IP": "0.0.0.0",
   "ENABLE_SYSLOG": "true",
   "ENABLE_AUTH": "false",

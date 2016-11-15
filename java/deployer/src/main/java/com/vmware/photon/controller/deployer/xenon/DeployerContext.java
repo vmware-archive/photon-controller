@@ -285,6 +285,9 @@ public class DeployerContext {
   @JsonProperty("enableAuth")
   private final boolean enableAuth;
 
+  @NotNull
+  private final Boolean isInstaller;
+
   /**
    * This list defines the order in which to un-install vibs that may be on the system.
    * This may be important
@@ -322,6 +325,7 @@ public class DeployerContext {
     enableAuth = false;
     keyStorePath = null;
     keyStorePassword = null;
+    isInstaller = false;
   }
 
   public int getCorePoolSize() {
@@ -570,5 +574,9 @@ public class DeployerContext {
 
   public DhcpVmConfiguration getDhcpVmConfiguration() {
     return dhcpVmConfiguration;
+  }
+
+  public boolean isInstaller() {
+    return isInstaller;
   }
 }

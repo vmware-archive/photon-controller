@@ -13,6 +13,7 @@
 package com.vmware.photon.controller.cloudstore;
 
 import com.vmware.photon.controller.api.model.DeploymentState;
+import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.provider.SystemConfigProvider;
 import com.vmware.photon.controller.common.xenon.OperationLatch;
@@ -132,6 +133,10 @@ public class SystemConfig implements SystemConfigProvider {
 
   @Override
   public boolean isBackgroundPaused()  {
+    if ( ((CloudStoreServiceGroup) xenonHost.getCloudStore()).isInstaller()) {
+      return true;
+    }
+
     DeploymentService.State state = getState();
     if (state == null) {
       logger.info("Deployment document not created yet .. isBackgroundPaused returns true");

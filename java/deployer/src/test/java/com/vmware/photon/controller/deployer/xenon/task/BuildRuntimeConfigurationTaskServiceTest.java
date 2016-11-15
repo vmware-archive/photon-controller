@@ -46,8 +46,11 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isIn;
 import static org.hamcrest.Matchers.nullValue;
 
 import java.io.File;
@@ -405,12 +408,21 @@ public class BuildRuntimeConfigurationTaskServiceTest {
           .collect(Collectors.toList()));
     }
 
-    @SuppressWarnings("unchecked")
     private Map<String, String> getExpectedParameters(String testCase, ContainersConfig.ContainerType containerType)
         throws Throwable {
       Path fixturePath = Paths.get("/fixtures/dynamic-parameters", testCase, containerType.name() + ".json");
       File fixture = new File(this.getClass().getResource(fixturePath.toString()).getPath());
-      return Utils.fromJson(FileUtils.readFileToString(fixture), Map.class);
+
+      // from Json is trying to do proper object conversion which results in some objects
+      // being mapped to Integer or Boolean
+      Map<?, ?> fromJson = Utils.fromJson(FileUtils.readFileToString(fixture), Map.class);
+
+      HashMap<String, String> map = new HashMap<>();
+      for (Map.Entry<?, ?> entry : fromJson.entrySet()) {
+        map.put(entry.getKey().toString(), entry.getValue().toString());
+      }
+
+      return map;
     }
 
     private void testRuntimeStateFromFile(ContainersConfig.ContainerType containerType,
@@ -478,7 +490,10 @@ public class BuildRuntimeConfigurationTaskServiceTest {
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.dynamicParameters, is(expectedParameters));
+      expectedParameters = new HashMap<>(expectedParameters);
+      assertThat(expectedParameters.size(), is(finalState.dynamicParameters.size()));
+      assertThat(expectedParameters.entrySet(), everyItem(isIn(finalState.dynamicParameters.entrySet())));
+      assertThat(finalState.dynamicParameters.entrySet(), everyItem(isIn(expectedParameters.entrySet())));
 
       ContainerService.State containerState =
           testEnvironment.getServiceState(startState.containerServiceLink, ContainerService.State.class);

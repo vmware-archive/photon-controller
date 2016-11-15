@@ -39,5 +39,6 @@
   "LIGHTWAVE_PASSWORD": "PASSWORD",
   "memoryMb": "8192",
   "diskGb": "27",
-  "cpuCount": "4"
+  "cpuCount": "4",
+  "IS_INSTALLER": false
 }
