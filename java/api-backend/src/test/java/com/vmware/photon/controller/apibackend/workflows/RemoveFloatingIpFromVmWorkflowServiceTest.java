@@ -431,8 +431,10 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
       VirtualNetworkService.State virtualNetwork = testEnvironment.getServiceState(
           savedState.taskServiceEntity.documentSelfLink,
           VirtualNetworkService.State.class);
-      assertThat(virtualNetwork.vmIdToNatRuleIdMap.size(), is(1));
-      assertThat(virtualNetwork.vmIdToNatRuleIdMap, equalTo(expectedVmIdToNatRuleIdMap));
+      assertThat(virtualNetwork.vmIdToDnatRuleIdMap.size(), is(1));
+      assertThat(virtualNetwork.vmIdToDnatRuleIdMap, equalTo(expectedVmIdToNatRuleIdMap));
+      assertThat(virtualNetwork.vmIdToSnatRuleIdMap.size(), is(1));
+      assertThat(virtualNetwork.vmIdToSnatRuleIdMap, equalTo(expectedVmIdToNatRuleIdMap));
 
       VmService.State vm = testEnvironment.getServiceState(
           VmServiceFactory.SELF_LINK + "/" + savedState.vmId,
@@ -508,9 +510,9 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
     virtualNetwork.tier0RouterId = "logical_tier0_router_id";
     virtualNetwork.logicalRouterId = "logical_tier1_router_id";
     virtualNetwork.logicalSwitchId = "logical_switch_id";
-    virtualNetwork.vmIdToNatRuleIdMap = new HashMap<>();
-    virtualNetwork.vmIdToNatRuleIdMap.put("vmId1", "natRuleId1");
-    virtualNetwork.vmIdToNatRuleIdMap.put("vmId2", "natRuleId2");
+    virtualNetwork.vmIdToDnatRuleIdMap = new HashMap<>();
+    virtualNetwork.vmIdToDnatRuleIdMap.put("vmId1", "natRuleId1");
+    virtualNetwork.vmIdToDnatRuleIdMap.put("vmId2", "natRuleId2");
     virtualNetwork.size = 16;
 
     Operation result = testEnvironment.sendPostAndWait(VirtualNetworkService.FACTORY_LINK, virtualNetwork);
@@ -530,7 +532,8 @@ public class RemoveFloatingIpFromVmWorkflowServiceTest {
       String networkId,
       Map<String, String> vmIdToNatRuleIdMap) throws Throwable {
     VirtualNetworkService.State patchState = new VirtualNetworkService.State();
-    patchState.vmIdToNatRuleIdMap = vmIdToNatRuleIdMap;
+    patchState.vmIdToDnatRuleIdMap = vmIdToNatRuleIdMap;
+    patchState.vmIdToSnatRuleIdMap = vmIdToNatRuleIdMap;
 
     Operation result = testEnvironment.sendPatchAndWait(VirtualNetworkService.FACTORY_LINK + "/" + networkId,
         patchState);

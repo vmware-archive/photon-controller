@@ -255,10 +255,16 @@ public class VirtualNetworkService extends StatefulService {
     public String tier0RouterDownlinkPortId;
 
     /**
-     * Mapping between the ID of the VM and the NAT rule ID. It is used to track the floating IP
+     * Mapping between the ID of the VM and the DNAT rule ID. It is used to track the floating IP
      * configuration of the VM.
      */
-    public Map<String, String> vmIdToNatRuleIdMap;
+    public Map<String, String> vmIdToDnatRuleIdMap;
+
+    /**
+     * Mapping between the ID of the VM and the SNAT rule ID. It is used to track the floating IP
+     * configuration of the VM.
+     */
+    public Map<String, String> vmIdToSnatRuleIdMap;
 
     public Long deleteRequestTime;
 
