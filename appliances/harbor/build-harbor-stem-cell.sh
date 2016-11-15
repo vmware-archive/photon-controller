@@ -15,7 +15,7 @@ export SOURCE_OVA=${SCRIPT_DIR}/../photon-ova/build/photon-ova-virtualbox.ova
 export FORCE_REBUILD_PHOTON=0
 
 if [ ! -n "${HARBOR_VERSION}" ]; then
-  export HARBOR_VERSION=0.3.0
+  export HARBOR_VERSION=0.4.1
 fi
 
 while [ $# -gt 0 ]; do
