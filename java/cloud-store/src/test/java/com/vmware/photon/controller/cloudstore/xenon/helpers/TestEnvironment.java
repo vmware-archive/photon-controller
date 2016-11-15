@@ -53,7 +53,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
 
       hosts[i] = new PhotonControllerXenonHost(xenonConfig,
               hostClientFactory, agentControlClientFactory, null, null, null);
-      CloudStoreServiceGroup cloudStoreServiceGroup = new CloudStoreServiceGroup();
+      CloudStoreServiceGroup cloudStoreServiceGroup = new CloudStoreServiceGroup(false);
       hosts[i].registerCloudStore(cloudStoreServiceGroup);
     }
     // Disable host ping: we have fake hosts and don't want them to be marked as missing

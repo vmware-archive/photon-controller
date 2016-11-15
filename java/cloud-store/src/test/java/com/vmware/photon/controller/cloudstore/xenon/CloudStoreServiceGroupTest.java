@@ -189,7 +189,7 @@ public class CloudStoreServiceGroupTest {
       createConfig();
       host = new PhotonControllerXenonHost(
           config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null);
-      cloudStoreServiceGroup = new CloudStoreServiceGroup();
+      cloudStoreServiceGroup = new CloudStoreServiceGroup(false);
       host.registerCloudStore(cloudStoreServiceGroup);
     }
 
@@ -215,7 +215,7 @@ public class CloudStoreServiceGroupTest {
 
       host = new PhotonControllerXenonHost(
           config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null);
-      cloudStoreServiceGroup = new CloudStoreServiceGroup();
+      cloudStoreServiceGroup = new CloudStoreServiceGroup(false);
       host.registerCloudStore(cloudStoreServiceGroup);
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
@@ -246,7 +246,7 @@ public class CloudStoreServiceGroupTest {
       createConfig();
       host = new PhotonControllerXenonHost(
           config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null);
-      cloudStoreServiceGroup = new CloudStoreServiceGroup();
+      cloudStoreServiceGroup = new CloudStoreServiceGroup(false);
       host.registerCloudStore(cloudStoreServiceGroup);
     }
 
@@ -301,7 +301,7 @@ public class CloudStoreServiceGroupTest {
       createConfig();
       host = new PhotonControllerXenonHost(
           config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null, null);
-      cloudStoreServiceGroup = new CloudStoreServiceGroup();
+      cloudStoreServiceGroup = new CloudStoreServiceGroup(false);
       host.registerCloudStore(cloudStoreServiceGroup);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
