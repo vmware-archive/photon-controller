@@ -464,8 +464,10 @@ public class AssignFloatingIpToVmWorkflowServiceTest {
       VirtualNetworkService.State virtualNetwork = testEnvironment.getServiceState(
           savedState.taskServiceEntity.documentSelfLink,
           VirtualNetworkService.State.class);
-      assertThat(virtualNetwork.vmIdToNatRuleIdMap.size(), is(1));
-      assertThat(virtualNetwork.vmIdToNatRuleIdMap, equalTo(expectedVmIdToNatRuleIdMap));
+      assertThat(virtualNetwork.vmIdToDnatRuleIdMap.size(), is(1));
+      assertThat(virtualNetwork.vmIdToDnatRuleIdMap, equalTo(expectedVmIdToNatRuleIdMap));
+      assertThat(virtualNetwork.vmIdToSnatRuleIdMap.size(), is(1));
+      assertThat(virtualNetwork.vmIdToSnatRuleIdMap, equalTo(expectedVmIdToNatRuleIdMap));
 
       VmService.State vm = testEnvironment.getServiceState(
           VmServiceFactory.SELF_LINK + "/" + savedState.vmId,
