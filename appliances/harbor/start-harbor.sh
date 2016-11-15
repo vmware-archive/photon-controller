@@ -62,13 +62,11 @@ sed -i "s|harbordomain.key|pc-harbor.local.key|g" nginx.conf
 popd
 
 pushd /root/harbor
-echo "Preparing Harbor"
-./prepare
-echo "Starting Harbor"
-docker-compose up -d
+echo "Preparing Harbor And Starting harbor"
+./install.sh
 popd
 echo "Harbor is up"
 
 echo "Exposing public CA certificate"
-docker exec harbor_ui_1 mkdir -p /go/bin/static/resources/certs/
-docker cp /root/ca.crt harbor_ui_1:/go/bin/static/resources/certs/
+docker exec harbor_ui_1 mkdir -p /harbor/static/resources/certs/
+docker cp /root/ca.crt harbor_ui_1:/harbor/static/resources/certs/

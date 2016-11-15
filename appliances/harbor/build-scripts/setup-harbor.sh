@@ -10,10 +10,6 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
 # specific language governing permissions and limitations under the License.
 
-# Downgrading docker on photon os to docker-1.11.2 because harbor-0.3.0 does not
-# work with docker-1.12.1 and thats the latest version installed.
-tdnf downgrade -y docker-1.11.2
-
 systemctl daemon-reload
 systemctl enable docker
 systemctl start docker
@@ -25,9 +21,5 @@ chmod +x docker-compose-Linux-x86_64
 mv docker-compose-Linux-x86_64 /usr/bin/docker-compose
 
 # Install harbor
-wget https://github.com/vmware/harbor/releases/download/0.3.0/harbor-0.3.0.tgz
-tar -xzvf harbor-0.3.0.tgz
-cd harbor
-./prepare
-docker-compose pull
-docker-compose build
+wget https://github.com/vmware/harbor/releases/download/0.4.1/harbor-offline-installer-0.4.1.tgz
+tar -xzvf harbor-offline-installer-0.4.1.tgz
