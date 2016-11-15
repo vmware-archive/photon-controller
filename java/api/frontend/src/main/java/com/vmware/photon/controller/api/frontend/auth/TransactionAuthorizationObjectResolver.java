@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.api.frontend.auth;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Inject;
 import com.vmware.photon.controller.api.frontend.resources.routes.ClusterResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.DiskResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.FlavorsResourceRoutes;
@@ -20,13 +22,11 @@ import com.vmware.photon.controller.api.frontend.resources.routes.ImageResourceR
 import com.vmware.photon.controller.api.frontend.resources.routes.InfoResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.ResourceTicketResourceRoutes;
-import com.vmware.photon.controller.api.frontend.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.TenantResourceRoutes;
+import com.vmware.photon.controller.api.frontend.resources.routes.SystemPropertiesRoutes;
+import com.vmware.photon.controller.api.frontend.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.VmResourceRoutes;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,6 +158,15 @@ public class TransactionAuthorizationObjectResolver {
                 TransactionAuthorizationObject.Kind.NONE
             )
         });
+
+    //System
+    EVALUATION_RULES.put(
+        SystemPropertiesRoutes.API.substring(1),
+            new Rule[]{
+                    new Rule(
+                            Pattern.compile("get", Pattern.CASE_INSENSITIVE),
+                            TransactionAuthorizationObject.Kind.NONE),
+                   });
   }
 
   public static void configureSubnetRule(boolean isSDN) {
@@ -202,7 +211,7 @@ public class TransactionAuthorizationObjectResolver {
 
     Matcher urlSegments = URL_PARSER.matcher(request.getPath(true));
     if (!urlSegments.matches()) {
-      // we can't parse the URL so make it admin only
+      // we can't parse the URL so make it system only
       logger.debug("Request path did not follow the expected URL pattern. ({})", request.getPath(true));
       return DEFAULT_OBJECT;
     }
