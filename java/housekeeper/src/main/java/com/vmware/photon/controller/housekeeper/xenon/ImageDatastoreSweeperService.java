@@ -110,7 +110,6 @@ public class ImageDatastoreSweeperService extends StatefulService {
     validatePatch(currentState, patchState);
     applyPatch(currentState, patchState);
     validateState(currentState);
-    ServiceUtils.logInfo(this, "Task state: %s", Utils.toJson(false, false, currentState));
 
     patch.complete();
 
@@ -720,10 +719,6 @@ public class ImageDatastoreSweeperService extends StatefulService {
     List<InactiveImageDescriptor> imagesToDelete = new LinkedList<>();
     for (InactiveImageDescriptor image : inactiveImages) {
       ImageService.State referenceImage = referenceImages.get(image.getImage_id());
-      ServiceUtils.logInfo(this, "Image id: %s, CloudStore state of inactive image: %s", image.getImage_id(),
-          Utils.toJson(false, false, referenceImage));
-      ServiceUtils.logInfo(this, "Image id: %s, Task state: %s", image.getImage_id(),
-          Utils.toJson(false, false, current));
 
       if (image.getTimestamp() > current.imageDeleteWatermarkTime) {
         // we only want to delete images that have been not used for a
@@ -753,8 +748,6 @@ public class ImageDatastoreSweeperService extends StatefulService {
       //  - ON_DEMAND and not used on a regular datastore
       imagesToDelete.add(image);
     }
-
-    ServiceUtils.logInfo(this, "Deleting images: %s", imagesToDelete);
 
     return imagesToDelete;
   }
