@@ -28,6 +28,7 @@ import com.vmware.photon.controller.api.frontend.providers.ExternalExceptionMapp
 import com.vmware.photon.controller.api.frontend.providers.JsonProcessingExceptionMapper;
 import com.vmware.photon.controller.api.frontend.providers.LoggingExceptionMapper;
 import com.vmware.photon.controller.api.frontend.providers.WebApplicationExceptionMapper;
+import com.vmware.photon.controller.api.frontend.resources.system.SystemPropertiesResource;
 import com.vmware.photon.controller.api.frontend.resources.auth.AuthResource;
 import com.vmware.photon.controller.api.frontend.resources.availabilityzone.AvailabilityZoneResource;
 import com.vmware.photon.controller.api.frontend.resources.availabilityzone.AvailabilityZonesResource;
@@ -234,6 +235,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     resources.add(ClusterResource.class);
     resources.add(ClusterResizeResource.class);
     resources.add(ClusterVmsResource.class);
+    resources.add(SystemPropertiesResource.class);
     resources.add(DatastoreResource.class);
     resources.add(DatastoresResource.class);
     resources.add(DeploymentHostsResource.class);
