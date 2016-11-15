@@ -42,6 +42,7 @@
     "DEPLOYER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/deployer",
     "VIB_DIRECTORY": "/var/esxcloud/packages",
     "ENABLE_SYSLOG": false,
-    "memoryMb": 2048
+    "memoryMb": 2048,
+    "IS_INSTALLER": false
   }
 }

@@ -75,4 +75,8 @@ public class DeployerConfig {
   public void setContainersConfig(ContainersConfig containersConfig) {
     this.containersConfig = containersConfig;
   }
+
+  public boolean isInstaller() {
+    return this.deployerContext.isInstaller();
+  }
 }
