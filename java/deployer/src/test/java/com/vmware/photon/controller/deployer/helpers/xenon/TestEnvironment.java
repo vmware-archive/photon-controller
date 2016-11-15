@@ -131,7 +131,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           hostManagementVmAddressValidatorFactory,
           clusterManagerFactory);
 
-      CloudStoreServiceGroup cloudStoreServiceGroup = new CloudStoreServiceGroup();
+      CloudStoreServiceGroup cloudStoreServiceGroup = new CloudStoreServiceGroup(false);
 
       hosts[i].registerDeployer(deployerServiceGroup);
       hosts[i].registerCloudStore(cloudStoreServiceGroup);

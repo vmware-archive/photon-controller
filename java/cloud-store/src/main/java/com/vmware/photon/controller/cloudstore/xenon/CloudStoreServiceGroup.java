@@ -164,7 +164,10 @@ public class CloudStoreServiceGroup
 
   private PhotonControllerXenonHost photonControllerXenonHost;
 
-  public CloudStoreServiceGroup() {
+  private boolean isInstaller;
+
+  public CloudStoreServiceGroup(boolean isInstaller) {
+    this.isInstaller = isInstaller;
   }
 
   @Override
@@ -287,5 +290,9 @@ public class CloudStoreServiceGroup
         photonControllerXenonHost.sendRequest(post);
       }
     }, TaskTriggerFactoryService.SELF_LINK);
+  }
+
+  public boolean isInstaller() {
+    return isInstaller;
   }
 }
