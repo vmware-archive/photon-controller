@@ -254,9 +254,14 @@ public class ServiceConfigurator {
     if (containerState.cpuShares != null) {
       commandBuilder.append("--cpu-shares=" + containerState.cpuShares + " ");
     }
-    // memory shares
-    if (containerState.memoryMb != null) {
-      commandBuilder.append("--memory=" + containerState.memoryMb + "m ");
+    // memory shares - set it only for non PhotonControllerCore containers. This is to alleviate memory leak issues
+    // that we are seeing in v1.1.0 where cgroup kills the java process running inside the PhotonControllerCore
+    // container due to the container using all of its memory. This happened when PhotonControllerCore container
+    // was restricted to 5GB.
+    if (!templateState.name.equals(ContainersConfig.ContainerType.PhotonControllerCore.name())) {
+      if (containerState.memoryMb != null) {
+        commandBuilder.append("--memory=" + containerState.memoryMb + "m ");
+      }
     }
     // Attach volumes from container (e.g. To link data container)
     if (templateState.volumesFrom != null) {
