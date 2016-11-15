@@ -42,6 +42,7 @@ deployer:
     vibDirectory: "{{{VIB_DIRECTORY}}}"
     sharedSecret: "{{{SHARED_SECRET}}}"
     enableAuth: {{{ENABLE_AUTH}}}
+    isInstaller: {{{IS_INSTALLER}}}
     vibUninstallOrder:
     - photon-controller-agent
     - envoy
