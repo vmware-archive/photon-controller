@@ -121,7 +121,7 @@ public class PhotonControllerXenonRestClient extends XenonRestClient {
   }
 
   @Override
-  public Operation patch(String serviceSelfLink, ServiceDocument body) {
+  public Operation patch(String serviceSelfLink, Object body) {
     try {
       return super.patch(serviceSelfLink, body);
     } catch (DocumentNotFoundException documentNotFoundException) {
