@@ -140,6 +140,7 @@ class DatastoreImageSweeper:
             self._grace_period = grace_period
         # Start task
         self._target_images = target_image_list
+        self._deleted_images = list()
         self._task_runner.start(self._timeout)
 
     @locked
