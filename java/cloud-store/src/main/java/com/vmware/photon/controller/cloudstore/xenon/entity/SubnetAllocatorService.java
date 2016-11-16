@@ -279,9 +279,13 @@ public class SubnetAllocatorService extends StatefulService {
       ServiceUtils.doServiceOperation(this, deleteOperation);
 
       IpV4Range targetRange = new IpV4Range(subnetState.lowIp, subnetState.highIp);
+      List<IpV4Range> currentFreeList = currentState.freeList
+          .stream()
+          .sorted((left, right) -> Long.compare(left.low, right.low))
+          .collect(Collectors.toList());
       List<IpV4Range> newFreeList = new ArrayList<>();
       // Merge range
-      for (IpV4Range freeRange : currentState.freeList) {
+      for (IpV4Range freeRange : currentFreeList) {
         if (freeRange.high < targetRange.low - 1) {
           newFreeList.add(freeRange);
         } else if (freeRange.low > targetRange.high + 1) {
