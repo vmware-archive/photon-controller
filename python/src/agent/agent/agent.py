@@ -49,6 +49,7 @@ from common.service_name import ServiceName
 from common.state import State
 
 SSL_CERT_FILE = "/etc/opt/vmware/photon/controller/rui.pem"
+SSL_CIPHERS = "!aNULL:kECDH+AESGCM:ECDH+AESGCM:RSA+AESGCM:kECDH+AES:ECDH+AES:RSA+AES"
 
 
 class Agent:
@@ -138,7 +139,8 @@ class Agent:
 
         if os.path.isfile(SSL_CERT_FILE) and os.path.getsize(SSL_CERT_FILE) > 0:
             self._logger.info("Initialize SSLSocket using %s" % SSL_CERT_FILE)
-            transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=SSL_CERT_FILE)
+            transport = TSSLSocket.TSSLServerSocket(port=self._config.host_port, certfile=SSL_CERT_FILE,
+                                                    ciphers=SSL_CIPHERS)
         else:
             self._logger.info("SSL Cert not found, initialize unencrypted socket")
             transport = TSocket.TServerSocket(port=self._config.host_port)
