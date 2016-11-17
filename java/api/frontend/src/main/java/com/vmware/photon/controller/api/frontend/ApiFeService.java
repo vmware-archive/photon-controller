@@ -58,6 +58,7 @@ import com.vmware.photon.controller.api.frontend.resources.resourceticket.Resour
 import com.vmware.photon.controller.api.frontend.resources.resourceticket.TenantResourceTicketsResource;
 import com.vmware.photon.controller.api.frontend.resources.status.AvailableResource;
 import com.vmware.photon.controller.api.frontend.resources.status.StatusResource;
+import com.vmware.photon.controller.api.frontend.resources.system.SystemPropertiesResource;
 import com.vmware.photon.controller.api.frontend.resources.tasks.AvailabilityZoneTasksResource;
 import com.vmware.photon.controller.api.frontend.resources.tasks.DiskTasksResource;
 import com.vmware.photon.controller.api.frontend.resources.tasks.FlavorTasksResource;
@@ -230,6 +231,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     resources.add(ClusterResource.class);
     resources.add(ClusterResizeResource.class);
     resources.add(ClusterVmsResource.class);
+    resources.add(SystemPropertiesResource.class);
     resources.add(DatastoreResource.class);
     resources.add(DatastoresResource.class);
     resources.add(DeploymentHostsResource.class);

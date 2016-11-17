@@ -302,13 +302,13 @@ public class XenonRestClient implements XenonClient {
   }
 
   @Override
-  public Operation patch(String serviceSelfLink, ServiceDocument body)
+  public Operation patch(String serviceSelfLink, Object body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
     return patch(serviceSelfLink, body, null);
   }
 
   @Override
-  public Operation patch(String serviceSelfLink, ServiceDocument body, EnumSet<HeaderOption> headerOptions)
+  public Operation patch(String serviceSelfLink, Object body, EnumSet<HeaderOption> headerOptions)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
 
     Operation patchOperation = Operation
