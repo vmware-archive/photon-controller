@@ -29,6 +29,9 @@ xenon:
 
 deployer:
   deployer:
+{{#CREATE_DEFAULT_DEPLOYMENT}}
+    defaultDeploymentEnabled: {{{CREATE_DEFAULT_DEPLOYMENT}}}
+{{/CREATE_DEFAULT_DEPLOYMENT}}
     apifeEndpoint: "http://{{{APIFE_IP}}}:{{{APIFE_PORT}}}"
     configDirectory: "/etc/esxcloud-deployer/configurations/"
     enableSyslog: "{{{ENABLE_SYSLOG}}}"

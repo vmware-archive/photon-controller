@@ -123,7 +123,7 @@ public class ApiFeXenonRestClient extends XenonRestClient {
   }
 
   @Override
-  public Operation patch(String serviceSelfLink, ServiceDocument body)
+  public Operation patch(String serviceSelfLink, Object body)
       throws DocumentNotFoundException {
     try {
       return super.patch(serviceSelfLink, body);
@@ -137,7 +137,7 @@ public class ApiFeXenonRestClient extends XenonRestClient {
   }
 
   @Override
-  public Operation patch(String serviceSelflink, ServiceDocument body, EnumSet<HeaderOption> headerOptions)
+  public Operation patch(String serviceSelflink, Object body, EnumSet<HeaderOption> headerOptions)
       throws DocumentNotFoundException {
     try {
       return super.patch(serviceSelflink, body, headerOptions);

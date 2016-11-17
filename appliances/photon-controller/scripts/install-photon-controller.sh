@@ -13,7 +13,11 @@
 echo "installing photon-controller"
 
 # install photon-controller
-tdnf install -y openjdk
+# the JRE/JDK version needs to match the version used by the lightwave client
+# otherwise we will be installing the JRE twice.
+# we require the JDK for keystoreutlis.
+tdnf install -y openjdk-1.8.0.102
+tdnf install -y openjre-1.8.0.102
 tdnf install -y sshpass
 mkdir -p /usr/java/default && ln -s /var/opt/OpenJDK* /usr/java/default
 
