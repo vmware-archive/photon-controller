@@ -6,8 +6,9 @@ source ../scripts/http.sh
 PHOTON_ISO_URL=${ISO_URL:="https://bintray.com/artifact/download/vmware/photon/photon-1.0-13c08b6.iso"}
 PHOTON_IMAGE_NAME=`basename $PHOTON_ISO_URL`
 
-rm -f $PHOTON_IMAGE_NAME
-download_file $PHOTON_ISO_URL
+if [ ! -f ./$PHOTON_IMAGE_NAME ]; then
+    download_file $PHOTON_ISO_URL
+fi
 
 PHOTON_ISO_SHA1=`sha1sum $PHOTON_IMAGE_NAME | cut -d' ' -f1`
 

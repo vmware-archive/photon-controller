@@ -175,14 +175,26 @@ function configure_photon() {
   # compute memory available on the system
   memory_mb=`free -m | grep Mem | tr -s " " | cut -d " " -f 2`
 
+  case "${create_default_deployment}" in
+    1 | [Tt][rR][uU][eE] | [Yy][eE][sS])
+        create_default_deployment="true"
+        ;;
+    *)
+        create_default_deployment="false"
+        ;;
+  esac
+
   custom_context="{\
+    \"CREATE_DEFAULT_DEPLOYMENT\" : \"${create_default_deployment}\", \
     \"REGISTRATION_ADDRESS\" : \"${ip0}\", \
     \"PHOTON_CONTROLLER_PEER_NODES\" : ${pc_peer_nodes}, \
     \"APIFE_IP\" : \"${ip0}\", \
     \"APIFE_PORT\" : 9000, \
-    \"LIGHTWAVE_PASSWORD\" : \"${pc_keystore_password}\", \
+    \"LIGHTWAVE_USERNAME\" : \"${lw_username}\", \
+    \"LIGHTWAVE_PASSWORD\" : \"${lw_password}\", \
     \"LIGHTWAVE_HOSTNAME\" : \"${lw_host}\", \
     \"LIGHTWAVE_DOMAIN\" : \"${lw_domain}\", \
+    \"LIGHTWAVE_SECURITY_GROUPS\" : \"${lw_domain}\\\\Administrators\", \
     \"USE_VIRTUAL_NETWORK\" : false, \
     \"ENABLE_SYSLOG\" : ${pc_enabled_syslog}, \
     \"SYSLOG_ENDPOINT\" : \"${pc_syslog_endpoint}\", \
@@ -231,22 +243,34 @@ function parse_ovf_env() {
   # photon Controller
   pc_syslog_endpoint=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_syslog_endpoint']/../@*[local-name()='value'])")
   # host,host
-  pc_peer_nodes_comma_seperated=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_peer_nodes']/../@*[local-name()='value'])")
-  pc_secret_password=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_secret_password']/../@*[local-name()='value'])")
+  pc_peer_nodes_comma_seperated=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_peer_nodes']/../@*[local-name()='value'])")
+  pc_secret_password=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_secret_password']/../@*[local-name()='value'])")
+  create_default_deployment=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='create_default_deployment']/../@*[local-name()='value'])")
+
+  if [ -z "$create_default_deployment" ]; then
+        create_default_deployment="false"
+  fi
 
   # lightwave config
-  lw_domain=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_domain']/../@*[local-name()='value'])") # some.domain.com
-  lw_host=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_hostname']/../@*[local-name()='value'])")
-  lw_port=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_port']/../@*[local-name()='value'])")
+  lw_domain=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_domain']/../@*[local-name()='value'])") # some.domain.com
+  lw_username=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_username']/../@*[local-name()='value'])") # administrator
+  lw_password=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_password']/../@*[local-name()='value'])")
+  lw_port=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_port']/../@*[local-name()='value'])")
   pc_secret_password=$(date +%s | base64 | head -c 8)
   pc_keystore_password=$(date +%s | base64 | head -c 8)
 
   if [ -z "$lw_port" ]; then
     missing_values = "Missing lw_port"
   fi
-  # default are meant for running test setup in fusion
-  if [ -z "$lw_host" ]; then
-    missing_values = ${missing_values}", lw_host"
+
+  if [ -z "$lw_username" ]; then
+    lw_username="administrator"
+  fi
+
+  missing_values=0
+  if [ -z "$lw_password" ]; then
+    missing_values=1
+    echo "Missing value [lw_password]"
   fi
   if [ -z "$lw_domain" ]; then
     missing_values = ${missing_values}", lw_domain"
