@@ -176,13 +176,11 @@ public class DeploymentService extends StatefulService {
     /**
      * This value represents the name of the image data store.
      */
-    @NotNull
     public Set<String> imageDataStoreNames;
 
     /**
      * This value represents whether the image data store can be used to create VMs.
      */
-    @NotNull
     @Immutable
     public Boolean imageDataStoreUsedForVMs;
 

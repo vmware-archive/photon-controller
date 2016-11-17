@@ -156,7 +156,7 @@ function configure_lightwave() {
     \"LIGHTWAVE_DOMAIN\" : \"$lw_domain\", \
     \"LIGHTWAVE_PASSWORD\" : \"$lw_password\", \
     \"IS_FIRST_INSTANCE\" : \"$lw_is_first_instance\", \
-    \"LIGHTWAVE_HOSTNAME\" : \"$lw_hostname\" \
+    \"LIGHTWAVE_HOSTNAME\" : \"$ip0\" \
   }"
   content=`cat /etc/photon/config/lightwave-server.cfg`
   pystache "$content" "$context" > /etc/photon/config/lightwave-server-instance.cfg
