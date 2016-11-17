@@ -172,10 +172,10 @@ public class SubnetAllocatorService extends StatefulService {
   }
 
   public void handleAllocateSubnet(Operation patch) {
-    ServiceUtils.logInfo(this, "Allocating subnet %s", getSelfLink());
-
     AllocateSubnet allocateSubnetPatch = patch.getBody(AllocateSubnet.class);
     State currentState = getState(patch);
+    ServiceUtils.logInfo(this, "Allocating subnet: %s", allocateSubnetPatch.subnetId);
+    ServiceUtils.logInfo(this, "Subnet size to be allocated: %d", allocateSubnetPatch.numberOfAllIpAddresses);
 
     try {
       Long requestedSize = allocateSubnetPatch.numberOfAllIpAddresses;
@@ -185,6 +185,11 @@ public class SubnetAllocatorService extends StatefulService {
           .collect(Collectors.toList());
       int inverseSubnetMask = IpHelper.safeLongToInt(requestedSize - 1);
       int subnetMask = ~(inverseSubnetMask);
+
+      currentState.freeList.stream().forEach(
+          range -> ServiceUtils.logInfo(this, "Free range before allocation: %d to %d", range.low, range.high));
+      candidateRanges.stream().forEach(
+          range -> ServiceUtils.logInfo(this, "Candidate free range: %d to %d", range.low, range.high));
 
       IpV4Range createdIpv4Range = null;
       IpV4Range selectedIpv4Range = null;
@@ -210,14 +215,18 @@ public class SubnetAllocatorService extends StatefulService {
         return;
       }
 
+      ServiceUtils.logInfo(this, "Selected range: %d to %d", selectedIpv4Range.low, selectedIpv4Range.high);
+
       currentState.freeList.remove(selectedIpv4Range);
       if (createdIpv4Range.low > selectedIpv4Range.low) {
         IpV4Range lowRange = new IpV4Range(selectedIpv4Range.low, createdIpv4Range.low - 1);
+        ServiceUtils.logInfo(this, "Insert low free range: %d to %d", lowRange.low, lowRange.high);
         currentState.freeList.add(lowRange);
       }
 
       if (createdIpv4Range.high < selectedIpv4Range.high) {
         IpV4Range highRange = new IpV4Range(createdIpv4Range.high + 1, selectedIpv4Range.high);
+        ServiceUtils.logInfo(this, "Insert high free range: %d to %d", highRange.low, highRange.high);
         currentState.freeList.add(highRange);
       }
 
@@ -250,6 +259,9 @@ public class SubnetAllocatorService extends StatefulService {
       ServiceUtils.doServiceOperation(this, postOperation);
 
       setState(patch, currentState);
+
+      currentState.freeList.stream().forEach(
+          range -> ServiceUtils.logInfo(this, "Free range after allocation: %d to %d", range.low, range.high));
       patch.complete();
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
@@ -258,9 +270,9 @@ public class SubnetAllocatorService extends StatefulService {
   }
 
   public void handleReleaseSubnet(Operation patch) {
-    ServiceUtils.logInfo(this, "Releasing subnet %s", getSelfLink());
     ReleaseSubnet releaseSubnetPatch = patch.getBody(ReleaseSubnet.class);
     State currentState = getState(patch);
+    ServiceUtils.logInfo(this, "Releasing subnet: %s", releaseSubnetPatch.subnetId);
 
     try {
       Operation getOperation =
@@ -277,6 +289,9 @@ public class SubnetAllocatorService extends StatefulService {
       Operation deleteOperation =
           Operation.createDelete(this, subnetState.documentSelfLink);
       ServiceUtils.doServiceOperation(this, deleteOperation);
+
+      currentState.freeList.stream().forEach(
+          range -> ServiceUtils.logInfo(this, "Free range before release: %d to %d", range.low, range.high));
 
       IpV4Range targetRange = new IpV4Range(subnetState.lowIp, subnetState.highIp);
       List<IpV4Range> currentFreeList = currentState.freeList
@@ -299,6 +314,9 @@ public class SubnetAllocatorService extends StatefulService {
 
       newFreeList.add(targetRange);
       currentState.freeList = newFreeList;
+
+      currentState.freeList.stream().forEach(
+          range -> ServiceUtils.logInfo(this, "Free range after release: %d to %d", range.low, range.high));
 
       patch.complete();
     } catch (Throwable t) {
