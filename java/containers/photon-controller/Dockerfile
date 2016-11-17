@@ -41,7 +41,8 @@ RUN tdnf makecache \
  && mkdir -p /var/run/sshd; chmod -rx /var/run/sshd \
  && ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key \
  && tdnf install -y sshpass \
- && tdnf install -y vmware-lightwave-clients \
+ && tdnf install -y likewise-open-6.2.10 \
+ && tdnf install -y vmware-lightwave-clients-6.6.2 \
  && tdnf install -y photon-controller-1.0.3 \
  && rm -rf /usr/share/doc/* \
  && rm -rf /usr/share/man/* \
