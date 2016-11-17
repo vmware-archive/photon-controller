@@ -587,7 +587,7 @@ public class SubnetAllocatorServiceTest {
 
         SubnetAllocatorService.AllocateSubnet allocateSubnetPatch =
             new SubnetAllocatorService.AllocateSubnet(
-                i.toString(), 8L, 2L);
+                i.toString(), 8L, 2L, false);
         patchOperation.setBody(allocateSubnetPatch);
 
         Operation completedOperation = host.sendRequestAndWait(patchOperation);
@@ -615,7 +615,7 @@ public class SubnetAllocatorServiceTest {
             .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
 
         SubnetAllocatorService.ReleaseSubnet releaseSubnetPatch =
-            new SubnetAllocatorService.ReleaseSubnet(i.toString());
+            new SubnetAllocatorService.ReleaseSubnet(i.toString(), false);
         patchOperation.setBody(releaseSubnetPatch);
 
         Operation completedOperation = host.sendRequestAndWait(patchOperation);
