@@ -576,7 +576,7 @@ public class DeployerContext {
     return dhcpVmConfiguration;
   }
 
-  public boolean isInstaller() {
+  public boolean getIsInstaller() {
     return isInstaller;
   }
 }
