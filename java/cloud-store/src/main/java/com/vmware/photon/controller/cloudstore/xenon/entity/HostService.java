@@ -34,6 +34,7 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultLong;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -178,6 +179,12 @@ public class HostService extends StatefulService {
       State patchState = patchOperation.getBody(State.class);
       validatePatchState(startState, patchState);
 
+      if (patchState.syncHostConfigTrigger != null && patchState.syncHostConfigTrigger) {
+        // Handle special patch operation to trigger immediate Host Configuration Synchronization.
+        getHostConfig(patchOperation, startState);
+        return;
+      }
+
       boolean stateChangedToReady =
           startState.state != HostState.READY && patchState.state == HostState.READY;
       boolean agentStateChangedToActive =
@@ -270,7 +277,7 @@ public class HostService extends StatefulService {
             .setCompletion((op, ex) -> {
               if (ex != null) {
                 ServiceUtils.logWarning(this, "Get request failed on Host Service to ping agent " + ex.getMessage());
-                maintenance.complete();
+                maintenance.fail(ex);
                 return;
               }
 
@@ -287,7 +294,7 @@ public class HostService extends StatefulService {
       }, ThreadLocalRandom.current().nextInt(1, DEFAULT_MAX_PING_WAIT_TIME_MILLIS), TimeUnit.MILLISECONDS);
     } catch (Exception exception) {
       ServiceUtils.logWarning(this, "Handle maintenance failed " + exception.getMessage());
-      maintenance.complete();
+      maintenance.fail(exception);
     }
   }
 
@@ -501,14 +508,14 @@ public class HostService extends StatefulService {
               ServiceUtils.logWarning(this, "get deployment state failed " + deploymentServiceLink +
                   " " + ex.getMessage());
               if (operation != null) {
-                operation.complete();
+                operation.fail(ex);
               }
             }
           } catch (Throwable t) {
             ServiceUtils.logWarning(this, "get deployment state failed " + deploymentServiceLink +
                 " " + t.getMessage());
             if (operation != null) {
-              operation.complete();
+              operation.fail(t);
             }
           }
         }));
@@ -579,7 +586,7 @@ public class HostService extends StatefulService {
         public void onError(Exception e) {
           ServiceUtils.logWarning(service, "Failed to update host config. Exception:" + e.getMessage());
           if (operation != null) {
-            operation.complete();
+            operation.fail(e);
           }
         }
       });
@@ -848,14 +855,6 @@ public class HostService extends StatefulService {
     public Map<String, String> datastoreServiceLinks;
 
     /**
-     * Currently unused. This is an optional field that defines the host group
-     * affinity of this host. Chairman uses this information to group hosts in
-     * the scheduler tree. If this field is not set, chairman puts the host into
-     * a default host group.
-     */
-    public String hostGroup;
-
-    /**
      * A set of datastore IDs reported by the host on registration. Chairman sets
      * this field when it receives a registration from the host.
      */
@@ -912,5 +911,12 @@ public class HostService extends StatefulService {
      */
     @DefaultLong(value = DEFAULT_DELETE_TASK_TRIGGER_WAIT_MILLIS)
     public Long deleteTaskWaitMillis;
+
+    /**
+     * Flag to trigger host configuration sync immediately and not waiting for periodic maintenance
+     * based on UPDATE_HOST_METADATA_INTERVAL.
+     */
+    @DefaultBoolean(value = false)
+    public Boolean syncHostConfigTrigger;
   }
 }
