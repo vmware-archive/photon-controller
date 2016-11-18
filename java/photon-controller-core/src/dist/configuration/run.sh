@@ -81,6 +81,7 @@ LIGHTWAVE_PASSWORD=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG keyStorePass
 REGISTRATION_ADDRESS=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG registrationAddress:`
 PHOTON_CONTROLLER_CORE_INSTALL_DIRECTORY=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG installDirectory:`
 LOG_DIRECTORY=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG logDirectory:`
+QUORUM_SIZE=`get_config_value $PHOTON_CONTROLLER_CORE_CONFIG quorumSize:`
 
 print_warning_if_value_mssing "${REGISTRATION_ADDRESS}"    "registrationAddress"   "$PHOTON_CONTROLLER_CORE_CONFIG"
 print_warning_if_value_mssing "${LOG_DIRECTORY}"           "logDirectory"          "$PHOTON_CONTROLLER_CORE_CONFIG"
@@ -124,7 +125,12 @@ jvm_mem=$(($memoryMb/2))
 # Use the JKS keystore which has our certificate as the default java keystore
 security_opts="-Djavax.net.ssl.trustStore=/keystore.jks"
 
-export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC ${security_opts} $JAVA_DEBUG"
+if [ -n "$QUORUM_SIZE" ]
+then
+  xenon_quorum_opts="-Dxenon.NodeState.membershipQuorum=${QUORUM_SIZE}"
+fi
+
+export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC ${security_opts} $JAVA_DEBUG ${xenon_quorum_opts}"
 
 if [ -n "$ENABLE_AUTH" -a "${ENABLE_AUTH,,}" == "true" ]
 then
