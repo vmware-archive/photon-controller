@@ -3,8 +3,8 @@
 function usage() {
     echo "Usage $0 OPERATION" 1>&2
     echo "OPERATION options: "
-    echo "shutdown"
-    echo "turnon"
+    echo "shutdown - Safely power off the Photon Controller and managed VMs"
+    echo "turnon - Safely power on Photon Controller after proper shutdown"
     exit 1
 }
 
@@ -27,12 +27,36 @@ PC_IPS=()
 # List of each Lightwave docker container id or name
 LW_DOCKER_IDS=(lightwave-0 lightwave-1 lightwave-2)
 
+if [ -z ${USERNAME} ]; then
+    echo "USERNAME for photon login needs to be set"
+fi
+
+if [ -z ${PASSWORD} ]; then
+    echo "PASSWORD for photon login needs to be set"
+fi
+
+if [ -z ${PC_CONFIG_DIRS} ]; then
+    echo "PC_CONFIG_DIRS needs to be set"
+fi
+
+if [ -z ${PC_DOCKER_IDS} ]; then
+    echo "PC_DOCKER_IDS needs to be set"
+fi
+
+if [ -z ${PC_IPS} ]; then
+    echo "PC_IPS needs to be set"
+fi
+
+if [ -z ${LW_DOCKER_IDS} ]; then
+    echo "LW_DOCKER_IDS needs to be set"
+fi
+
 pc_id=${PC_DOCKER_IDS[0]}
 
 curl_opts="--key /etc/keys/machine.privkey --cert /etc/keys/machine.crt --capath /etc/ssl/certs/ --silent"
 
 function photon_login() {
-   photon -n target login -u $USERNAME -p $PASSWORD > /dev/null
+    photon -n target login -u $USERNAME -p $PASSWORD > /dev/null
 }
 
 function update_membership_quorum() {
@@ -67,6 +91,7 @@ function verify_quorum() {
             return
         fi
         attempts=$[$attempts+1]
+        sleep 5
     done
 
     if [ $attempts -eq $total_attempts ]; then
@@ -75,25 +100,23 @@ function verify_quorum() {
     fi
 }
 
-function stop_hosts() {
-    echo "Stopping all VMs on all CLOUD only hosts"
+function stop_vms() {
+    echo "Stopping all VMs on each host"
     host_ids=$(photon -n host list | awk '{ print $1 }')
     for host_id in $host_ids; do
-        host_type=$(photon -n host show $host_id | awk '{ print $5 }')
-        if [ $host_type == "CLOUD" ]; then
-            vm_ids=$(photon -n host list-vms $host_id | awk '{print $1}')
-            for vm_id in $vm_ids; do
-                vm_state=$(photon -n vm show $vm_id)
-                if [[ $vm_state == *"STARTED"* ]]; then
-                    echo "Stopping vm $vm_id"
-                    photon -n vm stop $vm_id > /dev/null
-                fi
-            done
-        fi
+        photon_login
+        vm_ids=$(photon -n host list-vms $host_id | awk '{print $1}')
+        for vm_id in $vm_ids; do
+            vm_state=$(photon -n vm show $vm_id)
+            if [[ $vm_state == *"STARTED"* ]]; then
+                echo "Stopping vm $vm_id"
+                photon -n vm stop $vm_id > /dev/null
+            fi
+        done
     done
 }
 
-function wait_for_bg_tasks() {
+function wait_for_incomplete_tasks() {
     echo "Waiting for incomplete tasks to finish"
     task_ids=$(photon -n task list | awk '{print $1}')
     started_tasks=()
@@ -107,7 +130,7 @@ function wait_for_bg_tasks() {
     attempts=1
     total_attempts=300
     while [ $attempts -lt $total_attempts ] && [ ${#started_tasks[@]} -gt 0 ]; do
-        photon -n target login -u $username -p $password > /dev/null
+        photon_login
         if [  ${#started_tasks[@]} -eq 0 ]; then
             break;
         fi
@@ -142,6 +165,7 @@ function verify_xenon_stopped() {
             return
         fi
         attempts=$[$attempts+1]
+        sleep 5
     done
 
     if [ $attempts -eq $total_attempts ]; then
@@ -156,20 +180,20 @@ function verify_lightwave_up() {
     reachable="false"
     total_attempts=50
     while [ $attempts -lt $total_attempts ] && [ $reachable != "true" ]; do
-      http_code=$(docker exec -t $lw_container curl -I -so /dev/null -w "%{response_code}" -s -X GET -k https://127.0.0.1) || true
-      # The curl returns 000 when it fails to connect to the lightwave server
-      if [ "$http_code" == "000" ]; then
-        echo "Waiting for Lightwave server to startup at $lw_container (attempt $attempts/$total_attempts), will try again."
-        attempts=$[$attempts+1]
-        sleep 5
-      else
-        reachable="true"
-        return
-      fi
+        http_code=$(docker exec -t $lw_container curl -I -so /dev/null -w "%{response_code}" -s -X GET -k https://127.0.0.1) || true
+        # The curl returns 000 when it fails to connect to the Lightwave server
+        if [ "$http_code" == "000" ]; then
+            echo "Waiting for Lightwave server to startup at $lw_container (attempt $attempts/$total_attempts), will try again."
+            attempts=$[$attempts+1]
+            sleep 5
+        else
+            reachable="true"
+            return
+        fi
     done
     if [ $attempts -eq $total_attempts ]; then
-      echo "Could not connect to Lightwave REST client at $lw_container after $total_attempts attempts"
-      exit 1
+        echo "Could not connect to Lightwave REST client at $lw_container after $total_attempts attempts"
+        exit 1
     fi
 }
 
@@ -178,38 +202,38 @@ function verify_pc_available() {
     attempts=1
     reachable="false"
     total_attempts=50
-    while [ $attempts -lt $total_attempts ]; do
-      http_code=$(docker exec -t $pc_container curl -I -so /dev/null -w "%{response_code}" -s -X GET -k https://127.0.0.1:9000/available) || true
-      # The curl returns 000 when it fails to connect to the lightwave server
-      if [ "$http_code" == "000" ]; then
-        echo "Waiting for Photon Controller API server to startup at $pc_container (attempt $attempts/$total_attempts),  will try again."
-        attempts=$[$attempts+1]
-        sleep 5
-      else
-        reachable="true"
-        return
-      fi
+    while [ $attempts -lt $total_attempts ] && [ $reachable != "true" ]; do
+        http_code=$(docker exec -t $pc_container curl -I -so /dev/null -w "%{response_code}" -s -X GET -k https://127.0.0.1:9000/available) || true
+        # The curl returns 000 when it fails to connect to the Photon Controller API server
+        if [ "$http_code" == "000" ]; then
+            echo "Waiting for Photon Controller API server to startup at $pc_container (attempt $attempts/$total_attempts),  will try again."
+            attempts=$[$attempts+1]
+            sleep 5
+        else
+            reachable="true"
+            return
+        fi
     done
     if [ $attempts -eq $total_attempts ]; then
-      echo "Could not connect to Photon Controller API server at $pc_container after $total_attempts attempts"
-      exit 1
+        echo "Could not connect to Photon Controller API server at $pc_container after $total_attempts attempts"
+        exit 1
     fi
 }
 
 if [[ $operation == "shutdown" ]]; then
     photon_login
-    # Examines all CLOUD only hosts and stops all the VMs
-    stop_hosts
+    # Examines and stops all the VMs
+    stop_vms
 
     photon_login
     # Pause Photon Controller
     photon -n deployment pause > /dev/null
 
-    wait_for_bg_tasks
+    wait_for_incomplete_tasks
 
     echo "Stopping internal services"
     # Prevent synchronization issues during shutdown and startup
-    update_membership_quorum 3
+    update_membership_quorum ${#PC_DOCKER_IDS[@]}
     for pc_ip in ${PC_IPS[*]}; do
         docker exec $pc_id curl $curl_opts https://$pc_ip:19000/core/management -X "DELETE"
         verify_xenon_stopped $pc_ip
@@ -218,8 +242,8 @@ if [[ $operation == "shutdown" ]]; then
     # Update Photon Controller config for restart
     for folder in ${PC_CONFIG_DIRS[*]}; do
         config_file=$folder/photon-controller-core.yml
-        if ! grep -q "quorumSize: 3" $config_file; then
-          echo "quorumSize: 3" >> $config_file
+        if ! grep -q "quorumSize: ${#PC_DOCKER_IDS[@]}" $config_file; then
+            echo "quorumSize: ${#PC_DOCKER_IDS[@]}" >> $config_file
         fi
     done
 
@@ -242,6 +266,7 @@ fi
 if [[ $operation == "turnon" ]]; then
     docker start $HAPROXY_DOCKER_ID
     echo "Starting Lightwave"
+
     for lw_id in ${LW_DOCKER_IDS[*]}; do
         docker start $lw_id
         verify_lightwave_up $lw_id
@@ -254,14 +279,15 @@ if [[ $operation == "turnon" ]]; then
     done
 
     echo "Wait for all nodes to start and synchronize among all 3 nodes"
-    sleep 30
+    sleep 20
 
     for pc_ip in ${PC_IPS[*]}; do
-        verify_quorum $pc_ip 3
+        verify_quorum $pc_ip ${#PC_DOCKER_IDS[@]}
     done
 
     # Revert changes to quorum membership
-    update_membership_quorum 2
+    majority=`expr ${#PC_DOCKER_IDS[@]} / 2 + 1`
+    update_membership_quorum $majority
 
     photon_login
     photon -n deployment resume > /dev/null
