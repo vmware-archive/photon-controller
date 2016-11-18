@@ -143,6 +143,25 @@ public class TaskXenonBackend implements TaskBackend, StepBackend {
   }
 
   @Override
+  public TaskEntity createQueuedTask(String entityId, String entityKind, Operation operation) {
+    //For cluster user only. pass in the task entity id and kind
+    TaskService.State taskServiceState = TaskUtils.assembleBackEndTask(
+        DateTime.now().toDate(),
+        TaskService.State.TaskState.QUEUED,
+        operation.toString(),
+        entityId,
+        entityKind,
+        null,
+        null);
+
+    com.vmware.xenon.common.Operation result = xenonClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
+    TaskService.State createdState = result.getBody(TaskService.State.class);
+    TaskEntity task = TaskUtils.convertBackEndToMiddleEnd(createdState);
+    logger.info("created task: {}", task);
+    return task;
+  }
+
+  @Override
   public TaskEntity createCompletedTask(BaseEntity entity, Operation operation) {
     String entityId = null;
     String entityKind = null;
@@ -161,6 +180,25 @@ public class TaskXenonBackend implements TaskBackend, StepBackend {
       }
     }
 
+    TaskService.State taskServiceState = TaskUtils.assembleBackEndTask(
+        DateTime.now().toDate(),
+        TaskService.State.TaskState.COMPLETED,
+        operation.toString(),
+        entityId,
+        entityKind,
+        projectId,
+        null);
+
+    com.vmware.xenon.common.Operation result = xenonClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
+    TaskService.State createdState = result.getBody(TaskService.State.class);
+    TaskEntity task = TaskUtils.convertBackEndToMiddleEnd(createdState);
+    logger.info("created task: {}", task);
+    return task;
+  }
+
+  @Override
+  public TaskEntity createCompletedTask(String entityId, String entityKind, String projectId, Operation operation) {
+    //For cluster user only. pass in the task entity id and kind
     TaskService.State taskServiceState = TaskUtils.assembleBackEndTask(
         DateTime.now().toDate(),
         TaskService.State.TaskState.COMPLETED,
