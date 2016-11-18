@@ -811,7 +811,7 @@ public class HostServiceTest {
 
       // Patch it to READY state and test that getHostConfig() got initiated.
       HostService.State patchState = new HostService.State();
-      patchState.state = HostState.READY;
+      patchState.syncHostConfigTrigger = true;
       testEnvironment.sendPatchAndWait(createdState.documentSelfLink, patchState);
 
       assertThat(latch.await(5, TimeUnit.SECONDS), CoreMatchers.is(true));
