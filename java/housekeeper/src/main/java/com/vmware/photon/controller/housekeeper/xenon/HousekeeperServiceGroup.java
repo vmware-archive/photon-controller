@@ -66,7 +66,6 @@ public class HousekeeperServiceGroup
           ImageCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
   };
 
-  private static final String TRIGGER_SERVICE_SUFFIX = "/singleton";
   private static final String HOUSEKEEPER_URI = "housekeeper";
   private static final Class[] FACTORY_SERVICES = {
       ImageReplicatorServiceFactory.class,
@@ -84,6 +83,7 @@ public class HousekeeperServiceGroup
   public static final Map<Class<? extends Service>, Supplier<FactoryService>> FACTORY_SERVICES_MAP =
           ImmutableMap.<Class<? extends Service>, Supplier<FactoryService>>builder()
                   .put(SubnetIPLeaseSyncService.class, SubnetIPLeaseSyncService::createFactory)
+                  .put(HostsConfigSyncService.class, HostsConfigSyncService::createFactory)
                   .build();
 
   private PhotonControllerXenonHost photonControllerXenonHost;
@@ -157,6 +157,7 @@ public class HousekeeperServiceGroup
         && photonControllerXenonHost.checkServiceAvailable(ImageDatastoreSweeperServiceFactory.SELF_LINK)
         && photonControllerXenonHost.checkServiceAvailable(SubnetIPLeaseSyncService.FACTORY_LINK)
         && photonControllerXenonHost.checkServiceAvailable(SubnetIPLeaseSyncTriggerService.SELF_LINK)
+        && photonControllerXenonHost.checkServiceAvailable(HostsConfigSyncService.FACTORY_LINK)
 
         && photonControllerXenonHost.checkServiceAvailable(TaskTriggerFactoryService.SELF_LINK)
         && photonControllerXenonHost.checkServiceAvailable(getTriggerCleanerServiceUri())
