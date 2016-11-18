@@ -13,19 +13,19 @@
 
 package com.vmware.photon.controller.apibackend;
 
-import com.vmware.photon.controller.apibackend.tasks.ConfigureRoutingTaskService;
-import com.vmware.photon.controller.apibackend.tasks.ConnectVmToSwitchTaskService;
-import com.vmware.photon.controller.apibackend.tasks.CreateLogicalRouterTaskService;
-import com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService;
-import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalPortsTaskService;
-import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalRouterTaskService;
-import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalSwitchTaskService;
-import com.vmware.photon.controller.apibackend.tasks.DisconnectVmFromSwitchTaskService;
-import com.vmware.photon.controller.apibackend.workflows.AssignFloatingIpToVmWorkflowService;
-import com.vmware.photon.controller.apibackend.workflows.ConfigureDhcpWorkflowService;
-import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
-import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
-import com.vmware.photon.controller.apibackend.workflows.RemoveFloatingIpFromVmWorkflowService;
+import com.vmware.photon.controller.apibackend.tasks.network.virtual.ConnectVmToSwitchTaskService;
+import com.vmware.photon.controller.apibackend.tasks.network.virtual.CreateLogicalPortsTaskService;
+import com.vmware.photon.controller.apibackend.tasks.network.virtual.CreateLogicalRouterTaskService;
+import com.vmware.photon.controller.apibackend.tasks.network.virtual.CreateLogicalSwitchTaskService;
+import com.vmware.photon.controller.apibackend.tasks.network.virtual.DeleteLogicalPortsTaskService;
+import com.vmware.photon.controller.apibackend.tasks.network.virtual.DeleteLogicalRouterTaskService;
+import com.vmware.photon.controller.apibackend.tasks.network.virtual.DeleteLogicalSwitchTaskService;
+import com.vmware.photon.controller.apibackend.tasks.network.virtual.DisconnectVmFromSwitchTaskService;
+import com.vmware.photon.controller.apibackend.workflows.network.virtual.AssignFloatingIpToVmWorkflowService;
+import com.vmware.photon.controller.apibackend.workflows.network.virtual.ConfigureDhcpWorkflowService;
+import com.vmware.photon.controller.apibackend.workflows.network.virtual.CreateVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.apibackend.workflows.network.virtual.DeleteVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.apibackend.workflows.network.virtual.ReleaseFloatingIpFromVmWorkflowService;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
@@ -47,7 +47,7 @@ public class ApiBackendFactory {
       // tasks
       .put(CreateLogicalRouterTaskService.class, CreateLogicalRouterTaskService::createFactory)
       .put(CreateLogicalSwitchTaskService.class, CreateLogicalSwitchTaskService::createFactory)
-      .put(ConfigureRoutingTaskService.class, ConfigureRoutingTaskService::createFactory)
+      .put(CreateLogicalPortsTaskService.class, CreateLogicalPortsTaskService::createFactory)
       .put(DeleteLogicalSwitchTaskService.class, DeleteLogicalSwitchTaskService::createFactory)
       .put(DeleteLogicalRouterTaskService.class, DeleteLogicalRouterTaskService::createFactory)
       .put(DeleteLogicalPortsTaskService.class, DeleteLogicalPortsTaskService::createFactory)
@@ -59,6 +59,6 @@ public class ApiBackendFactory {
       .put(DeleteVirtualNetworkWorkflowService.class, DeleteVirtualNetworkWorkflowService::createFactory)
       .put(ConfigureDhcpWorkflowService.class, ConfigureDhcpWorkflowService::createFactory)
       .put(AssignFloatingIpToVmWorkflowService.class, AssignFloatingIpToVmWorkflowService::createFactory)
-      .put(RemoveFloatingIpFromVmWorkflowService.class, RemoveFloatingIpFromVmWorkflowService::createFactory)
+      .put(ReleaseFloatingIpFromVmWorkflowService.class, ReleaseFloatingIpFromVmWorkflowService::createFactory)
       .build();
 }

@@ -18,9 +18,9 @@ import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRest
 import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
-import com.vmware.photon.controller.apibackend.servicedocuments.ConnectVmToSwitchTask;
-import com.vmware.photon.controller.apibackend.servicedocuments.ConnectVmToSwitchTask.TaskState;
-import com.vmware.photon.controller.apibackend.tasks.ConnectVmToSwitchTaskService;
+import com.vmware.photon.controller.apibackend.servicedocuments.network.virtual.ConnectVmToSwitchTask;
+import com.vmware.photon.controller.apibackend.servicedocuments.network.virtual.ConnectVmToSwitchTask.TaskState;
+import com.vmware.photon.controller.apibackend.tasks.network.virtual.ConnectVmToSwitchTaskService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;

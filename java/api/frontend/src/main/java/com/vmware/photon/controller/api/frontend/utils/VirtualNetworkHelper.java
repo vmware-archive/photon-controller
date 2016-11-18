@@ -20,10 +20,10 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidNetw
 import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.SubnetState;
-import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
-import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
-import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
-import com.vmware.photon.controller.apibackend.workflows.RemoveFloatingIpFromVmWorkflowService;
+import com.vmware.photon.controller.apibackend.servicedocuments.network.virtual.DeleteVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.apibackend.servicedocuments.network.virtual.ReleaseFloatingIpFromVmWorkflowDocument;
+import com.vmware.photon.controller.apibackend.workflows.network.virtual.DeleteVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.apibackend.workflows.network.virtual.ReleaseFloatingIpFromVmWorkflowService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -117,12 +117,12 @@ public class VirtualNetworkHelper implements NetworkHelper {
 
   @Override
   public void releaseFloatingIp(String subnetId, String vmId) throws ExternalException {
-    RemoveFloatingIpFromVmWorkflowDocument state = new RemoveFloatingIpFromVmWorkflowDocument();
+    ReleaseFloatingIpFromVmWorkflowDocument state = new ReleaseFloatingIpFromVmWorkflowDocument();
     state.networkId = subnetId;
     state.vmId = vmId;
 
     photonControllerXenonRestClient.post(
-        RemoveFloatingIpFromVmWorkflowService.FACTORY_LINK,
+        ReleaseFloatingIpFromVmWorkflowService.FACTORY_LINK,
         state);
   }
 

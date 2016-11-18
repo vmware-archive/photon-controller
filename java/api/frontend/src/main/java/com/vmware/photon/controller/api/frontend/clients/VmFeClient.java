@@ -33,10 +33,10 @@ import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
 import com.vmware.photon.controller.api.model.VmFloatingIpSpec;
-import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIpToVmWorkflowDocument;
-import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
-import com.vmware.photon.controller.apibackend.workflows.AssignFloatingIpToVmWorkflowService;
-import com.vmware.photon.controller.apibackend.workflows.RemoveFloatingIpFromVmWorkflowService;
+import com.vmware.photon.controller.apibackend.servicedocuments.network.virtual.AssignFloatingIpToVmWorkflowDocument;
+import com.vmware.photon.controller.apibackend.servicedocuments.network.virtual.ReleaseFloatingIpFromVmWorkflowDocument;
+import com.vmware.photon.controller.apibackend.workflows.network.virtual.AssignFloatingIpToVmWorkflowService;
+import com.vmware.photon.controller.apibackend.workflows.network.virtual.ReleaseFloatingIpFromVmWorkflowService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 
 import com.google.common.base.Optional;
@@ -243,13 +243,13 @@ public class VmFeClient {
       throw new FloatingIpNotAcquiredException(vmId);
     }
 
-    RemoveFloatingIpFromVmWorkflowDocument startState = new RemoveFloatingIpFromVmWorkflowDocument();
+    ReleaseFloatingIpFromVmWorkflowDocument startState = new ReleaseFloatingIpFromVmWorkflowDocument();
     startState.vmId = vmId;
     startState.networkId = networkIdWithFloatingIP;
 
-    RemoveFloatingIpFromVmWorkflowDocument finalState = backendClient.post(
-        RemoveFloatingIpFromVmWorkflowService.FACTORY_LINK,
-        startState).getBody(RemoveFloatingIpFromVmWorkflowDocument.class);
+    ReleaseFloatingIpFromVmWorkflowDocument finalState = backendClient.post(
+        ReleaseFloatingIpFromVmWorkflowService.FACTORY_LINK,
+        startState).getBody(ReleaseFloatingIpFromVmWorkflowDocument.class);
 
     return TaskUtils.convertBackEndToFrontEnd(finalState.taskServiceState);
   }
