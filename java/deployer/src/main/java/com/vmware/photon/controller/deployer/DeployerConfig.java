@@ -77,6 +77,6 @@ public class DeployerConfig {
   }
 
   public boolean isInstaller() {
-    return this.deployerContext.isInstaller();
+    return this.deployerContext.getIsInstaller();
   }
 }
