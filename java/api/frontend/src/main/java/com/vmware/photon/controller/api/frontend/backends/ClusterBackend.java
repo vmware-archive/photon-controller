@@ -92,7 +92,7 @@ public class ClusterBackend {
     checkClusterId(clusterId);
 
     // Create the steps
-    TaskEntity taskEntity = taskBackend.createQueuedTask(null, Operation.RESIZE_CLUSTER);
+    TaskEntity taskEntity = taskBackend.createQueuedTask(clusterId, Cluster.KIND, Operation.RESIZE_CLUSTER);
     StepEntity initiateStep = taskBackend.getStepBackend().createQueuedStep(
         taskEntity, Operation.RESIZE_CLUSTER_INITIATE);
 
@@ -121,7 +121,7 @@ public class ClusterBackend {
     checkClusterId(clusterId);
 
     // Create the steps
-    TaskEntity taskEntity = taskBackend.createQueuedTask(null, Operation.DELETE_CLUSTER);
+    TaskEntity taskEntity = taskBackend.createQueuedTask(clusterId, Cluster.KIND, Operation.RESIZE_CLUSTER);
     StepEntity initiateStep = taskBackend.getStepBackend().createQueuedStep(
         taskEntity, Operation.DELETE_CLUSTER_INITIATE);
 
@@ -141,7 +141,7 @@ public class ClusterBackend {
     checkClusterId(clusterId);
     // Trigger the maintenance operation and return that is has been completed.
     clusterManagerClient.triggerMaintenance(clusterId);
-    return taskBackend.createCompletedTask(null, Operation.TRIGGER_CLUSTER_MAINTENANCE);
+    return taskBackend.createCompletedTask(clusterId, Cluster.KIND, null, Operation.TRIGGER_CLUSTER_MAINTENANCE);
   }
 
   public ResourceList<Vm> findVms(String clusterId, Optional<Integer> pageSize) throws ExternalException {

@@ -48,7 +48,11 @@ public interface TaskBackend {
 
   TaskEntity createQueuedTask(BaseEntity entity, Operation operation);
 
+  TaskEntity createQueuedTask(String id, String kind, Operation operation);
+
   TaskEntity createCompletedTask(BaseEntity entity, Operation operation);
+
+  TaskEntity createCompletedTask(String entityId, String entityKind, String projectId, Operation operation);
 
   Task createCompletedTask(String entityId, String entityKind, String projectId, String operation);
 
