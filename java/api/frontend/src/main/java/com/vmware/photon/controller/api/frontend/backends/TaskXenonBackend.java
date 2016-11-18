@@ -126,20 +126,12 @@ public class TaskXenonBackend implements TaskBackend, StepBackend {
       }
     }
 
-    TaskService.State taskServiceState = TaskUtils.assembleBackEndTask(
-        DateTime.now().toDate(),
-        TaskService.State.TaskState.QUEUED,
-        operation.toString(),
-        entityId,
-        entityKind,
-        projectId,
-        null);
+    return createTaskHelper(entityId, entityKind, projectId, operation, TaskService.State.TaskState.QUEUED, null);
+  }
 
-    com.vmware.xenon.common.Operation result = xenonClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
-    TaskService.State createdState = result.getBody(TaskService.State.class);
-    TaskEntity task = TaskUtils.convertBackEndToMiddleEnd(createdState);
-    logger.info("created task: {}", task);
-    return task;
+  @Override
+  public TaskEntity createQueuedTask(String entityId, String entityKind, Operation operation) {
+    return createTaskHelper(entityId, entityKind, null, operation, TaskService.State.TaskState.QUEUED, null);
   }
 
   @Override
@@ -161,20 +153,13 @@ public class TaskXenonBackend implements TaskBackend, StepBackend {
       }
     }
 
-    TaskService.State taskServiceState = TaskUtils.assembleBackEndTask(
-        DateTime.now().toDate(),
-        TaskService.State.TaskState.COMPLETED,
-        operation.toString(),
-        entityId,
-        entityKind,
-        projectId,
-        null);
+    return createTaskHelper(entityId, entityKind, projectId, operation, TaskService.State.TaskState.COMPLETED, null);
+  }
 
-    com.vmware.xenon.common.Operation result = xenonClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
-    TaskService.State createdState = result.getBody(TaskService.State.class);
-    TaskEntity task = TaskUtils.convertBackEndToMiddleEnd(createdState);
-    logger.info("created task: {}", task);
-    return task;
+  @Override
+  public TaskEntity createCompletedTask(String entityId, String entityKind, String projectId, Operation operation) {
+    //For cluster user only. pass in the task entity id and kind
+    return createTaskHelper(entityId, entityKind, null, operation, TaskService.State.TaskState.COMPLETED, null);
   }
 
   @Override
@@ -240,20 +225,8 @@ public class TaskXenonBackend implements TaskBackend, StepBackend {
       }
     }
 
-    TaskService.State taskServiceState = TaskUtils.assembleBackEndTask(
-        currentTime,
-        taskState,
-        operation.toString(),
-        entityId,
-        entityKind,
-        projectId,
-        taskSteps);
-
-    com.vmware.xenon.common.Operation result = xenonClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
-    TaskService.State createdState = result.getBody(TaskService.State.class);
-    TaskEntity task = TaskUtils.convertBackEndToMiddleEnd(createdState);
+    TaskEntity task = createTaskHelper(entityId, entityKind, projectId, operation, taskState, taskSteps);
     task.setSteps(stepEntities); // replacing steps to retain the transient properties
-    logger.info("created task: {}", task);
     return task;
   }
 
@@ -380,6 +353,24 @@ public class TaskXenonBackend implements TaskBackend, StepBackend {
         pageSize, true);
 
     return PaginationUtils.xenonQueryResultToResourceList(TaskService.State.class, queryResult);
+  }
+
+  private TaskEntity createTaskHelper(String entityId, String entityKind, String projectId, Operation operation,
+                                      TaskService.State.TaskState state, List<TaskService.State.Step> taskSteps) {
+    TaskService.State taskServiceState = TaskUtils.assembleBackEndTask(
+        DateTime.now().toDate(),
+        state,
+        operation.toString(),
+        entityId,
+        entityKind,
+        projectId,
+        taskSteps);
+
+    com.vmware.xenon.common.Operation result = xenonClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
+    TaskService.State createdState = result.getBody(TaskService.State.class);
+    TaskEntity task = TaskUtils.convertBackEndToMiddleEnd(createdState);
+    logger.info("created task: {}", task);
+    return task;
   }
 
   @Override
