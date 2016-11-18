@@ -90,3 +90,65 @@ After running following command you can keep using same API port before.
 ```
 ./swap-old-new-deployments.sh
 ```
+
+# Turn off all CLOUD only hosts managed by Photon Controller
+
+To suspend Photon Controller to allow maintenance on the managed CLOUD only hosts requiring those
+hosts to be powered off can be done in the following script:
+
+This assumes that Photon Controller management plane and hosts with MGMT tag will continue to be on and
+the CLOUD only hosts will only have transparent changes when they are powered back up.
+
+```
+./photon-system.sh pause username password
+```
+
+The script does the following things:
+ 1. Stop all VMs running on all CLOUD only hosts.
+ 2. Pause Photon Controller, setting the plane into a read only state.
+ 3. Wait for started tasks issued to Photon Controller before the pause to finish.
+
+On successful completion, all the CLOUD only hosts are ready for maintenance operations.
+
+When the system should be resumed, with all the CLOUD only hosts, run the following script:
+```
+./photon-system.sh resume username password
+```
+
+The script resumes Photon Controller to allow changes to its state.
+Note that for some commands to succeed Photon Controller it is recommended to wait one to two minutes after it
+has resumed. This is for the periodic host health check to contact the rebooted host.
+
+# Turn off Photon Controller without losing state
+
+To turn off Photon Controller to allow maintenance on all hosts without losing state of the management plane
+add specific parameters inside the following script and run:
+```
+./photon-full-system.sh shutdown
+```
+
+The script must be run in a location that has access to:
+ - Photon Controller CLI
+ - Photon Controller containers
+ - Lightwave containers
+
+The script does the following things:
+ 1. Stops all the VMs on all Photon Controller hosts (MGMT or CLOUD)
+ 2. Pause Photon Controller, setting the plane into a read only state.
+ 3. Wait for started tasks issued to Photon Controller before the pause to finish.
+ 4. Updates Xenon to a full quorum membership to prevent synchronization issues on shutdown.
+ 5. Update each Photon Controller configuration that on startup will start Xenon with a full quorum membership.
+ 6. Stop all Photon Controller containers.
+ 7. Stop all Lightwave containers.
+
+When the system should be restored, using same parameters in the script above run the following script:
+```
+./photon-full-system.sh turnon
+```
+
+The script does the following things:
+ 1. Start all Lightwave containers.
+ 2. Start all Photon Controller containers.
+ 3. Wait for Xenon to synchronize with a full quorum membership.
+ 4. Revert the Xenon quorum membership to be the majority of nodes (n/2+1).
+ 5. Resume Photon Controller.
