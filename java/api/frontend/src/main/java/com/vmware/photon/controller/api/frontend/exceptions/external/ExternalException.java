@@ -69,7 +69,8 @@ public class ExternalException extends ApiFeException {
       return (ExternalException) t;
     }
 
-    String errorMessage = "Please contact the system administrator about request #" + LoggingUtils.getRequestId();
+    String errorMessage = "Please contact the system administrator about request #" + LoggingUtils.getRequestId()
+        + ". The error message is: " + t.getMessage();
     return new ExternalException(ErrorCode.INTERNAL_ERROR, errorMessage, new HashMap<String, String>());
   }
 
