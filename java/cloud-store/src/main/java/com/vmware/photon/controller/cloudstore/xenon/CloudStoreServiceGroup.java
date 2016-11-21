@@ -81,6 +81,7 @@ import java.util.function.Supplier;
 public class CloudStoreServiceGroup
     implements XenonServiceGroup {
 
+  @SuppressWarnings("rawtypes")
   public static final Class[] FACTORY_SERVICES = {
       FlavorServiceFactory.class,
       ImageServiceFactory.class,

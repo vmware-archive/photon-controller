@@ -419,9 +419,8 @@ public class Main {
         com.vmware.photon.controller.core.Main.HostManagementVmAddressValidatorFactoryImpl();
 
     final ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(listeningExecutorService,
-        httpClient, apiFeServerSet, cloudStoreServerSet,
-        Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), CLUSTER_SCRIPTS_DIRECTORY).toString(),
-        deployerConfig.getDeployerContext().isAuthEnabled());
+        httpClient, cloudStoreServerSet,
+        Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), CLUSTER_SCRIPTS_DIRECTORY).toString());
 
     return new DeployerServiceGroup(deployerConfig.getDeployerContext(),
         apiClientFactory, deployerConfig.getContainersConfig(), listeningExecutorService,

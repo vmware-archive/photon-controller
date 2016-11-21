@@ -30,7 +30,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.host.gen.CopyImageResponse;
-import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.copy_image_call;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
@@ -277,11 +277,11 @@ public class ImageCopyService extends StatefulService {
       return;
     }
 
-    AsyncMethodCallback callback = new AsyncMethodCallback() {
+    AsyncMethodCallback<copy_image_call> callback = new AsyncMethodCallback<copy_image_call>() {
       @Override
-      public void onComplete(Object o) {
+      public void onComplete(copy_image_call callback) {
         try {
-          CopyImageResponse r = ((Host.AsyncSSLClient.copy_image_call) o).getResult();
+          CopyImageResponse r = callback.getResult();
           ServiceUtils.logInfo(ImageCopyService.this, "CopyImageResponse %s", r);
           switch (r.getResult()) {
             case OK:

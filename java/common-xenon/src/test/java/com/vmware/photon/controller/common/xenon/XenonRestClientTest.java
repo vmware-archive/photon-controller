@@ -703,11 +703,11 @@ public class XenonRestClientTest {
     public void testQueryOfCreatedDocumentWithInClauseTerms() throws Throwable {
       Map<String, ExampleService.ExampleServiceState> exampleServiceStateMap = new HashMap<>();
       List<Set<String>> tagSets = Arrays.asList(
-          new HashSet(Arrays.asList(new String[] {})),
-          new HashSet(Arrays.asList(new String[] { "tag3", "tag4" })),
-          new HashSet(Arrays.asList(new String[] { "tag1" })),
-          new HashSet(Arrays.asList(new String[] { "tag2", "tag3" })),
-          new HashSet(Arrays.asList(new String[] { "tag1", "tag2", "tag3" }))
+          new HashSet<>(Arrays.asList(new String[] {})),
+          new HashSet<>(Arrays.asList(new String[] { "tag3", "tag4" })),
+          new HashSet<>(Arrays.asList(new String[] { "tag1" })),
+          new HashSet<>(Arrays.asList(new String[] { "tag2", "tag3" })),
+          new HashSet<>(Arrays.asList(new String[] { "tag1", "tag2", "tag3" }))
       );
       for (int i = 0; i < 5; i++) {
         ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
@@ -743,7 +743,7 @@ public class XenonRestClientTest {
       Set<String> actualDocumentNames = result.documents.values().stream()
           .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
           .collect(Collectors.toSet());
-      Set<String> expectedDocumentNames = new HashSet(Arrays.asList(new String[] {"test2", "test3", "test4" }));
+      Set<String> expectedDocumentNames = new HashSet<>(Arrays.asList(new String[] {"test2", "test3", "test4" }));
       assertThat(CollectionUtils.isEqualCollection(actualDocumentNames, expectedDocumentNames), is(true));
     }
 

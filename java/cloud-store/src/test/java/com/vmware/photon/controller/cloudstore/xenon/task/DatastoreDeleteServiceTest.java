@@ -28,6 +28,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -319,7 +320,8 @@ public class DatastoreDeleteServiceTest {
       }
     }
 
-    private Long getTotalDocumentCount(TestEnvironment environment, Class kind) throws Throwable {
+    private Long getTotalDocumentCount(TestEnvironment environment, Class<? extends ServiceDocument> kind)
+            throws Throwable {
       QueryTask queryTask = QueryTask.Builder.createDirectTask()
           .setQuery(QueryTask.Query.Builder.create()
               .addKindFieldClause(kind)

@@ -23,10 +23,10 @@ import javax.inject.Provider;
  * instead of default constructors.
  */
 public class GuiceValueInstantiator extends ValueInstantiator {
-  private final Provider provider;
+  private final Provider<?> provider;
   private final String valueTypeDesc;
 
-  public GuiceValueInstantiator(Class clazz, Provider provider) {
+  public GuiceValueInstantiator(Class<?> clazz, Provider<?> provider) {
     this.provider = provider;
     this.valueTypeDesc = clazz.getName();
   }

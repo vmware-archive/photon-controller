@@ -96,7 +96,6 @@ import com.hubspot.dropwizard.guice.GuiceBundle;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.configuration.ConfigurationException;
-import io.dropwizard.hibernate.HibernateBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.reflections.Reflections;
@@ -118,7 +117,6 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This is the main API Front End Service. When an instance is launched, this is the boot class and the .run
@@ -127,11 +125,9 @@ import java.util.concurrent.TimeUnit;
 public class ApiFeService extends Application<ApiFeStaticConfiguration> {
 
   public static final String SWAGGER_VERSION = "1.2";
-  private static final long retryIntervalMsec = TimeUnit.SECONDS.toMillis(30);
   private static ApiFeConfiguration apiFeConfiguration;
   private Injector injector;
   private ApiFeModule apiModule;
-  private HibernateBundle<ApiFeStaticConfiguration> hibernateBundle;
   private static ServiceHost xenonHost;
   private static SSLContext sslContext;
 
@@ -330,7 +326,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     Set<Class<? extends Object>> classes = reflections.getSubTypesOf(Object.class);
 
     Set<String> packages = new HashSet<>();
-    for (Class classInstance : classes) {
+    for (Class<?> classInstance : classes) {
       String packageName = classInstance.getPackage().getName();
       if (!packagesToExclude.contains(packageName)) {
         packages.add(classInstance.getPackage().getName());

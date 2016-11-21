@@ -24,8 +24,6 @@ import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.collect.ImmutableMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -52,7 +50,6 @@ public class QueryTaskUtils {
    * stores the execution stage.
    */
   protected static final String STAGE_FIELD_NAME_FORMAT = "%s.stage";
-  private static final Logger logger = LoggerFactory.getLogger(QueryTaskUtils.class);
 
   /**
    * This method builds a query specification which will return service instances
@@ -64,7 +61,7 @@ public class QueryTaskUtils {
    */
   public static QueryTask.QuerySpecification buildChildServiceQuerySpec(
       final String selfLink,
-      final Class childClass) {
+      final Class<?> childClass) {
     return buildChildServiceQuerySpec(selfLink, childClass, new QueryTask.Query[0]);
   }
 
@@ -79,7 +76,7 @@ public class QueryTaskUtils {
    */
   public static QueryTask.QuerySpecification buildChildServiceQuerySpec(
       final String selfLink,
-      final Class childClass,
+      final Class<?> childClass,
       final QueryTask.Query... additionalClauses) {
     checkArgument(childClass != null, "childClass cannot be null");
     checkArgument(additionalClauses != null, "additionalClauses cannot be null");
@@ -105,7 +102,7 @@ public class QueryTaskUtils {
    */
   public static QueryTask.QuerySpecification buildChildServiceTaskStatusQuerySpec(
       final String selfLink,
-      final Class childClass,
+      final Class<?> childClass,
       final TaskState.TaskStage... stages) {
     checkArgument(stages != null && stages.length >= 1, "stages.length must be >= 1");
 
@@ -126,7 +123,7 @@ public class QueryTaskUtils {
    * @return
    */
   public static QueryTask.QuerySpecification buildTaskStatusQuerySpec(
-      final Class taskClass,
+      final Class<?> taskClass,
       final TaskState.TaskStage... stages) {
     checkArgument(stages != null && stages.length >= 1, "stages.length must be >= 1");
 
@@ -263,7 +260,7 @@ public class QueryTaskUtils {
    * @param terms
    * @return
    */
-  public static QueryTask.QuerySpecification buildQuerySpec(Class documentType, ImmutableMap<String, String> terms) {
+  public static QueryTask.QuerySpecification buildQuerySpec(Class<?> documentType, ImmutableMap<String, String> terms) {
     return buildQuerySpec(documentType, terms, null);
   }
 
@@ -278,7 +275,7 @@ public class QueryTaskUtils {
    * @param inClauseTerms
    * @return
    */
-  public static QueryTask.QuerySpecification buildQuerySpec(Class documentType, ImmutableMap<String, String> terms,
+  public static QueryTask.QuerySpecification buildQuerySpec(Class<?> documentType, ImmutableMap<String, String> terms,
                                                             ImmutableMap<String, List<String>> inClauseTerms) {
     checkNotNull(documentType, "Cannot build query spec for unspecified documentType");
     QueryTask.QuerySpecification spec = new QueryTask.QuerySpecification();
@@ -322,7 +319,7 @@ public class QueryTaskUtils {
    * @return
    */
   private static QueryTask.QuerySpecification buildQuerySpec(
-      final Class childClass,
+      final Class<?> childClass,
       final QueryTask.Query... additionalClauses) {
     QueryTask.Query kindClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
@@ -374,7 +371,7 @@ public class QueryTaskUtils {
    * @param childClass
    * @return
    */
-  private static String findStageFieldName(final Class childClass) {
+  private static String findStageFieldName(final Class<?> childClass) {
     for (Field field : childClass.getFields()) {
       if (TaskState.class.isAssignableFrom(field.getType())) {
         return field.getName();

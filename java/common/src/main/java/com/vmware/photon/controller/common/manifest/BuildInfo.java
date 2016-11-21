@@ -52,7 +52,7 @@ public class BuildInfo {
    * @param clazz class that resides in the Jar containing the build info manifest.
    * @return parsed build info attributes.
    */
-  public static BuildInfo get(Class clazz) {
+  public static BuildInfo get(Class<?> clazz) {
     try {
       URL resource = clazz.getResource(clazz.getSimpleName() + ".class");
       if (resource != null) {
@@ -79,11 +79,6 @@ public class BuildInfo {
       logger.warn("Could not bind manifest", e);
     }
     return new BuildInfo(null, null, null);
-  }
-
-  private static String getValue(Attributes attributes, Attributes.Name name, String defaultValue) {
-    String result = attributes.getValue(name);
-    return result != null ? result : defaultValue;
   }
 
   public String getVersion() {

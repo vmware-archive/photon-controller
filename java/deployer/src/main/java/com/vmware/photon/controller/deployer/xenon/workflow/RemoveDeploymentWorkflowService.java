@@ -799,7 +799,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
     callback.onSuccess(null);
   }
 
-  private void deleteXenonEntities(Class entityClass) {
+  private void deleteXenonEntities(Class<?> entityClass) {
 
     sendRequest(Operation
         .createPost(UriUtils.buildBroadcastRequestUri(
@@ -839,7 +839,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
         .sendWith(this);
   }
 
-  private QueryTask.QuerySpecification buildQuerySpecification(Class xenonEntityClass) {
+  private QueryTask.QuerySpecification buildQuerySpecification(Class<?> xenonEntityClass) {
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)

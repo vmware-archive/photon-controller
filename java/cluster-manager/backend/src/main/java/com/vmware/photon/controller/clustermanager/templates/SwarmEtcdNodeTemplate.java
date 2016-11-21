@@ -58,7 +58,7 @@ public class SwarmEtcdNodeTemplate implements NodeTemplate {
     String cidrSignature = new SubnetUtils(ipAddress, netmask).getInfo().getCidrSignature();
     String etcdParameters = createEtcdParameters(etcdIps);
 
-    Map<String, String> parameters = new HashMap();
+    Map<String, String> parameters = new HashMap<>();
     parameters.put("$DNS", "DNS=" + dns);
     parameters.put("$GATEWAY", gateway);
     parameters.put("$ETCD_ID", Integer.toString(nodeIndex));
@@ -89,7 +89,7 @@ public class SwarmEtcdNodeTemplate implements NodeTemplate {
     Preconditions.checkNotNull(etcdAddresses, "etcdAddresses cannot be null");
     Preconditions.checkArgument(etcdAddresses.size() > 0, "etcdAddresses should contain at least one address");
 
-    Map<String, String> properties = new HashMap();
+    Map<String, String> properties = new HashMap<>();
     properties.put(DNS_PROPERTY, dns);
     properties.put(GATEWAY_PROPERTY, gateway);
     properties.put(NETMASK_PROPERTY, netmask);

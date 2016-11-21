@@ -40,7 +40,7 @@ import java.util.Arrays;
  * @param <T> Generic type which extends TaskState class.
  * @param <E> Generic type which extends Enum class.
  */
-public abstract class BaseWorkflowService <S extends ServiceDocument, T extends TaskState, E extends Enum>
+public abstract class BaseWorkflowService <S extends ServiceDocument, T extends TaskState, E extends Enum<?>>
     extends StatefulService {
 
   protected final Class<T> taskStateType;

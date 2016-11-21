@@ -35,7 +35,7 @@ import java.util.Set;
  * This class provides utilities to handle reflections.
  */
 public class ReflectionUtils {
-  public static List<String> getAttributeNamesWithAnnotation(Class annotatedClassType, Class annotationType) {
+  public static List<String> getAttributeNamesWithAnnotation(Class<?> annotatedClassType, Class<?> annotationType) {
     List<String> attributes = new ArrayList<>();
     for (Field field : annotatedClassType.getDeclaredFields()) {
       for (Annotation annotation : field.getDeclaredAnnotations()) {

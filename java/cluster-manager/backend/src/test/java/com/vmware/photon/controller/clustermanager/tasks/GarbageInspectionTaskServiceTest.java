@@ -524,7 +524,7 @@ public class GarbageInspectionTaskServiceTest {
     }
 
     private void mockKubernetes() throws IOException {
-      final Set<String> nodeNames = new HashSet();
+      final Set<String> nodeNames = new HashSet<>();
       nodeNames.add("activeVm");
 
       doAnswer(invocation -> {

@@ -44,7 +44,7 @@ public class MarathonNodeTemplate implements NodeTemplate {
 
     List<String> zookeeperIps = NodeTemplateUtils.deserializeAddressList(properties.get(ZOOKEEPER_IPS_PROPERTY));
 
-    Map<String, String> parameters = new HashMap();
+    Map<String, String> parameters = new HashMap<>();
     parameters.put("$ZK_QUORUM", NodeTemplateUtils.createZookeeperQuorumString(zookeeperIps));
     parameters.put("$LOCAL_HOSTNAME", getVmName(properties));
 
@@ -65,7 +65,7 @@ public class MarathonNodeTemplate implements NodeTemplate {
     Preconditions.checkNotNull(zkAddresses, "zkAddresses cannot be null");
     Preconditions.checkArgument(zkAddresses.size() > 0, "zkAddresses should contain at least one address");
 
-    Map<String, String> properties = new HashMap();
+    Map<String, String> properties = new HashMap<>();
     properties.put(ZOOKEEPER_IPS_PROPERTY, NodeTemplateUtils.serializeAddressList(zkAddresses));
 
     return properties;

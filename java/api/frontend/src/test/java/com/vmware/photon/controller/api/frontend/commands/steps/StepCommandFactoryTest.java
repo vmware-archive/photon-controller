@@ -85,7 +85,7 @@ public class StepCommandFactoryTest {
    * @throws InternalException
    */
   @Test(dataProvider = "CreateCommand")
-  public void testCreateCommand(Operation operation, Class commandClass) throws InternalException {
+  public void testCreateCommand(Operation operation, Class<?> commandClass) throws InternalException {
     step.setOperation(operation);
     StepCommand stepCommand = stepCommandFactory.createCommand(taskCommand, step);
     assertThat(stepCommand.getClass().isAssignableFrom(commandClass), is(true));

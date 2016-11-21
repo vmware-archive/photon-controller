@@ -71,8 +71,8 @@ public class StatusFeClientTest {
   private StatusFeClient client;
 
   private List<ServerSet> singleInstanceServerSets;
-  private List<ClientPool> singleInstanceClientPools;
-  private List<ClientProxy> singleInstanceClientProxies;
+  private List<ClientPool<?>> singleInstanceClientPools;
+  private List<ClientProxy<?>> singleInstanceClientProxies;
 
   private List<StatusProvider> photonControllerClients;
 

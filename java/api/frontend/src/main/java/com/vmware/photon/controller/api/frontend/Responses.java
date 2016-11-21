@@ -136,7 +136,7 @@ public class Responses {
     // error response flow
     StringBuilder errorMessage = new StringBuilder();
     boolean firstPass = true;
-    for (ConstraintViolation error : e.getConstraintViolations()) {
+    for (ConstraintViolation<?> error : e.getConstraintViolations()) {
       if (!firstPass) {
         errorMessage.append(", ");
       }

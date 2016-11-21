@@ -86,6 +86,7 @@ import com.vmware.photon.controller.deployer.xenon.workflow.FinalizeDeploymentMi
 import com.vmware.photon.controller.deployer.xenon.workflow.InitializeDeploymentMigrationWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.xenon.workflow.RemoveDeploymentWorkflowFactoryService;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -398,7 +399,7 @@ public class DeployerServiceGroup
     }
   }
 
-  public Class<?>[] getFactoryServices() {
+  public Class<? extends Service>[] getFactoryServices() {
     return ObjectArrays.concat(
         FACTORY_SERVICES, ClusterManagerFactory.FACTORY_SERVICES,
         Class.class);

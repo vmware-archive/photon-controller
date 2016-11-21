@@ -21,6 +21,7 @@ import com.vmware.photon.controller.api.model.Operation;
  */
 public class InvalidOperationStateException extends ExternalException {
 
+  private static final long serialVersionUID = 1L;
   private final String entityId;
   private final String entityKind;
   private final Operation operation;

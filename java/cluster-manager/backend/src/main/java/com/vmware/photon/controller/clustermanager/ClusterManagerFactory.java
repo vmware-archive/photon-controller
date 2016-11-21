@@ -50,14 +50,13 @@ public class ClusterManagerFactory {
 
   private ListeningExecutorService listeningExecutorService;
   private CloseableHttpAsyncClient httpAsyncClient;
-  private ServerSet apiFeServerSet;
   private ServerSet cloudStoreServerSet;
   private String scriptsDirectory;
-  private boolean isAuthEnabled;
 
   /**
    * All Xenon Factory Services in Cluster-Manager backend.
    */
+  @SuppressWarnings("rawtypes")
   public static final Class[] FACTORY_SERVICES = {
       InactiveVmFactoryService.class,
       ClusterDeleteTaskFactoryService.class,
@@ -83,16 +82,12 @@ public class ClusterManagerFactory {
    */
   public ClusterManagerFactory(ListeningExecutorService listeningExecutorService,
                                CloseableHttpAsyncClient httpAsyncClient,
-                               ServerSet apiFeServerSet,
                                ServerSet cloudStoreServerSet,
-                               String scriptsDirectory,
-                               boolean isAuthEnabled) {
+                               String scriptsDirectory) {
     this.listeningExecutorService = listeningExecutorService;
     this.httpAsyncClient = httpAsyncClient;
-    this.apiFeServerSet = apiFeServerSet;
     this.cloudStoreServerSet = cloudStoreServerSet;
     this.scriptsDirectory = scriptsDirectory;
-    this.isAuthEnabled = isAuthEnabled;
   }
 
   /**

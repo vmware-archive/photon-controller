@@ -120,7 +120,7 @@ public class AuthInfoTest {
     }
 
     @Test(dataProvider = "invalidSecurityGroups")
-    public void testInvalidSecurityGroups(AuthInfo authInfo, String errorMsg, Class cls) {
+    public void testInvalidSecurityGroups(AuthInfo authInfo, String errorMsg, Class<?> cls) {
       ImmutableList<String> violations = validator.validate(authInfo, cls);
 
       assertThat(violations.size(), is(1));

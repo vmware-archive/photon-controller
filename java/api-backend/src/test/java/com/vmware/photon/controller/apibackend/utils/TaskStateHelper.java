@@ -20,7 +20,7 @@ import com.vmware.xenon.common.TaskState;
  *
  * @param <E> Generic type which extends Enum class.
  */
-public class TaskStateHelper<E extends Enum> {
+public class TaskStateHelper<E extends Enum<?>> {
 
   private final Class<E> taskSubStageType;
 

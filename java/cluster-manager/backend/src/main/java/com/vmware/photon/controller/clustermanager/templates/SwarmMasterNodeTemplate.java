@@ -45,7 +45,7 @@ public class SwarmMasterNodeTemplate implements NodeTemplate {
 
     List<String> etcdIps = NodeTemplateUtils.deserializeAddressList(properties.get(ETCD_IPS_PROPERTY));
 
-    Map<String, String> parameters = new HashMap();
+    Map<String, String> parameters = new HashMap<>();
     parameters.put("$ETCD_QUORUM", NodeTemplateUtils.createEtcdQuorumWithPortsString(etcdIps));
     parameters.put("$SWARM_PORT", Integer.toString(ClusterManagerConstants.Swarm.SWARM_PORT));
 
@@ -66,7 +66,7 @@ public class SwarmMasterNodeTemplate implements NodeTemplate {
     Preconditions.checkNotNull(etcdAddresses, "etcdAddresses cannot be null");
     Preconditions.checkArgument(etcdAddresses.size() > 0, "etcdAddresses should contain at least one address");
 
-    Map<String, String> properties = new HashMap();
+    Map<String, String> properties = new HashMap<>();
     properties.put(ETCD_IPS_PROPERTY, NodeTemplateUtils.serializeAddressList(etcdAddresses));
 
     return properties;

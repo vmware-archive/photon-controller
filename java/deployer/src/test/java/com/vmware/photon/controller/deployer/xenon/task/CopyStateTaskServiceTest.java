@@ -539,7 +539,7 @@ public class CopyStateTaskServiceTest {
       copyStateTaskServiceState.destinationServiceClassName = SampleService.class.getCanonicalName();
       copyStateTaskServiceState.performHostTransformation = true;
 
-      Class<?>[] sampleClasses = new Class[]{SampleServiceFactory.class};
+      Class<? extends Service>[] sampleClasses = new Class[]{SampleServiceFactory.class};
       for (int i = 0; i < destinationHostCount; i++) {
         ServiceHostUtils.startServices(destinationCloudStore.getHosts()[i], sampleClasses);
       }

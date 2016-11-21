@@ -478,7 +478,7 @@ public class ClusterManagerClientTest {
       kc.clusterState = ClusterState.READY;
       kc.projectId = "projectId";
       kc.workerCount = 3;
-      kc.extendedProperties = new HashMap();
+      kc.extendedProperties = new HashMap<>();
       kc.extendedProperties.put(
           ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK,
           "10.1.0.0/16");
@@ -542,7 +542,7 @@ public class ClusterManagerClientTest {
       clusterDocument.workerCount = 2;
       clusterDocument.clusterType = ClusterType.KUBERNETES;
       clusterDocument.clusterState = ClusterState.READY;
-      clusterDocument.extendedProperties = new HashMap();
+      clusterDocument.extendedProperties = new HashMap<>();
       clusterDocument.extendedProperties.put(
           ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK,
           "10.10.10.10");
@@ -581,7 +581,7 @@ public class ClusterManagerClientTest {
       clusterDocument.workerCount = 2;
       clusterDocument.clusterType = ClusterType.KUBERNETES;
       clusterDocument.clusterState = ClusterState.READY;
-      clusterDocument.extendedProperties = new HashMap();
+      clusterDocument.extendedProperties = new HashMap<>();
       clusterDocument.extendedProperties.put(
           ClusterManagerConstants.EXTENDED_PROPERTY_CONTAINER_NETWORK,
           "10.10.10.10");

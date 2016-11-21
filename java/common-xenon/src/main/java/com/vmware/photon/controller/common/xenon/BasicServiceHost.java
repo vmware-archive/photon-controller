@@ -20,23 +20,18 @@ import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
-import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.function.Predicate;
-import java.util.logging.Level;
 
 /**
  * Test helper used to test Xenon services in isolation.
@@ -51,8 +46,6 @@ public class BasicServiceHost
   public static final String BIND_ADDRESS = "0.0.0.0";
   public static final Integer BIND_PORT = 0;
   public static final String REFERRER = "test-basic-service-host";
-
-  private static final Logger logger = LoggerFactory.getLogger(BasicServiceHost.class);
 
   @VisibleForTesting
   protected String serviceUri;
@@ -120,6 +113,7 @@ public class BasicServiceHost
     return super.getState().isStarted;
   }
 
+  @SuppressWarnings("rawtypes")
   @Override
   public Class[] getFactoryServices() {
     return new Class[0];
@@ -165,19 +159,6 @@ public class BasicServiceHost
   public synchronized void cleanStorage() throws IOException {
     if (!StringUtils.isBlank(this.storagePath)) {
       FileUtils.deleteDirectory(new File(this.storagePath));
-    }
-  }
-
-  private static String buildPath(Class<? extends Service> type) {
-    try {
-      Field f = type.getField(FIELD_NAME_SELF_LINK);
-      return (String) f.get(null);
-    } catch (NoSuchFieldException | IllegalAccessException e) {
-      Utils.log(Utils.class, Utils.class.getSimpleName(), Level.SEVERE,
-          "%s field not found in class %s: %s", FIELD_NAME_SELF_LINK,
-          type.getSimpleName(),
-          Utils.toString(e));
-      throw new IllegalArgumentException(e);
     }
   }
 

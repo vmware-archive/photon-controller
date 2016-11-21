@@ -111,7 +111,7 @@ public class ClientProxyExecutor implements ExecutorService {
    * Inner class used to initialize captured tracing context before running a command.
    */
   private class ClientProxyRunnable implements Runnable {
-    protected final Map loggerContextMap;  // Pass context map to the new thread
+    protected final Map<String, String> loggerContextMap;  // Pass context map to the new thread
     private final Runnable command;
 
     public ClientProxyRunnable(Runnable command) {
