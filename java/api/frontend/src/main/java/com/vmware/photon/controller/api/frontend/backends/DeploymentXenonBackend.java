@@ -427,6 +427,22 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     return taskBackend.createCompletedTask(deploymentEntity, Operation.UPDATE_IMAGE_DATASTORES);
   }
 
+  @Override
+  public TaskEntity prepareSyncHostsConfig(String deploymentId) throws ExternalException {
+    DeploymentEntity deployment = findById(deploymentId);
+
+    TaskEntity taskEntity = this.taskBackend.createQueuedTask(deployment, Operation.SYNC_HOSTS_CONFIG);
+    // create the steps
+    StepEntity step = this.taskBackend.getStepBackend().createQueuedStep(
+        taskEntity, deployment, Operation.SYNC_HOSTS_CONFIG_INITIATE);
+    step.createOrUpdateTransientResource(SystemPauseStepCmd.DEPLOYMENT_ID_RESOURCE_KEY, deploymentId);
+
+    this.taskBackend.getStepBackend().createQueuedStep(
+        taskEntity, deployment, Operation.SYNC_HOSTS_CONFIG);
+
+    return taskEntity;
+  }
+
   private DeploymentService.State patchDeployment(String id, DeploymentService.State patch) throws
       DeploymentNotFoundException {
     com.vmware.xenon.common.Operation result;

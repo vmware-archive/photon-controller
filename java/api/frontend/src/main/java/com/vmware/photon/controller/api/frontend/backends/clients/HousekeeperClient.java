@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.api.frontend.backends.clients;
 
 import com.vmware.photon.controller.api.frontend.entities.ImageEntity;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.housekeeper.xenon.HostsConfigSyncService;
 import com.vmware.photon.controller.housekeeper.xenon.ImageReplicatorService;
 import com.vmware.photon.controller.housekeeper.xenon.ImageReplicatorServiceFactory;
 import com.vmware.photon.controller.housekeeper.xenon.ImageSeederService;
@@ -33,55 +35,66 @@ import java.net.URISyntaxException;
  */
 @Singleton
 public class HousekeeperClient {
-    private static final Logger logger = LoggerFactory.getLogger(HousekeeperClient.class);
+  private static final Logger logger = LoggerFactory.getLogger(HousekeeperClient.class);
 
-    private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
+  private PhotonControllerXenonRestClient photonControllerXenonRestClient;
+  private ApiFeXenonRestClient apiFeXenonRestClient;
 
-    private PhotonControllerXenonRestClient photonControllerXenonRestClient;
-    private ApiFeXenonRestClient apiFeXenonRestClient;
+  @Inject
+  public HousekeeperClient(PhotonControllerXenonRestClient photonControllerXenonRestClient,
+                           ApiFeXenonRestClient apiFeXenonClient) throws URISyntaxException {
+    this.photonControllerXenonRestClient = photonControllerXenonRestClient;
+    this.photonControllerXenonRestClient.start();
+    this.apiFeXenonRestClient = apiFeXenonClient;
+    this.apiFeXenonRestClient.start();
+  }
 
-    @Inject
-    public HousekeeperClient(PhotonControllerXenonRestClient photonControllerXenonRestClient,
-                             ApiFeXenonRestClient apiFeXenonClient) throws URISyntaxException {
-        this.photonControllerXenonRestClient = photonControllerXenonRestClient;
-        this.photonControllerXenonRestClient.start();
-        this.apiFeXenonRestClient = apiFeXenonClient;
-        this.apiFeXenonRestClient.start();
+  public ImageSeederService.State replicateImage(String datastoreId, ImageEntity image) {
+    ImageSeederService.State postReq = new ImageSeederService.State();
+    postReq.image = image.getId();
+    postReq.sourceImageDatastore = datastoreId;
+
+    // Create the operation and call for seeding.
+    Operation op = photonControllerXenonRestClient.post(
+        ImageSeederServiceFactory.SELF_LINK, postReq);
+
+    switch (image.getReplicationType()) {
+      case ON_DEMAND:
+        break;
+      case EAGER:
+        triggerReplication(datastoreId, image);
+        break;
+      default:
+        throw new IllegalArgumentException("ImageReplicationType unknown: " + image.getReplicationType());
     }
 
-    public ImageSeederService.State replicateImage(String datastoreId, ImageEntity image) {
-        ImageSeederService.State postReq = new ImageSeederService.State();
-        postReq.image = image.getId();
-        postReq.sourceImageDatastore = datastoreId;
+    return op.getBody(ImageSeederService.State.class);
+  }
 
-        // Create the operation and call for seeding.
-        Operation op = photonControllerXenonRestClient.post(
-            ImageSeederServiceFactory.SELF_LINK, postReq);
+  private ImageReplicatorService.State triggerReplication(String datastoreId, ImageEntity image) {
+    // Prepare replication service call.
+    ImageReplicatorService.State postReq = new ImageReplicatorService.State();
+    postReq.image = image.getId();
+    postReq.datastore = datastoreId;
 
-        switch (image.getReplicationType()) {
-            case ON_DEMAND:
-                break;
-            case EAGER:
-                triggerReplication(datastoreId, image);
-                break;
-            default:
-                throw new IllegalArgumentException("ImageReplicationType unknown: " + image.getReplicationType());
-        }
+    // Create the operation and call for replication.
+    Operation op = photonControllerXenonRestClient.post(
+        ImageReplicatorServiceFactory.SELF_LINK, postReq);
 
-        return op.getBody(ImageSeederService.State.class);
-    }
+    return op.getBody(ImageReplicatorService.State.class);
+  }
 
-    private ImageReplicatorService.State triggerReplication(String datastoreId, ImageEntity image) {
-        // Prepare replication service call.
-        ImageReplicatorService.State postReq = new ImageReplicatorService.State();
-        postReq.image = image.getId();
-        postReq.datastore = datastoreId;
+  public HostsConfigSyncService.State syncHostsConfig() {
+    HostsConfigSyncService.State state = new HostsConfigSyncService.State();
 
-        // Create the operation and call for replication.
-        Operation op = photonControllerXenonRestClient.post(
-            ImageReplicatorServiceFactory.SELF_LINK, postReq);
+    Operation operation = photonControllerXenonRestClient.post(HostsConfigSyncService.FACTORY_LINK, state);
 
-        return op.getBody(ImageReplicatorService.State.class);
-    }
+    return operation.getBody(HostsConfigSyncService.State.class);
+  }
 
+  public HostsConfigSyncService.State getSyncConfigSyncStatus(String taskLink)
+      throws DocumentNotFoundException {
+    Operation operation = photonControllerXenonRestClient.get(taskLink);
+    return operation.getBody(HostsConfigSyncService.State.class);
+  }
 }

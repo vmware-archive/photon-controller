@@ -290,6 +290,16 @@ public class DeploymentFeClient {
     return task;
   }
 
+  public Task syncHostsConfig(String id) throws ExternalException {
+    TaskEntity taskEntity = deploymentBackend.prepareSyncHostsConfig(id);
+    Task task = taskBackend.getApiRepresentation(taskEntity);
+
+    TaskCommand command = commandFactory.create(taskEntity);
+    executor.submit(command);
+
+    return task;
+  }
+
   public ResourceList<Vm> getVmsPage(String pageLink) throws ExternalException {
     return vmBackend.getVmsPage(pageLink);
   }
