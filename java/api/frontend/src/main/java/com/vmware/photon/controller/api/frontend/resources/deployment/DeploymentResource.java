@@ -272,6 +272,23 @@ public class DeploymentResource {
         TaskResourceRoutes.TASK_PATH);
   }
 
+  @POST
+  @Path(DeploymentResourceRoutes.SYNC_HOSTS_CONFIG_ACTION)
+  @ApiOperation(value = "Synchronize hosts configuration on-demand", response = Task.class)
+  @ApiResponses(value = {
+      @ApiResponse(code = 201, message = "Task created, progress communicated via the task")
+  })
+  public Response syncHostsConfig(@Context Request request,
+                                  @PathParam("id") String id) throws ExternalException {
+
+    Task task = client.syncHostsConfig(id);
+    return generateCustomResponse(
+        Response.Status.OK,
+        task,
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
+  }
+
   @GET
   @Path(DeploymentResourceRoutes.DEPLOYMENT_SIZE_PATH)
   @ApiOperation(value = "Gets size information about the deployment", response = DeploymentSize.class)

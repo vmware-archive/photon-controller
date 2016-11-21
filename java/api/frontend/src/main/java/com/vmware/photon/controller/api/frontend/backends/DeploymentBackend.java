@@ -75,4 +75,6 @@ public interface DeploymentBackend {
   DeploymentEntity findById(String id) throws DeploymentNotFoundException;
 
   TaskEntity prepareUpdateImageDatastores(String id, List<String> imageDatastores) throws ExternalException;
+
+  TaskEntity prepareSyncHostsConfig(String id) throws ExternalException;
 }

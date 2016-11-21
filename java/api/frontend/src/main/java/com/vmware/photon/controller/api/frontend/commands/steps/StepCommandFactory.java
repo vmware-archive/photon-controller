@@ -269,6 +269,11 @@ public class StepCommandFactory {
         return new SystemPauseBackgroundTasksStepCmd(taskCommand, stepBackend, stepEntity);
       case RESUME_SYSTEM:
         return new SystemResumeStepCmd(taskCommand, stepBackend, stepEntity);
+      case SYNC_HOSTS_CONFIG_INITIATE:
+        return new HostsConfigSyncStepCmd(taskCommand, stepBackend, stepEntity);
+      case SYNC_HOSTS_CONFIG:
+        return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
+            new HostsConfigSyncTaskStatusPoller(taskCommand, taskBackend));
       default:
         throw new InternalException(String.format("Invalid Operation %s to create StepCommand",
             stepEntity.getOperation()));

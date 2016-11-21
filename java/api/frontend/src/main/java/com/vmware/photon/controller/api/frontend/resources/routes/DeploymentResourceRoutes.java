@@ -48,5 +48,7 @@ public class DeploymentResourceRoutes {
 
   public static final String SET_IMAGE_DATASTORES_ACTION = "/set_image_datastores";
 
+  public static final String SYNC_HOSTS_CONFIG_ACTION = "/sync_hosts_config";
+
   public static final String DEPLOYMENT_SIZE_PATH = "/size";
 }

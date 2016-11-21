@@ -119,6 +119,8 @@ public enum Operation {
   CONFIGURE_CLUSTER("ConfigureCluster"),
   DELETE_CLUSTER_CONFIGURATION("DeleteClusterConfiguration"),
   UPDATE_IMAGE_DATASTORES("UpdateImageDatastores"),
+  SYNC_HOSTS_CONFIG_INITIATE("SyncHostsConfigInitiate"),
+  SYNC_HOSTS_CONFIG("SyncHostsConfig"),
 
   IMPORT_DC_CONFIG("ImportDcConfig"),
 
