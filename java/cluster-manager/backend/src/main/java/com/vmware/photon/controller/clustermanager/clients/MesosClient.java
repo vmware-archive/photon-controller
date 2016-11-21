@@ -71,7 +71,7 @@ public class MesosClient {
 
     final RestClient restClient = new RestClient(connectionString, this.httpClient);
 
-    org.apache.http.concurrent.FutureCallback futureCallback =
+    org.apache.http.concurrent.FutureCallback<HttpResponse> futureCallback =
         new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
           @Override
           public void completed(HttpResponse result) {
@@ -125,7 +125,7 @@ public class MesosClient {
 
     final RestClient restClient = new RestClient(connectionString, this.httpClient);
 
-    org.apache.http.concurrent.FutureCallback futureCallback =
+    org.apache.http.concurrent.FutureCallback<HttpResponse> futureCallback =
         new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
           @Override
           public void completed(HttpResponse result) {
@@ -140,7 +140,7 @@ public class MesosClient {
               return;
             }
 
-            Set<String> nodes = new HashSet();
+            Set<String> nodes = new HashSet<>();
             if (response != null && response.slaves != null) {
               for (Slave s : response.slaves) {
                 switch (nodeProperty) {
@@ -224,7 +224,7 @@ public class MesosClient {
 
     final RestClient restClient = new RestClient(connectionString, this.httpClient);
 
-    org.apache.http.concurrent.FutureCallback futureCallback =
+    org.apache.http.concurrent.FutureCallback<HttpResponse> futureCallback =
         new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
           @Override
           public void completed(HttpResponse result) {

@@ -37,7 +37,7 @@ public class NodeTemplateUtils {
    * Creates the cloud-config's meta-data file template.
    */
   public static FileTemplate createMetaDataTemplate(String scriptDirectory, String hostname) {
-    Map<String, String> parameters = new HashMap();
+    Map<String, String> parameters = new HashMap<>();
     parameters.put("$INSTANCE_ID", hostname);
     parameters.put("$LOCAL_HOSTNAME", hostname);
 

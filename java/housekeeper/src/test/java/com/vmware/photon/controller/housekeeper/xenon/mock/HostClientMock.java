@@ -26,6 +26,7 @@ import com.vmware.photon.controller.host.gen.GetInactiveImagesResponse;
 import com.vmware.photon.controller.host.gen.GetMonitoredImagesResultCode;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.copy_image_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.transfer_image_call;
 import com.vmware.photon.controller.host.gen.StartImageOperationResultCode;
 import com.vmware.photon.controller.host.gen.StartImageScanResponse;
 import com.vmware.photon.controller.host.gen.StartImageSweepResponse;
@@ -75,6 +76,7 @@ public class HostClientMock extends HostClient {
    */
   private Map<String, List<String>> imageListForGetImagesRequest;
 
+  @SuppressWarnings("unchecked")
   public HostClientMock() {
     super(mock(ClientProxyFactory.class), mock(ClientPoolFactory.class));
     state = Collections.synchronizedMap(new HashMap<>());
@@ -134,7 +136,7 @@ public class HostClientMock extends HostClient {
 
   @Override
   public void transferImage(String imageId, String source, String destination,
-                            ServerAddress destinationHost, AsyncMethodCallback callback) {
+                            ServerAddress destinationHost, AsyncMethodCallback<transfer_image_call> callback) {
     if (source.equals(destination)) {
       fail("Same source and destination should not be passed to call HostClient");
     }
@@ -185,6 +187,7 @@ public class HostClientMock extends HostClient {
     callback.onComplete(MethodCallBuilder.buildStartImageScanMethodCall(response));
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public void getInactiveImages(String datastore,
                                 AsyncMethodCallback<Host.AsyncSSLClient.get_inactive_images_call> callback) {
@@ -214,6 +217,7 @@ public class HostClientMock extends HostClient {
     callback.onComplete(MethodCallBuilder.buildStartImageSweepMethodCall(response));
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public void getDeletedImages(String datastore,
                                AsyncMethodCallback<Host.AsyncSSLClient.get_deleted_images_call> callback) {

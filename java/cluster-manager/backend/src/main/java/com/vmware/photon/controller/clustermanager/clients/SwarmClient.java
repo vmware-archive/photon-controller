@@ -73,7 +73,7 @@ public class SwarmClient {
 
     final RestClient restClient = new RestClient(connectionString, this.httpClient);
 
-    org.apache.http.concurrent.FutureCallback futureCallback =
+    org.apache.http.concurrent.FutureCallback<HttpResponse> futureCallback =
         new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
           @Override
           public void completed(HttpResponse result) {
@@ -88,7 +88,7 @@ public class SwarmClient {
               return;
             }
 
-            Set<String> nodes = new HashSet();
+            Set<String> nodes = new HashSet<>();
 
             for (JsonNode entry : driverStatus) {
               ArrayNode kv = (ArrayNode) entry;

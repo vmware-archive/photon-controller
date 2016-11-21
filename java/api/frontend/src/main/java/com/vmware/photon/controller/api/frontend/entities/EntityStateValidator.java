@@ -25,7 +25,7 @@ import java.util.Set;
  */
 public class EntityStateValidator {
 
-  public static <T extends Enum> void validateStateChange(
+  public static <T extends Enum<?>> void validateStateChange(
       T originalState, T targetState, Map<T, Set<T>> preconditionStates) {
     if (originalState == null || targetState == null) {
       return;

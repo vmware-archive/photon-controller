@@ -42,7 +42,7 @@ public enum NotEmptyValidator {
             }
 
             if (field.get(state) instanceof Collection) {
-              checkState(!((Collection) field.get(state)).isEmpty(),
+              checkState(!((Collection<?>) field.get(state)).isEmpty(),
                   String.format("%s cannot be emtpy", field.getName()));
             }
           }

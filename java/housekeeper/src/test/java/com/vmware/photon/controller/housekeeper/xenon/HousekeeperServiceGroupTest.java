@@ -350,7 +350,7 @@ public class HousekeeperServiceGroupTest {
   private String[] createServiceSelfLinks() {
     List<String> apiBackendServiceSelfLinks = new ArrayList<>();
     Set<Class<? extends Service>> set = ApiBackendFactory.FACTORY_SERVICES_MAP.keySet();
-    for (Class cls : set) {
+    for (Class<?> cls : set) {
       try {
         Field fld = cls.getField("FACTORY_LINK");
         apiBackendServiceSelfLinks.add((String) fld.get(null));

@@ -404,11 +404,11 @@ public class ServiceHostUtils {
    * @param host
    * @param services
    */
-  public static void startServices(ServiceHost host, Class... services)
+  public static void startServices(ServiceHost host, Class<? extends Service>... services)
       throws InstantiationException, IllegalAccessException {
     checkArgument(services != null, "services cannot be null");
 
-    for (Class service : services) {
+    for (Class<? extends Service> service : services) {
       startService(host, service);
     }
   }
@@ -421,7 +421,7 @@ public class ServiceHostUtils {
    * @throws InstantiationException
    * @throws IllegalAccessException
    */
-  public static void startService(ServiceHost host, Class service)
+  public static void startService(ServiceHost host, Class<? extends Service> service)
       throws InstantiationException, IllegalAccessException {
     startService(host, service, null);
   }
@@ -435,7 +435,7 @@ public class ServiceHostUtils {
    * @throws InstantiationException
    * @throws IllegalAccessException
    */
-  public static void startService(ServiceHost host, Class service, String path)
+  public static void startService(ServiceHost host, Class<? extends Service> service, String path)
       throws InstantiationException, IllegalAccessException {
     checkArgument(host != null, "host cannot be null");
     checkArgument(service != null, "service cannot be null");
@@ -467,13 +467,13 @@ public class ServiceHostUtils {
    * @throws NoSuchFieldException
    * @throws IllegalAccessException
    */
-  public static boolean areServicesReady(ServiceHost host, String serviceLinkFieldName, Class... services)
+  public static boolean areServicesReady(ServiceHost host, String serviceLinkFieldName, Class<?>... services)
       throws NoSuchFieldException, IllegalAccessException {
     checkArgument(host != null, "host cannot be null");
     checkArgument(serviceLinkFieldName != null, "serviceLinkFieldName cannot be null");
 
     boolean areReady = true;
-    for (Class service : services) {
+    for (Class<?> service : services) {
       boolean isServiceReady = isServiceReady(host, serviceLinkFieldName, service);
       if (!isServiceReady) {
         logger.info("%s is not ready.", getServiceSelfLink(serviceLinkFieldName, service));
@@ -494,7 +494,7 @@ public class ServiceHostUtils {
    * @throws NoSuchFieldException
    * @throws IllegalAccessException
    */
-  public static boolean isServiceReady(ServiceHost host, String serviceLinkFieldName, Class service)
+  public static boolean isServiceReady(ServiceHost host, String serviceLinkFieldName, Class<?> service)
       throws NoSuchFieldException, IllegalAccessException {
     return host.checkServiceAvailable(getServiceSelfLink(serviceLinkFieldName, service));
   }
@@ -508,10 +508,10 @@ public class ServiceHostUtils {
    * @throws NoSuchFieldException
    * @throws IllegalAccessException
    */
-  public static Collection<String> getServiceSelfLinks(String serviceLinkFieldName, Class... services)
+  public static Collection<String> getServiceSelfLinks(String serviceLinkFieldName, Class<?>... services)
       throws NoSuchFieldException, IllegalAccessException {
     List<String> serviceSelfLinks = new ArrayList<>();
-    for (Class service : services) {
+    for (Class<?> service : services) {
       serviceSelfLinks.add(getServiceSelfLink(serviceLinkFieldName, service));
     }
     return serviceSelfLinks;
@@ -526,7 +526,7 @@ public class ServiceHostUtils {
    * @throws NoSuchFieldException
    * @throws IllegalAccessException
    */
-  public static String getServiceSelfLink(String serviceLinkFieldName, Class service)
+  public static String getServiceSelfLink(String serviceLinkFieldName, Class<?> service)
       throws NoSuchFieldException, IllegalAccessException {
     Field serviceLinkField = service.getDeclaredField(serviceLinkFieldName);
     return (String) serviceLinkField.get(null);
@@ -719,10 +719,11 @@ public class ServiceHostUtils {
    * @param host
    * @throws Throwable
    */
+  @SuppressWarnings("unchecked")
   public static <H extends ServiceHost & XenonHostInfoProvider> void dumpHost(
       H host, String referrer) throws Throwable {
     logger.info(String.format("host: %s - %s", host.getId(), host.getPort()));
-    for (Class factory : host.getFactoryServices()) {
+    for (Class<? extends Service> factory : host.getFactoryServices()) {
       try {
         Operation op = Operation.createGet(
             UriUtils.buildExpandLinksQueryUri(
@@ -805,7 +806,7 @@ public class ServiceHostUtils {
    * @param path
    * @return
    */
-  private static URI buildServiceUri(ServiceHost host, Class service, String path) {
+  private static URI buildServiceUri(ServiceHost host, Class<? extends Service> service, String path) {
     URI serviceUri;
 
     String error;

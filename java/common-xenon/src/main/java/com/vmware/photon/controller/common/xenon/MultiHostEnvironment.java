@@ -129,7 +129,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
    * @param path
    * @throws Throwable
    */
-  public void startFactoryServiceSynchronously(Class factoryClass, String path) throws Throwable {
+  public void startFactoryServiceSynchronously(Class<?> factoryClass, String path) throws Throwable {
     if (!FactoryService.class.isAssignableFrom(factoryClass)) {
       throw new IllegalArgumentException("Service " + factoryClass.getName() + " is not FactoryService");
     }

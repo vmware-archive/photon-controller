@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.housekeeper.xenon.mock;
 
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.transfer_image_call;
 
 import org.apache.thrift.async.AsyncMethodCallback;
 import org.slf4j.Logger;
@@ -31,7 +32,7 @@ public class HostClientTransferImageErrorMock extends HostClientMock {
 
   @Override
   public void transferImage(String imageId, String source, String destination,
-                            ServerAddress destinationHost, AsyncMethodCallback callback) {
+                            ServerAddress destinationHost, AsyncMethodCallback<transfer_image_call> callback) {
     logger.info("Host transferImage error invocation");
     callback.onError(new RuntimeException("transferImage error"));
   }

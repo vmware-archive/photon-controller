@@ -316,13 +316,13 @@ public class TestHelper {
   }
 
   public static DeploymentService.State createDeploymentService(
-      MultiHostEnvironment testEnvironment) throws
+      MultiHostEnvironment<?> testEnvironment) throws
       Throwable {
     return createDeploymentService(testEnvironment, false, false);
   }
 
   public static DeploymentService.State createDeploymentService(
-      MultiHostEnvironment testEnvironment,
+      MultiHostEnvironment<?> testEnvironment,
       boolean isAuthEnabled,
       boolean isSdnEnabled) throws Throwable {
     return createDeploymentService(testEnvironment,
@@ -330,7 +330,7 @@ public class TestHelper {
   }
 
   public static DeploymentService.State createDeploymentService(
-      MultiHostEnvironment testEnvironment,
+      MultiHostEnvironment<?> testEnvironment,
       DeploymentService.State startState) throws Throwable {
 
     return (DeploymentService.State) testEnvironment.callServiceSynchronously(
@@ -340,7 +340,7 @@ public class TestHelper {
   }
 
   public static DatastoreService.State createDatastoreService(
-      MultiHostEnvironment testEnvironment,
+      MultiHostEnvironment<?> testEnvironment,
       DatastoreService.State startState) throws Throwable {
 
     return (DatastoreService.State) testEnvironment.callServiceSynchronously(
@@ -350,24 +350,25 @@ public class TestHelper {
   }
 
   public static HostService.State createHostService(
-      MultiHostEnvironment testEnvironment, UsageTag usageTag)
+      MultiHostEnvironment<?> testEnvironment, UsageTag usageTag)
       throws Throwable {
     return createHostService(testEnvironment, Collections.singleton(usageTag.name()));
   }
 
   public static HostService.State createHostService(
-      MultiHostEnvironment testEnvironment, Set<String> usageTags)
+      MultiHostEnvironment<?> testEnvironment, Set<String> usageTags)
       throws Throwable {
     return createHostService(testEnvironment, usageTags, HostState.READY);
   }
 
   public static HostService.State createHostService(
-      MultiHostEnvironment testEnvironment, Set<String> usageTags,
+      MultiHostEnvironment<?> testEnvironment, Set<String> usageTags,
       HostState state) throws Throwable {
     return createHostService(testEnvironment, getHostServiceStartState(usageTags, state));
   }
 
-  public static HostService.State createHostService(MultiHostEnvironment testEnvironment, HostService.State startState)
+  public static HostService.State createHostService(MultiHostEnvironment<?> testEnvironment,
+          HostService.State startState)
       throws Throwable {
     return (HostService.State) testEnvironment.callServiceSynchronously(
         HostServiceFactory.SELF_LINK,
@@ -453,7 +454,7 @@ public class TestHelper {
   //
 
   public static <T extends ServiceDocument> List<String> getServiceLinksOfType(
-      MultiHostEnvironment testEnvironment, Class<T> clazz)
+      MultiHostEnvironment<?> testEnvironment, Class<T> clazz)
       throws Throwable {
 
     QueryTask queryTask = QueryTask.Builder.createDirectTask()
@@ -464,7 +465,7 @@ public class TestHelper {
   }
 
   public static <T extends ServiceDocument> List<T> getServicesOfType(
-      MultiHostEnvironment testEnvironment, Class<T> clazz)
+      MultiHostEnvironment<?> testEnvironment, Class<T> clazz)
       throws Throwable {
 
     QueryTask queryResult = testEnvironment.sendQueryAndWait(QueryTask.Builder.createDirectTask()
@@ -481,7 +482,7 @@ public class TestHelper {
   }
 
   public static <T extends ServiceDocument> void assertNoServicesOfType(
-      MultiHostEnvironment testEnvironment, Class<T> clazz)
+      MultiHostEnvironment<?> testEnvironment, Class<T> clazz)
       throws Throwable {
 
     List<String> documentLinks = getServiceLinksOfType(testEnvironment, clazz);
@@ -489,7 +490,7 @@ public class TestHelper {
   }
 
   public static <T extends ServiceDocument> void deleteServicesOfType(
-      MultiHostEnvironment testEnvironment, Class<T> clazz)
+      MultiHostEnvironment<?> testEnvironment, Class<T> clazz)
       throws Throwable {
 
     List<String> documentLinks = getServiceLinksOfType(testEnvironment, clazz);
@@ -595,7 +596,7 @@ public class TestHelper {
   // Utility routines
   //
 
-  public static Object[][] getValidStartStages(@Nullable Class<? extends Enum> subStages) {
+  public static Object[][] getValidStartStages(@Nullable Class<? extends Enum<?>> subStages) {
 
     if (subStages == null) {
 
@@ -617,7 +618,7 @@ public class TestHelper {
       throw new IllegalStateException("Class " + subStages.getName() + " is not a valid enum");
     }
 
-    Enum[] enumConstants = subStages.getEnumConstants();
+    Enum<?>[] enumConstants = subStages.getEnumConstants();
     List<Object[]> validStartStages = new ArrayList<>();
     validStartStages.add(new Object[]{null, null});
     validStartStages.add(new Object[]{TaskState.TaskStage.CREATED, null});
@@ -637,7 +638,7 @@ public class TestHelper {
     return returnValue;
   }
 
-  public static Object[][] getInvalidStartStages(@Nullable Class<? extends Enum> subStages) {
+  public static Object[][] getInvalidStartStages(@Nullable Class<? extends Enum<?>> subStages) {
 
     if (subStages == null) {
 
@@ -652,7 +653,7 @@ public class TestHelper {
       throw new IllegalStateException("Class " + subStages.getName() + " is not a valid enum");
     }
 
-    Enum[] enumConstants = subStages.getEnumConstants();
+    Enum<?>[] enumConstants = subStages.getEnumConstants();
     List<Object[]> invalidStartStages = new ArrayList<>();
     for (int i = 0; i < enumConstants.length; i++) {
       invalidStartStages.add(new Object[]{TaskState.TaskStage.CREATED, enumConstants[i]});
@@ -677,7 +678,7 @@ public class TestHelper {
     return returnValue;
   }
 
-  public static Object[][] getValidStageTransitions(@Nullable Class<? extends Enum> subStages) {
+  public static Object[][] getValidStageTransitions(@Nullable Class<? extends Enum<?>> subStages) {
 
     if (subStages == null) {
 
@@ -705,7 +706,7 @@ public class TestHelper {
     // Add the normal task stage progression transitions.
     //
 
-    Enum[] enumConstants = subStages.getEnumConstants();
+    Enum<?>[] enumConstants = subStages.getEnumConstants();
     List<Object[]> validStageTransitions = new ArrayList<>();
     validStageTransitions.add(new Object[]
         {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.STARTED, enumConstants[0]});
@@ -748,7 +749,7 @@ public class TestHelper {
     return returnValue;
   }
 
-  public static Object[][] getInvalidStageTransitions(@Nullable Class<? extends Enum> subStages) {
+  public static Object[][] getInvalidStageTransitions(@Nullable Class<? extends Enum<?>> subStages) {
 
     if (subStages == null) {
 
@@ -785,7 +786,7 @@ public class TestHelper {
     invalidStageTransitions.add(new Object[]
         {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CREATED, null});
 
-    Enum[] enumConstants = subStages.getEnumConstants();
+    Enum<?>[] enumConstants = subStages.getEnumConstants();
     for (int i = 0; i < enumConstants.length; i++) {
       invalidStageTransitions.add(new Object[]
           {TaskState.TaskStage.STARTED, enumConstants[i], TaskState.TaskStage.CREATED, null});

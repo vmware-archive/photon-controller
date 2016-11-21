@@ -33,7 +33,7 @@ public abstract class BaseCommand implements Runnable {
 
   private static final Logger logger = LoggerFactory.getLogger(BaseCommand.class);
   protected final String activityId;
-  protected final Map loggerContextMap;
+  protected final Map<String, String> loggerContextMap;
 
   protected BaseCommand(String activityId) {
     this.activityId = checkNotNull(activityId);

@@ -38,14 +38,14 @@ import java.net.InetSocketAddress;
 public class ThriftClientFactory implements StatusProviderFactory {
   private static final Logger logger = LoggerFactory.getLogger(ThriftClientFactory.class);
   private final Class<?> clientClass;
-  private final ClientPoolFactory clientPoolFactory;
-  private final ClientProxyFactory clientProxyFactory;
+  private final ClientPoolFactory<?> clientPoolFactory;
+  private final ClientProxyFactory<?> clientProxyFactory;
   private ServerSet serverSet;
   private final String serviceName;
 
   public ThriftClientFactory(ServerSet serverSet,
-                             ClientPoolFactory clientPoolFactory,
-                             ClientProxyFactory clientProxyFactory,
+                             ClientPoolFactory<?> clientPoolFactory,
+                             ClientProxyFactory<?> clientProxyFactory,
                              Class<?> clientClass,
                              String serviceName) {
     this.serverSet = serverSet;
@@ -72,13 +72,13 @@ public class ThriftClientFactory implements StatusProviderFactory {
    * @return
    */
   public StatusProvider create(InetSocketAddress server) throws InternalException {
-    ClientProxy proxy = createClientProxy(server, this.clientPoolFactory, this.clientProxyFactory);
+    ClientProxy<?> proxy = createClientProxy(server, this.clientPoolFactory, this.clientProxyFactory);
     return createClient(proxy);
   }
 
-  private <C extends TAsyncSSLClient> StatusProvider createClient(ClientProxy proxy) throws InternalException {
+  private <C extends TAsyncSSLClient> StatusProvider createClient(ClientProxy<?> proxy) throws InternalException {
     try {
-      Constructor constructor = this.clientClass.getConstructor(ClientProxy.class);
+      Constructor<?> constructor = this.clientClass.getConstructor(ClientProxy.class);
       return (StatusProvider) constructor.newInstance(proxy);
     } catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
         InvocationTargetException ex) {
@@ -90,13 +90,13 @@ public class ThriftClientFactory implements StatusProviderFactory {
     }
   }
 
-  private ClientProxy createClientProxy(InetSocketAddress server,
-                                        ClientPoolFactory clientPoolFactory, ClientProxyFactory clientProxyFactory) {
-    ClientPool clientpool =
+  private ClientProxy<?> createClientProxy(InetSocketAddress server,
+                                        ClientPoolFactory<?> clientPoolFactory, ClientProxyFactory clientProxyFactory) {
+    ClientPool<?> clientpool =
         clientPoolFactory.create(
             new StaticServerSet(server),
             new ClientPoolOptions().setMaxClients(1).setMaxWaiters(1).setServiceName(this.serviceName));
-    ClientProxy clientProxy =
+    ClientProxy<?> clientProxy =
         clientProxyFactory.create(clientpool);
     return clientProxy;
   }

@@ -39,7 +39,8 @@ import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceH
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.CopyImageResponse;
-import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.copy_image_call;
+import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.transfer_image_call;
 import com.vmware.photon.controller.host.gen.TransferImageResponse;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
@@ -343,11 +344,11 @@ public class ImageHostToHostCopyService extends StatefulService {
    */
   private void invokeCopyImage(final State current) {
     ServiceUtils.logInfo(this, "Calling agent to do image copy between image datastores on the same host.");
-    AsyncMethodCallback callback = new AsyncMethodCallback() {
+    AsyncMethodCallback<copy_image_call> callback = new AsyncMethodCallback<copy_image_call>() {
       @Override
-      public void onComplete(Object o) {
+      public void onComplete(copy_image_call callback) {
         try {
-          CopyImageResponse r = ((Host.AsyncSSLClient.copy_image_call) o).getResult();
+          CopyImageResponse r = callback.getResult();
           ServiceUtils.logInfo(ImageHostToHostCopyService.this, "CopyImageResponse %s", r);
           switch (r.getResult()) {
             case OK:
@@ -398,11 +399,11 @@ public class ImageHostToHostCopyService extends StatefulService {
    */
   private void invokeTransferImage(final State current) {
     ServiceUtils.logInfo(this, "Calling agent to do host to host image copy.");
-    AsyncMethodCallback callback = new AsyncMethodCallback() {
+    AsyncMethodCallback<transfer_image_call> callback = new AsyncMethodCallback<transfer_image_call>() {
       @Override
-      public void onComplete(Object o) {
+      public void onComplete(transfer_image_call callback) {
         try {
-          TransferImageResponse r = ((Host.AsyncSSLClient.transfer_image_call) o).getResult();
+          TransferImageResponse r = callback.getResult();
           ServiceUtils.logInfo(ImageHostToHostCopyService.this, "TransferImageResponse %s", r);
           switch (r.getResult()) {
             case OK:
@@ -644,7 +645,7 @@ public class ImageHostToHostCopyService extends StatefulService {
           .setBody(s);
 
       if (isEagerCopy) {
-        operationSequence = operationSequence
+        operationSequence = OperationSequence
             .create(createImageReplicatorServicePatch)
             .setCompletion((operation, throwable) -> {
               if (throwable != null) {
@@ -657,7 +658,7 @@ public class ImageHostToHostCopyService extends StatefulService {
         }
       } else if (!current.isSelfProgressionDisabled) {
         // move to next stage
-        operationSequence = operationSequence.create(progress);
+        operationSequence = OperationSequence.create(progress);
       }
 
       if (operationSequence != null) {

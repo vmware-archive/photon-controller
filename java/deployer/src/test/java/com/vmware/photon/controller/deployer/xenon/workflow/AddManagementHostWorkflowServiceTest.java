@@ -802,7 +802,7 @@ public class AddManagementHostWorkflowServiceTest {
     }
 
     private String createDeploymentServiceLink(
-        MultiHostEnvironment cloudStore,
+        MultiHostEnvironment<?> cloudStore,
         boolean isAuthEnabled)
         throws Throwable {
       DeploymentService.State deploymentService = TestHelper.createDeploymentService(cloudStore,

@@ -623,22 +623,6 @@ public class ServiceHostUtilsTest {
     }
 
     /**
-     * Tests that error is thrown when class does not inherit from Service.
-     *
-     * @throws Throwable
-     */
-    @Test
-    public void testClassThatIsNotAService() throws Throwable {
-      try {
-        ServiceHostUtils.startService(
-            host,
-            Object.class);
-      } catch (ClassCastException ex) {
-        assertThat(ex.getMessage(), startsWith("java.lang.Object"));
-      }
-    }
-
-    /**
      * Tests that services starts successfully.
      */
     @Test

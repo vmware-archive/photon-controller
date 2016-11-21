@@ -394,15 +394,15 @@ public class SwaggerJsonListing {
     // In this block we get all of the parameters to the method and convert them to SwaggerParameter types. We
     // introspect the generic types.
     List<SwaggerParameter> swaggerParameters = new ArrayList<>();
-    Class[] parameterTypes = definitionMethod.getParameterTypes();
+    Class<?>[] parameterTypes = definitionMethod.getParameterTypes();
     Type[] genericParameterTypes = definitionMethod.getGenericParameterTypes();
     Annotation[][] parameterAnnotations = definitionMethod.getParameterAnnotations();
     for (int i = 0; i < parameterTypes.length; i++) {
-      Class parameter = parameterTypes[i];
+      Class<?> parameter = parameterTypes[i];
 
       Type genericParameterType = genericParameterTypes[i];
       if (genericParameterType instanceof Class &&
-          "javax.ws.rs.core.Request".equals(((Class) genericParameterType).getName())) {
+          "javax.ws.rs.core.Request".equals(((Class<?>) genericParameterType).getName())) {
         continue;
       }
 
@@ -427,11 +427,10 @@ public class SwaggerJsonListing {
    * @param parameterAnnotation  The annotations for the parameter.
    * @return A SwaggerParameter.
    */
-  private SwaggerParameter parameterToSwaggerParameter(HashMap<String, SwaggerModel> models, Class parameter,
+  private SwaggerParameter parameterToSwaggerParameter(HashMap<String, SwaggerModel> models, Class<?> parameter,
                                                        Type genericParameterType, Annotation[] parameterAnnotation) {
     SwaggerParameter swaggerParameter = new SwaggerParameter();
     swaggerParameter.setDataType(getTypeName(models, parameter, genericParameterType));
-    // TODO(lisbakke): Make this prettier. https://www.pivotaltracker.com/story/show/52999659
     for (Annotation paramAnnotation : parameterAnnotation) {
       if (paramAnnotation instanceof QueryParam) {
         swaggerParameter.setParamType(QUERY_TYPE);
@@ -475,15 +474,15 @@ public class SwaggerJsonListing {
    * @param genericType The generic type information for the class.
    * @return The string version of this class.
    */
-  private String getTypeName(HashMap<String, SwaggerModel> models, Class mainClass, Type genericType) {
+  private String getTypeName(HashMap<String, SwaggerModel> models, Class<?> mainClass, Type genericType) {
     String returnTypeString = mainClass.getSimpleName();
     if (genericType instanceof ParameterizedType) {
       List<Type> genericTypes = Arrays.asList(((ParameterizedType) genericType).getActualTypeArguments());
       if (genericTypes.size() > 0) {
         List<String> namedTypes = new ArrayList<>();
         for (Type type : genericTypes) {
-          addModel(models, (Class) type);
-          namedTypes.add(((Class) type).getSimpleName());
+          addModel(models, (Class<?>) type);
+          namedTypes.add(((Class<?>) type).getSimpleName());
         }
         returnTypeString += "[" + Joiner.on(",").join(namedTypes) + "]";
       }
@@ -513,7 +512,7 @@ public class SwaggerJsonListing {
     HashMap<String, String> items = new HashMap<>();
     items.put(REFERENCE_TYPE, model.getSimpleName());
     modelProperty.setItems(items);
-    HashMap<String, SwaggerModelProperty> modelProperties = new HashMap();
+    HashMap<String, SwaggerModelProperty> modelProperties = new HashMap<String, SwaggerModelProperty>();
     modelProperties.put("items", modelProperty);
     swaggerModel.setProperties(modelProperties);
     String listModelName = String.format("%s<%s>", modelName, model.getSimpleName());
@@ -534,8 +533,6 @@ public class SwaggerJsonListing {
   private void addModel(HashMap<String, SwaggerModel> models, Class<?> model) {
     String modelName = model.getSimpleName();
     if (!models.containsKey(modelName)) {
-      // TODO(lisbakke): Add @ApiModel description into our output once swagger-ui supports adding documentation for
-      // an ApiModel. https://www.pivotaltracker.com/story/show/52998073
       SwaggerModel swaggerModel = new SwaggerModel();
       swaggerModel.setId(modelName);
       swaggerModel.setName(modelName);
@@ -622,7 +619,7 @@ public class SwaggerJsonListing {
         // Swagger UI doesn't support the fact that a Parameter could be a collection/generic that
         // references two classes, such as HashMap<Class1, Class2>. If it did, then we wouldn't limit this method to
         // just COLLECTION_TYPES.
-        Class genericClass = (Class) genericTypes[0];
+        Class<?> genericClass = (Class<?>) genericTypes[0];
         addModel(models, genericClass);
         HashMap<String, String> items = new HashMap<>();
         if (PRIMITIVE_TYPES.contains(genericClass.getSimpleName())) {

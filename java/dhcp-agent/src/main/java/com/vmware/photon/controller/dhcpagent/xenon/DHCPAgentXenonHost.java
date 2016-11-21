@@ -30,8 +30,6 @@ import com.vmware.xenon.services.common.RootNamespaceService;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Class to initialize a Xenon host for dhcp-agent.
@@ -41,12 +39,12 @@ public class DHCPAgentXenonHost
     extends AbstractServiceHost
     implements XenonHostInfoProvider, ListeningExecutorServiceProvider {
 
-  private static final Logger logger = LoggerFactory.getLogger(DHCPAgentXenonHost.class);
 
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
 
   public static final int INDEX_SEARCHER_COUNT_THRESHOLD = 1024;
 
+  @SuppressWarnings("rawtypes")
   public static final Class[] FACTORY_SERVICES = {
       // Discovery
       RootNamespaceService.class,
@@ -101,6 +99,7 @@ public class DHCPAgentXenonHost
         checkServiceAvailable(RootNamespaceService.SELF_LINK);
   }
 
+  @SuppressWarnings("rawtypes")
   @Override
   public Class[] getFactoryServices() {
     return FACTORY_SERVICES;

@@ -67,6 +67,7 @@ public class HousekeeperServiceGroup
   };
 
   private static final String HOUSEKEEPER_URI = "housekeeper";
+  @SuppressWarnings("rawtypes")
   private static final Class[] FACTORY_SERVICES = {
       ImageReplicatorServiceFactory.class,
       ImageCopyServiceFactory.class,

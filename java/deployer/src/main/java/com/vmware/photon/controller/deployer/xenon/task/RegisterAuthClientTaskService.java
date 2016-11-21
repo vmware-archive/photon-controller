@@ -489,7 +489,7 @@ public class RegisterAuthClientTaskService extends StatefulService {
     //
     // Lightwave requires login name to be in format "domain/user"
     //
-    ListenableFutureTask futureTask = ListenableFutureTask.create(new Callable() {
+    ListenableFutureTask futureTask = ListenableFutureTask.create(new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         return authHelper.getResourceLoginUri(

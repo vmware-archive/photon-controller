@@ -27,7 +27,7 @@ import java.util.Set;
  */
 public class ConditionalValidator {
   public static  <P, E extends Throwable> void validate(
-      P payload, boolean condition, Class trutyGroup, Class falsyGroup, Class<E> eClass) throws E {
+      P payload, boolean condition, Class<?> trutyGroup, Class<?> falsyGroup, Class<E> eClass) throws E {
     Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
     Set<ConstraintViolation<P>> violations;
     if (condition) {

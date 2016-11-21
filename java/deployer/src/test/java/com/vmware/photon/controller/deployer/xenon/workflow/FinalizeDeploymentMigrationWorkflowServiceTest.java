@@ -821,7 +821,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     }
 
     private Set<String> getDocuments(Class<?> kindClass,
-                                     MultiHostEnvironment cloudStore)
+                                     MultiHostEnvironment<?> cloudStore)
         throws Throwable {
 
       QueryTask.Query kindClause = new QueryTask.Query()

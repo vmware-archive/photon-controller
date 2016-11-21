@@ -195,8 +195,7 @@
       -->
 
       <property name="ignorePattern"
-                value="${com.puppycrawl.tools.checkstyle.checks.sizes.LineLength.ignorePattern}"
-                default="^(package .*;\s*)|(import .*;\s*)|( *\* *https?://.*)$"/>
+                value="^(package .*;\s*)|(import .*;\s*)|( *\* *https?://.*)$"/>
     </module>
 
     <module name="LeftCurly">

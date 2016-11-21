@@ -369,7 +369,7 @@ public class HostClient {
    */
   @RpcMethod
   public void transferImage(String imageId, String source, String destination, ServerAddress destinationHost,
-                            AsyncMethodCallback<Host.AsyncSSLClient.copy_image_call> handler)
+                            AsyncMethodCallback<Host.AsyncSSLClient.transfer_image_call> handler)
       throws RpcException {
     ensureClient();
     TransferImageRequest transferImageRequest = new TransferImageRequest();

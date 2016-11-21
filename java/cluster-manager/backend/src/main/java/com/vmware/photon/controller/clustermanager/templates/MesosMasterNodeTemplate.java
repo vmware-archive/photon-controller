@@ -49,7 +49,7 @@ public class MesosMasterNodeTemplate implements NodeTemplate {
 
     List<String> zookeeperIps = NodeTemplateUtils.deserializeAddressList(properties.get(ZOOKEEPER_IPS_PROPERTY));
 
-    Map<String, String> parameters = new HashMap();
+    Map<String, String> parameters = new HashMap<>();
     parameters.put("$MESOS_PORT", Integer.toString(ClusterManagerConstants.Mesos.MESOS_PORT));
     parameters.put("$QUORUM_SIZE", Integer.toString(quorumSize));
     parameters.put("$ZK_QUORUM", NodeTemplateUtils.createZookeeperQuorumString(zookeeperIps));
@@ -72,7 +72,7 @@ public class MesosMasterNodeTemplate implements NodeTemplate {
     Preconditions.checkNotNull(zkAddresses, "zkAddresses cannot be null");
     Preconditions.checkArgument(zkAddresses.size() > 0, "zkAddresses should contain at least one address");
 
-    Map<String, String> properties = new HashMap();
+    Map<String, String> properties = new HashMap<>();
     properties.put(MASTERS_COUNT_PROPERTY, Integer.toString(masterCount));
     properties.put(ZOOKEEPER_IPS_PROPERTY, NodeTemplateUtils.serializeAddressList(zkAddresses));
 
