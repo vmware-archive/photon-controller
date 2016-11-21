@@ -74,7 +74,7 @@ public class StepEntityTest {
 
     StepErrorEntity secondError = step.getErrors().get(1);
     assertThat(secondError.getCode(), is(ErrorCode.INTERNAL_ERROR.getCode()));
-    assertThat(secondError.getMessage(), is("Please contact the system administrator about request #null"));
+    assertThat(secondError.getMessage(), is("Request #null failed due to an internal error: null"));
   }
 
   @Test
@@ -94,6 +94,6 @@ public class StepEntityTest {
 
     StepWarningEntity secondError = step.getWarnings().get(1);
     assertThat(secondError.getCode(), is(ErrorCode.INTERNAL_ERROR.getCode()));
-    assertThat(secondError.getMessage(), is("Please contact the system administrator about request #null"));
+    assertThat(secondError.getMessage(), is("Request #null failed due to an internal error: null"));
   }
 }

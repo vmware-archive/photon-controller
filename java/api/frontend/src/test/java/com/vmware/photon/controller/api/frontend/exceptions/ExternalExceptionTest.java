@@ -61,7 +61,7 @@ public class ExternalExceptionTest extends PowerMockTestCase {
     ExternalException e3 = ExternalException.launder(e2);
     assertThat(e3.getErrorCode(), is(INTERNAL_ERROR.getCode()));
     assertThat(e3.getHttpStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
-    assertThat(e3.getMessage(), is("Please contact the system administrator about request #null"));
+    assertThat(e3.getMessage(), is("Request #null failed due to an internal error: bar"));
     assertThat(e3.getData().isEmpty(), is(true));
   }
 }
