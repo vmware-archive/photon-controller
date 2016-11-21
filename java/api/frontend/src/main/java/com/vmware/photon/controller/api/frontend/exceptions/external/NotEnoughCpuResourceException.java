@@ -20,6 +20,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * reserving resources on host.
  */
 public class NotEnoughCpuResourceException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   public NotEnoughCpuResourceException() {
     super(ErrorCode.NOT_ENOUGH_CPU_RESOURCE);

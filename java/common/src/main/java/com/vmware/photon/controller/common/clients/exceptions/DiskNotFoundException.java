@@ -19,6 +19,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when the referenced disk was not found on the host.
  */
 public class DiskNotFoundException extends RpcException {
+  private static final long serialVersionUID = 1L;
 
   public DiskNotFoundException(String message) {
     super(message);

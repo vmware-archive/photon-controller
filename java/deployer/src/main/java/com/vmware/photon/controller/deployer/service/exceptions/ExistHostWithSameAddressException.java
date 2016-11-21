@@ -17,6 +17,7 @@ package com.vmware.photon.controller.deployer.service.exceptions;
  * Gets thrown when host address already exists.
  */
 public class ExistHostWithSameAddressException extends Exception {
+  private static final long serialVersionUID = 1L;
 
   public ExistHostWithSameAddressException(String message) {
     super(message);

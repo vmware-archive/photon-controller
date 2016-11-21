@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.frontend.entities.VmEntity;
  * Gets thrown when persistent disk is attached to the VM being deleted.
  */
 public class PersistentDiskAttachedException extends ExternalException {
+  private static final long serialVersionUID = 1L;
   private final String vmId;
   private final String diskId;
   private final String diskKind;

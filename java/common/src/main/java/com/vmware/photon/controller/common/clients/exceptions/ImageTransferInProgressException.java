@@ -18,6 +18,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when image is being transfered.
  */
 public class ImageTransferInProgressException extends RpcException {
+  private static final long serialVersionUID = 1L;
 
   public ImageTransferInProgressException(String message) {
     super(message);

@@ -94,6 +94,7 @@ public class DnsmasqDriverTest {
       if (!hasNetmaskLine) {
         fail("Missing netmask line in option file");
       }
+      optionFileBufferedReader.close();
 
       FileReader configFileReader = new FileReader(
           DnsmasqDriverTest.class.getResource("/config/dnsmasq.conf").getPath());
@@ -117,6 +118,7 @@ public class DnsmasqDriverTest {
       if (!hasConfigFileLine) {
         fail("Config file does not contain dhcp range for the subnet");
       }
+      configFileBufferedReader.close();
     } catch (Throwable e) {
       fail("Failed with exception: " + e.getMessage());
     }
@@ -155,6 +157,7 @@ public class DnsmasqDriverTest {
       // We need to create a subnet configuration file so that other tests can have this file when setting
       // up the dnsmasq driver.
       dnsmasqDriver.createSubnet("subnet1", "192.168.1.1", "192.168.1.0/8", "192.168.1.0", "192.168.1.16");
+      configFileBufferedReader.close();
     } catch (Throwable e) {
       fail("Failed with exception: " + e.getMessage());
     }
@@ -191,6 +194,7 @@ public class DnsmasqDriverTest {
           fail(String.format("MAC address not found in host file:", macAddress));
         }
       }
+      bufferedReader.close();
 
     } catch (Throwable e) {
       fail(String.format("Failed with exception: %s", e.toString()));

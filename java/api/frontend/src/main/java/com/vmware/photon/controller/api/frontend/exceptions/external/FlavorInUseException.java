@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Gets thrown when requested flavor is being used, cannot be deleted.
  */
 public class FlavorInUseException extends ExternalException {
+  private static final long serialVersionUID = 1L;
   private String flavorId;
   private String name;
   private String kind;

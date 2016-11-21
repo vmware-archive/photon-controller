@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.frontend.entities.base.BaseEntity;
  * tenant deletion with projects still in the tenant.
  */
 public class ContainerNotEmptyException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   private final String entityId;
   private final String entityKind;

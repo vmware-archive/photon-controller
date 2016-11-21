@@ -19,4 +19,5 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when a leader elected service is not currently the leader.
  */
 public class NotLeaderException extends RpcException {
+  private static final long serialVersionUID = 1L;
 }

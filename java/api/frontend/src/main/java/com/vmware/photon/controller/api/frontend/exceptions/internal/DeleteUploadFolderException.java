@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.internal;
  * Thrown when Image Upload Folder deletion fails.
  */
 public class DeleteUploadFolderException extends InternalException {
+  private static final long serialVersionUID = 1L;
 
   public DeleteUploadFolderException(String message) {
     super(message);

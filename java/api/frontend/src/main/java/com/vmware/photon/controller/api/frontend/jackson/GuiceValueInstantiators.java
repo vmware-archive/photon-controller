@@ -30,6 +30,7 @@ import java.util.List;
  */
 @Singleton
 public class GuiceValueInstantiators extends SimpleValueInstantiators {
+  private static final long serialVersionUID = 1L;
   private final Injector injector;
 
   @Inject

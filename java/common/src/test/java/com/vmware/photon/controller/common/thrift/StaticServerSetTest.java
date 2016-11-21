@@ -20,6 +20,7 @@ import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.mock;
 import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 /**
@@ -28,17 +29,18 @@ import java.net.InetSocketAddress;
 public class StaticServerSetTest {
 
   @Test
-  public void testAddChangeListener() {
+  public void testAddChangeListener() throws IOException {
     InetSocketAddress server = new InetSocketAddress(80);
     StaticServerSet set = new StaticServerSet(server);
     ServerSet.ChangeListener listener = mock(ServerSet.ChangeListener.class);
     set.addChangeListener(listener);
     verify(listener).onServerAdded(server);
     verifyNoMoreInteractions(listener);
+    set.close();
   }
 
   @Test
-  public void testMultipleServers() {
+  public void testMultipleServers() throws IOException {
     InetSocketAddress server1 = new InetSocketAddress(80);
     InetSocketAddress server2 = new InetSocketAddress(8080);
     StaticServerSet set = new StaticServerSet(server1, server2);
@@ -47,14 +49,16 @@ public class StaticServerSetTest {
     verify(listener).onServerAdded(server1);
     verify(listener).onServerAdded(server2);
     verifyNoMoreInteractions(listener);
+    set.close();
   }
 
   @Test
-  public void testGetServers() {
+  public void testGetServers() throws IOException {
     InetSocketAddress server1 = new InetSocketAddress(80);
     InetSocketAddress server2 = new InetSocketAddress(8080);
     StaticServerSet set = new StaticServerSet(server1, server2);
     assertThat(set.getServers().contains(server1), is(true));
     assertThat(set.getServers().contains(server2), is(true));
+    set.close();
   }
 }

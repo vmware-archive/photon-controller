@@ -19,6 +19,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when replication of image failed.
  */
 public class ReplicationFailedException extends RpcException {
+  private static final long serialVersionUID = 1L;
 
   public ReplicationFailedException(String message) {
     super(message);

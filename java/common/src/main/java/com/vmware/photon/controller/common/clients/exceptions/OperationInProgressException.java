@@ -17,6 +17,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when an image scan/sweep is in progress on the host.
  */
 public class OperationInProgressException extends RpcException {
+  private static final long serialVersionUID = 1L;
   public OperationInProgressException(String message) {
     super(message);
   }

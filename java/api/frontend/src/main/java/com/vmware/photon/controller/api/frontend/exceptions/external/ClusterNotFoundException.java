@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Gets thrown when requested cluster is not found.
  */
 public class ClusterNotFoundException extends ExternalException {
+  private static final long serialVersionUID = 1L;
   private final String clusterId;
 
   public ClusterNotFoundException(String clusterId) {

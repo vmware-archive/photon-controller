@@ -20,6 +20,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * reserving resources on host.
  */
 public class NotEnoughCpuResourceException extends RpcException {
+  private static final long serialVersionUID = 1L;
 
   public NotEnoughCpuResourceException(String message) {
     super(message);

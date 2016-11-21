@@ -17,6 +17,7 @@ package com.vmware.photon.controller.apibackend.exceptions;
  * Exception thrown due to failing to assign floating IP to VM.
  */
 public class AssignFloatingIpToVmException extends Exception {
+  private static final long serialVersionUID = 1L;
 
   public AssignFloatingIpToVmException(String message) {
     super(message);

@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Gets thrown when running out of ThreadPool worker.
  */
 public class OutOfThreadPoolWorkerException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   public OutOfThreadPoolWorkerException() {
     super(ErrorCode.OUT_OF_THREAD_POOL_WORKER);

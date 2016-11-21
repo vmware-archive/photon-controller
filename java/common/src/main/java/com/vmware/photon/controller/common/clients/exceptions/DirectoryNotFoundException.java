@@ -18,6 +18,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when Directory is not found.
  */
 public class DirectoryNotFoundException extends RpcException {
+  private static final long serialVersionUID = 1L;
 
   public DirectoryNotFoundException(String message) {
     super(message);

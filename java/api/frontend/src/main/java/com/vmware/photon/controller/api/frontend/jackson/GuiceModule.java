@@ -22,6 +22,7 @@ import com.google.inject.Singleton;
  */
 @Singleton
 public class GuiceModule extends SimpleModule {
+  private static final long serialVersionUID = 1L;
 
   @Inject
   public GuiceModule(GuiceValueInstantiators instantiators) {

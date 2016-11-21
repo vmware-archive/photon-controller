@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Gets thrown when requested disk is not found.
  */
 public class ImageNotFoundException extends ExternalException {
+  private static final long serialVersionUID = 1L;
   private final Type type;
   private final String value;
 

@@ -19,6 +19,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * I/O or application level exception.
  */
 public class RpcException extends Exception {
+  private static final long serialVersionUID = 1L;
 
   public RpcException() {
   }

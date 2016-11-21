@@ -17,6 +17,7 @@ package com.vmware.photon.controller.apibackend.exceptions;
  * Exception thrown due to failing to create logical switch.
  */
 public class CreateLogicalSwitchException extends Exception {
+  private static final long serialVersionUID = 1L;
 
   public CreateLogicalSwitchException(String message) {
     super(message);

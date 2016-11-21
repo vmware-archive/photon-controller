@@ -482,7 +482,7 @@ public class TombstoneCleanerService extends StatefulService {
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
         .setTermMatchValue(Utils.buildKind(TombstoneService.State.class));
 
-    QueryTask.NumericRange range = QueryTask.NumericRange.createLessThanRange(
+    QueryTask.NumericRange<?> range = QueryTask.NumericRange.createLessThanRange(
         System.currentTimeMillis() - current.tombstoneExpirationAgeMillis);
     range.precisionStep = Integer.MAX_VALUE;
     QueryTask.Query ageClause = new QueryTask.Query()

@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Gets thrown when requested flavor cannot be found.
  */
 public class FlavorNotFoundException extends ExternalException {
+  private static final long serialVersionUID = 1L;
   private String flavorId;
   private String name;
   private String kind;

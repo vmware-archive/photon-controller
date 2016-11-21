@@ -17,6 +17,7 @@ package com.vmware.photon.controller.apibackend.exceptions;
  * Exception thrown due to failing to configuring DHCP service.
  */
 public class ConfigureDhcpException extends Exception {
+  private static final long serialVersionUID = 1L;
 
   public ConfigureDhcpException(String message) {
     super(message);

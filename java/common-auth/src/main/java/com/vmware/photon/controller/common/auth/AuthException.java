@@ -17,6 +17,7 @@ package com.vmware.photon.controller.common.auth;
  * Exception thrown by the AuthToken Tool.
  */
 public class AuthException extends Exception {
+  private static final long serialVersionUID = 1L;
 
   public AuthException() {
   }

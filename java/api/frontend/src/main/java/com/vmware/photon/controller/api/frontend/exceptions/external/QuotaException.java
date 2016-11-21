@@ -21,6 +21,7 @@ import com.google.common.base.Objects;
  * Gets thrown when resource creation cannot proceed because there was not enough quota allocated to accommodate it.
  */
 public class QuotaException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   private final QuotaLineItemEntity limit;
   private final QuotaLineItemEntity usage;

@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Exception thrown when host's availability zone is already set.
  */
 public class HostAvailabilityZoneAlreadySetException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   private String hostId;
   private String availabilityZoneId;

@@ -18,6 +18,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * a floating IP again.
  */
 public class FloatingIpAlreadyAcquiredException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   private final String vmId;
   private final String networkId;

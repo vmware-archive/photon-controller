@@ -491,7 +491,7 @@ public class AvailabilityZoneCleanerService extends StatefulService {
         .setTermMatchValue(AVAILABILITY_ZONE_STATE_PENDING_DELETE);
 
     Long durationInMicros = Utils.getNowMicrosUtc() - state.availabilityZoneExpirationAgeInMicros;
-    QueryTask.NumericRange range = QueryTask.NumericRange.createLessThanRange(durationInMicros);
+    QueryTask.NumericRange<?> range = QueryTask.NumericRange.createLessThanRange(durationInMicros);
     range.precisionStep = Integer.MAX_VALUE;
     QueryTask.Query timeClause = new QueryTask.Query()
         .setTermPropertyName(DOCUMENT_UPDATE_TIME_MICROS)

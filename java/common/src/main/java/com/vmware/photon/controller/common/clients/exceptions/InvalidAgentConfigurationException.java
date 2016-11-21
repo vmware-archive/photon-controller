@@ -19,6 +19,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown on invalid configuration passed when agent is provisioned.
  */
 public class InvalidAgentConfigurationException extends RpcException {
+  private static final long serialVersionUID = 1L;
   public InvalidAgentConfigurationException(String message) {
     super(message);
   }

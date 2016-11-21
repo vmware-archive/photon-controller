@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Thrown when the system has insufficient capacity to fulfil a request.
  */
 public class InsufficientCapacityException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   public InsufficientCapacityException() {
     super(ErrorCode.INSUFFICIENT_CAPACITY);

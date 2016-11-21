@@ -19,6 +19,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when the referenced image is still used by a VM.
  */
 public class ImageInUseException extends RpcException {
+  private static final long serialVersionUID = 1L;
 
   public ImageInUseException(String message) {
     super(message);

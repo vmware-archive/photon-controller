@@ -19,6 +19,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when the VM was expected to be powered off and it wasn't.
  */
 public class ResourceConstraintException extends RpcException {
+  private static final long serialVersionUID = 1L;
   public ResourceConstraintException(String message) {
     super(message);
   }

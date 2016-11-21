@@ -18,6 +18,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * <p/>
  */
 public class InvalidAuthConfigException extends RpcException {
+  private static final long serialVersionUID = 1L;
   public InvalidAuthConfigException(String message) {
     super(message);
   }

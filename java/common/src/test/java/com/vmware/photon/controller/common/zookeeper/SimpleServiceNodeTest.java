@@ -77,6 +77,7 @@ public class SimpleServiceNodeTest extends BaseTestWithRealZookeeper {
 
       assertEqualsNoOrder(serverSet.getServers().toArray(),
           new InetSocketAddress[]{server1, server2});
+      serverSet.close();
 
     } finally {
       zkClient.close();
@@ -136,6 +137,7 @@ public class SimpleServiceNodeTest extends BaseTestWithRealZookeeper {
           "Timed out waiting for the node to be removed from the server set");
 
       assertTrue(servers.isEmpty());
+      serverSet.close();
     } finally {
       zkClient.close();
     }

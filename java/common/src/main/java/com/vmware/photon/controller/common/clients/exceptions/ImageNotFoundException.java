@@ -19,6 +19,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when the referenced image was not found on the host.
  */
 public class ImageNotFoundException extends RpcException {
+  private static final long serialVersionUID = 1L;
 
   public ImageNotFoundException(String message) {
     super(message);

@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Thrown when an Xenon page is expired.
  */
 public class PageExpiredException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   private final String pageLink;
 

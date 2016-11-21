@@ -19,6 +19,7 @@ import com.vmware.xenon.common.Operation;
  * This exception maps to HTTP status code 400.
  */
 public class BadRequestException extends XenonException {
+  private static final long serialVersionUID = 1L;
   public BadRequestException(Operation requestedOperation, Operation completedOperation) {
     super(requestedOperation, completedOperation);
   }

@@ -17,6 +17,7 @@ package com.vmware.photon.controller.common.thrift;
  * Gets thrown by {@link ClientPool}.
  */
 public class ClientPoolException extends Exception {
+  private static final long serialVersionUID = 1L;
   public ClientPoolException() {
   }
 

@@ -25,6 +25,7 @@ import java.util.Map;
  * Exception thrown when the port group is repeated in multiple networks.
  */
 public class PortGroupRepeatedInMultipleNetworksException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   private final Map<String, List<NetworkService.State>> violations;
 

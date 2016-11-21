@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Thrown when availability zone is in invalid state for operation.
  */
 public class InvalidAvailabilityZoneStateException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   public InvalidAvailabilityZoneStateException(String message) {
     super(ErrorCode.INVALID_AVAILABILITYZONE_STATE, message, null);

@@ -19,6 +19,8 @@ import com.vmware.xenon.common.Operation;
  * This exception maps to HTTP status code 404.
  */
 public class DocumentNotFoundException extends XenonException {
+  private static final long serialVersionUID = 1L;
+
   public DocumentNotFoundException(Operation requestedOperation, Operation completedOperation) {
     super(requestedOperation, completedOperation);
   }

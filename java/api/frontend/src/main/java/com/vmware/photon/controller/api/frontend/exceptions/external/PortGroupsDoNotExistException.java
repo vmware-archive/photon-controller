@@ -22,6 +22,7 @@ import java.util.List;
  * Exception thrown when the port group is already added to an existing network.
  */
 public class PortGroupsDoNotExistException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   private final List<String> violations;
 

@@ -294,7 +294,7 @@ public class DeploymentFeClientTest {
     public void testNotFoundTenant(String message, ResourceList<Tenant> tenantList) throws Throwable {
       doReturn(tenantList).when(tenantBackend).filter(Matchers.<Optional<String>>any(),
           Matchers.<Optional<Integer>>any());
-      ResourceList list = feClient.listVms(deploymentId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      ResourceList<Vm> list = feClient.listVms(deploymentId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(list.getItems().size(), is(0));
     }
 
@@ -318,7 +318,7 @@ public class DeploymentFeClientTest {
     public void testNotFoundProject(String message, ResourceList<Project> projectList) throws Throwable {
       doReturn(projectList).when(projectBackend).filter(tenant.getId(), Optional.of(Constants.PROJECT_NAME),
           Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
-      ResourceList list = feClient.listVms(deploymentId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      ResourceList<Vm> list = feClient.listVms(deploymentId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(list.getItems().size(), is(0));
     }
 

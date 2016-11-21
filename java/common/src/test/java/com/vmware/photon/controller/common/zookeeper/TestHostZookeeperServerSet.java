@@ -79,6 +79,7 @@ public class TestHostZookeeperServerSet extends BaseTestWithRealZookeeper {
 
       assertThat(serverSet.getServers().contains(server1), is(true));
       assertThat(serverSet.getServers().contains(server2), is(true));
+      serverSet.close();
 
     } finally {
       zkClient.close();

@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.model.HostState;
  * Thrown when the host fails to change from one state to another.
  */
 public class HostStateChangeException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   public HostStateChangeException(String hostLink, HostState newState, Exception ex) {
     super(hostLink + " failed to change state to " + newState + ": " + ex.getMessage());

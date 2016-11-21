@@ -75,7 +75,7 @@ public class ApiFeConfigurationTest {
 
   @Test
   public void testStatusConfig() {
-    Set expectedComponents = EnumSet.allOf(Component.class);
+    Set<Component> expectedComponents = EnumSet.allOf(Component.class);
     assertThat(config.getStatusConfig().getComponents(), is(expectedComponents));
   }
 

@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Thrown when file is not in valid ova format.
  */
 public class ImageUploadException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   public ImageUploadException(String message) {
     super(ErrorCode.IMAGE_UPLOAD_ERROR, message, null);

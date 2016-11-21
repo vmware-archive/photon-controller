@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.internal;
  * Thrown when Component is not found in ComponentEnum.
  */
 public class ComponentClientCreationException extends InternalException {
+  private static final long serialVersionUID = 1L;
 
   public ComponentClientCreationException(String message) {
     super(message);

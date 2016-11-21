@@ -19,6 +19,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when there is existing host with the same address.
  */
 public class HostExistWithSameAddressException extends RpcException {
+  private static final long serialVersionUID = 1L;
   public HostExistWithSameAddressException(String message) {
     super(message);
   }

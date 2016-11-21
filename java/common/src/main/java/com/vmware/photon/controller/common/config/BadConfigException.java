@@ -17,6 +17,7 @@ package com.vmware.photon.controller.common.config;
  * Signals that the configuration is invalid.
  */
 public class BadConfigException extends Exception {
+  private static final long serialVersionUID = 1L;
 
   public BadConfigException(String message) {
     super(message);

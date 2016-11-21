@@ -251,7 +251,7 @@ public class EntityLockDeleteService extends StatefulService {
 
     QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
 
-    QueryTask.NumericRange range = QueryTask.NumericRange.createLessThanRange(durationInMicros);
+    QueryTask.NumericRange<?> range = QueryTask.NumericRange.createLessThanRange(durationInMicros);
     range.precisionStep = Integer.MAX_VALUE;
     QueryTask.Query timeClause = new QueryTask.Query()
         .setTermPropertyName(DOCUMENT_UPDATE_TIME_MICROS)

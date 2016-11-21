@@ -135,6 +135,7 @@ public class ZookeeperServerSetTest {
     verify(listener4).onServerRemoved(server1);
 
     verifyNoMoreInteractions(listener1, listener2, mockZk, listener3, listener4);
+    hostSet.close();
   }
 
   @Test
@@ -173,12 +174,15 @@ public class ZookeeperServerSetTest {
     verify(listener4).onServerRemoved(server);
 
     verifyNoMoreInteractions(listener1, listener2, listener3, listener4);
+    set.close();
+    hostSet.close();
   }
 
   @Test(expectedExceptions = RuntimeException.class)
   public void testDeserializeError() throws Exception {
     ZookeeperServerSet set = new ZookeeperServerSet(mockChildrenCacheFactory, zkClient, serviceReader, "foo", true);
     set.childEvent(mock(CuratorFramework.class), badChildEvent());
+    set.close();
   }
 
   @Test
@@ -233,6 +237,8 @@ public class ZookeeperServerSetTest {
     verify(listener4).onServerAdded(new InetSocketAddress("192.168.1.2", 256));
 
     verifyNoMoreInteractions(listener1, listener2, listener3, listener4);
+    set.close();
+    hostSet.close();
   }
 
   @Test
@@ -254,6 +260,7 @@ public class ZookeeperServerSetTest {
     set.childEvent(mockZk, childRemovedEvent("/services/foo/node-1", data(server1)));
     assertFalse(set.getServers().contains(server1));
     assertTrue(set.getServers().contains(server2));
+    set.close();
   }
 
   private HostConfig getHostConfig(String id, ServerAddress server) {

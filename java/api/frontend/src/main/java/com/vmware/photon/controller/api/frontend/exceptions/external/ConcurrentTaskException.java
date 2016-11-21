@@ -18,6 +18,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * performing a different task.
  */
 public class ConcurrentTaskException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   public ConcurrentTaskException() {
     super(ErrorCode.CONCURRENT_TASK);

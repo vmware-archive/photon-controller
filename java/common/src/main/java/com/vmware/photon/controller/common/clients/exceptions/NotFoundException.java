@@ -19,4 +19,5 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when the the resource could not be located.
  */
 public class NotFoundException extends RpcException {
+  private static final long serialVersionUID = 1L;
 }

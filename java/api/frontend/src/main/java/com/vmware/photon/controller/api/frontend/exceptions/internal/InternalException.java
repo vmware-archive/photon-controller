@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.ApiFeException;
  * but otherwise give API callers no additional details beyond a 500 service response.
  */
 public class InternalException extends ApiFeException {
+  private static final long serialVersionUID = 1L;
 
   public InternalException() {
   }

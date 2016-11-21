@@ -361,7 +361,6 @@ public class DataDictionaryTest extends BaseTestWithRealZookeeper {
 
     try {
       final DataDictionary dictionary = new DataDictionary(zkClient, executor, "host");
-      final CountDownLatch done = new CountDownLatch(1);
       final Map<String, byte[]> m = new HashMap<String, byte[]>() {{
         put("k1", "v1".getBytes());
         put("k2", "v1".getBytes());
@@ -391,7 +390,6 @@ public class DataDictionaryTest extends BaseTestWithRealZookeeper {
 
     try {
       final DataDictionary dictionary = new DataDictionary(zkClient, executor, "missing");
-      final CountDownLatch done = new CountDownLatch(1);
       final List<String> l = new ArrayList<String>() {{
         add("k1");
         add("k2");

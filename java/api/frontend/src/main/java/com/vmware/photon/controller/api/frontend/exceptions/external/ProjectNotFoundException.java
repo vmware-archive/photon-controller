@@ -18,6 +18,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * not accessible.
  */
 public class ProjectNotFoundException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   private final String projectId;
 

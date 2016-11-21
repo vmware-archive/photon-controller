@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Not Implemented Exception.
  */
 public class NotImplementedException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   public NotImplementedException() {
     super(ErrorCode.INTERNAL_ERROR);

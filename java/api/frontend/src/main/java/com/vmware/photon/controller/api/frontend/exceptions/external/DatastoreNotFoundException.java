@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Gets thrown when requested Datastore Entity is not found.
  */
 public class DatastoreNotFoundException extends ExternalException {
+  private static final long serialVersionUID = 1L;
   private final String id;
 
   public DatastoreNotFoundException(String id) {

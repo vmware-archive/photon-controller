@@ -19,6 +19,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown on invalid state is encountered when agent is provisioned.
  */
 public class InvalidAgentStateException extends RpcException {
+  private static final long serialVersionUID = 1L;
   public InvalidAgentStateException(String message) {
     super(message);
   }

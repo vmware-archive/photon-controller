@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Thrown when flavor is in an invalid state for operation.
  */
 public class InvalidFlavorSpecification extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   public InvalidFlavorSpecification(String message) {
     super(ErrorCode.INVALID_FLAVOR_SPECIFICATION, message, null);

@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.model.ClusterType;
  * Exception thrown when a certain type cluster has already been configured.
  */
 public class ClusterTypeAlreadyConfiguredException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   private ClusterType clusterType;
 

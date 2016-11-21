@@ -19,4 +19,5 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when the disk was expected to be attached.
  */
 public class DiskDetachedException extends RpcException {
+  private static final long serialVersionUID = 1L;
 }

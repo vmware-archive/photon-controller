@@ -19,6 +19,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Thrown when no such a resource as found at the time of reserving resources on host.
  */
 public class NoSuchResourceException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   public NoSuchResourceException() {
     super(ErrorCode.NO_SUCH_RESOURCE);

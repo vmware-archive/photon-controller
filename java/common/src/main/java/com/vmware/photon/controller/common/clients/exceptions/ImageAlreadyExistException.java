@@ -18,6 +18,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when image already exist.
  */
 public class ImageAlreadyExistException extends RpcException {
+  private static final long serialVersionUID = 1L;
 
   public ImageAlreadyExistException(String message) {
     super(message);

@@ -19,6 +19,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when the referenced host was not found.
  */
 public class HostNotFoundException extends RpcException {
+  private static final long serialVersionUID = 1L;
   public HostNotFoundException(String message) {
     super(message);
   }

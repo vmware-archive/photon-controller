@@ -19,6 +19,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when not enough memory was found at the time of reserving resources on host.
  */
 public class NotEnoughDatastoreCapacityException extends RpcException {
+  private static final long serialVersionUID = 1L;
 
   public NotEnoughDatastoreCapacityException(String message) {
     super(message);

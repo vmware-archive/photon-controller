@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions;
  * Exception thrown by API Frontend.
  */
 public class ApiFeException extends Exception {
+  private static final long serialVersionUID = 1L;
 
   public ApiFeException() {
   }

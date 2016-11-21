@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Gets thrown when the disks, which are specified to attach to a vm, are invalid.
  */
 public class InvalidAttachDisksException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   private final String message;
 

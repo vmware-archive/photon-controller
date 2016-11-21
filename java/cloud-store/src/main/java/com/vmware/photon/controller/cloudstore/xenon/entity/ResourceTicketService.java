@@ -332,6 +332,7 @@ public class ResourceTicketService extends StatefulService {
    * Gets thrown when resource creation cannot proceed because there was not enough quota allocated to accommodate it.
    */
   public static class QuotaException extends IllegalArgumentException {
+    private static final long serialVersionUID = 1L;
 
     private final QuotaErrorResponse quotaErrorResponse;
 

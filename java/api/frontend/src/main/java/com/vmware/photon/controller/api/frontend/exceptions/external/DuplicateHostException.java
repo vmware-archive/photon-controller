@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Exception thrown when host with the same address already exists.
  */
 public class DuplicateHostException extends ExternalException {
+  private static final long serialVersionUID = 1L;
   private String ip;
 
   public DuplicateHostException(String ip) {

@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Exception thrown when Deployment already exists.
  */
 public class DeploymentAlreadyExistException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   public DeploymentAlreadyExistException() {
     super(ErrorCode.DEPLOYMENT_ALREADY_EXIST);

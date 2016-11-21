@@ -66,7 +66,8 @@ public class NsxPair<K, V> {
       return false;
     }
 
-    NsxPair other = (NsxPair) o;
+    @SuppressWarnings("unchecked")
+    NsxPair<K, V> other = (NsxPair<K, V>) o;
     return Objects.equals(this.key, other.key)
         && Objects.equals(this.value, other.value);
   }

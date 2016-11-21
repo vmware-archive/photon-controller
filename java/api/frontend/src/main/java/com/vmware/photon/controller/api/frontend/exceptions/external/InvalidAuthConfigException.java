@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Gets thrown when calling deployment but invalid auth config is specified in deploy request.
  */
 public class InvalidAuthConfigException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   public InvalidAuthConfigException(String message) {
     super(ErrorCode.INVALID_AUTH_CONFIG, message, null);

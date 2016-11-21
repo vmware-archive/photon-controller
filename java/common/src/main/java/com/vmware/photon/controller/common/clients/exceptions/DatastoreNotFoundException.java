@@ -18,6 +18,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when datastore is not found.
  */
 public class DatastoreNotFoundException extends RpcException {
+  private static final long serialVersionUID = 1L;
 
   public DatastoreNotFoundException(String message) {
     super(message);

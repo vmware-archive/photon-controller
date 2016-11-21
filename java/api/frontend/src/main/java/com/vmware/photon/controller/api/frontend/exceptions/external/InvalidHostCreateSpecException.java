@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Gets thrown when a Host Spec is invalid.
  */
 public class InvalidHostCreateSpecException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   private final String message;
 

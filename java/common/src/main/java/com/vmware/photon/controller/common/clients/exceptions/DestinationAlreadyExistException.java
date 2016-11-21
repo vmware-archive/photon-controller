@@ -18,6 +18,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when destination already exist.
  */
 public class DestinationAlreadyExistException extends RpcException {
+  private static final long serialVersionUID = 1L;
 
   public DestinationAlreadyExistException(String message) {
     super(message);

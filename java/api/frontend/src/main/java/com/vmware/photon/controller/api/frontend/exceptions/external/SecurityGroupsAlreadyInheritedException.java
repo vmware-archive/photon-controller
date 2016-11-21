@@ -20,6 +20,7 @@ import java.util.List;
  * have duplicate names with the ones inherited.
  */
 public class SecurityGroupsAlreadyInheritedException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   private final List<String> securityGroupsNotSet;
 

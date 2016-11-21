@@ -17,6 +17,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Gets thrown when requested host provision fails.
  */
 public class HostProvisionFailedException extends ExternalException {
+  private static final long serialVersionUID = 1L;
   private final String id;
   private final String error;
 

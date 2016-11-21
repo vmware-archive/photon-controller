@@ -23,6 +23,7 @@ import java.util.Map;
  * Base ESXCloud exception.
  */
 public class ExternalException extends ApiFeException {
+  private static final long serialVersionUID = 1L;
 
   // todo(markl): discuss capturing current operation and current request id to aid with debug
   // todo(markl): https://www.pivotaltracker.com/story/show/52317629

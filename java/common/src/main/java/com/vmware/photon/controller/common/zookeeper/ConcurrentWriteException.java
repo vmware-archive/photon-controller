@@ -18,4 +18,5 @@ package com.vmware.photon.controller.common.zookeeper;
  * of a key to fail.
  */
 public class ConcurrentWriteException extends Exception {
+  private static final long serialVersionUID = 1L;
 }

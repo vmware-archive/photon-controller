@@ -17,6 +17,7 @@ package com.vmware.photon.controller.deployer.service.exceptions;
  * Gets thrown when auth config is invalid.
  */
 public class InvalidAuthConfigException extends Exception {
+  private static final long serialVersionUID = 1L;
 
   public InvalidAuthConfigException(String message) {
     super(message);

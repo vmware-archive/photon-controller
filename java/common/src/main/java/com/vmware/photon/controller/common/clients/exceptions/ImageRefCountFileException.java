@@ -19,6 +19,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when the ref count file for the referenced image is corrupted.
  */
 public class ImageRefCountFileException extends RpcException {
+  private static final long serialVersionUID = 1L;
 
   public ImageRefCountFileException(String message) {
     super(message);

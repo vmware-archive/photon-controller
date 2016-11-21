@@ -19,6 +19,7 @@ package com.vmware.photon.controller.common.clients.exceptions;
  * Thrown when no constraint matching datastore is found at the time of reserving resources on host.
  */
 public class ConstraintMatchingDatastoreNotFoundException extends RpcException {
+  private static final long serialVersionUID = 1L;
 
   public ConstraintMatchingDatastoreNotFoundException(String message) {
     super(message);

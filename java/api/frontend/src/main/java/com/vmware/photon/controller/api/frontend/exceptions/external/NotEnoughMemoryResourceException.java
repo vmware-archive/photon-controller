@@ -19,6 +19,7 @@ package com.vmware.photon.controller.api.frontend.exceptions.external;
  * Thrown when not enough memory was found at the time of reserving resources on host.
  */
 public class NotEnoughMemoryResourceException extends ExternalException {
+  private static final long serialVersionUID = 1L;
 
   public NotEnoughMemoryResourceException() {
     super(ErrorCode.NOT_ENOUGH_MEMORY_RESOURCE);
