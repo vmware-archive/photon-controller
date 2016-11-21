@@ -412,6 +412,29 @@ public class DeploymentResourceTest extends ResourceTest {
   }
 
   @Test
+  public void testSyncHostsConfig() throws Exception {
+    Task task = new Task();
+    task.setId(taskId);
+    doReturn(task).when(feClient).syncHostsConfig(eq(deploymentId));
+
+    String uri = UriBuilder.fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
+        DeploymentResourceRoutes.SYNC_HOSTS_CONFIG_ACTION)
+        .build(deploymentId)
+        .toString();
+
+    Response response = client()
+        .target(uri)
+        .request()
+        .post(Entity.json(null));
+    assertThat(response.getStatus(), is(200));
+
+    Task responseTask = response.readEntity(Task.class);
+    assertThat(responseTask, is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
+  }
+
+  @Test
   public void testGetSizeByValidId() throws Exception {
     DeploymentSize deploymentSize = new DeploymentSize();
     deploymentSize.setNumberHosts(2);

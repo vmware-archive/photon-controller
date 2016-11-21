@@ -1388,4 +1388,53 @@ public class DeploymentXenonBackendTest {
           is(true));
     }
   }
+
+  /**
+   * Tests for sync hosts config task.
+   */
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
+  public static class SyncHostsConfigTasksTest {
+    @Inject
+    private BasicServiceHost serviceHost;
+    @Inject
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+    @Inject
+    private DeploymentBackend deploymentBackend;
+
+    private String deploymentId;
+
+    @BeforeClass
+    public void beforeClassSetup() throws Throwable {
+      commonHostAndClientSetup(serviceHost, apiFeXenonRestClient);
+    }
+
+    @BeforeMethod
+    public void beforeMethodSetup() throws Throwable {
+      commonDataSetup();
+
+      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
+      DeploymentEntity deploymentEntity = deploymentBackend.findById(task.getEntityId());
+      deploymentId = deploymentEntity.getId();
+    }
+
+    @AfterMethod
+    public void afterMethodCleanup() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testSyncHostsConfig() throws Throwable {
+      TaskEntity taskEntity = deploymentBackend.prepareSyncHostsConfig(deploymentId);
+
+      // verify that task steps are created successfully
+      assertThat(taskEntity.getSteps().size(), is(2));
+      Assert.assertEquals(taskEntity.getSteps().get(0).getOperation(), Operation.SYNC_HOSTS_CONFIG_INITIATE);
+      Assert.assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.SYNC_HOSTS_CONFIG);
+    }
+  }
 }
