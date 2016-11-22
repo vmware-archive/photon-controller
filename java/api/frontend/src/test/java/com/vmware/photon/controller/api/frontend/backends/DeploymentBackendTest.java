@@ -88,9 +88,9 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 
 /**
- * Tests {@link DeploymentXenonBackend}.
+ * Tests {@link DeploymentBackend}.
  */
-public class DeploymentXenonBackendTest {
+public class DeploymentBackendTest {
 
   private static ApiFeXenonRestClient xenonClient;
   private static BasicServiceHost host;
@@ -245,7 +245,7 @@ public class DeploymentXenonBackendTest {
       assertThat(deployment.getOauthEndpoint(), nullValue());
       assertThat(deployment.getOauthPort(), nullValue());
       assertThat(deployment.getOauthTenant(), is("t"));
-      assertThat(deployment.getOauthUsername(), is(DeploymentXenonBackend.AUTH_ADMIN_USER_NAME));
+      assertThat(deployment.getOauthUsername(), is(DeploymentBackend.AUTH_ADMIN_USER_NAME));
       assertThat(deployment.getOauthPassword(), is("p"));
       assertThat(deployment.getNetworkManagerAddress(), is("1.2.3.4"));
       assertThat(deployment.getNetworkManagerUsername(), is("networkManagerUsername"));
@@ -295,9 +295,9 @@ public class DeploymentXenonBackendTest {
     private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
-    private DeploymentXenonBackend deploymentBackend;
+    private DeploymentBackend deploymentBackend;
 
-    private DeploymentXenonBackend deploymentBackendSpy;
+    private DeploymentBackend deploymentBackendSpy;
 
     private DeploymentEntity entity;
 
@@ -690,7 +690,7 @@ public class DeploymentXenonBackendTest {
   }
 
   /**
-   * Tests {@link DeploymentXenonBackend#toApiRepresentation(String)}.
+   * Tests {@link DeploymentBackend#toApiRepresentation(String)}.
    */
   @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
   public static class ToApiRepresentationTest {

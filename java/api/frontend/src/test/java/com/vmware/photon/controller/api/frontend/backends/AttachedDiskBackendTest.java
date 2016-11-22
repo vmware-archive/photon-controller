@@ -52,9 +52,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link AttachedDiskXenonBackend}.
+ * Tests {@link AttachedDiskBackend}.
  */
-public class AttachedDiskXenonBackendTest {
+public class AttachedDiskBackendTest {
 
   private static ApiFeXenonRestClient xenonClient;
   private static BasicServiceHost host;

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.api.frontend.commands.steps;
 
-import com.vmware.photon.controller.api.frontend.backends.DeploymentXenonBackend;
+import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
 import com.vmware.photon.controller.api.frontend.backends.StepBackend;
 import com.vmware.photon.controller.api.frontend.backends.TaskBackend;
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
@@ -103,7 +103,7 @@ public class DeploymentDeleteStatusStepCmd extends XenonTaskStatusStepCmd {
                 RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS.ordinal())
             .build();
 
-    private final DeploymentXenonBackend deploymentBackend;
+    private final DeploymentBackend deploymentBackend;
 
     private DeploymentEntity entity;
     private TaskCommand taskCommand;
@@ -111,7 +111,7 @@ public class DeploymentDeleteStatusStepCmd extends XenonTaskStatusStepCmd {
 
     public DeploymentDeleteStepPoller(TaskCommand taskCommand,
                                       TaskBackend taskBackend,
-                                      DeploymentXenonBackend deploymentBackend) {
+                                      DeploymentBackend deploymentBackend) {
       this.taskCommand = taskCommand;
       this.deploymentBackend = deploymentBackend;
       this.taskBackend = taskBackend;

@@ -46,9 +46,9 @@ import static org.testng.Assert.fail;
 import java.util.UUID;
 
 /**
- * Tests {@link com.vmware.photon.controller.api.frontend.backends.AvailabilityZoneXenonBackend}.
+ * Tests {@link AvailabilityZoneBackend}.
  */
-public class AvailabilityZoneXenonBackendTest {
+public class AvailabilityZoneBackendTest {
 
   private static ApiFeXenonRestClient xenonClient;
   private static BasicServiceHost host;
@@ -131,7 +131,7 @@ public class AvailabilityZoneXenonBackendTest {
     private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
-    private AvailabilityZoneXenonBackend availabilityZoneXenonBackend;
+    private AvailabilityZoneBackend availabilityZoneBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -151,11 +151,11 @@ public class AvailabilityZoneXenonBackendTest {
 
     @Test
     public void testCreateAvailabilityZone() throws Throwable {
-      createdAvailabilityZoneTaskEntity = availabilityZoneXenonBackend.createAvailabilityZone(
+      createdAvailabilityZoneTaskEntity = availabilityZoneBackend.createAvailabilityZone(
           availabilityZoneCreateSpec);
 
       String availabilityZoneId = createdAvailabilityZoneTaskEntity.getEntityId();
-      AvailabilityZoneEntity availabilityZone = availabilityZoneXenonBackend.getEntityById(availabilityZoneId);
+      AvailabilityZoneEntity availabilityZone = availabilityZoneBackend.getEntityById(availabilityZoneId);
       assertThat(availabilityZone, is(notNullValue()));
       assertThat(availabilityZone.getName(), is(availabilityZoneCreateSpec.getName()));
       assertThat(availabilityZone.getKind(), is("availability-zone"));
@@ -180,7 +180,7 @@ public class AvailabilityZoneXenonBackendTest {
     private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
-    private AvailabilityZoneXenonBackend availabilityZoneXenonBackend;
+    private AvailabilityZoneBackend availabilityZoneBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -202,7 +202,7 @@ public class AvailabilityZoneXenonBackendTest {
 
     @Test
     public void testGetEntityById() throws Throwable {
-      AvailabilityZoneEntity foundAvailabilityZoneEntity = availabilityZoneXenonBackend.getEntityById(
+      AvailabilityZoneEntity foundAvailabilityZoneEntity = availabilityZoneBackend.getEntityById(
           availabilityZoneId);
       assertThat(foundAvailabilityZoneEntity.getName(), is(availabilityZone.name));
       assertThat(foundAvailabilityZoneEntity.getState(), is(availabilityZone.state));
@@ -212,8 +212,8 @@ public class AvailabilityZoneXenonBackendTest {
     public void testGetEntityByIdWithNonExistingId() throws Throwable {
       String id = UUID.randomUUID().toString();
       try {
-        availabilityZoneXenonBackend.getEntityById(id);
-        fail("availabilityZoneXenonBackend.getEntityById for a non existing id should have failed");
+        availabilityZoneBackend.getEntityById(id);
+        fail("availabilityZoneBackend.getEntityById for a non existing id should have failed");
       } catch (AvailabilityZoneNotFoundException e) {
         assertThat(e.getMessage(), containsString(id));
       }
@@ -221,7 +221,7 @@ public class AvailabilityZoneXenonBackendTest {
 
     @Test
     public void testGetApiRepresentation() throws ExternalException {
-      AvailabilityZone foundAvailabilityZone = availabilityZoneXenonBackend.getApiRepresentation(availabilityZoneId);
+      AvailabilityZone foundAvailabilityZone = availabilityZoneBackend.getApiRepresentation(availabilityZoneId);
       assertThat(foundAvailabilityZone.getName(), is(availabilityZone.name));
       assertThat(foundAvailabilityZone.getState(), is(availabilityZone.state));
     }
@@ -229,7 +229,7 @@ public class AvailabilityZoneXenonBackendTest {
     @Test
     public void testGetAll() throws Throwable {
       createTestAvailabilityZoneDocument(createTestAvailabilityZone(AvailabilityZoneState.CREATING));
-      ResourceList<AvailabilityZoneEntity> foundAvailabilityZoneEntities = availabilityZoneXenonBackend.getAll(
+      ResourceList<AvailabilityZoneEntity> foundAvailabilityZoneEntities = availabilityZoneBackend.getAll(
           Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(foundAvailabilityZoneEntities.getItems().isEmpty(), is(false));
       assertThat(foundAvailabilityZoneEntities.getItems().size(), is(2));
@@ -240,13 +240,13 @@ public class AvailabilityZoneXenonBackendTest {
     @Test
     public void testGetListApiRepresentation() throws Throwable {
       createTestAvailabilityZoneDocument(createTestAvailabilityZone(AvailabilityZoneState.CREATING));
-      ResourceList<AvailabilityZone> foundAvailabilityZones = availabilityZoneXenonBackend.getListApiRepresentation
+      ResourceList<AvailabilityZone> foundAvailabilityZones = availabilityZoneBackend.getListApiRepresentation
           (Optional.of(1));
       assertThat(foundAvailabilityZones.getItems().isEmpty(), is(false));
       assertThat(foundAvailabilityZones.getItems().size(), is(1));
       assertThat(foundAvailabilityZones.getItems().get(0).getState(), is(availabilityZone.state));
 
-      foundAvailabilityZones = availabilityZoneXenonBackend.getPage(foundAvailabilityZones.getNextPageLink());
+      foundAvailabilityZones = availabilityZoneBackend.getPage(foundAvailabilityZones.getNextPageLink());
       assertThat(foundAvailabilityZones.getItems().isEmpty(), is(false));
       assertThat(foundAvailabilityZones.getItems().size(), is(1));
       assertThat(foundAvailabilityZones.getItems().get(0).getState(), is(availabilityZone.state));
@@ -269,7 +269,7 @@ public class AvailabilityZoneXenonBackendTest {
     private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
-    private AvailabilityZoneXenonBackend availabilityZoneXenonBackend;
+    private AvailabilityZoneBackend availabilityZoneBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -291,11 +291,11 @@ public class AvailabilityZoneXenonBackendTest {
 
     @Test
     public void testPrepareAvailabilityZoneDelete() throws Throwable {
-      TaskEntity task = availabilityZoneXenonBackend.prepareAvailabilityZoneDelete(availabilityZoneId);
+      TaskEntity task = availabilityZoneBackend.prepareAvailabilityZoneDelete(availabilityZoneId);
       assertThat(task, is(notNullValue()));
       assertThat(task.getState(), is(TaskEntity.State.COMPLETED));
 
-      AvailabilityZoneEntity foundAvailabilityZoneEntity = availabilityZoneXenonBackend.getEntityById(
+      AvailabilityZoneEntity foundAvailabilityZoneEntity = availabilityZoneBackend.getEntityById(
           availabilityZoneId);
       assertThat(foundAvailabilityZoneEntity.getName(), is(availabilityZone.name));
       assertThat(foundAvailabilityZoneEntity.getState(), is(AvailabilityZoneState.PENDING_DELETE));
@@ -305,8 +305,8 @@ public class AvailabilityZoneXenonBackendTest {
     public void testPrepareAvailabilityZoneDeleteWithNonExistingId() throws Throwable {
       String id = UUID.randomUUID().toString();
       try {
-        availabilityZoneXenonBackend.prepareAvailabilityZoneDelete(id);
-        fail("availabilityZoneXenonBackend.prepareAvailabilityZoneDelete for a non existing id should have failed");
+        availabilityZoneBackend.prepareAvailabilityZoneDelete(id);
+        fail("availabilityZoneBackend.prepareAvailabilityZoneDelete for a non existing id should have failed");
       } catch (AvailabilityZoneNotFoundException e) {
         assertThat(e.getMessage(), containsString(id));
       }

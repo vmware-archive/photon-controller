@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.api.frontend.clients;
 
-import com.vmware.photon.controller.api.frontend.backends.AvailabilityZoneXenonBackend;
+import com.vmware.photon.controller.api.frontend.backends.AvailabilityZoneBackend;
 import com.vmware.photon.controller.api.frontend.backends.DiskBackend;
 import com.vmware.photon.controller.api.frontend.backends.FlavorBackend;
 import com.vmware.photon.controller.api.frontend.backends.HostBackend;
@@ -75,7 +75,7 @@ public class TaskFeClientTest {
           taskBackend, mock(TenantBackend.class), mock(ProjectBackend.class),
           mock(ResourceTicketBackend.class), mock(VmBackend.class), mock(DiskBackend.class),
           mock(ImageBackend.class), mock(FlavorBackend.class), mock(HostBackend.class),
-          mock(AvailabilityZoneXenonBackend.class));
+          mock(AvailabilityZoneBackend.class));
     }
 
     /**

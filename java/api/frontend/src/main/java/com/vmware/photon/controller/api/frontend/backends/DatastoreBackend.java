@@ -13,26 +13,111 @@
 
 package com.vmware.photon.controller.api.frontend.backends;
 
+import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DatastoreNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpiredException;
+import com.vmware.photon.controller.api.frontend.utils.PaginationUtils;
 import com.vmware.photon.controller.api.model.Datastore;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Inventory Datastore service backend.
  */
-public interface DatastoreBackend {
+@Singleton
+public class DatastoreBackend {
 
-  Datastore toApiRepresentation(String id) throws DatastoreNotFoundException;
+  private static final Logger logger = LoggerFactory.getLogger(DatastoreBackend.class);
 
-  Datastore getDatastore(String id) throws DatastoreNotFoundException;
+  private final ApiFeXenonRestClient xenonClient;
 
-  ResourceList<Datastore> filter(Optional<String> tag, Optional<Integer> pageSize) throws ExternalException;
+  @Inject
+  public DatastoreBackend(ApiFeXenonRestClient xenonClient) {
+    this.xenonClient = xenonClient;
+    this.xenonClient.start();
+  }
 
-  ResourceList<Datastore> getDatastoresPage(String pageLink) throws PageExpiredException;
+  public Datastore toApiRepresentation(String id) throws DatastoreNotFoundException {
+    return toApiRepresentation(findById(id));
+  }
 
-  int getNumberDatastores();
+  public ResourceList<Datastore> filter(Optional<String> tag, Optional<Integer> pageSize) throws ExternalException {
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+
+    if (tag.isPresent()) {
+      termsBuilder.put(DatastoreService.TAGS_KEY, tag.get().toString());
+    }
+
+    ImmutableMap<String, String> terms = termsBuilder.build();
+    logger.info("Filtering Datastores using terms {}", terms);
+
+    ServiceDocumentQueryResult queryResult = xenonClient.queryDocuments(
+            DatastoreService.State.class, terms, pageSize, true);
+
+    return PaginationUtils.xenonQueryResultToResourceList(DatastoreService.State.class, queryResult,
+            state -> toApiRepresentation(state));
+  }
+
+  public Datastore getDatastore(String id) throws DatastoreNotFoundException {
+    return toApiRepresentation(findById(id));
+  }
+
+  public ResourceList<Datastore> getDatastoresPage(String pageLink) throws PageExpiredException{
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = xenonClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    return PaginationUtils.xenonQueryResultToResourceList(
+            DatastoreService.State.class, queryResult, state -> toApiRepresentation(state));
+  }
+
+  public int getNumberDatastores() {
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
+    querySpec.query.addBooleanClause(kindClause);
+    querySpec.options.add(QueryTask.QuerySpecification.QueryOption.COUNT);
+
+    com.vmware.xenon.common.Operation result = xenonClient.query(querySpec, true);
+    ServiceDocumentQueryResult queryResult = result.getBody(QueryTask.class).results;
+    return queryResult.documentCount.intValue();
+  }
+
+  private DatastoreService.State findById(String id) throws DatastoreNotFoundException {
+    try {
+      com.vmware.xenon.common.Operation result = xenonClient.get(DatastoreServiceFactory.SELF_LINK + "/" + id);
+      return result.getBody(DatastoreService.State.class);
+    } catch (DocumentNotFoundException exception) {
+      throw new DatastoreNotFoundException(id);
+    }
+  }
+
+  private Datastore toApiRepresentation(DatastoreService.State state) {
+    Datastore datastore = new Datastore();
+    datastore.setId(ServiceUtils.getIDFromDocumentSelfLink(state.documentSelfLink));
+    datastore.setType(state.type);
+    datastore.setTags(state.tags);
+
+    return datastore;
+  }
+
 }

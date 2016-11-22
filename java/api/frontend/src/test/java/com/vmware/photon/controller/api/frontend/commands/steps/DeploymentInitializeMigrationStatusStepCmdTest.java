@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.api.frontend.commands.steps;
 
-import com.vmware.photon.controller.api.frontend.backends.DeploymentXenonBackend;
+import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
 import com.vmware.photon.controller.api.frontend.backends.StepBackend;
 import com.vmware.photon.controller.api.frontend.backends.TaskBackend;
 import com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient;
@@ -50,7 +50,7 @@ public class DeploymentInitializeMigrationStatusStepCmdTest {
   private StepBackend stepBackend;
   private TaskCommand taskCommand;
   private TaskBackend taskBackend;
-  private DeploymentXenonBackend deploymentBackend;
+  private DeploymentBackend deploymentBackend;
 
   private DeployerClient deployerClient;
   private DeploymentInitializeMigrationStatusStepCmd.DeploymentInitializeMigrationStatusStepPoller poller;
@@ -65,7 +65,7 @@ public class DeploymentInitializeMigrationStatusStepCmdTest {
     deployerClient = mock(DeployerClient.class);
     taskCommand = mock(TaskCommand.class);
     taskBackend = mock(TaskBackend.class);
-    deploymentBackend = mock(DeploymentXenonBackend.class);
+    deploymentBackend = mock(DeploymentBackend.class);
     when(taskCommand.getDeployerXenonClient()).thenReturn(deployerClient);
     when(deploymentBackend.getDeployerClient()).thenReturn(deployerClient);
     stepBackend = mock(StepBackend.class);

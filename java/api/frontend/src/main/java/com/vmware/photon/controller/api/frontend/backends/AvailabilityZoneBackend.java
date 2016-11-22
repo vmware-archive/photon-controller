@@ -13,32 +13,157 @@
 
 package com.vmware.photon.controller.api.frontend.backends;
 
+import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.entities.AvailabilityZoneEntity;
+import com.vmware.photon.controller.api.frontend.entities.EntityStateValidator;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
+import com.vmware.photon.controller.api.frontend.exceptions.external.AvailabilityZoneNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.NotImplementedException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpiredException;
+import com.vmware.photon.controller.api.frontend.utils.PaginationUtils;
 import com.vmware.photon.controller.api.model.AvailabilityZone;
 import com.vmware.photon.controller.api.model.AvailabilityZoneCreateSpec;
+import com.vmware.photon.controller.api.model.AvailabilityZoneState;
+import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.cloudstore.xenon.entity.AvailabilityZoneService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.AvailabilityZoneServiceFactory;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Backend interface for availability zone related operations.
+ * Implementation of the availabilityZone operations with Xenon as the document store.
  */
-public interface AvailabilityZoneBackend {
-  TaskEntity createAvailabilityZone(AvailabilityZoneCreateSpec availabilityZone) throws ExternalException;
+@Singleton
+public class AvailabilityZoneBackend {
 
-  AvailabilityZone getApiRepresentation(String id) throws ExternalException;
+  private static final Logger logger = LoggerFactory.getLogger(AvailabilityZoneBackend.class);
 
-  ResourceList<AvailabilityZone> getListApiRepresentation(Optional<Integer> pageSize) throws ExternalException;
+  private final ApiFeXenonRestClient xenonClient;
+  private final TaskBackend taskBackend;
 
-  AvailabilityZoneEntity getEntityById(String id) throws ExternalException;
+  @Inject
+  public AvailabilityZoneBackend(ApiFeXenonRestClient xenonClient, TaskBackend taskBackend) {
+    this.xenonClient = xenonClient;
+    this.taskBackend = taskBackend;
+    this.xenonClient.start();
+  }
 
-  ResourceList<AvailabilityZoneEntity> getAll(Optional<Integer> pageSize) throws ExternalException;
+  public TaskEntity createAvailabilityZone(AvailabilityZoneCreateSpec availabilityZone) throws ExternalException {
+    AvailabilityZoneService.State state = new AvailabilityZoneService.State();
+    state.name = availabilityZone.getName();
+    state.state = AvailabilityZoneState.READY;
+    com.vmware.xenon.common.Operation result = xenonClient.post(AvailabilityZoneServiceFactory.SELF_LINK, state);
+    AvailabilityZoneService.State createdState = result.getBody(AvailabilityZoneService.State.class);
+    AvailabilityZoneEntity availabilityZoneEntity = convertToEntity(createdState);
+    return taskBackend.createCompletedTask(availabilityZoneEntity, Operation.CREATE_AVAILABILITYZONE);
+  }
 
-  ResourceList<AvailabilityZone> getPage(String pageLink) throws ExternalException;
+  public AvailabilityZone getApiRepresentation(String id) throws ExternalException {
+    return convertToEntity(findById(id)).toApiRepresentation();
+  }
 
-  TaskEntity prepareAvailabilityZoneDelete(String id) throws ExternalException;
+  public ResourceList<AvailabilityZone> getListApiRepresentation(Optional<Integer> pageSize)
+      throws ExternalException {
 
-  void tombstone(AvailabilityZoneEntity availabilityZone) throws ExternalException;
+    List<AvailabilityZone> result = new ArrayList<>();
+    ResourceList<AvailabilityZoneEntity> list = getAll(pageSize);
+    list.getItems().forEach(entity -> result.add(entity.toApiRepresentation()));
+
+    return new ResourceList<>(result, list.getNextPageLink(), list.getPreviousPageLink());
+  }
+
+  public AvailabilityZoneEntity getEntityById(String id) throws ExternalException {
+    checkNotNull(id);
+    return convertToEntity(findById(id));
+  }
+
+  public ResourceList<AvailabilityZoneEntity> getAll(Optional<Integer> pageSize) throws ExternalException {
+    return findEntitiesByName(Optional.<String>absent(), pageSize);
+  }
+
+  public TaskEntity prepareAvailabilityZoneDelete(String id) throws ExternalException {
+    AvailabilityZoneEntity availabilityZoneEntity = convertToEntity(findById(id));
+    EntityStateValidator.validateStateChange(availabilityZoneEntity.getState(),
+        AvailabilityZoneState.DELETED, AvailabilityZoneState.PRECONDITION_STATES);
+
+    AvailabilityZoneService.State availabilityZoneState = new AvailabilityZoneService.State();
+    availabilityZoneState.state = AvailabilityZoneState.PENDING_DELETE;
+    try {
+      xenonClient.patch(AvailabilityZoneServiceFactory.SELF_LINK + "/" + availabilityZoneEntity.getId(),
+          availabilityZoneState);
+    } catch (DocumentNotFoundException e) {
+      throw new AvailabilityZoneNotFoundException(availabilityZoneEntity.getId());
+    }
+
+    return taskBackend.createCompletedTask(availabilityZoneEntity, Operation.DELETE_AVAILABILITYZONE);
+  }
+
+  public void tombstone(AvailabilityZoneEntity availabilityZone) throws ExternalException {
+    // For tombstone, we'll follow different pattern.
+    // Build a service in Xenon which gets all PENDING_DELETE availability zones, checks whether
+    // there is any host associated with availability zone. If none, then tombstone the availability zone
+    // and deletes the availability zone document.
+    throw new NotImplementedException();
+  }
+
+  public ResourceList<AvailabilityZone> getPage(String pageLink) throws ExternalException {
+    ServiceDocumentQueryResult queryResult = null;
+    try {
+      queryResult = xenonClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    return PaginationUtils.xenonQueryResultToResourceList(AvailabilityZoneService.State.class, queryResult,
+        state -> convertToEntity(state).toApiRepresentation());
+  }
+
+  private AvailabilityZoneEntity convertToEntity(AvailabilityZoneService.State availabilityZone) {
+    AvailabilityZoneEntity availabilityZoneEntity = new AvailabilityZoneEntity();
+    availabilityZoneEntity.setName(availabilityZone.name);
+    availabilityZoneEntity.setState(availabilityZone.state);
+    availabilityZoneEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(availabilityZone.documentSelfLink));
+    return availabilityZoneEntity;
+  }
+
+  private AvailabilityZoneService.State findById(String id) throws ExternalException {
+    com.vmware.xenon.common.Operation result;
+
+    try {
+      result = xenonClient.get(AvailabilityZoneServiceFactory.SELF_LINK + "/" + id);
+    } catch (DocumentNotFoundException documentNotFoundException) {
+      throw new AvailabilityZoneNotFoundException(id);
+    }
+
+    return result.getBody(AvailabilityZoneService.State.class);
+  }
+
+  private ResourceList<AvailabilityZoneEntity> findEntitiesByName(Optional<String> name, Optional<Integer> pageSize)
+      throws ExternalException {
+
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    if (name.isPresent()) {
+      termsBuilder.put("name", name.get());
+    }
+
+    ServiceDocumentQueryResult queryResult = xenonClient.queryDocuments(AvailabilityZoneService.State.class,
+        termsBuilder.build(), pageSize, true);
+
+    return PaginationUtils.xenonQueryResultToResourceList(AvailabilityZoneService.State.class, queryResult,
+        state -> convertToEntity(state));
+  }
 }

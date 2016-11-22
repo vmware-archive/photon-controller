@@ -62,9 +62,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link DiskXenonBackend}.
+ * Tests {@link DiskBackend}.
  */
-public class DiskXenonBackendTest {
+public class DiskBackendTest {
 
   private static ApiFeXenonRestClient xenonClient;
   private static BasicServiceHost host;
@@ -126,7 +126,7 @@ public class DiskXenonBackendTest {
     private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
-    private DiskXenonBackend diskXenonBackend;
+    private DiskBackend diskBackend;
 
     @Inject
     private ResourceTicketBackend resourceTicketBackend;
@@ -210,12 +210,12 @@ public class DiskXenonBackendTest {
 
     @Test
     public void testCreateDisk() throws Exception {
-      TaskEntity taskEntity = diskXenonBackend.prepareDiskCreate(projectId, spec);
+      TaskEntity taskEntity = diskBackend.prepareDiskCreate(projectId, spec);
       assertThat(taskEntity.getEntityId(), notNullValue());
       assertThat(taskEntity.getEntityKind(), is(PersistentDisk.KIND));
       assertThat(taskEntity.getSteps().size(), is(2));
 
-      PersistentDiskEntity persistentDiskEntity = (PersistentDiskEntity) diskXenonBackend.find(PersistentDisk.KIND,
+      PersistentDiskEntity persistentDiskEntity = (PersistentDiskEntity) diskBackend.find(PersistentDisk.KIND,
           taskEntity.getEntityId());
       Flavor flavor = flavorBackend.filter(Optional.of(spec.getFlavor()),
               Optional.of(PersistentDisk.KIND), Optional.absent()).getItems().get(0);
@@ -243,7 +243,7 @@ public class DiskXenonBackendTest {
       createSpec.setCapacityGb(2);
       createSpec.setFlavor("test-flavor-ephemeral-disk");
 
-      BaseDiskEntity diskEntity = diskXenonBackend.create(projectId, createSpec);
+      BaseDiskEntity diskEntity = diskBackend.create(projectId, createSpec);
       Flavor flavor = flavorBackend.filter(Optional.of(createSpec.getFlavor()),
               Optional.of(EphemeralDisk.KIND), Optional.absent()).getItems().get(0);
 
@@ -257,7 +257,7 @@ public class DiskXenonBackendTest {
     @Test
     public void testCreateDiskInvalidProjectId() throws Exception {
       try {
-        diskXenonBackend.prepareDiskCreate("invalid-project", spec);
+        diskBackend.prepareDiskCreate("invalid-project", spec);
         fail("should have failed with TenantNotFoundException.");
       } catch (ProjectNotFoundException e) {
         assertThat(e.getMessage(), is("Project invalid-project not found"));

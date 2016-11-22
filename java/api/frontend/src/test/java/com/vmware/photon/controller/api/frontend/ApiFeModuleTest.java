@@ -32,13 +32,9 @@ import com.vmware.photon.controller.api.frontend.auth.fetcher.TenantSecurityGrou
 import com.vmware.photon.controller.api.frontend.auth.fetcher.Vm;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.VmSecurityGroupFetcher;
 import com.vmware.photon.controller.api.frontend.backends.AttachedDiskBackend;
-import com.vmware.photon.controller.api.frontend.backends.AttachedDiskXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.DatastoreBackend;
-import com.vmware.photon.controller.api.frontend.backends.DatastoreXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
-import com.vmware.photon.controller.api.frontend.backends.DeploymentXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.DiskBackend;
-import com.vmware.photon.controller.api.frontend.backends.DiskXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.EntityLockBackend;
 import com.vmware.photon.controller.api.frontend.backends.EntityLockXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.FlavorBackend;
@@ -368,7 +364,7 @@ public class ApiFeModuleTest {
       assertThat(xenonBackendDummyClient.networkBackend, notNullValue());
       assertThat(xenonBackendDummyClient.networkBackend, instanceOf(NetworkXenonBackend.class));
       assertThat(xenonBackendDummyClient.datastoreBackend, notNullValue());
-      assertThat(xenonBackendDummyClient.datastoreBackend, instanceOf(DatastoreXenonBackend.class));
+      assertThat(xenonBackendDummyClient.datastoreBackend, instanceOf(DatastoreBackend.class));
       assertThat(xenonBackendDummyClient.entityLockBackend, notNullValue());
       assertThat(xenonBackendDummyClient.entityLockBackend, instanceOf(EntityLockXenonBackend.class));
       assertThat(xenonBackendDummyClient.taskBackend, notNullValue());
@@ -378,9 +374,9 @@ public class ApiFeModuleTest {
       assertThat(xenonBackendDummyClient.resourceTicketBackend, notNullValue());
       assertThat(xenonBackendDummyClient.resourceTicketBackend, instanceOf(ResourceTicketXenonBackend.class));
       assertThat(xenonBackendDummyClient.diskBackend, notNullValue());
-      assertThat(xenonBackendDummyClient.diskBackend, instanceOf(DiskXenonBackend.class));
+      assertThat(xenonBackendDummyClient.diskBackend, instanceOf(DiskBackend.class));
       assertThat(xenonBackendDummyClient.attachedDiskBackend, notNullValue());
-      assertThat(xenonBackendDummyClient.attachedDiskBackend, instanceOf(AttachedDiskXenonBackend.class));
+      assertThat(xenonBackendDummyClient.attachedDiskBackend, instanceOf(AttachedDiskBackend.class));
       assertThat(xenonBackendDummyClient.vmBackend, notNullValue());
       assertThat(xenonBackendDummyClient.vmBackend, instanceOf(VmXenonBackend.class));
       assertThat(xenonBackendDummyClient.tombstoneBackend, notNullValue());
@@ -388,7 +384,7 @@ public class ApiFeModuleTest {
       assertThat(xenonBackendDummyClient.hostBackend, notNullValue());
       assertThat(xenonBackendDummyClient.hostBackend, instanceOf(HostXenonBackend.class));
       assertThat(xenonBackendDummyClient.deploymentBackend, notNullValue());
-      assertThat(xenonBackendDummyClient.deploymentBackend, instanceOf(DeploymentXenonBackend.class));
+      assertThat(xenonBackendDummyClient.deploymentBackend, instanceOf(DeploymentBackend.class));
     }
   }
 

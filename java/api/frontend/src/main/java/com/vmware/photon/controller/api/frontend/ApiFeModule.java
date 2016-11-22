@@ -36,15 +36,10 @@ import com.vmware.photon.controller.api.frontend.auth.fetcher.TenantSecurityGrou
 import com.vmware.photon.controller.api.frontend.auth.fetcher.Vm;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.VmSecurityGroupFetcher;
 import com.vmware.photon.controller.api.frontend.backends.AttachedDiskBackend;
-import com.vmware.photon.controller.api.frontend.backends.AttachedDiskXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.AvailabilityZoneBackend;
-import com.vmware.photon.controller.api.frontend.backends.AvailabilityZoneXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.DatastoreBackend;
-import com.vmware.photon.controller.api.frontend.backends.DatastoreXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
-import com.vmware.photon.controller.api.frontend.backends.DeploymentXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.DiskBackend;
-import com.vmware.photon.controller.api.frontend.backends.DiskXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.EntityLockBackend;
 import com.vmware.photon.controller.api.frontend.backends.EntityLockXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.FlavorBackend;
@@ -256,22 +251,17 @@ public class ApiFeModule extends AbstractModule {
     logger.info("Using cloud store Xenon backend");
 
     bind(FlavorBackend.class).to(FlavorXenonBackend.class);
-    bind(AvailabilityZoneBackend.class).to(AvailabilityZoneXenonBackend.class);
     bind(ImageBackend.class).to(ImageXenonBackend.class);
     bind(NetworkBackend.class).to(NetworkXenonBackend.class);
-    bind(DatastoreBackend.class).to(DatastoreXenonBackend.class);
     bind(EntityLockBackend.class).to(EntityLockXenonBackend.class);
     bind(TaskBackend.class).to(TaskXenonBackend.class);
     bind(StepBackend.class).to(TaskXenonBackend.class); // Step backend was merged into Task backend
     bind(ProjectBackend.class).to(ProjectXenonBackend.class);
     bind(TenantBackend.class).to(TenantXenonBackend.class);
     bind(ResourceTicketBackend.class).to(ResourceTicketXenonBackend.class);
-    bind(DiskBackend.class).to(DiskXenonBackend.class);
-    bind(AttachedDiskBackend.class).to(AttachedDiskXenonBackend.class);
     bind(VmBackend.class).to(VmXenonBackend.class);
     bind(TombstoneBackend.class).to(TombstoneXenonBackend.class);
     bind(HostBackend.class).to(HostXenonBackend.class);
-    bind(DeploymentBackend.class).to(DeploymentXenonBackend.class);
   }
 
   private void bindAuthSecurityGroupFetchers() {

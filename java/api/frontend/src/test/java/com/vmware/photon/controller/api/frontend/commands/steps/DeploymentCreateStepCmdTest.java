@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.api.frontend.commands.steps;
 
-import com.vmware.photon.controller.api.frontend.backends.DeploymentXenonBackend;
+import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
 import com.vmware.photon.controller.api.frontend.backends.HostXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.StepBackend;
 import com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient;
@@ -54,7 +54,7 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
   private DeployerClient deployerClient;
   private StepBackend stepBackend;
   private TaskCommand taskCommand;
-  private DeploymentXenonBackend deploymentBackend;
+  private DeploymentBackend deploymentBackend;
   private DeploymentEntity deploymentEntity;
   private HostXenonBackend hostXenonBackend;
 
@@ -68,7 +68,7 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
     deployerClient = mock(DeployerClient.class);
     stepBackend = mock(StepBackend.class);
     taskCommand = mock(TaskCommand.class);
-    deploymentBackend = mock(DeploymentXenonBackend.class);
+    deploymentBackend = mock(DeploymentBackend.class);
     hostXenonBackend = mock(HostXenonBackend.class);
 
     deploymentEntity = new DeploymentEntity();

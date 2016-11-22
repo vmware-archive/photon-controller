@@ -54,20 +54,15 @@ public class XenonBackendTestModule extends AbstractModule {
     bind(FlavorBackend.class).to(FlavorXenonBackend.class);
     bind(ImageBackend.class).to(ImageXenonBackend.class);
     bind(NetworkBackend.class).to(NetworkXenonBackend.class);
-    bind(DatastoreBackend.class).to(DatastoreXenonBackend.class);
     bind(EntityLockBackend.class).to(EntityLockXenonBackend.class);
     bind(TaskBackend.class).to(TaskXenonBackend.class);
     bind(StepBackend.class).to(TaskXenonBackend.class); // Step backend was merged into Task backend
     bind(ProjectBackend.class).to(ProjectXenonBackend.class);
     bind(TenantBackend.class).to(TenantXenonBackend.class);
     bind(ResourceTicketBackend.class).to(ResourceTicketXenonBackend.class);
-    bind(DiskBackend.class).to(DiskXenonBackend.class);
-    bind(AttachedDiskBackend.class).to(AttachedDiskXenonBackend.class);
     bind(VmBackend.class).to(VmXenonBackend.class);
     bind(TombstoneBackend.class).to(TombstoneXenonBackend.class);
     bind(HostBackend.class).to(HostXenonBackend.class);
-    bind(DeploymentBackend.class).to(DeploymentXenonBackend.class);
-    bind(AvailabilityZoneBackend.class).to(AvailabilityZoneXenonBackend.class);
 
     customConfigure();
   }

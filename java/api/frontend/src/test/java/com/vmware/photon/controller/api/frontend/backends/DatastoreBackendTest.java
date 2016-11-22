@@ -39,9 +39,9 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 
 /**
- * Tests {@link DatastoreXenonBackend}.
+ * Tests {@link DatastoreBackend}.
  */
-public class DatastoreXenonBackendTest {
+public class DatastoreBackendTest {
 
   private ApiFeXenonRestClient xenonClient;
 
@@ -76,7 +76,7 @@ public class DatastoreXenonBackendTest {
     xenonClient =
         new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1), host);
 
-    datastoreBackend = new DatastoreXenonBackend(xenonClient);
+    datastoreBackend = new DatastoreBackend(xenonClient);
   }
 
   public void tearDownCommon() throws Throwable {
@@ -127,8 +127,8 @@ public class DatastoreXenonBackendTest {
 
   /**
    * Tests for querying datastore.
-   * {@link DatastoreXenonBackend#filter(Optional, Optional)}.
-   * {@link DatastoreXenonBackend#getNumberDatastores()}.
+   * {@link DatastoreBackend#filter(Optional, Optional)}.
+   * {@link DatastoreBackend#getNumberDatastores()}.
    */
   public class QueryTest {
 

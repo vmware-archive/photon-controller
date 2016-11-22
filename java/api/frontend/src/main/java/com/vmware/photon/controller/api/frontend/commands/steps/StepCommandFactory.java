@@ -15,7 +15,7 @@ package com.vmware.photon.controller.api.frontend.commands.steps;
 
 import com.vmware.photon.controller.api.frontend.backends.AttachedDiskBackend;
 import com.vmware.photon.controller.api.frontend.backends.ClusterBackend;
-import com.vmware.photon.controller.api.frontend.backends.DeploymentXenonBackend;
+import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
 import com.vmware.photon.controller.api.frontend.backends.DiskBackend;
 import com.vmware.photon.controller.api.frontend.backends.EntityLockBackend;
 import com.vmware.photon.controller.api.frontend.backends.FlavorBackend;
@@ -53,7 +53,7 @@ public class StepCommandFactory {
   private final AttachedDiskBackend attachedDiskBackend;
   private final ImageBackend imageBackend;
   private final TaskBackend taskBackend;
-  private final DeploymentXenonBackend deploymentBackend;
+  private final DeploymentBackend deploymentBackend;
   private final HostXenonBackend hostBackend;
   private final ImageConfig imageConfig;
   private final ImageStoreFactory imageStoreFactory;
@@ -74,7 +74,7 @@ public class StepCommandFactory {
                             AttachedDiskBackend attachedDiskBackend,
                             ImageBackend imageBackend,
                             TaskBackend taskBackend,
-                            DeploymentXenonBackend deploymentBackend,
+                            DeploymentBackend deploymentBackend,
                             HostXenonBackend hostBackend,
                             ImageConfig imageConfig,
                             ImageStoreFactory imageStoreFactory,
