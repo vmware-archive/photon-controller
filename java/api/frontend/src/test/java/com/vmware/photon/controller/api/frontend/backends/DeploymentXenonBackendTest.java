@@ -1386,6 +1386,11 @@ public class DeploymentXenonBackendTest {
       DeploymentEntity deploymentEntity = deploymentBackend.findById(taskEntity.getEntityId());
       assertThat(CollectionUtils.isEqualCollection(deploymentEntity.getImageDatastores(), updatedImageDatastores),
           is(true));
+
+      // verify that task steps are created successfully
+      assertThat(taskEntity.getSteps().size(), is(2));
+      Assert.assertEquals(taskEntity.getSteps().get(0).getOperation(), Operation.SYNC_HOSTS_CONFIG_INITIATE);
+      Assert.assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.SYNC_HOSTS_CONFIG);
     }
   }
 
