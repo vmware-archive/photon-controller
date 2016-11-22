@@ -210,17 +210,11 @@ module EsxCloud
       end
 
       def enter_suspended_mode(host)
-        begin
-          EsxCloud::Host.enter_suspended_mode host.id
-        rescue
-        end
+        ignoring_all_errors { EsxCloud::Host.enter_suspended_mode host.id }
       end
 
       def enter_maintenance_mode(host)
-        begin
-          EsxCloud::Host.enter_maintenance_mode host.id
-        rescue
-        end
+        ignoring_all_errors { EsxCloud::Host.enter_maintenance_mode host.id }
       end
     end
 
