@@ -209,17 +209,21 @@ module EsxCloud
         end
       end
 
-      def enter_suspended_mode(host)
+      def enter_suspended_mode(host, remaining_retries=3)
         begin
           EsxCloud::Host.enter_suspended_mode host.id
         rescue
+          puts "retrying to suspend host #{host.address}"
+          enter_suspended_mode(host, remaining_retries-1) unless remaining_retries == 0
         end
       end
 
-      def enter_maintenance_mode(host)
+      def enter_maintenance_mode(host, remaining_retries=3)
         begin
           EsxCloud::Host.enter_maintenance_mode host.id
         rescue
+          puts "retrying to enter maintenance mode host #{host.address}"
+          enter_maintenance_mode(host, remaining_retries-1) unless remaining_retries == 0
         end
       end
     end
