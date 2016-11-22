@@ -423,15 +423,18 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     patch.imageDataStoreNames = new HashSet<>(imageDatastores);
     patchDeployment(id, patch);
 
-    DeploymentEntity deploymentEntity = findById(id);
-    return taskBackend.createCompletedTask(deploymentEntity, Operation.UPDATE_IMAGE_DATASTORES);
+    return prepareSyncHostsConfig(id, Operation.UPDATE_IMAGE_DATASTORES);
   }
 
   @Override
   public TaskEntity prepareSyncHostsConfig(String deploymentId) throws ExternalException {
+    return prepareSyncHostsConfig(deploymentId, Operation.SYNC_HOSTS_CONFIG);
+  }
+
+  private TaskEntity prepareSyncHostsConfig(String deploymentId, Operation operation) throws ExternalException {
     DeploymentEntity deployment = findById(deploymentId);
 
-    TaskEntity taskEntity = this.taskBackend.createQueuedTask(deployment, Operation.SYNC_HOSTS_CONFIG);
+    TaskEntity taskEntity = this.taskBackend.createQueuedTask(deployment, operation);
     // create the steps
     StepEntity step = this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deployment, Operation.SYNC_HOSTS_CONFIG_INITIATE);
