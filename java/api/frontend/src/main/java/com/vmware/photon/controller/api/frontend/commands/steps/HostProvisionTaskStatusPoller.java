@@ -79,7 +79,7 @@ public class HostProvisionTaskStatusPoller implements XenonTaskStatusStepCmd.Xen
   private void handleTaskFailure(TaskState state) throws ApiFeException {
     logger.info("Host create failed, mark entity {} state as ERROR", this.hostEntity);
     if (this.hostEntity != null) {
-      hostBackend.updateState(this.hostEntity, HostState.READY);
+      hostBackend.updateState(this.hostEntity, HostState.ERROR);
     }
     throw new HostProvisionFailedException(state.toString(), state.failure.message);
   }
