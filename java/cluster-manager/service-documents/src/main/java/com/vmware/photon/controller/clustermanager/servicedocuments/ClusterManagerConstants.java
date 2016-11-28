@@ -47,6 +47,7 @@ public class ClusterManagerConstants {
   public static final String KUBECTL_PATH_RELEASE                       = "kubernetes-release/release";
   public static final String BIN                                        = "bin";
   public static final String KUBECTL                                    = "kubectl";
+  public static final String KUBECTLEXE                                 = "kubectl.exe";
 
   public static final long DEFAULT_MAINTENANCE_INTERVAL = TimeUnit.HOURS.toMicros(1);
   public static final int DEFAULT_TASK_POLL_DELAY = 1000;
