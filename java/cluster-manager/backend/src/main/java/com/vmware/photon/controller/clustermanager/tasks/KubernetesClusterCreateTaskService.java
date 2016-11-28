@@ -456,8 +456,15 @@ public class KubernetesClusterCreateTaskService extends StatefulService {
 
   // Generate the URL for downloading kubectl
   private String generateKubectlDownloadAddress(String version, String os, String model) {
-    String path = UriUtils.buildUriPath(ClusterManagerConstants.KUBECTL_PATH_RELEASE, version,
-        ClusterManagerConstants.BIN, os, model, ClusterManagerConstants.KUBECTL);
+    // For windows url, there is a .exe in the end
+    String path = "";
+    if (os.equals("windows")) {
+      path = UriUtils.buildUriPath(ClusterManagerConstants.KUBECTL_PATH_RELEASE, version,
+          ClusterManagerConstants.BIN, os, model, ClusterManagerConstants.KUBECTLEXE);
+    } else {
+      path = UriUtils.buildUriPath(ClusterManagerConstants.KUBECTL_PATH_RELEASE, version,
+          ClusterManagerConstants.BIN, os, model, ClusterManagerConstants.KUBECTL);
+    }
     return UriUtils.buildUri(UriUtils.HTTPS_SCHEME, ClusterManagerConstants.KUBECTL_BASE_URI, 443, path, null)
         .toString();
   }
