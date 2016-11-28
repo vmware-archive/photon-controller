@@ -42,7 +42,7 @@ class AgentConfig(object):
     reboot_required attribute captures this (e.g. updates to host port number)
     """
 
-    DEFAULT_CONFIG_PATH = "/etc/opt/vmware/photon/controller"
+    DEFAULT_CONFIG_PATH = "/etc/vmware/photon/controller"
     DEFAULT_LOG_FILE = "/scratch/log/photon-controller-agent.log"
     DEFAULT_LOG_FILE_SIZE = 10 * 1024 * 1024
     DEFAULT_LOG_FILE_BACKUP_COUNT = 10
