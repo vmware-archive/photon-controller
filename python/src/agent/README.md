@@ -29,7 +29,7 @@ run:
 
 ## Configuring the agent
 
-Modify /etc/opt/vmware/photon/controller/config.json. Here is a sample configuration:
+Modify /etc/vmware/photon/controller/config.json. Here is a sample configuration:
 
     {
       "log_level": "debug",
