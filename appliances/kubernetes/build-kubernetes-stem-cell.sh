@@ -60,6 +60,10 @@ wget https://storage.googleapis.com/kubernetes-release/release/v${KUBERNETES_VER
 chmod +x kubectl
 
 # Run the Packer build, but first clean up previous build artifacts
+
+if [ -f ./build ]; then
+  rm ./build
+fi
 mkdir -p ./build
 rm -rf ./build/*
 packer build -force kubernetes.json
