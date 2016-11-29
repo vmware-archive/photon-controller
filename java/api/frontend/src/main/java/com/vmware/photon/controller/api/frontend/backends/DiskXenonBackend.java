@@ -184,14 +184,16 @@ public class DiskXenonBackend implements DiskBackend {
 
   @Override
   public void updateState(BaseDiskEntity disk, DiskState state, String agent,
-                          String datastore) throws DiskNotFoundException {
+                          String datastoreId, String datastoreName) throws DiskNotFoundException {
     DiskService.State diskServiceState = new DiskService.State();
     diskServiceState.state = state;
     diskServiceState.agent = agent;
-    diskServiceState.datastore = datastore;
+    diskServiceState.datastoreId = datastoreId;
+    diskServiceState.datastoreName = datastoreName;
     disk.setState(state);
     disk.setAgent(agent);
-    disk.setDatastore(datastore);
+    disk.setDatastoreName(datastoreName);
+    disk.setDatastoreId(datastoreId);
     updateState(disk, diskServiceState);
   }
 
@@ -296,7 +298,8 @@ public class DiskXenonBackend implements DiskBackend {
     diskEntity.setState(diskState.state);
     diskEntity.setCapacityGb(diskState.capacityGb);
     diskEntity.setFlavorId(diskState.flavorId);
-    diskEntity.setDatastore(diskState.datastore);
+    diskEntity.setDatastoreId(diskState.datastoreId);
+    diskEntity.setDatastoreName(diskState.datastoreName);
     diskEntity.setAgent(diskState.agent);
     if (diskState.tags != null) {
       for (String tagText : diskState.tags) {
@@ -336,7 +339,8 @@ public class DiskXenonBackend implements DiskBackend {
 
     FlavorEntity flavorEntity = flavorBackend.getEntityById(diskState.flavorId);
     persistentDisk.setFlavor(flavorEntity.getName());
-    persistentDisk.setDatastore(diskState.datastore);
+    persistentDisk.setDatastoreId(diskState.datastoreId);
+    persistentDisk.setDatastoreName(diskState.datastoreName);
     persistentDisk.setCost(diskState.cost);
 
     if (diskState.tags != null) {

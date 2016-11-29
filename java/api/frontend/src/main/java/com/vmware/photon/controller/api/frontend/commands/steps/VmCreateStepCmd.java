@@ -116,7 +116,7 @@ public class VmCreateStepCmd extends StepCommand {
 
     List<EphemeralDiskEntity> disks = step.getTransientResourceEntities(EphemeralDisk.KIND);
     for (EphemeralDiskEntity disk : disks) {
-      diskBackend.updateState(disk, DiskState.ATTACHED, vm.getAgent(), vm.getDatastore());
+      diskBackend.updateState(disk, DiskState.ATTACHED, vm.getAgent(), vm.getDatastore(), vm.getDatastoreName());
       logger.info("attached Disk: {}", disk);
     }
   }

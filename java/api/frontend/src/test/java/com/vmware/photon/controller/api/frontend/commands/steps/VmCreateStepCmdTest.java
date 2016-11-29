@@ -182,7 +182,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     InOrder inOrder = inOrder(diskBackend);
-    inOrder.verify(diskBackend).updateState(disk, DiskState.ATTACHED, null, null);
+    inOrder.verify(diskBackend).updateState(disk, DiskState.ATTACHED, null, null, null);
 
     verifyNoMoreInteractions(diskBackend);
   }

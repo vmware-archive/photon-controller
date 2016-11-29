@@ -274,7 +274,7 @@ public class ResourceReserveStepCmd extends StepCommand {
     switch (localityEntity.getKind()) {
       case DISK_KIND:
         resourceConstraint.setType(ResourceConstraintType.DATASTORE);
-        constraintValues.add(diskBackend.find(PersistentDisk.KIND, localityEntity.getResourceId()).getDatastore());
+        constraintValues.add(diskBackend.find(PersistentDisk.KIND, localityEntity.getResourceId()).getDatastoreId());
         resourceConstraint.setValues(constraintValues);
         break;
 

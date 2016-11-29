@@ -47,7 +47,8 @@ public interface DiskBackend {
 
   void updateState(BaseDiskEntity disk, DiskState state) throws DiskNotFoundException;
 
-  void updateState(BaseDiskEntity disk, DiskState state, String agent, String datastore) throws DiskNotFoundException;
+  void updateState(BaseDiskEntity disk, DiskState state, String agent, String datastoreId, String datastoreName)
+      throws DiskNotFoundException;
 
   BaseDiskEntity find(String kind, String id) throws DiskNotFoundException;
 

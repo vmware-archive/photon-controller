@@ -53,7 +53,9 @@ public abstract class BaseDiskEntity extends InfrastructureEntity {
    * already has a datastore (i.e., its been attached in the past), then no new infrastructure is
    * created. Once this is done, all disks in the AttachedDisks array are ready from attaching to the vm.
    */
-  private String datastore;
+  private String datastoreId;
+
+  private String datastoreName;
 
   // getters and setters
   public int getCapacityGb() {
@@ -64,14 +66,21 @@ public abstract class BaseDiskEntity extends InfrastructureEntity {
     this.capacityGb = capacityGb;
   }
 
-  public String getDatastore() {
-    return datastore;
+  public String getDatastoreId() {
+    return datastoreId;
   }
 
-  public void setDatastore(String datastore) {
-    this.datastore = datastore;
+  public void setDatastoreId(String datastoreId) {
+    this.datastoreId = datastoreId;
   }
 
+  public String getDatastoreName() {
+    return datastoreName;
+  }
+
+  public void setDatastoreName(String datastoreName) {
+    this.datastoreName = datastoreName;
+  }
   /**
    * this method overrides the base setCost function as it needs
    * to fold in a capacity line item.

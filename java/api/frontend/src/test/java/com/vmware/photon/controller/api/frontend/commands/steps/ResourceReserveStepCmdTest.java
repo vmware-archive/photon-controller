@@ -288,8 +288,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
 
     PersistentDiskEntity disk1 = new PersistentDiskEntity();
     PersistentDiskEntity disk2 = new PersistentDiskEntity();
-    disk1.setDatastore("datastore-1");
-    disk2.setDatastore("datastore-1");
+    disk1.setDatastoreId("datastore-1");
+    disk2.setDatastoreId("datastore-1");
 
     when(diskBackend.find(PersistentDisk.KIND, "disk-1")).thenReturn(disk1);
     when(diskBackend.find(PersistentDisk.KIND, "disk-2")).thenReturn(disk2);

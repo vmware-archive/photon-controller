@@ -133,7 +133,9 @@ public class DiskService extends StatefulService {
 
     public Integer capacityGb;
 
-    public String datastore;
+    public String datastoreId;
+
+    public String datastoreName;
 
     public String agent;
 

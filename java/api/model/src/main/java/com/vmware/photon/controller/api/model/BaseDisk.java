@@ -35,7 +35,11 @@ public abstract class BaseDisk extends Infrastructure {
 
   @JsonProperty
   @ApiModelProperty(value = "Supplies the datastore id of the Disk")
-  private String datastore;
+  private String datastoreId;
+
+  @JsonProperty
+  @ApiModelProperty(value = "Supplies the datastore name of the Disk")
+  private String datastoreName;
 
   @JsonProperty
   private int capacityGb;
@@ -48,12 +52,20 @@ public abstract class BaseDisk extends Infrastructure {
     this.state = state;
   }
 
-  public String getDatastore() {
-    return datastore;
+  public String getDatastoreId() {
+    return datastoreId;
   }
 
-  public void setDatastore(String datastore) {
-    this.datastore = datastore;
+  public void setDatastoreId(String datastoreId) {
+    this.datastoreId = datastoreId;
+  }
+
+  public String getDatastoreName() {
+    return datastoreName;
+  }
+
+  public void setDatastoreName(String datastoreName) {
+    this.datastoreName = datastoreName;
   }
 
   public int getCapacityGb() {
@@ -80,11 +92,11 @@ public abstract class BaseDisk extends Infrastructure {
 
     return Objects.equals(state, other.state) &&
         Objects.equals(capacityGb, other.capacityGb) &&
-        Objects.equals(datastore, other.datastore);
+        Objects.equals(datastoreId, other.datastoreId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), state, capacityGb, datastore);
+    return Objects.hash(super.hashCode(), state, capacityGb, datastoreId);
   }
 }

@@ -84,7 +84,7 @@ public class PersistentDiskTest {
       disk.setCapacityGb(10);
       disk.setFlavor("disk-flavor");
       disk.setTags(tags);
-      disk.setDatastore("datastore1");
+      disk.setDatastoreId("datastore1");
       disk.setCost(costs);
       disk.setVms(ImmutableList.of("vm-id1", "vm-id2"));
       disk.setProjectId("project-id");

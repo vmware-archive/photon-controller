@@ -138,8 +138,8 @@ public class DiskCreateStepCmdTest extends PowerMockTestCase {
     command.execute();
     assertThat(disk1.getAgent(), is("agent-id"));
     assertThat(disk2.getAgent(), is("agent-id"));
-    verify(diskBackend).updateState(disk1, DiskState.DETACHED, "agent-id", "datastore-id");
-    verify(diskBackend).updateState(disk2, DiskState.DETACHED, "agent-id", "datastore-id");
+    verify(diskBackend).updateState(disk1, DiskState.DETACHED, "agent-id", "datastore-id", null);
+    verify(diskBackend).updateState(disk2, DiskState.DETACHED, "agent-id", "datastore-id", null);
   }
 
   @Test

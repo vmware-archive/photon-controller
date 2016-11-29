@@ -357,12 +357,12 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     eDisk1 = new EphemeralDiskEntity();
     eDisk1.setState(DiskState.ATTACHED);
     eDisk1.setId("e-disk-1");
-    eDisk1.setDatastore("ds-1");
+    eDisk1.setDatastoreId("ds-1");
 
     eDisk2 = new EphemeralDiskEntity();
     eDisk2.setState(DiskState.ATTACHED);
     eDisk2.setId("e-disk-2");
-    eDisk2.setDatastore("ds-2");
+    eDisk2.setDatastoreId("ds-2");
 
     return ImmutableList.of(eDisk1, eDisk2);
   }

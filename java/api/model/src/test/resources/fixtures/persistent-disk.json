@@ -10,7 +10,7 @@
         "bosh:job=ccdb",
         "sys:sla=cesspool"
     ],
-    "datastore": "datastore1",
+    "datastoreId": "datastore1",
     "cost": [
         {
             "key": "disk",
