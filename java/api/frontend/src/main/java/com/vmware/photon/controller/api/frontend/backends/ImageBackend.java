@@ -49,7 +49,7 @@ public interface ImageBackend {
 
   void updateSize(ImageEntity imageEntity, Long size) throws ExternalException;
 
-  void updateImageDatastore(String imageId, String imageDatastoreName) throws ExternalException;
+  void updateImageDatastore(String imageId, String imageDatastoreId) throws ExternalException;
 
   ResourceList<ImageEntity> getAll(Optional<Integer> pageSize) throws ExternalException;
 

@@ -61,8 +61,8 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
 
   private static final String HOST_ADDRESS = "10.146.1.1";
   private static final String VM_HOST_ADDRESS = "10.146.1.2";
-  private static final String IMAGE_DATASTORE_NAME = "datastore-name";
-  private static final String VM_IMAGE_DATASTORE_NAME = "vm-datastore-name";
+  private static final String IMAGE_DATASTORE_ID = "datastore-id";
+  private static final String VM_IMAGE_DATASTORE_ID = "vm-datastore-id";
 
   private VsphereImageStore imageStore;
 
@@ -82,7 +82,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
   private ResourceList<Host> buildHostList() {
     Host host = new Host();
     host.setAddress(HOST_ADDRESS);
-    host.setDatastores(ImmutableList.of(new HostDatastore("id1", IMAGE_DATASTORE_NAME, true)));
+    host.setDatastores(ImmutableList.of(new HostDatastore(IMAGE_DATASTORE_ID, "datastore-name", true)));
 
     ResourceList<Host> hostList = new ResourceList<>();
     hostList.setItems(ImmutableList.of(host));
@@ -93,7 +93,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
   private ResourceList<Host> buildVmHostList() {
     Host host = new Host();
     host.setAddress(VM_HOST_ADDRESS);
-    host.setDatastores(ImmutableList.of(new HostDatastore("id2", VM_IMAGE_DATASTORE_NAME, true)));
+    host.setDatastores(ImmutableList.of(new HostDatastore(VM_IMAGE_DATASTORE_ID, "vm-datastore-name", true)));
 
     ResourceList<Host> hostList = new ResourceList<>();
     hostList.setItems(ImmutableList.of(host));
@@ -223,11 +223,11 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
 
     @Test
     public void testGetDatastore() throws Exception {
-      assertThat(imageStore.getDatastore(), equalTo(VM_IMAGE_DATASTORE_NAME));
+      assertThat(imageStore.getDatastore(), equalTo(VM_IMAGE_DATASTORE_ID));
       imageStore.setHostIp(HOST_ADDRESS);
-      assertThat(imageStore.getDatastore(), equalTo(IMAGE_DATASTORE_NAME));
+      assertThat(imageStore.getDatastore(), equalTo(IMAGE_DATASTORE_ID));
       imageStore.setHostIp(VM_HOST_ADDRESS);
-      assertThat(imageStore.getDatastore(), equalTo(VM_IMAGE_DATASTORE_NAME));
+      assertThat(imageStore.getDatastore(), equalTo(VM_IMAGE_DATASTORE_ID));
     }
 
     @Test

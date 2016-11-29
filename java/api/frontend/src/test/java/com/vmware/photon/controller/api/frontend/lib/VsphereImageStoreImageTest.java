@@ -62,7 +62,7 @@ public class VsphereImageStoreImageTest {
 
   private ImageConfig imageConfig;
   private String imageId = "image-id";
-  private String imageDatastore = "datastore-name";
+  private String imageDatastore = "datastore-id";
   private InputStream inputStream;
 
   @BeforeMethod
@@ -80,7 +80,7 @@ public class VsphereImageStoreImageTest {
 
     Host host = new Host();
     host.setAddress(imageConfig.getEndpointHostAddress());
-    host.setDatastores(ImmutableList.of(new HostDatastore("id1", imageDatastore, true)));
+    host.setDatastores(ImmutableList.of(new HostDatastore(imageDatastore, "datastore-name", true)));
     ResourceList<Host> hostList = new ResourceList<>();
     hostList.setItems(ImmutableList.of(host));
 

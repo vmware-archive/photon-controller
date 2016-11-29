@@ -36,7 +36,6 @@ import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
-import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingService;
@@ -263,51 +262,20 @@ public class ImageXenonBackend implements ImageBackend {
   }
 
   @Override
-  public void updateImageDatastore(String imageId, String imageDatastoreName) throws ExternalException {
+  public void updateImageDatastore(String imageId, String imageDatastoreId) throws ExternalException {
     checkNotNull(imageId, "imageId can not be null.");
-    checkNotNull(imageDatastoreName, "imageDatastoreName can not be null");
-    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
-    termsBuilder.put("name", imageDatastoreName);
-    termsBuilder.put("isImageDatastore", "true");
-    List<DatastoreService.State> datastores = xenonClient.queryDocuments(DatastoreService.State.class,
-        termsBuilder.build());
-
-    if (datastores.size() != 1) {
-
-      //
-      // Get all of the datastore documents from cloud store and dump them to the log.
-      //
-
-      try {
-        com.vmware.xenon.common.Operation result = xenonClient.get(DatastoreServiceFactory.SELF_LINK);
-        ServiceDocumentQueryResult queryResult = result.getBody(ServiceDocumentQueryResult.class);
-        logger.info("While looking for image datastore named '" + imageDatastoreName + "', found datastores: "
-            + Utils.toJson(false, false, queryResult));
-      } catch (DocumentNotFoundException | XenonRuntimeException e) {
-        // Ignore failures -- this is just for logging purposes
-      }
-
-      logger.error(
-          "While attempting to make image to image datastore mapping for image {}, "
-              + "expected exactly 1 image datastore named '{}' but found {} [{}]",
-          imageId,
-          imageDatastoreName,
-          datastores.size(),
-          Utils.toJson(false, false, datastores));
-      throw new ExternalException(
-          "Expected exactly 1 image datastore named '" + imageDatastoreName + "', found [" + datastores.size() + "]");
-    }
+    checkNotNull(imageDatastoreId, "imageDatastoreId can not be null");
 
     try {
       ImageToImageDatastoreMappingService.State state =
           new ImageToImageDatastoreMappingService.State();
-      state.imageDatastoreId = datastores.get(0).id;
+      state.imageDatastoreId = imageDatastoreId;
       state.imageId = imageId;
-      state.documentSelfLink = imageId + "_" + datastores.get(0).id;
+      state.documentSelfLink = imageId + "_" + imageDatastoreId;
 
       xenonClient.post(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, state);
       logger.info("ImageToImageDatastoreMappingServiceState created with imageId {}, ImageDatastore {}", imageId,
-          datastores.get(0).id);
+          imageDatastoreId);
     } catch (XenonRuntimeException e) {
       if (e.getCompletedOperation().getStatusCode() ==
           com.vmware.xenon.common.Operation.STATUS_CODE_CONFLICT) {
