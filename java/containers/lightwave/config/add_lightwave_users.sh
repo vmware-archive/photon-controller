@@ -1,6 +1,7 @@
 #!/bin/bash -xe
 
 admin_password=$1
+domain_name=$2
 user_password='Passw0rd!'
 
 lwcli="docker exec lightwave opt/vmware/bin/dir-cli"
@@ -28,4 +29,4 @@ $lwcli group modify --name EsxcloudProjectUserGroup1 --add ec-project-user --pas
 $lwcli user create --account ec-user --user-password $user_password --first-name ec-user --last-name ec-user --password $admin_password
 
 # Add DNS forwarder to lightwave VM. 10.0.2.3 is a DNS resolver provided by Vagrant.
-$lwdnscli add-forwarder 10.0.2.3 --server 127.0.0.1 --username administrator --domain esxcloud --password $admin_password
+$lwdnscli add-forwarder 10.0.2.3 --server 127.0.0.1 --username administrator --domain $domain_name --password $admin_password
