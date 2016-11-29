@@ -18,7 +18,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.Unsupported
 import com.vmware.photon.controller.api.frontend.lib.VsphereImageStore;
 import com.vmware.photon.controller.api.frontend.lib.VsphereImageStoreImage;
 import com.vmware.photon.controller.api.frontend.lib.ova.OvaTestModule;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.transfer.nfc.NfcClient;
 
 import org.mockito.InOrder;
@@ -159,7 +159,7 @@ public class ImageLoaderTest {
       doReturn(image).when(imageStore).createImage(anyString());
       imageEntity = new ImageEntity();
       imageEntity.setId(imageId);
-      imageEntity.setReplicationType(ImageReplicationType.EAGER);
+      imageEntity.setReplicationType(ImageReplication.EAGER);
     }
 
     @Test

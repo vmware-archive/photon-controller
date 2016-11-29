@@ -14,9 +14,9 @@
 package com.vmware.photon.controller.api.frontend.entities;
 
 import com.vmware.photon.controller.api.frontend.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.api.model.base.Named;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import com.google.common.base.Objects.ToStringHelper;
 
@@ -49,7 +49,7 @@ public class ImageEntity extends BaseEntity implements Named {
 
   private ImageState state;
 
-  private ImageReplicationType replicationType = ImageReplicationType.EAGER;
+  private ImageReplication replicationType = ImageReplication.EAGER;
 
   @Override
   public String getKind() {
@@ -82,11 +82,11 @@ public class ImageEntity extends BaseEntity implements Named {
     this.state = state;
   }
 
-  public ImageReplicationType getReplicationType() {
+  public ImageReplication getReplicationType() {
     return replicationType;
   }
 
-  public void setReplicationType(ImageReplicationType replicationType) {
+  public void setReplicationType(ImageReplication replicationType) {
     this.replicationType = replicationType;
   }
 

@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper.xenon;
 
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
@@ -30,6 +29,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.housekeeper.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.xenon.TestHost;
 import com.vmware.photon.controller.housekeeper.xenon.mock.HostClientMock;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
@@ -309,7 +309,7 @@ public class ImageSeederSyncServiceTest {
 
       ImageService.State state = new ImageService.State();
       state.name = "image-1";
-      state.replicationType = ImageReplicationType.EAGER;
+      state.replicationType = ImageReplication.EAGER;
       state.state = imageState;
       state.totalDatastore = 1;
       state.totalImageDatastore = 1;

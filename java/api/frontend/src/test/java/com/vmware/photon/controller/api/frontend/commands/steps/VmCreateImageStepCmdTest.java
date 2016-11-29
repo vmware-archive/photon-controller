@@ -25,8 +25,8 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.NameTakenEx
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
 import com.vmware.photon.controller.api.frontend.lib.ImageStore;
 import com.vmware.photon.controller.api.frontend.lib.image.ImageLoader;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.InOrder;
@@ -81,7 +81,7 @@ public class VmCreateImageStepCmdTest extends PowerMockTestCase {
 
     vmImage = new ImageEntity();
     vmImage.setId(vmImageId);
-    vmImage.setReplicationType(ImageReplicationType.EAGER);
+    vmImage.setReplicationType(ImageReplication.EAGER);
     vmImage.setSize(100L);
     ImageSettingsEntity imageSetting1 = new ImageSettingsEntity();
     imageSetting1.setName("n1");

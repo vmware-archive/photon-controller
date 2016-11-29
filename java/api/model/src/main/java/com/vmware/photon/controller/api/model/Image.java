@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.api.model;
 
 import com.vmware.photon.controller.api.model.base.VisibleModel;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -48,7 +49,7 @@ public class Image extends VisibleModel {
 
   @JsonProperty
   @ApiModelProperty(value = "Image replication type", required = true)
-  private ImageReplicationType replicationType;
+  private ImageReplication replicationType;
 
   @JsonProperty
   @ApiModelProperty(value = "Settings for creating VM", required = true)
@@ -83,11 +84,11 @@ public class Image extends VisibleModel {
     this.size = size;
   }
 
-  public ImageReplicationType getReplicationType() {
+  public ImageReplication getReplicationType() {
     return replicationType;
   }
 
-  public void setReplicationType(ImageReplicationType replicationType) {
+  public void setReplicationType(ImageReplication replicationType) {
     this.replicationType = replicationType;
   }
 

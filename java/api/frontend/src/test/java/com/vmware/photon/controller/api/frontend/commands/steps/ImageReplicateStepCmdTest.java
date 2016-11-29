@@ -23,10 +23,10 @@ import com.vmware.photon.controller.api.frontend.entities.StepEntity;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.lib.Image;
 import com.vmware.photon.controller.api.frontend.lib.ImageStore;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.housekeeper.xenon.ImageSeederService;
 import com.vmware.photon.controller.housekeeper.xenon.ImageSeederServiceFactory;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.InOrder;
@@ -91,7 +91,7 @@ public class ImageReplicateStepCmdTest extends PowerMockTestCase {
     imageEntity = new ImageEntity();
     imageEntity.setId(imageId);
     imageEntity.setName("image-name");
-    imageEntity.setReplicationType(ImageReplicationType.EAGER);
+    imageEntity.setReplicationType(ImageReplication.EAGER);
 
     step = new StepEntity();
     step.setId("step-1");

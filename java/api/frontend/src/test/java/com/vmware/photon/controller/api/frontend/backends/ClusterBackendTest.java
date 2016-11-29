@@ -31,7 +31,6 @@ import com.vmware.photon.controller.api.model.ClusterCreateSpec;
 import com.vmware.photon.controller.api.model.ClusterResizeOperation;
 import com.vmware.photon.controller.api.model.ClusterState;
 import com.vmware.photon.controller.api.model.ClusterType;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.QuotaLineItem;
@@ -47,6 +46,7 @@ import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -669,7 +669,7 @@ public class ClusterBackendTest {
       imageServiceState.name = "image-1";
       imageServiceState.state = ImageState.READY;
       imageServiceState.size = 1024L * 1024L;
-      imageServiceState.replicationType = ImageReplicationType.EAGER;
+      imageServiceState.replicationType = ImageReplication.EAGER;
       imageServiceState.imageSettings = new ArrayList<>();
       ImageService.State.ImageSetting imageSetting = new ImageService.State.ImageSetting();
       imageSetting.name = "n1";

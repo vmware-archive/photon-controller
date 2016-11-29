@@ -20,7 +20,6 @@ import com.vmware.photon.controller.api.client.resource.ImagesRestApi;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
 import com.vmware.photon.controller.api.client.resource.TasksRestApi;
 import com.vmware.photon.controller.api.model.Image;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
@@ -42,6 +41,7 @@ import com.vmware.photon.controller.deployer.xenon.ApiTestUtils;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.util.ApiUtils;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
@@ -460,7 +460,7 @@ public class UploadImageTaskServiceTest {
 
       verify(imagesApi).uploadImage(
           any(FileBody.class),
-          eq(ImageReplicationType.ON_DEMAND.name()));
+          eq(ImageReplication.ON_DEMAND.name()));
 
       verify(tasksApi, times(3)).getTaskAsync(
           eq("UPLOAD_IMAGE_TASK_ID"),
@@ -521,7 +521,7 @@ public class UploadImageTaskServiceTest {
 
       verify(imagesApi).uploadImage(
           any(FileBody.class),
-          eq(ImageReplicationType.ON_DEMAND.name()));
+          eq(ImageReplication.ON_DEMAND.name()));
 
       verify(imagesApi, times(3)).getImageAsync(
           eq(imageId),
@@ -572,7 +572,7 @@ public class UploadImageTaskServiceTest {
 
       verify(imagesApi).uploadImage(
           any(FileBody.class),
-          eq(ImageReplicationType.ON_DEMAND.name()));
+          eq(ImageReplication.ON_DEMAND.name()));
 
       verify(tasksApi, times(3)).getTaskAsync(
           eq("UPLOAD_IMAGE_TASK_ID"),
@@ -609,7 +609,7 @@ public class UploadImageTaskServiceTest {
 
       verify(imagesApi).uploadImage(
           any(FileBody.class),
-          eq(ImageReplicationType.ON_DEMAND.name()));
+          eq(ImageReplication.ON_DEMAND.name()));
 
       verify(tasksApi, times(3)).getTaskAsync(
           eq("UPLOAD_IMAGE_TASK_ID"),

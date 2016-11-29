@@ -15,7 +15,6 @@ package com.vmware.photon.controller.housekeeper.xenon;
 
 
 import com.vmware.photon.controller.api.model.HostState;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
@@ -43,6 +42,7 @@ import com.vmware.photon.controller.host.gen.GetInactiveImagesResponse;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.StartImageScanResponse;
 import com.vmware.photon.controller.host.gen.StartImageSweepResponse;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.photon.controller.resource.gen.InactiveImageDescriptor;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationSequence;
@@ -737,7 +737,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
           continue;
         }
 
-        if (referenceImage.replicationType == ImageReplicationType.EAGER || current.isImageDatastore) {
+        if (referenceImage.replicationType == ImageReplication.EAGER || current.isImageDatastore) {
           // we do not delete unused images:
           // a) of replication type EAGER
           // b) stored on image datastore

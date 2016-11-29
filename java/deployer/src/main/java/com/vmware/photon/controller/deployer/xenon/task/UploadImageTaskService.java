@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.deployer.xenon.task;
 
 import com.vmware.photon.controller.api.model.Image;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -36,6 +35,7 @@ import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.util.ApiUtils;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.OperationProcessingChain;
@@ -469,7 +469,7 @@ public class UploadImageTaskService extends StatefulService {
     ListenableFutureTask<Task> futureTask = ListenableFutureTask.create(
         () -> HostUtils.getApiClient(this)
             .getImagesApi()
-            .uploadImage(fileBody, ImageReplicationType.ON_DEMAND.name()));
+            .uploadImage(fileBody, ImageReplication.ON_DEMAND.name()));
 
     HostUtils.getListeningExecutorService(this).submit(futureTask);
 

@@ -29,7 +29,6 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpired
 import com.vmware.photon.controller.api.frontend.utils.PaginationUtils;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.ImageCreateSpec;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageSetting;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.api.model.Operation;
@@ -44,6 +43,7 @@ import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.Utils;
@@ -133,7 +133,7 @@ public class ImageXenonBackend implements ImageBackend {
 
   @Override
   public TaskEntity prepareImageUpload(InputStream inputStream, String imageFileName,
-                                       ImageReplicationType replicationType) throws ExternalException {
+                                       ImageReplication replicationType) throws ExternalException {
     if (StringUtils.isBlank(imageFileName)) {
       throw new ImageUploadException("Image file name cannot be blank.");
     }

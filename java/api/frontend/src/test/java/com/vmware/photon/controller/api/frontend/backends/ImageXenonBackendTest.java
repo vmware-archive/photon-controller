@@ -26,7 +26,6 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.ImageUpload
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidImageStateException;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.ImageCreateSpec;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.ResourceList;
@@ -39,6 +38,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastor
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -113,7 +113,7 @@ public class ImageXenonBackendTest {
 
   private static ImageEntity prepareImageUpload(ImageBackend imageBackend, InputStream inputStream,
                                                 String imageFileName, String imageName,
-                                                ImageReplicationType replicationType)
+                                                ImageReplication replicationType)
       throws ExternalException {
     TaskEntity task = imageBackend.prepareImageUpload(inputStream, imageFileName, replicationType);
     assertThat(task.getSteps().size(), is(2));
@@ -157,7 +157,7 @@ public class ImageXenonBackendTest {
     ImageService.State imageServiceState = new ImageService.State();
     imageServiceState.name = imageName;
     imageServiceState.state = imageState;
-    imageServiceState.replicationType = ImageReplicationType.EAGER;
+    imageServiceState.replicationType = ImageReplication.EAGER;
     imageServiceState.size = imageSize;
     imageServiceState.totalDatastore = totalDatastore;
     imageServiceState.totalImageDatastore = totalImageDatastore;
@@ -216,7 +216,7 @@ public class ImageXenonBackendTest {
     public void testSuccess() throws Throwable {
       ImageCreateSpec imageCreateSpec = new ImageCreateSpec();
       imageCreateSpec.setName("i1");
-      imageCreateSpec.setReplicationType(ImageReplicationType.EAGER);
+      imageCreateSpec.setReplicationType(ImageReplication.EAGER);
 
       ImageEntity originalImage = new ImageEntity();
       originalImage.setSize(100L);
@@ -274,18 +274,18 @@ public class ImageXenonBackendTest {
     @Test
     public void testPrepareImageUploadEager() throws ExternalException {
       imageName = UUID.randomUUID().toString();
-      prepareImageUpload(imageBackend, inputStream, imageName, imageName, ImageReplicationType.EAGER);
+      prepareImageUpload(imageBackend, inputStream, imageName, imageName, ImageReplication.EAGER);
     }
 
     @Test
     public void testPrepareImageUploadOnDemand() throws ExternalException {
       imageName = UUID.randomUUID().toString();
-      prepareImageUpload(imageBackend, inputStream, imageName, imageName, ImageReplicationType.ON_DEMAND);
+      prepareImageUpload(imageBackend, inputStream, imageName, imageName, ImageReplication.ON_DEMAND);
     }
 
     @Test(dataProvider = "ImageFileNames")
     public void testPrepareImageUploadImageFileNames(String imageFileName) throws ExternalException {
-      prepareImageUpload(imageBackend, inputStream, imageFileName, imageName, ImageReplicationType.ON_DEMAND);
+      prepareImageUpload(imageBackend, inputStream, imageFileName, imageName, ImageReplication.ON_DEMAND);
     }
 
     @DataProvider(name = "ImageFileNames")
@@ -301,15 +301,15 @@ public class ImageXenonBackendTest {
     @Test(expectedExceptions = ImageUploadException.class,
         expectedExceptionsMessageRegExp = "Image file name cannot be blank.")
     public void testPrepareImageUploadBlankFileName() throws Throwable {
-      imageBackend.prepareImageUpload(inputStream, "", ImageReplicationType.ON_DEMAND);
+      imageBackend.prepareImageUpload(inputStream, "", ImageReplication.ON_DEMAND);
     }
 
     @Test
     public void testUploadingImageWithDuplicatedName() throws ExternalException {
       int currentCountOfImages = imageBackend.getAll(Optional.absent()).getItems().size();
       String testImage = UUID.randomUUID().toString();
-      imageBackend.prepareImageUpload(inputStream, testImage, ImageReplicationType.ON_DEMAND);
-      imageBackend.prepareImageUpload(inputStream, testImage, ImageReplicationType.ON_DEMAND);
+      imageBackend.prepareImageUpload(inputStream, testImage, ImageReplication.ON_DEMAND);
+      imageBackend.prepareImageUpload(inputStream, testImage, ImageReplication.ON_DEMAND);
 
       assertThat(imageBackend.getAll(Optional.absent()).getItems().size(), is(currentCountOfImages + 2));
     }
@@ -359,7 +359,7 @@ public class ImageXenonBackendTest {
       assertThat(image.getId(), is(id));
       assertThat(image.getName(), is(imageName));
       assertThat(image.getState(), is(ImageState.READY));
-      assertThat(image.getReplicationType(), is(ImageReplicationType.EAGER));
+      assertThat(image.getReplicationType(), is(ImageReplication.EAGER));
       assertThat(image.getSize(), is(1L));
       assertThat(image.getTotalDatastore(), is(10));
       assertThat(image.getTotalImageDatastore(), is(8));

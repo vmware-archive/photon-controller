@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.housekeeper.xenon;
 
 import com.vmware.photon.controller.api.model.HostState;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
@@ -43,6 +42,7 @@ import com.vmware.photon.controller.housekeeper.xenon.mock.hostclient.ErrorMockG
 import com.vmware.photon.controller.housekeeper.xenon.mock.hostclient.ErrorMockGetInactiveImages;
 import com.vmware.photon.controller.housekeeper.xenon.mock.hostclient.ErrorMockStartImageScan;
 import com.vmware.photon.controller.housekeeper.xenon.mock.hostclient.ErrorMockStartImageSweep;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.photon.controller.resource.gen.InactiveImageDescriptor;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -1292,9 +1292,9 @@ public class ImageDatastoreSweeperServiceTest {
         com.vmware.photon.controller.cloudstore.xenon.entity.ImageService.State state
             = new ImageService.State();
         state.name = "image-" + i;
-        state.replicationType = ImageReplicationType.EAGER;
+        state.replicationType = ImageReplication.EAGER;
         if (i % 2 == 0) {
-          state.replicationType = ImageReplicationType.ON_DEMAND;
+          state.replicationType = ImageReplication.ON_DEMAND;
         }
 
         state.state = ImageState.READY;

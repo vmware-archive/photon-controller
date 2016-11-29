@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.api.model;
 
 import com.vmware.photon.controller.api.model.helpers.JsonHelpers;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import org.hamcrest.MatcherAssert;
 import org.testng.annotations.Test;
@@ -50,7 +51,7 @@ public class ImageTest {
     image.setName("imageName");
     image.setState(ImageState.READY);
     image.setSize(100L);
-    image.setReplicationType(ImageReplicationType.EAGER);
+    image.setReplicationType(ImageReplication.EAGER);
     image.setReplicationProgress("50%");
     image.setSeedingProgress("40%");
     image.setSettings(imageSettings);
