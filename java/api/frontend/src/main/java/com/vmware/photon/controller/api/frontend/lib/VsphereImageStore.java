@@ -186,16 +186,16 @@ public class VsphereImageStore implements ImageStore {
   @Override
   public String getDatastore() throws ExternalException {
     ensureHost();
-    return getImageDataStoreMountPoint(this.host.getDatastores());
+    return getImageDataStoreId(this.host.getDatastores());
   }
 
-  private String getImageDataStoreMountPoint(List<HostDatastore> dataStoreList) throws ExternalException {
+  private String getImageDataStoreId(List<HostDatastore> dataStoreList) throws ExternalException {
     checkNotNull(dataStoreList);
 
     String dataStore = null;
     for (HostDatastore ds : dataStoreList) {
       if (ds.isImageDatastore()) {
-        dataStore = ds.getMountPoint();
+        dataStore = ds.getDatastoreId();
         break;
       }
     }
