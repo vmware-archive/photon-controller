@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.housekeeper.xenon;
 
 import com.vmware.photon.controller.api.model.HostState;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
@@ -39,6 +38,7 @@ import com.vmware.photon.controller.housekeeper.helpers.xenon.TestHost;
 import com.vmware.photon.controller.housekeeper.xenon.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.xenon.mock.HostClientCopyImageErrorMock;
 import com.vmware.photon.controller.housekeeper.xenon.mock.HostClientMock;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
@@ -1042,7 +1042,7 @@ public class
       com.vmware.photon.controller.cloudstore.xenon.entity.ImageService.State state
           = new com.vmware.photon.controller.cloudstore.xenon.entity.ImageService.State();
       state.name = "image-1";
-      state.replicationType = ImageReplicationType.EAGER;
+      state.replicationType = ImageReplication.EAGER;
       state.state = ImageState.READY;
       state.totalDatastore = 1;
 

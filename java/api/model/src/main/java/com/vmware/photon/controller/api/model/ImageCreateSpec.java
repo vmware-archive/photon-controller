@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.api.model;
 
 import com.vmware.photon.controller.api.model.base.Named;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -43,7 +44,7 @@ public class ImageCreateSpec {
   @JsonProperty
   @ApiModelProperty(value = "Image replication type", required = true)
   @NotNull
-  private ImageReplicationType replicationType;
+  private ImageReplication replicationType;
 
   public String getName() {
     return name;
@@ -53,11 +54,11 @@ public class ImageCreateSpec {
     this.name = name;
   }
 
-  public ImageReplicationType getReplicationType() {
+  public ImageReplication getReplicationType() {
     return replicationType;
   }
 
-  public void setReplicationType(ImageReplicationType replicationType) {
+  public void setReplicationType(ImageReplication replicationType) {
     this.replicationType = replicationType;
   }
 

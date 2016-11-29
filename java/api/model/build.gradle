@@ -28,7 +28,9 @@ dependencies {
   }
   compile 'io.netty:netty-all:4.1.0.Final'
 
-  thrift files('../../../thrift/tracing.thrift',
+  thrift files('../../../thrift/flavors.thrift',
+               '../../../thrift/resource.thrift',
+               '../../../thrift/tracing.thrift',
                '../../../thrift/status.thrift')
 
   testCompile("org.apache.curator:curator-test:${versions.curator}") {

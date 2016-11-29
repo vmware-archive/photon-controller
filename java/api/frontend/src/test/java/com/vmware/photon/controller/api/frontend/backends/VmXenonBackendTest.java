@@ -46,7 +46,6 @@ import com.vmware.photon.controller.api.model.HostCreateSpec;
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.ImageCreateSpec;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.api.model.Iso;
 import com.vmware.photon.controller.api.model.LocalitySpec;
@@ -84,6 +83,7 @@ import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.QueryTask;
@@ -225,7 +225,7 @@ public class VmXenonBackendTest {
     imageServiceState.name = "image-1";
     imageServiceState.state = ImageState.READY;
     imageServiceState.size = 1024L * 1024L;
-    imageServiceState.replicationType = ImageReplicationType.EAGER;
+    imageServiceState.replicationType = ImageReplication.EAGER;
     imageServiceState.imageSettings = new ArrayList<>();
     ImageService.State.ImageSetting imageSetting = new ImageService.State.ImageSetting();
     imageSetting.name = "n1";
@@ -1285,7 +1285,7 @@ public class VmXenonBackendTest {
     }
 
     @Test(dataProvider = "vmCreateImageReplicationType")
-    public void testPrepareVmCreateImage(ImageReplicationType replicationType) throws Throwable {
+    public void testPrepareVmCreateImage(ImageReplication replicationType) throws Throwable {
       ImageCreateSpec imageCreateSpec = new ImageCreateSpec();
       imageCreateSpec.setName("i1");
       imageCreateSpec.setReplicationType(replicationType);
@@ -1320,8 +1320,8 @@ public class VmXenonBackendTest {
     @DataProvider(name = "vmCreateImageReplicationType")
     public Object[][] getVmCreateImageReplicationType() {
       return new Object[][]{
-          {ImageReplicationType.EAGER},
-          {ImageReplicationType.ON_DEMAND}
+          {ImageReplication.EAGER},
+          {ImageReplication.ON_DEMAND}
       };
     }
 

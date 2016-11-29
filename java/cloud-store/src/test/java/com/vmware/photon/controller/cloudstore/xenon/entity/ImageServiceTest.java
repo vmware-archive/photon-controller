@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
@@ -21,6 +20,7 @@ import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.UriUtils;
@@ -105,7 +105,7 @@ public class ImageServiceTest {
       testState = new ImageService.State();
       testState.name = "dummyName";
       testState.state = ImageState.READY;
-      testState.replicationType = ImageReplicationType.EAGER;
+      testState.replicationType = ImageReplication.EAGER;
     }
 
     @AfterMethod
@@ -193,7 +193,7 @@ public class ImageServiceTest {
       testState = new ImageService.State();
       testState.name = "dummyName";
       testState.state = ImageState.READY;
-      testState.replicationType = ImageReplicationType.EAGER;
+      testState.replicationType = ImageReplication.EAGER;
       testState.replicatedDatastore = 3;
       testState.totalDatastore = 10;
       testState.totalImageDatastore = 8;
@@ -240,7 +240,7 @@ public class ImageServiceTest {
       host.startServiceSynchronously(service, testState);
 
       ImageService.State patchState = new ImageService.State();
-      patchState.replicationType = ImageReplicationType.ON_DEMAND;
+      patchState.replicationType = ImageReplication.ON_DEMAND;
 
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
@@ -305,7 +305,7 @@ public class ImageServiceTest {
       testState = new ImageService.State();
       testState.name = "dummyName";
       testState.state = ImageState.READY;
-      testState.replicationType = ImageReplicationType.EAGER;
+      testState.replicationType = ImageReplication.EAGER;
       testState.replicatedDatastore = 8;
       testState.replicatedImageDatastore = 5;
       testState.totalDatastore = 10;
@@ -576,7 +576,7 @@ public class ImageServiceTest {
       testState = new ImageService.State();
       testState.name = UUID.randomUUID().toString();
       testState.state = ImageState.READY;
-      testState.replicationType = ImageReplicationType.EAGER;
+      testState.replicationType = ImageReplication.EAGER;
       testState.replicatedDatastore = 8;
       testState.replicatedImageDatastore = 5;
       testState.totalDatastore = 10;

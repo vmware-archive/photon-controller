@@ -16,7 +16,6 @@ package com.vmware.photon.controller.deployer.helpers;
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.Image;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.StatsStoreType;
@@ -49,6 +48,7 @@ import com.vmware.photon.controller.deployer.xenon.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VibService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
@@ -415,7 +415,7 @@ public class TestHelper {
   public static ImageService.State createImageService(MultiHostEnvironment<?> cloudStoreMachine) throws Throwable {
     ImageService.State imageServiceStartState = new ImageService.State();
     imageServiceStartState.name = "imageName";
-    imageServiceStartState.replicationType = ImageReplicationType.EAGER;
+    imageServiceStartState.replicationType = ImageReplication.EAGER;
     imageServiceStartState.state = ImageState.READY;
     ImageService.State imageServiceState =
         cloudStoreMachine.callServiceSynchronously(

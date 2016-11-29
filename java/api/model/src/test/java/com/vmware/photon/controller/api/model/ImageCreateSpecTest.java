@@ -15,6 +15,7 @@ package com.vmware.photon.controller.api.model;
 
 import com.vmware.photon.controller.api.model.helpers.JsonHelpers;
 import com.vmware.photon.controller.api.model.helpers.Validator;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import com.google.common.collect.ImmutableList;
 import org.hamcrest.MatcherAssert;
@@ -32,7 +33,7 @@ public class ImageCreateSpecTest {
 
   private ImageCreateSpec createImageCreateSpec(
       String name,
-      ImageReplicationType replicationType) {
+      ImageReplication replicationType) {
     ImageCreateSpec imageCreateSpec = new ImageCreateSpec();
     imageCreateSpec.setName(name);
     imageCreateSpec.setReplicationType(replicationType);
@@ -54,7 +55,7 @@ public class ImageCreateSpecTest {
     @Test
     public void testCorrectString() {
       String expectedString = "ImageCreateSpec{name=image1, replicationType=EAGER}";
-      ImageCreateSpec spec = createImageCreateSpec("image1", ImageReplicationType.EAGER);
+      ImageCreateSpec spec = createImageCreateSpec("image1", ImageReplication.EAGER);
       assertThat(spec.toString(), is(expectedString));
     }
   }
@@ -69,8 +70,8 @@ public class ImageCreateSpecTest {
     @DataProvider(name = "validImageCreateSpecs")
     public Object[][] getValidImageCreateSpecs() {
       return new Object[][]{
-          {createImageCreateSpec("i1", ImageReplicationType.EAGER)},
-          {createImageCreateSpec("i1", ImageReplicationType.ON_DEMAND)},
+          {createImageCreateSpec("i1", ImageReplication.EAGER)},
+          {createImageCreateSpec("i1", ImageReplication.ON_DEMAND)},
       };
     }
 
@@ -84,7 +85,7 @@ public class ImageCreateSpecTest {
     @DataProvider(name = "invalidImageCreateSpecs")
     public Object[][] getInvalidImageCreateSpecs() {
       return new Object[][]{
-          {createImageCreateSpec(null, ImageReplicationType.EAGER),
+          {createImageCreateSpec(null, ImageReplication.EAGER),
               "name may not be null (was null)"},
           {createImageCreateSpec("i1", null),
               "replicationType may not be null (was null)"}
@@ -109,7 +110,7 @@ public class ImageCreateSpecTest {
 
     @Test
     public void testSerialization() throws Exception {
-      ImageCreateSpec spec = createImageCreateSpec("image1", ImageReplicationType.EAGER);
+      ImageCreateSpec spec = createImageCreateSpec("image1", ImageReplication.EAGER);
       String json = JsonHelpers.jsonFixture(JSON_FILE);
 
       MatcherAssert.assertThat(JsonHelpers.asJson(spec), is(equalTo(json)));

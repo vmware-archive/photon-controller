@@ -23,10 +23,10 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalExc
 import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
 import com.vmware.photon.controller.api.model.Image;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
@@ -59,7 +59,7 @@ public class ImageFeClient {
     this.taskBackend = taskBackend;
   }
 
-  public Task create(InputStream inputStream, String name, ImageReplicationType replicationType) throws
+  public Task create(InputStream inputStream, String name, ImageReplication replicationType) throws
       InternalException, ExternalException {
     TaskEntity taskEntity = imageBackend.prepareImageUpload(inputStream, name, replicationType);
     boolean hasReplicateImageStep = taskEntity.containsStep(Operation.REPLICATE_IMAGE);

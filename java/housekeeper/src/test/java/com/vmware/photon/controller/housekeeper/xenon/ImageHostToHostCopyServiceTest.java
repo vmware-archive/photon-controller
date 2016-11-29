@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.housekeeper.xenon;
 
 import com.vmware.photon.controller.api.model.HostState;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
@@ -44,6 +43,7 @@ import com.vmware.photon.controller.housekeeper.helpers.xenon.TestHost;
 import com.vmware.photon.controller.housekeeper.xenon.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.xenon.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.xenon.mock.HostClientTransferImageErrorMock;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
@@ -778,22 +778,22 @@ public class ImageHostToHostCopyServiceTest {
     @DataProvider(name = "transferImageSuccessCode")
     public Object[][] getTransferImageSuccessCode() {
       return new Object[][]{
-          {1, TransferImageResultCode.OK, ImageReplicationType.EAGER, 2},
-          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK, ImageReplicationType.EAGER, 2},
-          {1, TransferImageResultCode.OK, ImageReplicationType.ON_DEMAND, 1},
-          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK, ImageReplicationType.ON_DEMAND, 1},
+          {1, TransferImageResultCode.OK, ImageReplication.EAGER, 2},
+          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK, ImageReplication.EAGER, 2},
+          {1, TransferImageResultCode.OK, ImageReplication.ON_DEMAND, 1},
+          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT, TransferImageResultCode.OK, ImageReplication.ON_DEMAND, 1},
       };
     }
 
     @DataProvider(name = "transferImageDestinationAlreadyExistsCode")
     public Object[][] getTransferImageDestinationAlreadyExistsCode() {
       return new Object[][]{
-          {1, TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplicationType.EAGER, 1},
+          {1, TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplication.EAGER, 1},
           {TestEnvironment.DEFAULT_MULTI_HOST_COUNT,
-              TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplicationType.EAGER, 1},
-          {1, TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplicationType.ON_DEMAND, 0},
+              TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplication.EAGER, 1},
+          {1, TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplication.ON_DEMAND, 0},
           {TestEnvironment.DEFAULT_MULTI_HOST_COUNT,
-              TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplicationType.ON_DEMAND, 0},
+              TransferImageResultCode.DESTINATION_ALREADY_EXIST, ImageReplication.ON_DEMAND, 0},
       };
     }
 
@@ -804,7 +804,7 @@ public class ImageHostToHostCopyServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "transferImageSuccessCode")
-    public void testSuccess(int hostCount, TransferImageResultCode code, ImageReplicationType type,
+    public void testSuccess(int hostCount, TransferImageResultCode code, ImageReplication type,
                             int addedReplicatedImageDatastore) throws Throwable {
       HostClientMock hostClient = new HostClientMock();
       hostClient.setTransferImageResultCode(code);
@@ -889,7 +889,7 @@ public class ImageHostToHostCopyServiceTest {
           .hostCount(hostCount)
           .build();
 
-      ImageService.State createdImageState = createNewImageEntity(ImageReplicationType.EAGER);
+      ImageService.State createdImageState = createNewImageEntity(ImageReplication.EAGER);
       int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
       int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
       copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
@@ -958,7 +958,7 @@ public class ImageHostToHostCopyServiceTest {
      */
     @Test(dataProvider = "transferImageDestinationAlreadyExistsCode")
     public void testSuccessWithDestinationAlreadyExists(int hostCount, TransferImageResultCode code,
-                                                        ImageReplicationType type,
+                                                        ImageReplication type,
                                                         int addedReplicatedImageDatastore) throws Throwable {
       HostClientMock hostClient = new HostClientMock();
       hostClient.setTransferImageResultCode(code);
@@ -1037,7 +1037,7 @@ public class ImageHostToHostCopyServiceTest {
     @Test(dataProvider = "transferImageSuccessCode")
     public void testSuccessWithImageToImageDatastoreMappingServiceDocumentExists(int hostCount,
                                                                                  TransferImageResultCode code,
-                                                                                 ImageReplicationType type,
+                                                                                 ImageReplication type,
                                                                                  int addedReplicatedImageDatastore)
         throws Throwable {
       HostClientMock hostClient = new HostClientMock();
@@ -1102,7 +1102,7 @@ public class ImageHostToHostCopyServiceTest {
           .hostCount(hostCount)
           .build();
 
-      ImageService.State createdImageState = createNewImageEntity(ImageReplicationType.EAGER);
+      ImageService.State createdImageState = createNewImageEntity(ImageReplication.EAGER);
       int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
       int initialReplicatedDatastoreCount = createdImageState.replicatedDatastore;
       copyTask.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
@@ -1318,7 +1318,7 @@ public class ImageHostToHostCopyServiceTest {
     }
 
     private com.vmware.photon.controller.cloudstore.xenon.entity.ImageService.State createNewImageEntity
-        (ImageReplicationType type)
+        (ImageReplication type)
         throws Throwable {
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(

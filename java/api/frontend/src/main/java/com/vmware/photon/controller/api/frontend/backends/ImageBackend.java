@@ -19,9 +19,9 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalExc
 import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.ImageCreateSpec;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import com.google.common.base.Optional;
 
@@ -38,7 +38,7 @@ public interface ImageBackend {
   ImageEntity deriveImage(ImageCreateSpec imageCreateSpec, ImageEntity originalImage);
 
   TaskEntity prepareImageUpload(InputStream inputStream, String imageFileName,
-                                ImageReplicationType replicationType) throws ExternalException;
+                                ImageReplication replicationType) throws ExternalException;
 
   TaskEntity prepareImageDelete(String id)
       throws ExternalException;

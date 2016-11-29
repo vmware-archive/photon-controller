@@ -22,9 +22,9 @@ import com.vmware.photon.controller.api.frontend.resources.routes.ImageResourceR
 import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.api.frontend.utils.PaginationUtils;
 import com.vmware.photon.controller.api.model.Image;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import static com.vmware.photon.controller.api.frontend.Responses.generateCustomResponseFromServlet;
 import static com.vmware.photon.controller.api.frontend.Responses.generateResourceListResponse;
 
@@ -125,7 +125,7 @@ public class ImagesResource {
     InputStream itemStream = null;
 
     try {
-      ImageReplicationType replicationType = null;
+      ImageReplication replicationType = null;
 
       iterator = fileUpload.getItemIterator(request);
       while (iterator.hasNext()) {
@@ -136,7 +136,7 @@ public class ImagesResource {
           String fieldName = item.getFieldName();
           switch (fieldName.toUpperCase()) {
             case "IMAGEREPLICATION":
-              replicationType = ImageReplicationType.valueOf(Streams.asString(itemStream).toUpperCase());
+              replicationType = ImageReplication.valueOf(Streams.asString(itemStream).toUpperCase());
               break;
             default:
               logger.warn(String.format("The parameter '%s' is unknown in image upload.", fieldName));

@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.housekeeper.xenon;
 
 import com.vmware.photon.controller.api.model.HostState;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
@@ -42,6 +41,7 @@ import com.vmware.photon.controller.host.gen.CopyImageResponse;
 import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.copy_image_call;
 import com.vmware.photon.controller.host.gen.Host.AsyncSSLClient.transfer_image_call;
 import com.vmware.photon.controller.host.gen.TransferImageResponse;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.OperationSequence;
@@ -566,7 +566,7 @@ public class ImageHostToHostCopyService extends StatefulService {
         failTask(throwable);
       }
       ImageService.State imageState = operation.getBody(ImageService.State.class);
-      boolean isEagerCopy = (imageState.replicationType == ImageReplicationType.EAGER);
+      boolean isEagerCopy = (imageState.replicationType == ImageReplication.EAGER);
       updateDocumentsAndTriggerCopy(current, isEagerCopy);
     });
     sendRequest(imageQuery);

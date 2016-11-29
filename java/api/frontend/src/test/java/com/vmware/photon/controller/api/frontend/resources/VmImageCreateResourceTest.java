@@ -18,8 +18,8 @@ import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRo
 import com.vmware.photon.controller.api.frontend.resources.routes.VmResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.vm.VmImageCreateResource;
 import com.vmware.photon.controller.api.model.ImageCreateSpec;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 
 import org.mockito.Mock;
 import org.testng.annotations.Test;
@@ -64,7 +64,7 @@ public class VmImageCreateResourceTest extends ResourceTest {
 
     ImageCreateSpec imageCreateSpec = new ImageCreateSpec();
     imageCreateSpec.setName("image1");
-    imageCreateSpec.setReplicationType(ImageReplicationType.EAGER);
+    imageCreateSpec.setReplicationType(ImageReplication.EAGER);
 
     when(vmFeClient.createImage(vmId, imageCreateSpec)).thenReturn(task);
 

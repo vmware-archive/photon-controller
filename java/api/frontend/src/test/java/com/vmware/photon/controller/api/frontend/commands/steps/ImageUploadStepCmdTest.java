@@ -27,8 +27,8 @@ import com.vmware.photon.controller.api.frontend.lib.Image;
 import com.vmware.photon.controller.api.frontend.lib.ImageStore;
 import com.vmware.photon.controller.api.frontend.lib.image.ImageLoader;
 import com.vmware.photon.controller.api.frontend.lib.ova.OvaTestModule;
-import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ImageState;
+import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.transfer.streamVmdk.VmdkFormatException;
 
 import org.mockito.ArgumentCaptor;
@@ -140,15 +140,15 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
   @DataProvider(name = "ImageStreams")
   public Object[][] imageStreams() throws Throwable {
     return new Object[][]{
-        {ova.getOvaStream(), ImageReplicationType.EAGER},
-        {ova.getRawVmdkStream(), ImageReplicationType.EAGER},
-        {ova.getOvaStream(), ImageReplicationType.ON_DEMAND},
-        {ova.getRawVmdkStream(), ImageReplicationType.ON_DEMAND}
+        {ova.getOvaStream(), ImageReplication.EAGER},
+        {ova.getRawVmdkStream(), ImageReplication.EAGER},
+        {ova.getOvaStream(), ImageReplication.ON_DEMAND},
+        {ova.getRawVmdkStream(), ImageReplication.ON_DEMAND}
     };
   }
 
   @Test(dataProvider = "ImageStreams")
-  public void testSuccessfulUpload(InputStream imageStream, ImageReplicationType replicationType) throws Throwable {
+  public void testSuccessfulUpload(InputStream imageStream, ImageReplication replicationType) throws Throwable {
     this.inputStream = imageStream;
     imageEntity.setReplicationType(replicationType);
     step.createOrUpdateTransientResource(ImageUploadStepCmd.INPUT_STREAM, imageStream);
@@ -176,7 +176,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
   }
 
   @Test(dataProvider = "ImageStreams")
-  public void testSuccessfulUploadTwice(InputStream imageStream, ImageReplicationType replicationType)
+  public void testSuccessfulUploadTwice(InputStream imageStream, ImageReplication replicationType)
       throws Exception {
     this.inputStream = imageStream;
     imageEntity.setReplicationType(replicationType);
