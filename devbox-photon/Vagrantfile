@@ -308,7 +308,7 @@ cat >> $out <<-'EOM'
     else
       reachable="true"
       echo "Adding Lightwave users."
-      /devbox_data/java/containers/lightwave/config/add_lightwave_users.sh #{ENV['LW_PASSWORD']}
+      /devbox_data/java/containers/lightwave/config/add_lightwave_users.sh #{ENV['LW_PASSWORD']} #{ENV['LW_DOMAIN_NAME']}
       echo "Updating tenant token expiration time."
       /devbox_data/java/containers/lightwave/config/update_token_expiration.sh #{ENV['LW_PASSWORD']} #{ENV['LW_DOMAIN_NAME']}
       break
