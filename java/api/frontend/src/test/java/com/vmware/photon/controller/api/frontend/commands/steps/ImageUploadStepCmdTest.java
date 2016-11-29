@@ -74,7 +74,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
   private static String imageId;
   private static long imageSize;
   private static OvaTestModule ova;
-  private static String datastoreName;
+  private static String datastoreId;
 
   @Mock
   private TaskCommand taskCommand;
@@ -100,7 +100,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
     // Create VMDK stats.
     imageId = "image-1";
     imageSize = ova.vmdkContent.length();
-    datastoreName = "datastore";
+    datastoreId = "datastore-id";
   }
 
   @AfterClass
@@ -125,7 +125,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     when(imageStore.createImage(anyString())).thenReturn(image);
     doNothing().when(imageStore).finalizeImage(anyObject());
-    when(imageStore.getDatastore()).thenReturn(datastoreName);
+    when(imageStore.getDatastore()).thenReturn(datastoreId);
     when(image.addDisk(anyString(), any(InputStream.class))).thenReturn(imageSize);
   }
 
@@ -157,7 +157,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     doNothing().when(imageBackend).updateSettings(imageEntity, imageSettings);
     doNothing().when(imageBackend).updateSize(imageEntity, imageSize);
-    doNothing().when(imageBackend).updateImageDatastore(imageEntity.getId(), datastoreName);
+    doNothing().when(imageBackend).updateImageDatastore(imageEntity.getId(), datastoreId);
 
     command.execute();
 
@@ -188,7 +188,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
 
     doNothing().when(imageBackend).updateSettings(imageEntity, imageSettings);
     doNothing().when(imageBackend).updateSize(imageEntity, imageSize);
-    doNothing().when(imageBackend).updateImageDatastore(imageEntity.getId(), datastoreName);
+    doNothing().when(imageBackend).updateImageDatastore(imageEntity.getId(), datastoreId);
 
     command.execute();
     // Do it twice, it should work.

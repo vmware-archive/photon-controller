@@ -552,7 +552,7 @@ public class ImageXenonBackendTest {
 
       xenonClient.post(DatastoreServiceFactory.SELF_LINK, datastoreState);
 
-      imageBackend.updateImageDatastore(imageEntity.getId(), "image-datastore-name");
+      imageBackend.updateImageDatastore(imageEntity.getId(), imageDatastoreId);
 
       final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
       termsBuilder.put("imageId", imageEntity.getId());
@@ -588,7 +588,7 @@ public class ImageXenonBackendTest {
       datastoreState.isImageDatastore = true;
       xenonClient.post(DatastoreServiceFactory.SELF_LINK, datastoreState);
 
-      imageBackend.updateImageDatastore(imageEntity.getId(), "image-datastore-name");
+      imageBackend.updateImageDatastore(imageEntity.getId(), imageDatastoreId);
 
       final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
       termsBuilder.put("imageId", imageEntity.getId());
@@ -598,7 +598,7 @@ public class ImageXenonBackendTest {
       assertThat(results.size(), is(1));
       assertThat(results.get(0).imageDatastoreId, is(imageDatastoreId));
 
-      imageBackend.updateImageDatastore(imageEntity.getId(), "image-datastore-name");
+      imageBackend.updateImageDatastore(imageEntity.getId(), imageDatastoreId);
       results = xenonClient.queryDocuments(ImageToImageDatastoreMappingService.State.class,
           termsBuilder.build());
       assertThat(results.size(), is(1));
