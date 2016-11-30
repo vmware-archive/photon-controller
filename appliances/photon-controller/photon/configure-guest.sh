@@ -226,6 +226,7 @@ function configure_photon()
     \"PHOTON_CONTROLLER_PEER_NODES\" : ${pc_peer_nodes}, \
     \"APIFE_IP\" : \"${ip0}\", \
     \"APIFE_PORT\" : 9000, \
+    \"LIGHTWAVE_USERNAME\" : \"${lw_username}\", \
     \"LIGHTWAVE_PASSWORD\" : \"${lw_password}\", \
     \"LIGHTWAVE_HOSTNAME\" : \"${lw_host}\", \
     \"LIGHTWAVE_DOMAIN\" : \"${lw_domain}\", \
@@ -283,6 +284,7 @@ function parse_ovf_env()
 
   # lightwave config
   lw_domain=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_domain']/../@*[local-name()='value'])") # some.domain.com
+  lw_username=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_username']/../@*[local-name()='value'])") # administrator
   lw_password=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_password']/../@*[local-name()='value'])")
   lw_port=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_port']/../@*[local-name()='value'])")
   pc_secret_password=$(date +%s | base64 | head -c 8)
@@ -290,6 +292,10 @@ function parse_ovf_env()
 
   if [ -z "$lw_port" ]; then
     lw_port="443"
+  fi
+
+  if [ -z "$lw_username" ]; then
+    lw_username="administrator"
   fi
 
   missing_values=0
