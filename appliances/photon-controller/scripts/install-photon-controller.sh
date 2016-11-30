@@ -13,8 +13,8 @@
 echo "installing photon-controller"
 
 # install photon-controller
-tdnf install -y openjdk-1.8.0.92
-tdnf install -y openjre-1.8.0.92
+tdnf install -y openjdk-1.8.0.102
+tdnf install -y openjre-1.8.0.102
 tdnf install -y sshpass
 mkdir -p /usr/java && ln -s /var/opt/OpenJDK* /usr/java/default
 
