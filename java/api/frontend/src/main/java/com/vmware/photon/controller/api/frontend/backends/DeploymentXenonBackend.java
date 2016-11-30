@@ -45,7 +45,6 @@ import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
-import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.MigrationStatus;
 import com.vmware.photon.controller.api.model.NetworkConfiguration;
 import com.vmware.photon.controller.api.model.Operation;
@@ -56,7 +55,6 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfiguration
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
-import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 
@@ -309,7 +307,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     networkConfiguration.setIpRange(deploymentEntity.getIpRange());
     networkConfiguration.setFloatingIpRange(deploymentEntity.getFloatingIpRange());
     networkConfiguration.setDhcpServers(deploymentEntity.getDhcpServers());
-    networkConfiguration.setSnatIp(deploymentEntity.getSnatIp());
     deployment.setNetworkConfiguration(networkConfiguration);
 
     deployment.setLoadBalancerEnabled(deploymentEntity.getLoadBalancerEnabled());
@@ -509,14 +506,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
       deployment.networkHostUplinkPnic = spec.getNetworkConfiguration().getNetworkHostUplinkPnic();
       deployment.ipRange = spec.getNetworkConfiguration().getIpRange();
       deployment.dhcpServers = spec.getNetworkConfiguration().getDhcpServers();
-
-      IpRange externalIpRange = spec.getNetworkConfiguration().getExternalIpRange();
-      deployment.snatIp = externalIpRange.getStart();
-
-      IpRange floatingIpRange = new IpRange();
-      floatingIpRange.setStart(IpHelper.longToIpString(IpHelper.ipStringToLong(externalIpRange.getStart()) + 1));
-      floatingIpRange.setEnd(externalIpRange.getEnd());
-      deployment.floatingIpRange = floatingIpRange;
+      deployment.floatingIpRange = spec.getNetworkConfiguration().getExternalIpRange();
     }
     deployment.loadBalancerEnabled = spec.getLoadBalancerEnabled();
 
@@ -560,7 +550,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     entity.setIpRange(deployment.ipRange);
     entity.setFloatingIpRange(deployment.floatingIpRange);
     entity.setDhcpServers(deployment.dhcpServers);
-    entity.setSnatIp(deployment.snatIp);
     entity.setLoadBalancerEnabled(deployment.loadBalancerEnabled);
     entity.setLoadBalancerAddress(deployment.loadBalancerAddress);
     entity.setMigrationProgress(deployment.dataMigrationProgress);
