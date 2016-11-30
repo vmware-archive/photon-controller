@@ -15,7 +15,6 @@ package com.vmware.photon.controller.api.model;
 
 import com.vmware.photon.controller.api.model.constraints.Cidr;
 import com.vmware.photon.controller.api.model.constraints.DomainOrIP;
-import com.vmware.photon.controller.api.model.constraints.IPv4;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -101,11 +100,6 @@ public class NetworkConfiguration {
   @ApiModelProperty(value = "IP addresses of DHCP servers", required = false)
   private List<String> dhcpServers;
 
-  @ApiModelProperty(value = "The IP used for SNAT", required = true)
-  @NotNull
-  @IPv4
-  private String snatIp;
-
   public boolean getSdnEnabled() {
     return sdnEnabled;
   }
@@ -160,14 +154,6 @@ public class NetworkConfiguration {
 
   public void setFloatingIpRange(IpRange floatingIpRange) {
     this.floatingIpRange = floatingIpRange;
-  }
-
-  public String getSnatIp() {
-    return snatIp;
-  }
-
-  public void setSnatIp(String snatIp) {
-    this.snatIp = snatIp;
   }
 
   public String getNetworkTopRouterId() {
@@ -232,8 +218,7 @@ public class NetworkConfiguration {
         && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId())
         && Objects.equals(this.getIpRange(), other.getIpRange())
         && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange())
-        && Objects.deepEquals(this.getDhcpServers(), other.getDhcpServers())
-        && Objects.equals(this.getSnatIp(), other.getSnatIp());
+        && Objects.deepEquals(this.getDhcpServers(), other.getDhcpServers());
   }
 
   @Override
@@ -250,8 +235,7 @@ public class NetworkConfiguration {
         this.getNetworkHostUplinkPnic(),
         this.getEdgeClusterId(),
         this.getFloatingIpRange(),
-        this.getDhcpServers(),
-        this.getSnatIp());
+        this.getDhcpServers());
   }
 
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
@@ -266,7 +250,6 @@ public class NetworkConfiguration {
         .add("networkHostUplinkPnic", this.getNetworkHostUplinkPnic())
         .add("ipRange", this.getIpRange())
         .add("floatingIpRange", this.getFloatingIpRange())
-        .add("snatIp", this.getSnatIp())
         .add("edgeClusterId", this.edgeClusterId)
         .add("dhcpServers", StringUtils.join(this.getDhcpServers(), ','));
   }
