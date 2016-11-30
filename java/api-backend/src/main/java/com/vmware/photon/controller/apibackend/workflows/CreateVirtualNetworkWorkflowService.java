@@ -179,6 +179,9 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
         case GET_IP_ADDRESS_SPACE:
           getIpAddressSpace(state);
           break;
+        case ALLOCATE_FLOATING_IP:
+          allocateFloatingIp(state);
+          break;
         case CREATE_LOGICAL_SWITCH:
           createLogicalSwitch(state);
           break;
@@ -216,7 +219,6 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
             patchState.tier0RouterId = deploymentState.networkTopRouterId;
             patchState.edgeClusterId = deploymentState.edgeClusterId;
             patchState.dhcpRelayServiceId = deploymentState.dhcpRelayServiceId;
-            patchState.snatIp = deploymentState.snatIp;
             progress(state, patchState);
           } catch (Throwable t) {
             fail(state, t);
@@ -343,7 +345,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
             DhcpSubnetService.State subnet = op.getBody(DhcpSubnetService.State.class);
             CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
-                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH);
+                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_FLOATING_IP);
             patchState.taskServiceEntity = state.taskServiceEntity;
             patchState.taskServiceEntity.cidr = subnet.cidr;
             patchState.taskServiceEntity.lowIpDynamic = convertLongToDottedIp(subnet.lowIpDynamic);
@@ -369,6 +371,40 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           }
         })
         .sendWith(this);
+  }
+
+  /**
+   * Acquires a floating IP to be set as SNAT IP for this virtual network.
+   */
+  private void allocateFloatingIp(CreateVirtualNetworkWorkflowDocument state) {
+    DhcpSubnetService.IpOperationPatch allocateIp = new DhcpSubnetService.IpOperationPatch(
+        DhcpSubnetService.IpOperationPatch.Kind.AllocateIp,
+        DhcpSubnetService.VIRTUAL_NETWORK_SNAT_IP, DhcpSubnetService.VIRTUAL_NETWORK_SNAT_IP, null);
+
+    CloudStoreUtils.patchAndProcess(
+        this,
+        DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK,
+        allocateIp,
+        DhcpSubnetService.IpOperationPatch.class,
+        allocateIpResult -> {
+          allocateFloatingIp(state, allocateIpResult.ipAddress);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
+  }
+
+  private void allocateFloatingIp(CreateVirtualNetworkWorkflowDocument state, String ipAddress) {
+    try {
+      CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
+          TaskState.TaskStage.STARTED,
+          CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH);
+      patchState.snatIp = ipAddress;
+      progress(state, patchState);
+    } catch (Throwable t) {
+      fail(state, t);
+    }
   }
 
   /**

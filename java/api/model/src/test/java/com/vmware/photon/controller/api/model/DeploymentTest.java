@@ -83,7 +83,6 @@ public class DeploymentTest {
         .ipRange("10.0.0.1/24")
         .floatingIpRange(ipRange)
         .dhcpServers(Arrays.asList("192.10.0.1", "192.20.0.1"))
-        .snatIp("192.168.0.1")
         .build());
     deployment.setLoadBalancerEnabled(true);
     deployment.setLoadBalancerAddress(loadBalancerAddress);
@@ -173,7 +172,7 @@ public class DeploymentTest {
               "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, " +
               "networkEdgeIpPoolId=networkEdgeIpPoolId, networkHostUplinkPnic=networkHostUplinkPnic, " +
               "ipRange=10.0.0.1/24, floatingIpRange=IpRange{start=192.168.0.2, end=192.168.0.254}, " +
-              "snatIp=192.168.0.1, edgeClusterId=edgeClusterId, dhcpServers=192.10.0.1,192.20.0.1}, " +
+              "edgeClusterId=edgeClusterId, dhcpServers=192.10.0.1,192.20.0.1}, " +
               "loadBalancerEnabled=true, loadBalancerAddress=0.0.0.4, migrationProgress=null, " +
               "clusterConfigurations=null}";
       HashSet<String> imageDatastores = new HashSet<String>();
