@@ -25,6 +25,7 @@ import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNet
 import com.vmware.photon.controller.apibackend.utils.TaskStateHelper;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
@@ -35,6 +36,7 @@ import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
@@ -490,7 +492,6 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     private static final String LOGICAL_ROUTER_UPLINK_PORT_ID = "logicalRouterUplinkPortId";
     private static final String TIER0_ROUTER_DOWNLINK_PORT_ID = "tier0RouterDownlinkPortId";
     private static final String DHCP_RELAY_SERVICE_ID = "dhcpRelayServiceId";
-    private static final String SNAT_IP = "192.168.1.1";
     private static final String SNAT_RULE_ID = "snatRuleId";
 
     private CreateVirtualNetworkWorkflowDocument startState;
@@ -552,6 +553,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       startProjectService(testEnvironment);
       startResourceTicketService(testEnvironment);
       startSubnetAllocatorService(testEnvironment);
+      startDhcpSubnetService(testEnvironment);
 
       QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
       querySpecification.query = new QueryTask.Query()
@@ -671,6 +673,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       startProjectService(testEnvironment);
       startResourceTicketService(testEnvironment);
       startSubnetAllocatorService(testEnvironment);
+      startDhcpSubnetService(testEnvironment);
 
       startState.routingType = RoutingType.ISOLATED;
       CreateVirtualNetworkWorkflowDocument finalState =
@@ -886,6 +889,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       startProjectService(testEnvironment);
       startResourceTicketService(testEnvironment);
       startSubnetAllocatorService(testEnvironment);
+      startDhcpSubnetService(testEnvironment);
 
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -934,7 +938,6 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       deploymentStartState.networkTopRouterId = NETWORK_TOP_ROUTER_ID;
       deploymentStartState.edgeClusterId = NETWORK_EDGE_CLUSTER_ID;
       deploymentStartState.dhcpRelayServiceId = DHCP_RELAY_SERVICE_ID;
-      deploymentStartState.snatIp = SNAT_IP;
 
       URI hostUri = testEnvironment.getHosts()[0].getUri();
       deploymentStartState.dhcpServers = new ArrayList<>();
@@ -994,6 +997,30 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           SubnetAllocatorService.FACTORY_LINK,
           subnetAllocatorServiceState,
           SubnetAllocatorService.State.class,
+          (state) -> true);
+    }
+
+    private DhcpSubnetService.State startDhcpSubnetService(TestEnvironment testEnvironment) throws Throwable {
+      DhcpSubnetService.State dhcpSubnetServiceState = new DhcpSubnetService.State();
+      dhcpSubnetServiceState.lowIp = 1L;
+      dhcpSubnetServiceState.highIp = 100L;
+      dhcpSubnetServiceState.lowIpDynamic = 1L;
+      dhcpSubnetServiceState.highIpDynamic = 100L;
+      dhcpSubnetServiceState.lowIpStatic = 1L;
+      dhcpSubnetServiceState.highIpDynamic = 100L;
+      dhcpSubnetServiceState.size = 128L;
+      URI hostUri = testEnvironment.getHosts()[0].getUri();
+      dhcpSubnetServiceState.dhcpAgentEndpoint =
+          hostUri.getScheme() + "://" + hostUri.getHost() + ":" + hostUri.getPort();
+      dhcpSubnetServiceState.documentSelfLink = DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK;
+      dhcpSubnetServiceState.subnetId = ServiceUtils.getIDFromDocumentSelfLink(
+          DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK);
+      dhcpSubnetServiceState.isFloatingIpSubnet = true;
+
+      return testEnvironment.callServiceAndWaitForState(
+          DhcpSubnetService.FACTORY_LINK,
+          dhcpSubnetServiceState,
+          DhcpSubnetService.State.class,
           (state) -> true);
     }
   }

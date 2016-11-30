@@ -62,7 +62,6 @@ public class DefaultDeployment {
     startState.dhcpRelayServiceId = deploymentContext.getDhcpRelayServiceId();
     startState.ipRange = deploymentContext.getIpRange();
     startState.floatingIpRange = deploymentContext.getFloatingIpRange();
-    startState.snatIp = deploymentContext.getSnatIp();
     startState.syslogEndpoint = deploymentContext.getSyslogEndpoint();
     startState.statsEnabled = deploymentContext.getStatsEnabled();
     startState.statsStoreEndpoint = deploymentContext.getStatsStoreEndpoint();

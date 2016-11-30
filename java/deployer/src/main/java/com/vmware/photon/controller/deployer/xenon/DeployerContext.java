@@ -167,11 +167,6 @@ public class DeployerContext {
   private IpRange floatingIpRange;
 
   /**
-   * This value represents the SNAT ip.
-   */
-  private String snatIp;
-
-  /**
    * This value represents whether Stats collection is enabled for the deployment.
    */
   private Boolean statsEnabled = false;
@@ -542,10 +537,6 @@ public class DeployerContext {
 
   public IpRange getFloatingIpRange() {
     return floatingIpRange;
-  }
-
-  public String getSnatIp() {
-    return snatIp;
   }
 
   public Boolean getStatsEnabled() {
