@@ -338,11 +338,6 @@ public class DeploymentService extends StatefulService {
     public IpRange floatingIpRange;
 
     /**
-     * This value represents the IP for SNAT.
-     */
-    public String snatIp;
-
-    /**
      * This value represents the syslog endpoint for the deployment.
      */
     @Immutable

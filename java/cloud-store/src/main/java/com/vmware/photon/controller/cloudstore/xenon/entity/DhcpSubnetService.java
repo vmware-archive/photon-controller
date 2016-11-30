@@ -60,6 +60,7 @@ public class DhcpSubnetService extends StatefulService {
   public static final String FLOATING_IP_SUBNET_SINGLETON_LINK = FACTORY_LINK + "/floating-ip-dhcp-subnet";
 
   public static final long MAX_IPV4 = 0xFFFFFFFFL; // this represents 255.255.255.255
+  public static final String VIRTUAL_NETWORK_SNAT_IP = "virtual-network-snat-ip";
 
   public DhcpSubnetService() {
     super(State.class);

@@ -83,8 +83,6 @@ public class DeploymentEntity extends BaseEntity {
 
   private List<String> dhcpServers;
 
-  private String snatIp;
-
   private String ntpEndpoint;
 
   private Set<String> imageDatastores;
@@ -325,14 +323,6 @@ public class DeploymentEntity extends BaseEntity {
     this.dhcpServers = dhcpServers;
   }
 
-  public String getSnatIp() {
-    return snatIp;
-  }
-
-  public void setSnatIp(String snatIp) {
-    this.snatIp = snatIp;
-  }
-
   public String getNtpEndpoint() {
     return this.ntpEndpoint;
   }
@@ -424,8 +414,6 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId())
         && Objects.equals(this.getIpRange(), other.getIpRange())
         && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange())
-        && Objects.deepEquals(this.getDhcpServers(), other.getDhcpServers())
-        && Objects.equals(this.getSnatIp(), other.getSnatIp())
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
         && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.getUseImageDatastoreForVms(), other.getUseImageDatastoreForVms())
@@ -462,7 +450,6 @@ public class DeploymentEntity extends BaseEntity {
         .add("ipRange", this.getIpRange())
         .add("floatingIpRange", this.getFloatingIpRange())
         .add("dhcpServers", StringUtils.join(this.getDhcpServers(), ','))
-        .add("snatIp", this.getSnatIp())
         .add("ntpEndpoint", this.getNtpEndpoint())
         .add("imageDatastores", StringUtils.join(this.getImageDatastores(), ','))
         .add("useImageDatastoreForVms", this.getUseImageDatastoreForVms())
