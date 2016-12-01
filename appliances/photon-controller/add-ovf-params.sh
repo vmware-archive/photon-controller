@@ -78,7 +78,7 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
         <Label>Shared key.</Label> \
         <Description>Shared key to side step authentication. (optional)</Description> \
       </Property> \
-      <Property ovf:key="create_default_deployment" ovf:userConfigurable="true" > \
+      <Property ovf:key="create_default_deployment" ovf:type="string" ovf:userConfigurable="true" > \
         <Label>Boolean value</Label> \
         <Description>Indicates whether to create the default deployment (last node in deployment must specify this)</Description> \
       </Property> \
