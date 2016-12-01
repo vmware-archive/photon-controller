@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.QuotaLineItem;
 import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.ReservedIpType;
+import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureRoutingTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalRouterTask;
@@ -179,8 +180,8 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
         case GET_IP_ADDRESS_SPACE:
           getIpAddressSpace(state);
           break;
-        case ALLOCATE_FLOATING_IP:
-          allocateFloatingIp(state);
+        case ALLOCATE_SNAT_IP:
+          allocateSnatIp(state);
           break;
         case CREATE_LOGICAL_SWITCH:
           createLogicalSwitch(state);
@@ -345,7 +346,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
             DhcpSubnetService.State subnet = op.getBody(DhcpSubnetService.State.class);
             CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
-                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_FLOATING_IP);
+                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.ALLOCATE_SNAT_IP);
             patchState.taskServiceEntity = state.taskServiceEntity;
             patchState.taskServiceEntity.cidr = subnet.cidr;
             patchState.taskServiceEntity.lowIpDynamic = convertLongToDottedIp(subnet.lowIpDynamic);
@@ -376,7 +377,14 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
   /**
    * Acquires a floating IP to be set as SNAT IP for this virtual network's Tier1 router .
    */
-  private void allocateFloatingIp(CreateVirtualNetworkWorkflowDocument state) {
+  private void allocateSnatIp(CreateVirtualNetworkWorkflowDocument state) {
+    // In ISOLATED network, Tier1 router is not connected to Tier0 router hence we don't need SNAT IP.
+    if (state.routingType == RoutingType.ISOLATED) {
+      ServiceUtils.logInfo(this, "ISOLATED network does not need SNAT IP hence moving to next step.");
+      saveSnatIp(state, null);
+      return;
+    }
+
     DhcpSubnetService.IpOperationPatch allocateIp = new DhcpSubnetService.IpOperationPatch(
         DhcpSubnetService.IpOperationPatch.Kind.AllocateIp,
         DhcpSubnetService.VIRTUAL_NETWORK_SNAT_IP, DhcpSubnetService.VIRTUAL_NETWORK_SNAT_IP, null);
@@ -387,7 +395,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
         allocateIp,
         DhcpSubnetService.IpOperationPatch.class,
         allocateIpResult -> {
-          allocateFloatingIp(state, allocateIpResult.ipAddress);
+          saveSnatIp(state, allocateIpResult.ipAddress);
         },
         throwable -> {
           fail(state, throwable);
@@ -395,12 +403,14 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     );
   }
 
-  private void allocateFloatingIp(CreateVirtualNetworkWorkflowDocument state, String ipAddress) {
+  private void saveSnatIp(CreateVirtualNetworkWorkflowDocument state, String ipAddress) {
     try {
       CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
           TaskState.TaskStage.STARTED,
           CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH);
+      patchState.taskServiceEntity = state.taskServiceEntity;
       patchState.snatIp = ipAddress;
+      patchState.taskServiceEntity.snatIp = ipAddress;
       progress(state, patchState);
     } catch (Throwable t) {
       fail(state, t);
@@ -671,6 +681,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     virtualNetworkPatchState.lowIpStatic = state.taskServiceEntity.lowIpStatic;
     virtualNetworkPatchState.highIpStatic = state.taskServiceEntity.highIpStatic;
     virtualNetworkPatchState.reservedIpList = state.taskServiceEntity.reservedIpList;
+    virtualNetworkPatchState.snatIp = state.taskServiceEntity.snatIp;
 
     return virtualNetworkPatchState;
   }
