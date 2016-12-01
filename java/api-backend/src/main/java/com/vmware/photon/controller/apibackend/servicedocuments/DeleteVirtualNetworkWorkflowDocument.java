@@ -52,6 +52,7 @@ public class DeleteVirtualNetworkWorkflowDocument extends ServiceDocument{
       GET_NSX_CONFIGURATION,
       RELEASE_IP_ADDRESS_SPACE,
       RELEASE_QUOTA,
+      RELEASE_SNAT_IP,
       DELETE_LOGICAL_PORTS,
       DELETE_LOGICAL_ROUTER,
       DELETE_LOGICAL_SWITCH,

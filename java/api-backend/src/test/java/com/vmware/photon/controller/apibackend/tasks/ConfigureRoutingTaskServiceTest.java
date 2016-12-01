@@ -174,8 +174,7 @@ public class ConfigureRoutingTaskServiceTest {
           {"logicalTier1RouterId", "logicalTier1RouterId cannot be null"},
           {"logicalTier1RouterDownLinkPortIp", "logicalTier1RouterDownLinkPortIp cannot be null"},
           {"logicalTier1RouterDownLinkPortIpPrefixLen", "logicalTier1RouterDownLinkPortIpPrefixLen cannot be null"},
-          {"logicalTier0RouterId", "logicalTier0RouterId cannot be null"},
-          {"snatIp", "snatIp cannot be null"}
+          {"logicalTier0RouterId", "logicalTier0RouterId cannot be null"}
       };
     }
   }

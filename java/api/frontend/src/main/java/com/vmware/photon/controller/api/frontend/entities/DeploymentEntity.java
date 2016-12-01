@@ -414,6 +414,7 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId())
         && Objects.equals(this.getIpRange(), other.getIpRange())
         && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange())
+        && Objects.deepEquals(this.getDhcpServers(), other.getDhcpServers())
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
         && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.getUseImageDatastoreForVms(), other.getUseImageDatastoreForVms())
