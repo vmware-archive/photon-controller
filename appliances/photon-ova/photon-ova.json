@@ -76,6 +76,10 @@
     {
       "type": "shell",
       "script": "../scripts/cleanup.sh"
+    },
+    {
+      "type": "shell",
+      "inline": "rm -rf /var/lib/cloud/*"
     }
   ]
 }
