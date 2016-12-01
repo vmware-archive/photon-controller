@@ -540,8 +540,12 @@ public class DeploymentXenonBackend implements DeploymentBackend {
 
     entity.setId(ServiceUtils.getIDFromDocumentSelfLink(deployment.documentSelfLink));
     entity.setState(deployment.state);
-    entity.setImageDatastores(deployment.imageDataStoreNames);
-    entity.setUseImageDatastoreForVms(deployment.imageDataStoreUsedForVMs);
+    if (deployment.imageDataStoreNames != null) {
+      entity.setImageDatastores(deployment.imageDataStoreNames);
+    }
+    if (deployment.imageDataStoreUsedForVMs != null) {
+      entity.setUseImageDatastoreForVms(deployment.imageDataStoreUsedForVMs);
+    }
     entity.setSyslogEndpoint(deployment.syslogEndpoint);
     entity.setStatsEnabled(deployment.statsEnabled);
     entity.setStatsStoreEndpoint(deployment.statsStoreEndpoint);
