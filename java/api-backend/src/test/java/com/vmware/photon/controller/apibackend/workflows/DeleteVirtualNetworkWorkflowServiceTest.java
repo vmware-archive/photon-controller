@@ -28,6 +28,7 @@ import com.vmware.photon.controller.apibackend.utils.TaskStateHelper;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
@@ -85,6 +86,8 @@ import java.util.function.Supplier;
  * .DeleteVirtualNetworkWorkflowService} class.
  */
 public class DeleteVirtualNetworkWorkflowServiceTest {
+
+  protected static final String SNAT_IP_ADDRESS = "0.0.0.1";
 
   private static TaskStateHelper<DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage> taskStateHelper =
       new TaskStateHelper<>(DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.class);
@@ -147,6 +150,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     virtualNetwork.size = 16;
     virtualNetwork.isSizeQuotaConsumed = true;
     virtualNetwork.isIpAddressSpaceConsumed = true;
+    virtualNetwork.snatIp = SNAT_IP_ADDRESS;
 
     Operation result = testEnvironment.sendPostAndWait(VirtualNetworkService.FACTORY_LINK, virtualNetwork);
     assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
@@ -640,7 +644,10 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
       startProjectService(testEnvironment);
       startResourceTicketService(testEnvironment);
       SubnetAllocatorService.State subnetAllocatorServiceState = startSubnetAllocatorService(testEnvironment);
-      startDhcpSubnetService(testEnvironment, subnetId);
+      startDhcpSubnetService(testEnvironment, subnetId, false);
+      startDhcpSubnetService(testEnvironment, DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK, true);
+      startIpLeaseService(testEnvironment, SNAT_IP_ADDRESS, ServiceUtils.getIDFromDocumentSelfLink(DhcpSubnetService
+          .FLOATING_IP_SUBNET_SINGLETON_LINK));
 
       SubnetAllocatorService.AllocateSubnet allocateSubnetPatch =
           new SubnetAllocatorService.AllocateSubnet(
@@ -1040,8 +1047,10 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     }
 
     private DhcpSubnetService.State startDhcpSubnetService(TestEnvironment testEnvironment,
-                                                           String subnetId) throws Throwable {
+                                                           String subnetId,
+                                                           boolean isFloatingDhcpSubnet) throws Throwable {
       DhcpSubnetService.State dhcpSubnetServiceState = new DhcpSubnetService.State();
+      dhcpSubnetServiceState.cidr = "0.0.0.1/26";
       dhcpSubnetServiceState.lowIp = 1L;
       dhcpSubnetServiceState.highIp = 100L;
       dhcpSubnetServiceState.lowIpDynamic = 1L;
@@ -1053,12 +1062,28 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
       dhcpSubnetServiceState.dhcpAgentEndpoint =
           hostUri.getScheme() + "://" + hostUri.getHost() + ":" + hostUri.getPort();
       dhcpSubnetServiceState.documentSelfLink = subnetId;
-      dhcpSubnetServiceState.isFloatingIpSubnet = true;
+      dhcpSubnetServiceState.isFloatingIpSubnet = isFloatingDhcpSubnet;
+      dhcpSubnetServiceState.subnetId = subnetId;
 
       return testEnvironment.callServiceAndWaitForState(
           DhcpSubnetService.FACTORY_LINK,
           dhcpSubnetServiceState,
           DhcpSubnetService.State.class,
+          (state) -> true);
+    }
+
+    private IpLeaseService.State startIpLeaseService(TestEnvironment testEnvironment,
+                                                     String ip,
+                                                     String subnetId) throws Throwable {
+      IpLeaseService.State startState = new IpLeaseService.State();
+      startState.ip = ip;
+      startState.subnetId = subnetId;
+      startState.documentSelfLink = ip.replace(".", ":");
+
+      return testEnvironment.callServiceAndWaitForState(
+          IpLeaseService.FACTORY_LINK,
+          startState,
+          IpLeaseService.State.class,
           (state) -> true);
     }
 

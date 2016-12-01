@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apibackend.workflows;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.QuotaLineItem;
 import com.vmware.photon.controller.api.model.QuotaUnit;
+import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.api.model.VirtualSubnet;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalPortsTask;
@@ -195,6 +196,9 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           break;
         case RELEASE_QUOTA:
           releaseQuota(state);
+          break;
+        case RELEASE_SNAT_IP:
+          releaseSnatIp(state);
           break;
         case DELETE_LOGICAL_PORTS:
           deleteLogicalPorts(state);
@@ -412,7 +416,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           try {
             DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
-                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
+                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_SNAT_IP);
             patchState.taskServiceEntity = state.taskServiceEntity;
             patchState.taskServiceEntity.isSizeQuotaConsumed = false;
             progress(state, patchState);
@@ -421,6 +425,35 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           }
         })
         .sendWith(this);
+  }
+
+  /**
+   * Release floating IP that was used as SNAT IP on this virtual network's Tier1 router.
+   */
+  private void releaseSnatIp(DeleteVirtualNetworkWorkflowDocument state) {
+    // In ISOLATED network, Tier1 router is not connected to Tier0 router hence we won't have SNAT IP.
+    if (state.taskServiceEntity.routingType == RoutingType.ISOLATED) {
+      ServiceUtils.logInfo(this, "ISOLATED network does not have SNAT IP hence moving to next step.");
+      progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
+      return;
+    }
+
+    DhcpSubnetService.IpOperationPatch releaseIp = new DhcpSubnetService.IpOperationPatch(
+        DhcpSubnetService.IpOperationPatch.Kind.ReleaseIp,
+        DhcpSubnetService.VIRTUAL_NETWORK_SNAT_IP, null, state.taskServiceEntity.snatIp);
+
+    CloudStoreUtils.patchAndProcess(
+        this,
+        DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK,
+        releaseIp,
+        DhcpSubnetService.IpOperationPatch.class,
+        releaseIpResult -> {
+          progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
+        },
+        throwable -> {
+          fail(state, throwable);
+        }
+    );
   }
 
   /**

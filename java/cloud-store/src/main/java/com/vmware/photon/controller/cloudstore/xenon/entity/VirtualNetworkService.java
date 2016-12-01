@@ -255,6 +255,12 @@ public class VirtualNetworkService extends StatefulService {
     public String tier0RouterDownlinkPortId;
 
     /**
+     * SNAT IP used for Tier1 router.
+     */
+    @WriteOnce
+    public String snatIp;
+
+    /**
      * Mapping between the ID of the VM and the DNAT rule ID. It is used to track the floating IP
      * configuration of the VM.
      */

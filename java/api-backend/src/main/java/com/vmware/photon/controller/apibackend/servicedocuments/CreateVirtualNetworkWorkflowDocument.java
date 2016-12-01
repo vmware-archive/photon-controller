@@ -54,7 +54,7 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
       ENFORCE_QUOTA,
       ALLOCATE_IP_ADDRESS_SPACE,
       GET_IP_ADDRESS_SPACE,
-      ALLOCATE_FLOATING_IP,
+      ALLOCATE_SNAT_IP,
       CREATE_LOGICAL_SWITCH,
       CREATE_LOGICAL_ROUTER,
       SET_UP_LOGICAL_ROUTER,

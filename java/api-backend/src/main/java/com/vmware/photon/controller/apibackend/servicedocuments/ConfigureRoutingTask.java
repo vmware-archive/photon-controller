@@ -150,7 +150,6 @@ public class ConfigureRoutingTask extends ServiceDocument {
   /**
    * IP address for SNAT rules.
    */
-  @NotBlank
   @Immutable
   public String snatIp;
 
