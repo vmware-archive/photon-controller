@@ -230,6 +230,7 @@ function configure_photon()
     \"LIGHTWAVE_PASSWORD\" : \"${lw_password}\", \
     \"LIGHTWAVE_HOSTNAME\" : \"${lw_host}\", \
     \"LIGHTWAVE_DOMAIN\" : \"${lw_domain}\", \
+    \"LIGHTWAVE_SECURITY_GROUPS\" : \"${lw_domain}\\\\Administrators\", \
     \"USE_VIRTUAL_NETWORK\" : false, \
     \"ENABLE_SYSLOG\" : ${pc_enabled_syslog}, \
     \"SYSLOG_ENDPOINT\" : \"${pc_syslog_endpoint}\", \
