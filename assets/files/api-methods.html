@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" type="text/css" />
+
+</head>
+
+<body>
+<div id="doc" class="container-fluid">
+<h2>Photon Controller REST API Methods</h2>
+<p>Here's an overview of the Photon Controller REST API methods. <!-- Even though there may be a space in some of the request listings in the table, the actual request contains no spaces. --></p>
+<table class="table">
+   <thead>
+    <tr>
+    <th>URI</th>
+    <th>HTTP Method</th>
+    <th>Comment</th>
+    <th>Request</th>
+    <th>Response</th>
+   </tr>
+   </thead>
+   <tbody>
+   <tr>
+    <td>/auth</td>
+    <td>GET&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td>Returns  Authentication/ Authorization Info</td>
+    <td>{  }</td>
+    <td>Auth</td>
+   </tr>
+   <tr>
+    <td>/available</td>
+    <td>GET</td>
+    <td>Indicates that the Photon Controller API on this host is available</td>
+    <td>{  }</td>
+    <td>Available</td>
+   </tr>
+   <tr>
+    <td>/availabilityzones/{id}</td>
+    <td>GET</td>
+    <td>Find availabilityZone</td>
+    <td>{ id:String }</td>
+    <td>AvailabilityZone</td>
+   </tr>
+   <tr>
+    <td>/availabilityzones/{id}</td>
+    <td>DELETE</td>
+    <td>Delete availabilityZone</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/availabilityzones/{id}/tasks</td>
+    <td>GET</td>
+    <td>Find tasks associated with AvailabilityZone. If pageLink is provided, then get the tasks on that specific page</td>
+    <td>{ id:Stringstate:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Task&gt;</td>
+   </tr>
+   <tr>
+    <td>/availabilityzones</td>
+    <td>POST</td>
+    <td>Create availability zone</td>
+    <td>{ None:AvailabilityZoneCreateSpec }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/availabilityzones</td>
+    <td>GET</td>
+    <td>Get all availability zones' information</td>
+    <td>{ name:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;AvailabilityZone&gt;</td>
+   </tr>
+   <tr>
+    <td>/clusters/{id}/vms</td>
+    <td>GET</td>
+    <td>List VMs in a cluster</td>
+    <td>{ id:StringpageSize:Optional[Integer]pageLink: Optional[String] }</td>
+    <td>ResourceList&lt;Vm&gt;</td>
+   </tr>
+   <tr>
+    <td>/clusters/{id}</td>
+    <td>GET</td>
+    <td>Find a cluster by id</td>
+    <td>{ id:String }</td>
+    <td>Cluster</td>
+   </tr>
+   <tr>
+    <td>/clusters/{id}</td>
+    <td>DELETE</td>
+    <td>Delete a cluster by id</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/clusters/{id}/trigger_maintenance</td>
+    <td>POST</td>
+    <td>Triggers background maintenance for a cluster</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/clusters/{id}/resize</td>
+    <td>POST</td>
+    <td>Resize a cluster</td>
+    <td>{ id:StringNone:ClusterResizeOperation }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/datastores/{id}</td>
+    <td>GET</td>
+    <td>Find datastore by id</td>
+    <td>{ id:String }</td>
+    <td>Datastore</td>
+   </tr>
+   <tr>
+    <td>/datastores</td>
+    <td>GET</td>
+    <td>Enumerate all datastores</td>
+    <td>{ tag:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Datastore&gt;</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/vms</td>
+    <td>GET</td>
+    <td>Find all Vms associated with the Deployment</td>
+    <td>{ id:StringpageSize:Optional[Integer]pageLink: Optional[String] }</td>
+    <td>ResourceList&lt;Vm&gt;</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/hosts</td>
+    <td>GET</td>
+    <td>Find all hosts associated with the Deployment</td>
+    <td>{ id:StringpageSize:Optional[Integer]pageLink: Optional[String] }</td>
+    <td>ResourceList&lt;Host&gt;</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/hosts</td>
+    <td>POST</td>
+    <td>Add a host to a deployment</td>
+    <td>{ None:HostCreateSpecid:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/set_security_groups</td>
+    <td>POST</td>
+    <td>Change the security groups of deployment</td>
+    <td>{ id:StringNone:ResourceList[String] }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}</td>
+    <td>GET</td>
+    <td>Find Deployment by id</td>
+    <td>{ id:String }</td>
+    <td>Deployment</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}</td>
+    <td>DELETE</td>
+    <td>Delete Deployment</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/destroy</td>
+    <td>POST</td>
+    <td>Destroy deployment for given deployment entity</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/size</td>
+    <td>GET</td>
+    <td>Gets size information about the deployment</td>
+    <td>{ id:String }</td>
+    <td>DeploymentSize</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/deploy</td>
+    <td>POST</td>
+    <td>Perform deployment for give given deployment entity</td>
+    <td>{ id:StringNone:DeploymentDeployOperation }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/initialize_migration</td>
+    <td>POST</td>
+    <td>Migrate another deployment to this deployment</td>
+    <td>{ id:StringNone:InitializeMigrationOperation }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/finalize_migration</td>
+    <td>POST</td>
+    <td>Finish migrating another deployment into this deployment</td>
+    <td>{ id:StringNone:FinalizeMigrationOperation }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/pause_system</td>
+    <td>POST</td>
+    <td>Pause system under the deployment</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/resume_system</td>
+    <td>POST</td>
+    <td>Resume system under the deployment</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/enable_cluster_type</td>
+    <td>POST</td>
+    <td>Configures a given type of cluster associated with the Deployment</td>
+    <td>{ id:StringNone:ClusterConfigurationSpec }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/disable_cluster_type</td>
+    <td>POST</td>
+    <td>Delete cluster configuration for a give cluster type</td>
+    <td>{ id:StringNone:ClusterConfigurationSpec }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/set_image_datastores</td>
+    <td>POST</td>
+    <td>Change the image datastores of deployment</td>
+    <td>{ id:StringNone:ResourceList[String] }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments/{id}/pause_background_tasks</td>
+    <td>POST</td>
+    <td>Pause background tasks under the deployment</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments</td>
+    <td>POST</td>
+    <td>Create a deployment</td>
+    <td>{ None:DeploymentCreateSpec }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/deployments</td>
+    <td>GET</td>
+    <td>Enumerate all deployments</td>
+    <td>{  }</td>
+    <td>ResourceList&lt;Deployment&gt;</td>
+   </tr>
+   <tr>
+    <td>/disks/{id}</td>
+    <td>GET</td>
+    <td>Find Disk by id</td>
+    <td>{ id:String }</td>
+    <td>PersistentDisk</td>
+   </tr>
+   <tr>
+    <td>/disks/{id}</td>
+    <td>DELETE</td>
+    <td>Delete Disk</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/disks/{id}/tasks</td>
+    <td>GET</td>
+    <td>Find tasks associated with a DISK, such as CREATE_DISK. If pageLink is provided, then get the tasks on that specific page</td>
+    <td>{ id:Stringstate:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] } </td>
+    <td>ResourceList&lt;Task&gt;</td>
+   </tr>
+   <tr>
+    <td>/flavors/{id}/tasks</td>
+    <td>GET</td>
+    <td>Find tasks associated with a Flavor. If page link is provided, then get the tasks on that specific page</td>
+    <td>{ id:Stringstate:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Task&gt;</td>
+   </tr>
+   <tr>
+    <td>/flavors</td>
+    <td>POST</td>
+    <td>Create flavor</td>
+    <td>{ None:FlavorCreateSpec }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/flavors</td>
+    <td>GET</td>
+    <td>Get all flavors' information</td>
+    <td>{ name:Optional[String]kind:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Flavor&gt;</td>
+   </tr>
+   <tr>
+    <td>/flavors/{id}</td>
+    <td>GET</td>
+    <td>Find a flavor</td>
+    <td>{ id:String }</td>
+    <td>Flavor</td>
+   </tr>
+   <tr>
+    <td>/flavors/{id}</td>
+    <td>DELETE</td>
+    <td>Delete a flavor</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/hosts/{id}/tasks</td>
+    <td>GET</td>
+    <td>Find tasks associated with a Host. If pageLink is provided, then get the tasks on that specific page</td>
+    <td>{ id:Stringstate:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Task&gt;</td>
+   </tr>
+   <tr>
+    <td>/hosts/{id}</td>
+    <td>GET</td>
+    <td>Find host by id</td>
+    <td>{ id:String }</td>
+    <td>Host</td>
+   </tr>
+   <tr>
+    <td>/hosts/{id}</td>
+    <td>DELETE</td>
+    <td>Delete host</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/hosts/{id}/suspend</td>
+    <td>POST</td>
+    <td>Host enter suspended mode</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/hosts/{id}/exit_maintenance</td>
+    <td>POST</td>
+    <td>Host exit maintenance mode</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/hosts/{id}/enter_maintenance</td>
+    <td>POST</td>
+    <td>Host enter maintenance mode</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/hosts/{id}/resume</td>
+    <td>POST</td>
+    <td>Host resume to normal mode</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/hosts/{id}/set_availability_zone</td>
+    <td>POST</td>
+    <td>Set Host Availability Zone</td>
+    <td>{ id:StringNone:HostSetAvailabilityZoneOperation }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/hosts/{id}/vms</td>
+    <td>GET</td>
+    <td>Find all Vms associated with the Host</td>
+    <td>{ id:StringpageSize:Optional[Integer]pageLink: Optional[String] }</td>
+    <td>ResourceList&lt;Vm&gt;</td>
+   </tr>
+   <tr>
+    <td>/images</td>
+    <td>GET</td>
+    <td>Get all images' information</td>
+    <td>{ name:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Image&gt;</td>
+   </tr>
+   <tr>
+    <td>/images</td>
+    <td>POST</td>
+    <td>Upload an image</td>
+    <td>{ None:HttpServletRequest }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/images/{id}</td>
+    <td>GET</td>
+    <td>Get image information</td>
+    <td>{ id:String }</td>
+    <td>Image</td>
+   </tr>
+   <tr>
+    <td>/images/{id}</td>
+    <td>DELETE</td>
+    <td>Delete Image</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/images/{id}/tasks</td>
+    <td>GET</td>
+    <td>Find tasks associated with an Image. If pageLink is provided, then get the tasks on that specific page</td>
+    <td>{ id:Stringstate:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Task&gt;</td>
+   </tr>
+   <tr>
+    <td>/info</td>
+    <td>GET</td>
+    <td>Information about the Photon Controller deployment</td>
+    <td>{  }</td>
+    <td>Info</td>
+   </tr>
+   <tr>
+    <td>/projects/{id}/clusters</td>
+    <td>POST</td>
+    <td>Create a cluster in a project</td>
+    <td>{ id:StringNone:ClusterCreateSpec }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/projects/{id}/clusters</td>
+    <td>GET</td>
+    <td>List all clusters in a project</td>
+    <td>{ id:StringpageSize:Optional[Integer]pageLink: Optional[String] }</td>
+    <td>ResourceList&lt;Cluster&gt;</td>
+   </tr>
+   <tr>
+    <td>/projects/{id}</td>
+    <td>GET</td>
+    <td>Find a project</td>
+    <td>{ id:String }</td>
+    <td>Project</td>
+   </tr>
+   <tr>
+    <td>/projects/{id}</td>
+    <td>DELETE</td>
+    <td>Delete a project</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/projects/{id}/tasks</td>
+    <td>GET</td>
+    <td>Find tasks under a project, such as CREATE_VM under a project. If pageLink is provided, then get the tasks on that specific page</td>
+    <td>{ id:Stringstate:Optional[String]kind:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Task&gt;</td>
+   </tr>
+   <tr>
+    <td>/projects/{id}/vms</td>
+    <td>POST</td>
+    <td>Create a VM in a project</td>
+    <td>{ id:StringNone:VmCreateSpec }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/projects/{id}/vms</td>
+    <td>GET</td>
+    <td>List VMs in a project</td>
+    <td>{ id:Stringname:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Vm&gt;</td>
+   </tr>
+   <tr>
+    <td>/projects/{id}/set_security_groups</td>
+    <td>POST</td>
+    <td>Change the security groups of project</td>
+    <td>{ id:StringNone:ResourceList[String] }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/projects/{id}/disks</td>
+    <td>POST</td>
+    <td>Create a Disk in a project</td>
+    <td>{ id:StringNone:DiskCreateSpec }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/projects/{id}/disks</td>
+    <td>GET</td>
+    <td>List Disks in a project</td>
+    <td>{ id:Stringname:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;PersistentDisk&gt;</td>
+   </tr>
+   <tr>
+    <td>/resource-tickets/{id}/tasks</td>
+    <td>GET</td>
+    <td>Find tasks associated with a resource ticket. If pageLink is provided, then get the tasks on that specific page</td>
+    <td>{ id:Stringstate:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Task&gt;</td>
+   </tr>
+   <tr>
+    <td>/resource-tickets/{id}</td>
+    <td>GET</td>
+    <td>Find a resource ticket</td>
+    <td>{ id:String }</td>
+    <td>ResourceTicket</td>
+   </tr>
+   <tr>
+    <td>/status</td>
+    <td>GET</td>
+    <td>Get status of all components, such as root scheduler housekeeper</td>
+    <td>{  }</td>
+    <td>SystemStatus</td>
+   </tr>
+   <tr>
+    <td>/tasks/{id}</td>
+    <td>GET</td>
+    <td>Find a task</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/tasks</td>
+    <td>GET</td>
+    <td>List tasks, filtering by entityId and entityKind. If pageLink is provided, then get the tasks on that specific page</td>
+    <td>{ entityId:Optional[String]entityKind: Optional[String]state:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Task&gt;</td>
+   </tr>
+   <tr>
+    <td>/tenants/{id}/projects</td>
+    <td>POST</td>
+    <td>Create a project within the tenant</td>
+    <td>{ id:StringNone:ProjectCreateSpec }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/tenants/{id}/projects</td>
+    <td>GET</td>
+    <td>List projects under tenant</td>
+    <td>{ id:Stringname:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Project&gt;</td>
+   </tr>
+   <tr>
+    <td>/tenants/{id}</td>
+    <td>GET</td>
+    <td>Get a tenant by id</td>
+    <td>{ id:String }</td>
+    <td>Tenant</td>
+   </tr>
+   <tr>
+    <td>/tenants/{id}</td>
+    <td>DELETE</td>
+    <td>Delete a tenant</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/tenants</td>
+    <td>POST</td>
+    <td>Create a tenant</td>
+    <td>{ None:TenantCreateSpec }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/tenants</td>
+    <td>GET</td>
+    <td>List tenants, optionally filtering by name</td>
+    <td>{ name:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Tenant&gt;</td>
+   </tr>
+   <tr>
+    <td>/tenants/{id}/set_security_groups</td>
+    <td>POST</td>
+    <td>Change the security groups of tenant</td>
+    <td>{ id:StringNone:ResourceList[String] }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/tenants/{id}/resource-tickets</td>
+    <td>POST</td>
+    <td>Create a resource ticket within the tenant</td>
+    <td>{ id:StringNone:ResourceTicketCreateSpec }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/tenants/{id}/resource-tickets</td>
+    <td>GET</td>
+    <td>List resource tickets by name</td>
+    <td>{ id:Stringname:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;ResourceTicket&gt;</td>
+   </tr>
+   <tr>
+    <td>/tenants/{id}/tasks</td>
+    <td>GET</td>
+    <td>List tasks associated with a tenant, such as CREATE_TENANT. If pageLink is provided, then  get the tasks on that specific page</td>
+    <td>{ id:Stringstate:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Task&gt;</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/subnets</td>
+    <td>GET</td>
+    <td>Find subnets information associated with a VM</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/attach_disk</td>
+    <td>POST</td>
+    <td>Attaches a PERSISTENT_DISK to the VM</td>
+    <td>{ id:StringNone:VmDiskOperation }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/tags</td>
+    <td>POST</td>
+    <td>Add tag to VM</td>
+    <td>{ id:StringNone:Tag }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/detach_iso</td>
+    <td>POST</td>
+    <td>Detaches a ISO from the VM</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}</td>
+    <td>GET</td>
+    <td>Find VM by id</td>
+    <td>{ id:String }</td>
+    <td>Vm</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}</td>
+    <td>DELETE</td>
+    <td>Delete VM</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/start</td>
+    <td>POST</td>
+    <td>Perform a start operation on a VM</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/stop</td>
+    <td>POST</td>
+    <td>Perform a stop operation on a VM</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/suspend</td>
+    <td>POST</td>
+    <td>Perform a suspend operation on a VM</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/resume</td>
+    <td>POST</td>
+    <td>Perform a resume operation on a VM</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/restart</td>
+    <td>POST</td>
+    <td>Perform a restart operation on a VM</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/create_image</td>
+    <td>POST</td>
+    <td>Create an image by cloning VM</td>
+    <td>{ id:StringNone:ImageCreateSpec }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/tasks</td>
+    <td>GET</td>
+    <td>Find tasks associated with a VM, such as CREATE_VM. If pageLink is provided, then get the tasks on that specific page</td>
+    <td>{ id:Stringstate:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Task&gt;</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/mks_ticket</td>
+    <td>GET</td>
+    <td>Find mks ticket information associated with a VM</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/detach_disk</td>
+    <td>POST</td>
+    <td>Detaches a PERSISTENT_DISK from the VM</td>
+    <td>{ id:StringNone:VmDiskOperation }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/attach_iso</td>
+    <td>POST</td>
+    <td>Attaches a ISO to the VM</td>
+    <td>{ None:HttpServletRequestid:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/vms/{id}/set_metadata</td>
+    <td>POST</td>
+    <td>Set VM Metadata</td>
+    <td>{ id:StringNone:VmMetadata }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/subnets/{id}</td>
+    <td>GET</td>
+    <td>Find Subnet by id</td>
+    <td>{ id:String }</td>
+    <td>Subnet</td>
+   </tr>
+   <tr>
+    <td>/subnets/{id}</td>
+    <td>DELETE</td>
+    <td>Delete Subnet</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/subnets/{id}/set_default</td>
+    <td>POST</td>
+    <td>Set Subnet Default</td>
+    <td>{ id:String }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/subnets</td>
+    <td>POST</td>
+    <td>Create a subnet</td>
+    <td>{ None:SubnetCreateSpec }</td>
+    <td>Task</td>
+   </tr>
+   <tr>
+    <td>/subnets</td>
+    <td>GET</td>
+    <td>Get all subnets</td>
+    <td>{ name:Optional[String]pageSize: Optional[Integer]pageLink:Optional[String] }</td>
+    <td>ResourceList&lt;Subnet&gt;</td>
+   </tr>
+   <tr>
+    <td>/subnets/{id}/set_portgroups</td>
+    <td>POST</td>
+    <td>Set Subnet Port Groups</td>
+    <td>{ id:StringNone:ResourceList[String] }</td>
+    <td>Task</td>
+   </tr>
+   </tbody>
+  </table>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+</body>
+</html>
