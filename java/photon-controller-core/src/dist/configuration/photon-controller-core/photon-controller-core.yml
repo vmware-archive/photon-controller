@@ -16,6 +16,7 @@ xenon:
   securePort: 19000
   keyFile: "/etc/keys/machine.privkey"
   certificateFile: "/etc/keys/machine.crt"
+  sslClientAuthMode: NEED
   port: 0
   peerNodes:
   {{#PHOTON_CONTROLLER_PEER_NODES}}
@@ -28,6 +29,9 @@ xenon:
 
 deployer:
   deployer:
+{{#CREATE_DEFAULT_DEPLOYMENT}}
+    defaultDeploymentEnabled: {{{CREATE_DEFAULT_DEPLOYMENT}}}
+{{/CREATE_DEFAULT_DEPLOYMENT}}
     apifeEndpoint: "http://{{{APIFE_IP}}}:{{{APIFE_PORT}}}"
     configDirectory: "/etc/esxcloud-deployer/configurations/"
     enableSyslog: "{{{ENABLE_SYSLOG}}}"
@@ -45,18 +49,19 @@ deployer:
     vibUninstallOrder:
     - photon-controller-agent
     - envoy
+    - lightwave-esx
     memoryMb: {{{memoryMb}}}
     installDirectory: "/usr/lib/esxcloud/photon-controller-core"
     logDirectory: {{{LOG_DIRECTORY}}}
     javaDebug: {{{JAVA_DEBUG}}}
 {{#ENABLE_AUTH}}
-    keyStorePath: /keystore.jks
+    keyStorePath: /etc/vmware/photon/keystore.jks
     keyStorePassword: "changeme"
     lightwavePassword: {{{LIGHTWAVE_PASSWORD}}}
     lightwaveDomain: {{{LIGHTWAVE_DOMAIN}}}
     lightwaveHostname: {{{LIGHTWAVE_HOSTNAME}}}
     lightwaveDomainController: {{{LIGHTWAVE_DOMAIN_CONTROLLER}}}
-    lightwaveMachineAccount:  {{{LIGHTWAVE_MACHINE_ACCOUNT}}}
+    lightwaveMachineAccount: {{{LIGHTWAVE_MACHINE_ACCOUNT}}}
     lightwaveDisableVmafdListener: {{{LIGHTWAVE_DISABLE_VMAFD_LISTENER}}}
     lightwaveSubjectAltName: {{{REGISTRATION_ADDRESS}}}
 {{/ENABLE_AUTH}}
@@ -94,7 +99,7 @@ apife:
     type: https
     port: 9000
     bindHost: "0.0.0.0"
-    keyStorePath: /keystore.jks
+    keyStorePath: /etc/vmware/photon/keystore.jks
     keyStorePassword: "changeme"
     validateCerts: false
     supportedProtocols: [TLSv1.2]

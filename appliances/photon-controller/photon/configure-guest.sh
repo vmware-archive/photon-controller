@@ -221,7 +221,17 @@ function configure_photon()
   # compute memory available on the system
   memory_mb=`free -m | grep Mem | tr -s " " | cut -d " " -f 2`
 
+  case "${create_default_deployment}" in
+    1 | [Tt][rR][uU][eE] | [Yy][eE][sS])
+        create_default_deployment="true"
+        ;;
+    *)
+        create_default_deployment="false"
+        ;;
+  esac
+
   custom_context="{\
+    \"CREATE_DEFAULT_DEPLOYMENT\" : \"${create_default_deployment}\", \
     \"REGISTRATION_ADDRESS\" : \"${ip0}\", \
     \"PHOTON_CONTROLLER_PEER_NODES\" : ${pc_peer_nodes}, \
     \"APIFE_IP\" : \"${ip0}\", \
@@ -282,6 +292,11 @@ function parse_ovf_env()
   # host,host
   pc_peer_nodes_comma_seperated=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_peer_nodes']/../@*[local-name()='value'])")
   pc_secret_password=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_secret_password']/../@*[local-name()='value'])")
+  create_default_deployment=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='create_default_deployment']/../@*[local-name()='value'])")
+
+  if [ -z "$create_default_deployment" ]; then
+        create_default_deployment="false"
+  fi
 
   # lightwave config
   lw_domain=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_domain']/../@*[local-name()='value'])") # some.domain.com
