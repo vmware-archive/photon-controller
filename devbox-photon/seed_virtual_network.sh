@@ -73,6 +73,7 @@ floating_ip_allocator_json="{ \
   \"size\" : \"${floating_size}\", \
   \"doGarbageCollection\" : \"false\", \
   \"subnetId\" : \"floating-ip-dhcp-subnet\",
+  \"isFloatingIpSubnet\" : \"true\", \
   \"dhcpAgentEndpoint\" : \"http://${NETWORK_DHCP_SERVER}:${NETWORK_DHCP_PORT}\", \
   \"documentSelfLink\" : \"/photon/cloudstore/dhcp-subnets/floating-ip-dhcp-subnet\" \
 }"
