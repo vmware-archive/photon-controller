@@ -79,7 +79,6 @@ deployment_create_spec_json="{ \
       \"dhcpRelayServiceId\": \"${NETWORK_DHCP_RELAY_SERVICE_ID}\", \
       \"ipRange\" : \"${NETWORK_IP_RANGE}\", \
       \"floatingIpRange\" : {\"start\" : \"${NETWORK_EXTERNAL_IP_START}\", \"end\" : \"${NETWORK_EXTERNAL_IP_END}\"}, \
-      \"snatIp\": \"${NETWORK_SNAT_IP}\", \
       \"dhcpServers\" : [\"${NETWORK_DHCP_SERVER}\"], \
       \"sdnEnabled\" : true"
    else
