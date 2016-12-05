@@ -27,14 +27,10 @@ have both python 2.6 and 2.7 installed.
 brew install python
 ```
 
-virtualenv 1.9.1 is also required to be installed. Newer or older version could
-cause agent incompatibility issue while running in ESX server.
+virtualenv is required to be installed.
 
 ```bash
-curl -O https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz
-tar xvfz virtualenv-1.9.1.tar.gz
-cd virtualenv-1.9.1
-sudo python setup.py install
+brew install virtualenv
 ```
 
 #### greadlink and sed
