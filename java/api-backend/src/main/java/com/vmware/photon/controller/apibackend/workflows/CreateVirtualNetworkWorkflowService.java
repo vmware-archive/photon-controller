@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.ReservedIpType;
 import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.api.model.SubnetState;
+import com.vmware.photon.controller.apibackend.exceptions.ConfigureRoutingException;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureRoutingTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalRouterTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalSwitchTask;
@@ -194,6 +195,9 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           break;
         case CONFIGURE_DHCP_OPTION:
           configureDhcpOption(state);
+          break;
+        default:
+          throw new ConfigureRoutingException("Unexpected substage " + state.taskState.subStage);
       }
     } catch (Throwable t) {
       fail(state, t);
@@ -439,24 +443,30 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
         new FutureCallback<CreateLogicalSwitchTask>() {
           @Override
           public void onSuccess(CreateLogicalSwitchTask result) {
-            switch (result.taskState.stage) {
-              case FINISHED:
-                try {
-                  CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
-                      TaskState.TaskStage.STARTED,
-                      CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER);
-                  patchState.taskServiceEntity = state.taskServiceEntity;
-                  patchState.taskServiceEntity.logicalSwitchId = result.logicalSwitchId;
-                  progress(state, patchState);
-                } catch (Throwable t) {
-                  fail(state, t);
-                }
-                break;
-              case FAILED:
-              case CANCELLED:
-                fail(state, new IllegalStateException(
-                    String.format("Failed to create logical switch: %s", result.taskState.failure.message)));
-                break;
+            try {
+              switch (result.taskState.stage) {
+                case FINISHED:
+                  try {
+                    CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
+                        TaskState.TaskStage.STARTED,
+                        CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER);
+                    patchState.taskServiceEntity = state.taskServiceEntity;
+                    patchState.taskServiceEntity.logicalSwitchId = result.logicalSwitchId;
+                    progress(state, patchState);
+                  } catch (Throwable t) {
+                    fail(state, t);
+                  }
+                  break;
+                case FAILED:
+                case CANCELLED:
+                  fail(state, new IllegalStateException(
+                      String.format("Failed to create logical switch: %s", result.taskState.failure.message)));
+                  break;
+                default:
+                  throw new ConfigureRoutingException("Unexpected taskStage " + result.taskState.stage);
+              }
+            } catch (Throwable t) {
+              fail(state, t);
             }
           }
 
@@ -490,6 +500,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
         new FutureCallback<CreateLogicalRouterTask>() {
           @Override
           public void onSuccess(CreateLogicalRouterTask result) {
+            try {
             switch (result.taskState.stage) {
               case FINISHED:
                 try {
@@ -508,7 +519,12 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
                 fail(state, new IllegalStateException(
                     String.format("Failed to create logical router: %s", result.taskState.failure.message)));
                 break;
+              default:
+                throw new ConfigureRoutingException("Unexpected taskStage " + result.taskState.stage);
             }
+          } catch (Throwable t) {
+            fail(state, t);
+          }
           }
 
           @Override
@@ -549,32 +565,37 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
         new FutureCallback<ConfigureRoutingTask>() {
           @Override
           public void onSuccess(ConfigureRoutingTask result) {
-            switch (result.taskState.stage) {
-              case FINISHED:
-                try {
-                  CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
-                      TaskState.TaskStage.STARTED,
-                      CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CONFIGURE_DHCP_OPTION);
-                  patchState.taskServiceEntity = state.taskServiceEntity;
-                  patchState.taskServiceEntity.logicalSwitchUplinkPortId = result.logicalSwitchPortId;
-                  patchState.taskServiceEntity.logicalRouterDownlinkPortId = result.logicalTier1RouterDownLinkPort;
-                  patchState.taskServiceEntity.logicalRouterUplinkPortId = result.logicalLinkPortOnTier1Router;
-                  patchState.taskServiceEntity.tier0RouterDownlinkPortId = result.logicalLinkPortOnTier0Router;
-                  patchState.taskServiceEntity.tier0RouterId = state.tier0RouterId;
+            try {
+              switch (result.taskState.stage) {
+                case FINISHED:
+                  try {
+                    CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
+                        TaskState.TaskStage.STARTED,
+                        CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CONFIGURE_DHCP_OPTION);
+                    patchState.taskServiceEntity = state.taskServiceEntity;
+                    patchState.taskServiceEntity.logicalSwitchUplinkPortId = result.logicalSwitchPortId;
+                    patchState.taskServiceEntity.logicalRouterDownlinkPortId = result.logicalTier1RouterDownLinkPort;
+                    patchState.taskServiceEntity.logicalRouterUplinkPortId = result.logicalLinkPortOnTier1Router;
+                    patchState.taskServiceEntity.tier0RouterDownlinkPortId = result.logicalLinkPortOnTier0Router;
+                    patchState.taskServiceEntity.tier0RouterId = state.tier0RouterId;
 
-                  progress(state, patchState);
-                } catch (Throwable t) {
-                  fail(state, t);
-                }
-                break;
-              case FAILED:
-              case CANCELLED:
-                fail(state, new IllegalStateException(
-                    String.format("Failed to configure routing: %s", result.taskState.failure.message)));
-                break;
+                    progress(state, patchState);
+                  } catch (Throwable t) {
+                    fail(state, t);
+                  }
+                  break;
+                case FAILED:
+                case CANCELLED:
+                  fail(state, new IllegalStateException(
+                      String.format("Failed to configure routing: %s", result.taskState.failure.message)));
+                  break;
+                default:
+                  throw new ConfigureRoutingException("Unexpected substage " + result.taskState.stage);
+              }
+            } catch (Throwable t) {
+              fail(state, t);
             }
           }
-
           @Override
           public void onFailure(Throwable t) {
             fail(state, t);

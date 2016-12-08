@@ -17,6 +17,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.Objects;
 
@@ -73,6 +74,11 @@ public class SecurityGroup {
 
     return Objects.equals(this.getName(), other.getName())
         && this.isInherited() == other.isInherited();
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder(37,41).append(name).append(inherited).toHashCode();
   }
 
   @Override

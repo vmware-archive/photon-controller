@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.api.frontend.entities;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import java.util.Objects;
 
 /**
@@ -60,5 +62,10 @@ public class SecurityGroupEntity {
 
     return Objects.equals(this.getName(), other.getName())
         && this.isInherited() == other.isInherited();
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder(23,29).append(name).append(inherited).toHashCode();
   }
 }

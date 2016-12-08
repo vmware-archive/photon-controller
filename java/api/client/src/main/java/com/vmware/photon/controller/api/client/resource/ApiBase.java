@@ -38,7 +38,7 @@ import java.util.logging.Logger;
  * Base class for Apis.
  */
 public abstract class ApiBase {
-  protected static ObjectMapper objectMapper = new ObjectMapper();
+  protected final static ObjectMapper objectMapper = new ObjectMapper();
   protected final RestClient restClient;
 
   public ApiBase(RestClient restClient) {

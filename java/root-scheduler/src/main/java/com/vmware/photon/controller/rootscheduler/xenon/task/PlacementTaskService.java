@@ -685,7 +685,7 @@ public class PlacementTaskService extends StatefulService {
 
     // First, check for failure
     if (ex != null) {
-      String error = String.format("Failed to call cloud-store to lookup image datastores for image %d");
+      String error = String.format("Failed to call cloud-store to lookup image datastores for image %s", imageId);
       ServiceUtils.logSevere(this, error, ex);
       Exception cloudStoreEx = new SystemErrorException(error + ": " + ex.getMessage());
       completion.handle(null, cloudStoreEx);

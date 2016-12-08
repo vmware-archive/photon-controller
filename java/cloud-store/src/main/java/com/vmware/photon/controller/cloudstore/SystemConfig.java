@@ -57,7 +57,7 @@ public class SystemConfig implements SystemConfigProvider {
     instance = null;
   }
 
-  public static SystemConfig createInstance(PhotonControllerXenonHost xenonHost) {
+  public static synchronized SystemConfig createInstance(PhotonControllerXenonHost xenonHost) {
     if (instance == null) {
       instance = new SystemConfig(xenonHost);
       xenonHost.setSystemConfigProvider(instance);
@@ -132,7 +132,7 @@ public class SystemConfig implements SystemConfigProvider {
   }
 
   @Override
-  public boolean isBackgroundPaused()  {
+  public boolean isBackgroundPaused() {
     if ( ((CloudStoreServiceGroup) xenonHost.getCloudStore()).isInstaller()) {
       return true;
     }

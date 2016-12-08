@@ -43,6 +43,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import java.util.concurrent.TimeUnit;
@@ -143,7 +144,7 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
           currentState.nsxPassword).getLogicalSwitchApi().createLogicalSwitch(logicalSwitchCreateSpec,
           new FutureCallback<LogicalSwitch>() {
             @Override
-            public void onSuccess(@Nullable LogicalSwitch result) {
+            public void onSuccess(@Nonnull LogicalSwitch result) {
               currentState.logicalSwitchId = result.getId();
               waitForConfigurationComplete(currentState);
             }
@@ -174,7 +175,7 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
             currentState.logicalSwitchId,
             new FutureCallback<LogicalSwitchState>() {
               @Override
-              public void onSuccess(@Nullable LogicalSwitchState result) {
+              public void onSuccess(@Nonnull LogicalSwitchState result) {
                 NsxSwitch.State state = result.getState();
                 switch (state) {
                   case IN_PROGRESS:

@@ -16,6 +16,7 @@ package com.vmware.photon.controller.api.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.wordnik.swagger.annotations.ApiModel;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Indicates that an APIFE host is running and available
@@ -36,6 +37,11 @@ public class Available {
     }
     // We have no data--all objects are identical
     return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return 3;
   }
 
   @Override
