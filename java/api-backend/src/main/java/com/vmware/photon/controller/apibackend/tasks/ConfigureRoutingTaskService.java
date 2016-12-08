@@ -65,6 +65,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import java.util.ArrayList;
@@ -206,7 +207,7 @@ public class ConfigureRoutingTaskService extends StatefulService {
     logicalSwitchApi.createLogicalPort(spec,
         new FutureCallback<LogicalPort>() {
           @Override
-          public void onSuccess(@Nullable LogicalPort result) {
+          public void onSuccess(@Nonnull LogicalPort result) {
             ConfigureRoutingTask patch = buildPatch(TaskState.TaskStage.STARTED,
                 TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_SWITCH,
                 null);
@@ -262,7 +263,7 @@ public class ConfigureRoutingTaskService extends StatefulService {
     logicalRouterApi.createLogicalRouterDownLinkPort(spec,
         new FutureCallback<LogicalRouterDownLinkPort>() {
           @Override
-          public void onSuccess(@Nullable LogicalRouterDownLinkPort result) {
+          public void onSuccess(@Nonnull LogicalRouterDownLinkPort result) {
             ConfigureRoutingTask patch = null;
             if (currentState.routingType == RoutingType.ROUTED) {
               patch = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_TIER0_ROUTER_PORT, null);
@@ -300,7 +301,7 @@ public class ConfigureRoutingTaskService extends StatefulService {
     logicalRouterApi.createLogicalRouterLinkPortTier0(spec,
         new FutureCallback<LogicalRouterLinkPortOnTier0>() {
           @Override
-          public void onSuccess(@Nullable LogicalRouterLinkPortOnTier0 result) {
+          public void onSuccess(@Nonnull LogicalRouterLinkPortOnTier0 result) {
             ConfigureRoutingTask patch = buildPatch(TaskState.TaskStage.STARTED,
                 TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER, null);
             patch.logicalLinkPortOnTier0Router = result.getId();
@@ -338,7 +339,7 @@ public class ConfigureRoutingTaskService extends StatefulService {
     logicalRouterApi.createLogicalRouterLinkPortTier1(spec,
         new FutureCallback<LogicalRouterLinkPortOnTier1>() {
           @Override
-          public void onSuccess(@Nullable LogicalRouterLinkPortOnTier1 result) {
+          public void onSuccess(@Nonnull LogicalRouterLinkPortOnTier1 result) {
             ConfigureRoutingTask patch = buildPatch(TaskState.TaskStage.STARTED,
                 TaskState.SubStage.ADD_SNAT_RULES, null);
             patch.logicalLinkPortOnTier1Router = result.getId();

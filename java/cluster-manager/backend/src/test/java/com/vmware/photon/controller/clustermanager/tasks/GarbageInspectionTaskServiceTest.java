@@ -34,7 +34,6 @@ import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManag
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.statuschecks.StatusCheckHelper;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
-import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -331,7 +330,6 @@ public class GarbageInspectionTaskServiceTest {
       doReturn(vmApi).when(apiClient).getVmApi();
 
       cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
-      CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreMachine.getServerSet());
 
       machine = new TestEnvironment.Builder()
           .apiClient(apiClient)

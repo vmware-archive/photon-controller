@@ -39,6 +39,11 @@ public class Available {
   }
 
   @Override
+  public int hashCode() {
+    return 3;
+  }
+
+  @Override
   public String toString() {
     return toStringHelper().toString();
   }

@@ -258,11 +258,18 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
   }
 
   private void validateTaskSubStage(TaskState.SubStage startSubStage, TaskState.SubStage patchSubStage) {
-    if (patchSubStage != null) {
-      switch (patchSubStage) {
-        case WAIT_DELETE_SWITCH:
-          checkState(startSubStage != null && startSubStage == TaskState.SubStage.DELETE_SWITCH);
+    try {
+      if (patchSubStage != null) {
+        switch (patchSubStage) {
+          case WAIT_DELETE_SWITCH:
+            checkState(startSubStage != null && startSubStage == TaskState.SubStage.DELETE_SWITCH);
+            break;
+          default:
+            throw new ConfigureRoutingException("Unexpected substage " + patchSubStage);
+        }
       }
+    } catch (Throwable t) {
+      failTask(t);
     }
   }
 }

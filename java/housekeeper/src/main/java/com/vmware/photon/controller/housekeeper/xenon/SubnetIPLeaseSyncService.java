@@ -220,7 +220,7 @@ public class SubnetIPLeaseSyncService extends StatefulService {
     }
 
     if (results.documentCount > 1) {
-      failTask(new Throwable(String.format("More than one Dhcp subnet found with the same Id:",
+      failTask(new Throwable(String.format("More than one Dhcp subnet found with the same Id: %s",
               current.subnetId)));
       return;
     }
