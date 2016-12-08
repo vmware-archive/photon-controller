@@ -257,12 +257,18 @@ public class DeleteLogicalRouterTaskService extends StatefulService {
   }
 
   private void validateSubStage(TaskState.SubStage currentSubStage, TaskState.SubStage patchSubStage) {
-    if (patchSubStage != null) {
-      switch (patchSubStage) {
-        case WAIT_DELETE_ROUTER:
-          checkState(currentSubStage != null && currentSubStage == TaskState.SubStage.DELETE_ROUTER);
+    try {
+      if (patchSubStage != null) {
+        switch (patchSubStage) {
+          case WAIT_DELETE_ROUTER:
+            checkState(currentSubStage != null && currentSubStage == TaskState.SubStage.DELETE_ROUTER);
+            break;
+          default:
+            throw new ConfigureRoutingException("Unexpected substage " + patchSubStage);
+        }
       }
+    } catch (Throwable t) {
+      failTask(t);
     }
-
   }
 }

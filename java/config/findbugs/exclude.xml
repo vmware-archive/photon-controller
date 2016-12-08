@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!-- Findbug report this has a cast error error which we want to ignore-->
+  <Match>
+    <BugInstance type="BC_UNCONFIRMED_CAST" priority="1" rank="15" abbrev="BC" category="STYLE" />
+    <Class name="com.vmware.photon.controller.apibackend.utils.ServiceHostUtils" />
+  </Match>
+
+  <!-- In common folder, SyncHandler is extends thrift SyncHandler and they have the same name. It is okay-->
+  <Match>
+    <BugInstance type="NM_SAME_SIMPLE_NAME_AS_SUPERCLASS" priority="1" rank="14" abbrev="Nm" category="BAD_PRACTICE" />
+    <Class name="com.vmware.photon.controller.common.clients.SyncHandler" />
+  </Match>
+</FindBugsFilter>
