@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.api.model.VirtualSubnet;
+import com.vmware.photon.controller.apibackend.exceptions.ConfigureRoutingException;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalPortsTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalRouterTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalSwitchTask;
@@ -215,6 +216,8 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
         case DELETE_NETWORK_ENTITY:
           deleteVirtualNetwork(state);
           break;
+        default:
+          throw new ConfigureRoutingException("Unexpected substage " + state.taskState.subStage);
       }
     } catch (Throwable t) {
       fail(state, t);
@@ -479,15 +482,21 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
         new FutureCallback<DeleteLogicalPortsTask>() {
           @Override
           public void onSuccess(DeleteLogicalPortsTask result) {
-            switch (result.taskState.stage) {
-              case FINISHED:
-                progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER);
-                break;
-              case FAILED:
-              case CANCELLED:
-                fail(state, new IllegalStateException(
-                    String.format("Failed to delete logical ports: %s", result.taskState.failure.message)));
-                break;
+            try {
+              switch (result.taskState.stage) {
+                case FINISHED:
+                  progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER);
+                  break;
+                case FAILED:
+                case CANCELLED:
+                  fail(state, new IllegalStateException(
+                      String.format("Failed to delete logical ports: %s", result.taskState.failure.message)));
+                  break;
+                default:
+                  throw new ConfigureRoutingException("Unexpected task stage " + result.taskState.stage);
+              }
+            } catch (Throwable t){
+              fail(state, t);
             }
           }
 
@@ -520,15 +529,21 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
         new FutureCallback<DeleteLogicalRouterTask>() {
           @Override
           public void onSuccess(DeleteLogicalRouterTask result) {
-            switch (result.taskState.stage) {
-              case FINISHED:
-                progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH);
-                break;
-              case FAILED:
-              case CANCELLED:
-                fail(state, new IllegalStateException(
-                    String.format("Failed to delete logical Tier-1 router: %s", result.taskState.failure.message)));
-                break;
+            try {
+              switch (result.taskState.stage) {
+                case FINISHED:
+                  progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH);
+                  break;
+                case FAILED:
+                case CANCELLED:
+                  fail(state, new IllegalStateException(
+                      String.format("Failed to delete logical Tier-1 router: %s", result.taskState.failure.message)));
+                  break;
+                default:
+                  throw new ConfigureRoutingException("Unexpected task stage " + result.taskState.stage);
+              }
+            } catch (Throwable t) {
+              fail(state, t);
             }
           }
 
@@ -560,19 +575,25 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
         new FutureCallback<DeleteLogicalSwitchTask>() {
           @Override
           public void onSuccess(DeleteLogicalSwitchTask result) {
-            switch (result.taskState.stage) {
-              case FINISHED:
-                try {
-                  progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_DHCP_OPTION);
-                } catch (Throwable t) {
-                  fail(state, t);
-                }
-                break;
-              case FAILED:
-              case CANCELLED:
-                fail(state, new IllegalStateException(
-                    String.format("Failed to delete logical switch: %s", result.taskState.failure.message)));
-                break;
+            try {
+              switch (result.taskState.stage) {
+                case FINISHED:
+                  try {
+                    progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_DHCP_OPTION);
+                  } catch (Throwable t) {
+                    fail(state, t);
+                  }
+                  break;
+                case FAILED:
+                case CANCELLED:
+                  fail(state, new IllegalStateException(
+                      String.format("Failed to delete logical switch: %s", result.taskState.failure.message)));
+                  break;
+                default:
+                  throw new ConfigureRoutingException("Unexpected task stage " + result.taskState.subStage);
+              }
+            } catch (Throwable t) {
+              fail(state, t);
             }
           }
 
