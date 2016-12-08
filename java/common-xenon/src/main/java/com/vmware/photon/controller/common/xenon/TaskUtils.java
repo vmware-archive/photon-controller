@@ -35,6 +35,8 @@ public class TaskUtils {
   public static Set<TaskState.TaskStage> finalTaskStages =
       ImmutableSet.of(TaskState.TaskStage.CANCELLED, TaskState.TaskStage.FINISHED, TaskState.TaskStage.FAILED);
 
+  public static final Random UTIL_RANDOM = new Random();
+
   public static <T extends ServiceDocument> void startTaskAsync(
       final Service service,
       String factoryLink,
@@ -75,7 +77,7 @@ public class TaskUtils {
       final FutureCallback<T> callback) {
 
     try {
-      Thread.sleep(Math.abs(new Random().nextLong()) % (taskPollDelay + 1) + 1);
+      Thread.sleep(Math.abs(UTIL_RANDOM.nextInt(Integer.MAX_VALUE)) % (taskPollDelay + 1) + 1);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }

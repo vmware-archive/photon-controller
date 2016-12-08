@@ -549,7 +549,7 @@ public class VmRestApi extends ApiBase implements VmApi {
   public static VmNetworks parseVmNetworksFromTask(Task task) throws IOException {
     // task.getResourceProperties() is a HashSet, we need to serialize it to Json
     // then deserialize with correct type.
-    String json = objectMapper.writeValueAsString(task.getResourceProperties());
+    String json = OBJECT_MAPPER.writeValueAsString(task.getResourceProperties());
     return deserializeObjectFromJson(json, new TypeReference<VmNetworks>(){});
   }
 

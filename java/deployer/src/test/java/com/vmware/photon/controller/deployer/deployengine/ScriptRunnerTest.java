@@ -105,7 +105,7 @@ public class ScriptRunnerTest {
     @Test
     public void testFailureNullCommandList() {
       try {
-        ScriptRunner.Builder builder = new ScriptRunner.Builder(null, DEFAULT_TIMEOUT_IN_SECONDS);
+        new ScriptRunner.Builder(null, DEFAULT_TIMEOUT_IN_SECONDS);
       } catch (IllegalArgumentException e) {
         assertThat(e.getMessage(), is("Parameter command cannot be null or zero-length"));
       }
@@ -115,7 +115,7 @@ public class ScriptRunnerTest {
     public void testFailureEmptyCommandList() {
       List<String> emptyCommand = new ArrayList<>();
       try {
-        ScriptRunner.Builder builder = new ScriptRunner.Builder(emptyCommand, DEFAULT_TIMEOUT_IN_SECONDS);
+        new ScriptRunner.Builder(emptyCommand, DEFAULT_TIMEOUT_IN_SECONDS);
       } catch (IllegalArgumentException e) {
         assertThat(e.getMessage(), is("Parameter command cannot be null or zero-length"));
       }
@@ -124,7 +124,7 @@ public class ScriptRunnerTest {
     @Test
     public void testFailureZeroTimeoutValue() {
       try {
-        ScriptRunner.Builder builder = new ScriptRunner.Builder(baseCommand, 0);
+        new ScriptRunner.Builder(baseCommand, 0);
       } catch (IllegalArgumentException e) {
         assertThat(e.getMessage(), is("Parameter timeoutInSeconds cannot be zero"));
       }

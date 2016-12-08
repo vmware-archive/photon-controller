@@ -63,7 +63,7 @@ public class CloudStoreHelperTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testConstructorWithNullServerSet() {
-      CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(null);
+      new CloudStoreHelper(null);
     }
   }
 
