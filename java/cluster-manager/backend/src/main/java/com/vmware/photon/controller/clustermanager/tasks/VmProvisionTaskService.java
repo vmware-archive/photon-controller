@@ -183,6 +183,13 @@ public class VmProvisionTaskService extends StatefulService {
     };
 
     try {
+      ServiceUtils.logInfo(this, "Current patch: %s", Utils.toJson(currentState));
+      if (HostUtils.getApiClient(this) == null) {
+        ServiceUtils.logInfo(this, "ApiClient is null");
+      }
+      if (HostUtils.getApiClient(this).getProjectApi() == null) {
+        ServiceUtils.logInfo(this, "ProjectApi is null");
+      }
       HostUtils.getApiClient(this).getProjectApi().createVmAsync(
           currentState.projectId,
           composeVmCreateSpec(currentState),
