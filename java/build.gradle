@@ -66,6 +66,7 @@ buildscript {
 }
 
 subprojects {
+  apply plugin: 'findbugs'
   apply plugin: 'checkstyle'
   apply plugin: 'idea'
   apply plugin: 'java'
@@ -111,6 +112,18 @@ subprojects {
     configFile = new File(rootDir, "config/checkstyle/checkstyle.xml")
     configProperties = ['checkstyle.suppressions.file': new File(rootDir, "config/checkstyle/suppressions.xml"),
                         'checkstyle.header.file'      : new File(rootDir, "config/checkstyle/copy-right-java.header")]
+  }
+
+  findbugs {
+    toolVersion = "3.0.1"
+    sourceSets = [sourceSets.main]
+    ignoreFailures = true
+    reportsDir = file("$project.buildDir/findbugsReports")
+    effort = "max"
+    reportLevel = "high"
+    visitors = ["FindSqlInjection", "SwitchFallthrough"]
+    omitVisitors = ["FindNonShortCircuit"]
+    excludeFilter = file("$rootProject.projectDir/config/findbugs/exclude.xml")
   }
 
   idea {

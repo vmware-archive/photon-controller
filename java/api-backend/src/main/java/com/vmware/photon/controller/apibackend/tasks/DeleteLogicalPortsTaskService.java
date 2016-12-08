@@ -579,23 +579,31 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
   }
 
   private void validateTaskSubStage(TaskState.SubStage startSubStage, TaskState.SubStage patchSubStage) {
-    if (patchSubStage != null) {
-      switch (patchSubStage) {
-        case WAIT_DELETE_TIER1_ROUTER_LINK_PORT:
-          checkState(startSubStage != null && startSubStage == TaskState.SubStage.DELETE_TIER1_ROUTER_LINK_PORT);
-          break;
+    try {
+      if (patchSubStage != null) {
+        switch (patchSubStage) {
+          case WAIT_DELETE_TIER1_ROUTER_LINK_PORT:
+            checkState(startSubStage != null && startSubStage == TaskState.SubStage.DELETE_TIER1_ROUTER_LINK_PORT);
+            break;
 
-        case WAIT_DELETE_TIER0_ROUTER_LINK_PORT:
-          checkState(startSubStage != null && startSubStage == TaskState.SubStage.DELETE_TIER0_ROUTER_LINK_PORT);
-          break;
+          case WAIT_DELETE_TIER0_ROUTER_LINK_PORT:
+            checkState(startSubStage != null && startSubStage == TaskState.SubStage.DELETE_TIER0_ROUTER_LINK_PORT);
+            break;
 
-        case WAIT_DELETE_TIER1_ROUTER_DOWN_LINK_PORT:
-          checkState(startSubStage != null && startSubStage == TaskState.SubStage.DELETE_TIER1_ROUTER_DOWN_LINK_PORT);
-          break;
+          case WAIT_DELETE_TIER1_ROUTER_DOWN_LINK_PORT:
+            checkState(startSubStage != null && startSubStage == TaskState.SubStage.DELETE_TIER1_ROUTER_DOWN_LINK_PORT);
+            break;
 
-        case WAIT_DELETE_SWITCH_PORT:
-          checkState(startSubStage != null && startSubStage == TaskState.SubStage.DELETE_SWITCH_PORT);
+          case WAIT_DELETE_SWITCH_PORT:
+            checkState(startSubStage != null && startSubStage == TaskState.SubStage.DELETE_SWITCH_PORT);
+            break;
+
+          default:
+            throw new ConfigureRoutingException("Unexpected substage " + patchSubStage);
+        }
       }
+    } catch (Throwable t) {
+      failTask(t);
     }
   }
 }

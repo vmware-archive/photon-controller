@@ -1,0 +1,7 @@
+<FindBugsFilter>
+     <!-- Findbug report this cast error which we want to ignore-->
+     <Match>
+       <Bug code = "BC" />
+       <Class name="com/vmware/photon/controller/apibackend/utils/ServiceHostUtils.java" />
+     </Match>
+</FindBugsFilter>
