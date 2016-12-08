@@ -539,7 +539,6 @@ public class NsxClientApiBaseTest extends NsxClientApi {
         return httpResponseFuture;
       }).when(asyncClient).execute(any(HttpUriRequest.class), any(BasicHttpContext.class), any(FutureCallback.class));
 
-      HttpEntity requestHttpEntity = new StringEntity("", ContentType.APPLICATION_JSON);
       NsxClientApiBaseTest nsxClientApi = new NsxClientApiBaseTest(restClient);
       nsxClientApi.getAsync("target",
           HttpStatus.SC_OK,

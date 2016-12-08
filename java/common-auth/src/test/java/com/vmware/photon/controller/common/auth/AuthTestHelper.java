@@ -31,7 +31,7 @@ public class AuthTestHelper {
   public static final String PASSWORD = "lotus_password";
   public static RSAPrivateKey privateKey;
   public static RSAPublicKey publicKey;
-  public static Date issueTime;
+  public static final Date issueTime;
   public static Date expirationTime;
 
   static {
