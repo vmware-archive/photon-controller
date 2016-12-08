@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!-- Findbug report this has a cast error error which we want to ignore-->
+  <Match>
+    <BugInstance type="BC_UNCONFIRMED_CAST" priority="1" rank="15" abbrev="BC" category="STYLE" />
+    <Class name="com.vmware.photon.controller.apibackend.utils.ServiceHostUtils" />
+  </Match>
+
+  <!-- We sometimes name the child class to be the same as the parent but with a different namespace. It is okay-->
+  <Match>
+    <Or>
+      <Bug pattern="NM_SAME_SIMPLE_NAME_AS_SUPERCLASS" />
+      <Bug pattern="DM_DEFAULT_ENCODING" />
+    </Or>
+  </Match>
+</FindBugsFilter>

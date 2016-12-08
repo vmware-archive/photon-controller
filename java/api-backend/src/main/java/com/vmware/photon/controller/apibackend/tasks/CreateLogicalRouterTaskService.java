@@ -38,6 +38,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -134,7 +135,7 @@ public class CreateLogicalRouterTaskService extends StatefulService {
           currentState.nsxPassword).getLogicalRouterApi().createLogicalRouter(logicalRouterCreateSpec,
           new FutureCallback<LogicalRouter>() {
             @Override
-            public void onSuccess(@Nullable LogicalRouter result) {
+            public void onSuccess(@Nonnull LogicalRouter result) {
               // TODO(ysheng): there is no getState API for logical router. Not sure
               // what is the correct way to wait for the completion of the router creation.
               CreateLogicalRouterTask patchState = buildPatch(TaskState.TaskStage.FINISHED);

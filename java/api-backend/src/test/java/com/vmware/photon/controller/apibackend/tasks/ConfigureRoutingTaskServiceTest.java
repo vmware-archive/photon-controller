@@ -144,7 +144,7 @@ public class ConfigureRoutingTaskServiceTest {
 
       Field[] fields = startState.getClass().getDeclaredFields();
       for (Field field : fields) {
-        if (field.getName() != fieldName) {
+        if (!field.getName().equals(fieldName)) {
           field.set(startState, ReflectionUtils.getDefaultAttributeValue(field));
         }
       }
