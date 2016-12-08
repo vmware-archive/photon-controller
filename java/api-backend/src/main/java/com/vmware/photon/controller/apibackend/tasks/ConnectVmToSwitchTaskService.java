@@ -41,7 +41,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -169,10 +169,12 @@ public class ConnectVmToSwitchTaskService extends StatefulService {
       logicalSwitchApi.createLogicalPort(spec,
           new FutureCallback<LogicalPort>() {
             @Override
-            public void onSuccess(@Nullable LogicalPort result) {
+            public void onSuccess(@Nonnull LogicalPort result) {
               ConnectVmToSwitchTask patch = buildPatch(TaskState.TaskStage.STARTED,
                   TaskState.SubStage.UPDATE_VIRTUAL_NETWORK);
-              patch.toVmPortId = result.getId();
+              if (patch != null) {
+                patch.toVmPortId = result.getId();
+              }
 
               TaskUtils.sendSelfPatch(ConnectVmToSwitchTaskService.this, patch);
             }
@@ -189,20 +191,24 @@ public class ConnectVmToSwitchTaskService extends StatefulService {
   }
 
   private void getVirtualNetwork(ConnectVmToSwitchTask currentState) {
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createGet(VirtualNetworkService.FACTORY_LINK + "/" + currentState.networkId)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
+    try {
+      ServiceHostUtils.getCloudStoreHelper(getHost())
+          .createGet(VirtualNetworkService.FACTORY_LINK + "/" + currentState.networkId)
+          .setCompletion((op, ex) -> {
+            if (ex != null) {
+              failTask(ex);
+              return;
+            }
 
-          VirtualNetworkService.State virtualNetwork = op.getBody(VirtualNetworkService.State.class);
-          updateVirtualNetwork(virtualNetwork.documentSelfLink,
-              virtualNetwork.logicalSwitchDownlinkPortIds,
-              currentState);
-        })
-        .sendWith(this);
+            VirtualNetworkService.State virtualNetwork = op.getBody(VirtualNetworkService.State.class);
+            updateVirtualNetwork(virtualNetwork.documentSelfLink,
+                virtualNetwork.logicalSwitchDownlinkPortIds,
+                currentState);
+          })
+          .sendWith(this);
+    } catch (Throwable t) {
+      failTask(t);
+    }
   }
 
   private void updateVirtualNetwork(String virtualNetworkSelfLink,

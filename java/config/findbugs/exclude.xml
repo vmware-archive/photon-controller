@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+     <!-- Findbug report this has a cast error error which we want to ignore-->
+     <Match>
+       <BugInstance type="BC_UNCONFIRMED_CAST" priority="1" rank="15" abbrev="BC" category="STYLE" />
+       <Class name="com.vmware.photon.controller.apibackend.utils.ServiceHostUtils" />
+     </Match>
+</FindBugsFilter>

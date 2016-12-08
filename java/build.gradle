@@ -69,6 +69,7 @@ subprojects {
   apply plugin: 'checkstyle'
   apply plugin: 'idea'
   apply plugin: 'java'
+  apply plugin: 'findbugs'
   apply plugin: 'maven'
   apply plugin: 'com.bmuschko.docker-remote-api'
   apply plugin: 'com.bmuschko.vagrant-base'
@@ -111,6 +112,15 @@ subprojects {
     configFile = new File(rootDir, "config/checkstyle/checkstyle.xml")
     configProperties = ['checkstyle.suppressions.file': new File(rootDir, "config/checkstyle/suppressions.xml"),
                         'checkstyle.header.file'      : new File(rootDir, "config/checkstyle/copy-right-java.header")]
+  }
+
+  findbugs {
+      toolVersion = "3.0.1"
+      reportsDir = file("$project.buildDir/findbugsReports")
+      effort = "min"
+      reportLevel = "high"
+      ignoreFailures = true
+      excludeFilter = file("$rootProject.projectDir/config/findbugs/exclude.xml")
   }
 
   idea {

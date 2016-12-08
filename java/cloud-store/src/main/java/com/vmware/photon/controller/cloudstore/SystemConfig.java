@@ -57,7 +57,7 @@ public class SystemConfig implements SystemConfigProvider {
     instance = null;
   }
 
-  public static SystemConfig createInstance(PhotonControllerXenonHost xenonHost) {
+  public synchronized static SystemConfig createInstance(PhotonControllerXenonHost xenonHost) {
     if (instance == null) {
       instance = new SystemConfig(xenonHost);
       xenonHost.setSystemConfigProvider(instance);
