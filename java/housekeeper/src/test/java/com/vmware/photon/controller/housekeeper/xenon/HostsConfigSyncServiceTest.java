@@ -296,6 +296,9 @@ public class HostsConfigSyncServiceTest {
         host.usageTags = new HashSet<>();
         host.usageTags.add(UsageTag.CLOUD.name());
         host.reportedDatastores.add(datastore.id);
+        // These tests don't depend on scheduling constants, so this will assign
+        // one manually instead of using the SchedulingConstantGenerator.
+        host.schedulingConstant = 1L;
 
         Operation operation = env.sendPostAndWaitForReplication(HostServiceFactory.SELF_LINK, host);
         HostService.State createdHost = operation.getBody(HostService.State.class);

@@ -29,6 +29,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastor
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.SchedulingConstantGenerator;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TombstoneServiceFactory;
@@ -116,6 +117,7 @@ public class CloudStoreServiceGroupTest {
       ClusterConfigurationServiceFactory.SELF_LINK,
       AvailabilityZoneServiceFactory.SELF_LINK,
       VirtualNetworkService.FACTORY_LINK,
+      SchedulingConstantGenerator.FACTORY_LINK,
 
       // triggers
       TaskTriggerFactoryService.SELF_LINK,
@@ -144,6 +146,9 @@ public class CloudStoreServiceGroupTest {
 
       // discovery
       RootNamespaceService.SELF_LINK,
+
+      // special
+      SchedulingConstantGenerator.SINGLETON_LINK,
   };
   private CloudStoreConfig config;
   private HostClientFactory hostClientFactory;

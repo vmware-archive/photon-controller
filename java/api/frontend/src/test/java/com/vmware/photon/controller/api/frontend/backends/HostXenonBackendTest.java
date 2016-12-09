@@ -42,6 +42,7 @@ import com.vmware.photon.controller.api.model.builders.AuthConfigurationSpecBuil
 import com.vmware.photon.controller.api.model.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.SchedulingConstantGenerator;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 
@@ -84,7 +85,7 @@ public class HostXenonBackendTest {
   }
 
   private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
+      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) throws Throwable {
     host = basicServiceHost;
     xenonClient = apiFeXenonRestClient;
 
@@ -102,6 +103,11 @@ public class HostXenonBackendTest {
       throw new IllegalStateException(
           "host is expected to be in started state, current state=" + host.getState());
     }
+
+    host.startFactoryServiceSynchronously(
+        SchedulingConstantGenerator.createFactory(),
+        SchedulingConstantGenerator.FACTORY_LINK);
+    SchedulingConstantGenerator.startSingletonServiceForTest(host);
   }
 
   private static void commonHostDocumentsCleanup() throws Throwable {

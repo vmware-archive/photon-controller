@@ -925,6 +925,9 @@ public class ImageSeederServiceTest {
         state.reportedDatastores.add("datastore-id-0");
         state.reportedImageDatastores = new HashSet<>();
         state.reportedImageDatastores.add(datastore.getId());
+        // These tests don't depend on scheduling constants, so this will assign
+        // one manually instead of using the SchedulingConstantGenerator.
+        state.schedulingConstant = 1L;
 
         Operation op = cloudStoreHelper
             .createPost(HostServiceFactory.SELF_LINK)

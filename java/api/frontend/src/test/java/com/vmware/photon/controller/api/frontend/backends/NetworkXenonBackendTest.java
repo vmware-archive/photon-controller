@@ -133,6 +133,10 @@ public class NetworkXenonBackendTest {
     hostDoc.reportedNetworks.add("PG2");
     hostDoc.reportedNetworks.add("PG3");
 
+    // These tests don't depend on scheduling constants, so this will assign
+    // one manually instead of using the SchedulingConstantGenerator.
+    hostDoc.schedulingConstant = 1L;
+
     Operation post = Operation.createPost(host, HostServiceFactory.SELF_LINK).setBody(hostDoc);
     host.sendRequestAndWait(post);
   }
