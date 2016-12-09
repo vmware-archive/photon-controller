@@ -1373,6 +1373,9 @@ public class ImageHostToHostCopyServiceTest {
       state.reportedImageDatastores.addAll(Arrays.asList(reportedImageDatastores));
       state.reportedDatastores = new HashSet<>();
       state.reportedDatastores.add("local-datastore-id");
+      // These tests don't depend on scheduling constants, so this will assign
+      // one manually instead of using the SchedulingConstantGenerator.
+      state.schedulingConstant = 1L;
 
       Operation op = cloudStoreHelper
           .createPost(HostServiceFactory.SELF_LINK)

@@ -30,6 +30,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.SchedulingConstantGenerator;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantServiceFactory;
@@ -126,6 +127,7 @@ public class CloudStoreServiceGroup
           .put(DhcpSubnetDeleteService.class, DhcpSubnetDeleteService::createFactory)
           .put(IpLeaseDeleteService.class, IpLeaseDeleteService::createFactory)
           .put(IpLeaseCleanerService.class, IpLeaseCleanerService::createFactory)
+          .put(SchedulingConstantGenerator.class, SchedulingConstantGenerator::createFactory)
           .build();
 
   protected static final String SCHEDULER_IP_LEASE_DELETES = "/ip-lease-deletes";
@@ -187,6 +189,10 @@ public class CloudStoreServiceGroup
     // Start all special services
     startTaskTriggerServices();
     startTaskSchedulerServices();
+
+    photonControllerXenonHost.registerForServiceAvailability(
+        SchedulingConstantGenerator.startSingletonService(photonControllerXenonHost),
+        SchedulingConstantGenerator.FACTORY_LINK);
   }
 
   @Override
@@ -198,6 +204,7 @@ public class CloudStoreServiceGroup
             && photonControllerXenonHost.checkServiceAvailable(SubnetAllocatorService.FACTORY_LINK)
             && photonControllerXenonHost.checkServiceAvailable(DhcpSubnetService.FACTORY_LINK)
             && photonControllerXenonHost.checkServiceAvailable(IpLeaseService.FACTORY_LINK)
+            && photonControllerXenonHost.checkServiceAvailable(SchedulingConstantGenerator.FACTORY_LINK)
             && photonControllerXenonHost.checkServiceAvailable(FlavorServiceFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(ImageServiceFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(ImageToImageDatastoreMappingServiceFactory.SELF_LINK)
@@ -246,7 +253,10 @@ public class CloudStoreServiceGroup
             && photonControllerXenonHost.checkServiceAvailable(
             TaskTriggerFactoryService.SELF_LINK + DhcpSubnetDeleteTriggerBuilder.TRIGGER_SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(
-            TaskTriggerFactoryService.SELF_LINK + IpLeaseCleanerTriggerBuilder.TRIGGER_SELF_LINK);
+            TaskTriggerFactoryService.SELF_LINK + IpLeaseCleanerTriggerBuilder.TRIGGER_SELF_LINK)
+
+            // special services
+            && photonControllerXenonHost.checkServiceAvailable(SchedulingConstantGenerator.SINGLETON_LINK);
   }
 
   @Override

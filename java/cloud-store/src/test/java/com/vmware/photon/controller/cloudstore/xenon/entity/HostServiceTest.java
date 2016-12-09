@@ -148,6 +148,11 @@ public class HostServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+
+      // Start the singleton SchedulingConstantGenerator for new HostService
+      // instances to use
+      SchedulingConstantGenerator.startSingletonServiceForTest(host);
+
       xenonRestClient =
           new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1), host);
       xenonRestClient.start();
@@ -346,6 +351,10 @@ public class HostServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+
+      // Start the singleton SchedulingConstantGenerator for new HostService
+      // instances to use
+      SchedulingConstantGenerator.startSingletonServiceForTest(host);
 
       xenonRestClient =
           new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1), host);
@@ -981,6 +990,11 @@ public class HostServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+
+      // Start the singleton SchedulingConstantGenerator for new HostService
+      // instances to use
+      SchedulingConstantGenerator.startSingletonServiceForTest(host);
+
       xenonRestClient =
           new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1), host);
       xenonRestClient.start();

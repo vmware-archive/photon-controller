@@ -53,7 +53,7 @@ import java.util.concurrent.CountDownLatch;
  *
  * Note that this is used from within the PlacementTaskService. It is asynchronous, but it doesn't update the
  * state of the task with PATCHs. This is partly because it doesn't need to (the task is neither persisted
- * nor replicated) and partly because it keeps the constraint checker distinctd from the placement task. This
+ * nor replicated) and partly because it keeps the constraint checker distinct from the placement task. This
  * will allow us to do easy future experimentation with alternative constraint checkers.
  *
  * The approach here is interesting, because we want random hosts, but Xenon's  LuceneDocumentQueryService
@@ -66,7 +66,7 @@ import java.util.concurrent.CountDownLatch;
  * 0.....random midpoint.....10,000
  *
  * We first look for results in the second half (random to 10,000), sorting them in ascending order. If we don't find
- * enough hosts, we query from the first half (0 to random), and we sort them in descending order. (50% of the time,
+ * enough hosts, we query from the first half (0 to random), and we sort them in ascending order. (50% of the time,
  * we do it in the reverse order, to reduce bias against hosts with a low scheduling constant.) Note that empirical
  * results shows we still have some bias because we're not making a truly random selection.
  *
@@ -437,7 +437,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
       state.ranges[0].sortOrder = SortOrder.ASC;
       state.ranges[1].lowerBound = 0;
       state.ranges[1].upperBound = randomMidpoint;
-      state.ranges[1].sortOrder = SortOrder.DESC;
+      state.ranges[1].sortOrder = SortOrder.ASC;
     } else {
       // Case 2: first try [0, randomMidpoint] then [randomMidpoint, 10000]
       state.ranges[0].lowerBound = 0;
@@ -445,7 +445,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
       state.ranges[0].sortOrder = SortOrder.DESC;
       state.ranges[1].lowerBound = randomMidpoint;
       state.ranges[1].upperBound = HostService.MAX_SCHEDULING_CONSTANT;
-      state.ranges[1].sortOrder = SortOrder.ASC;
+      state.ranges[1].sortOrder = SortOrder.DESC;
     }
     state.currentRange = 0;
     state.currentStep = Step.BUILD_QUERY;
