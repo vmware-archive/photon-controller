@@ -231,6 +231,9 @@ public class TaskCommandTest {
     hostState.usageTags = new HashSet<>();
     hostState.usageTags.add("VMFS");
     hostState.state = HostState.READY;
+    // These tests don't depend on scheduling constants, so this will assign
+    // one manually instead of using the SchedulingConstantGenerator.
+    hostState.schedulingConstant = 1L;
     xenonClient.post(HostServiceFactory.SELF_LINK, hostState);
 
     VmEntity vm = new VmEntity();

@@ -119,6 +119,12 @@ public class HostService extends StatefulService {
   public static final int MAX_SCHEDULING_CONSTANT = 10000;
 
   /**
+   * Sentinel value that indicates that the host hasn't been assigned a
+   * scheduling constant yet.
+   */
+  private static final long NO_SCHEDULING_CONSTANT_YET = -1;
+
+  /**
    * This determines when the host datastores and networks should be checked and updated through
    * a polling interval (10 minutes). This is set to 10 minutes because the datastores and networks
    * attached to a host do not change very often. Also the agent detects the datastores attached to
@@ -152,11 +158,67 @@ public class HostService extends StatefulService {
       State startState = startOperation.getBody(State.class);
       InitializationUtils.initialize(startState);
 
-      if (null == startState.schedulingConstant) {
-        startState.schedulingConstant = (long) random.nextInt(MAX_SCHEDULING_CONSTANT);
+      // Getting a scheduling constant requires a request to another service.
+      // Before making that request, validate everything else; fail-fast if the
+      // new HostService's state would fail to validate anyway.
+      // Put in a fake scheduling constant to pass validation.
+      if (startState.schedulingConstant == null) {
+        startState.schedulingConstant = NO_SCHEDULING_CONSTANT_YET;
       }
 
       validateState(startState);
+
+      // finishHandleStart will complete or fail startOperation. If this host
+      // already has a scheduling constant, call finishHandleStart directly; if
+      // this host needs a scheduling constant assigned, send a request to
+      // SchedulingConstantGenerator to get it, and call finishHandleStart in
+      // the completion handler.
+      if (startState.schedulingConstant == NO_SCHEDULING_CONSTANT_YET) {
+        Operation scgPatch = Operation
+            .createPatch(this, SchedulingConstantGenerator.SINGLETON_LINK)
+            .setBody(new SchedulingConstantGenerator.State())
+            .setCompletion((o, e) -> {
+              if (e != null) {
+                ServiceUtils.logSevere(this, "Request to SchedulingConstantGenerator failed: %s", e);
+                startOperation.fail(e);
+                return;
+              }
+
+              SchedulingConstantGenerator.State responseState = o.getBody(SchedulingConstantGenerator.State.class);
+              startState.schedulingConstant = responseState.lastSchedulingConstant;
+
+              finishHandleStart(startOperation, startState);
+            });
+        sendRequest(scgPatch);
+      } else {
+        finishHandleStart(startOperation, startState);
+      }
+
+    } catch (IllegalStateException t) {
+      ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      startOperation.fail(t);
+    }
+  }
+
+  /**
+   * Perform final validation of a new HostService's state, set maintenance
+   * interval, and complete or fail the start operation.
+   *
+   * finishHandleStart can be called synchronously or it can be called
+   * asynchronously from a completion handler.
+   *
+   * @param startOperation
+   * @param startState
+   */
+  private void finishHandleStart(Operation startOperation, State startState) {
+    try {
+      validateState(startState);
+      // This is the final validation: make sure the scheduling constant is valid
+      if (startState.schedulingConstant == NO_SCHEDULING_CONSTANT_YET) {
+        throw new IllegalStateException("scheduling constant was not assigned");
+      }
 
       // set the maintenance interval to match the value in the state.
       this.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(startState.triggerIntervalMillis));

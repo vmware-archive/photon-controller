@@ -75,6 +75,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.SchedulingConstantGenerator;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
@@ -141,13 +142,14 @@ public class VmXenonBackendTest {
   }
 
   private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
+      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) throws Throwable {
     commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient, null);
   }
 
   private static void commonHostAndClientSetup(BasicServiceHost basicServiceHost,
                                                ApiFeXenonRestClient apiFeXenonRestClient,
-                                               PhotonControllerXenonRestClient photonControllerXenonRestClient) {
+                                               PhotonControllerXenonRestClient photonControllerXenonRestClient)
+      throws Throwable {
 
     host = basicServiceHost;
     xenonClient = apiFeXenonRestClient;
@@ -167,6 +169,8 @@ public class VmXenonBackendTest {
       throw new IllegalStateException(
           "host is expected to be in started state, current state=" + host.getState());
     }
+
+    SchedulingConstantGenerator.startSingletonServiceForTest(host);
   }
 
   private static void commonHostDocumentsCleanup() throws Throwable {

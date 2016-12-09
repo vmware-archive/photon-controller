@@ -1194,6 +1194,9 @@ public class ImageDatastoreSweeperServiceTest {
         state.reportedDatastores.add(datastoreIterator.next().id);
         state.reportedImageDatastores = new HashSet<>();
         state.reportedImageDatastores.add(imageDatastore.id);
+        // These tests don't depend on scheduling constants, so this will assign
+        // one manually instead of using the SchedulingConstantGenerator.
+        state.schedulingConstant = 1L;
 
         Operation op = cloudStoreHelper
             .createPost(HostServiceFactory.SELF_LINK)
