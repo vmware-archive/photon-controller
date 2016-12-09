@@ -87,7 +87,9 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 
 /**
@@ -405,8 +407,10 @@ public class ProvisionHostTaskServiceTest {
 
       deploymentState = TestHelper.createDeploymentService(cloudStoreEnvironment, true, true);
 
-      hostState = TestHelper.createHostService(cloudStoreEnvironment, Collections.singleton(UsageTag.MGMT.name()),
-          HostState.NOT_PROVISIONED);
+      Set<String> usageTags = new HashSet<>();
+      usageTags.add(UsageTag.MGMT.name());
+      usageTags.add(UsageTag.CLOUD.name());
+      hostState = TestHelper.createHostService(cloudStoreEnvironment, usageTags, HostState.NOT_PROVISIONED);
 
       NsxClient nsxClient = mock(NsxClient.class);
       doReturn(nsxClient).when(nsxClientFactory).create(anyString(), anyString(), anyString());
@@ -542,6 +546,56 @@ public class ProvisionHostTaskServiceTest {
               eq(hostState.agentPort),
               eq(0.0),
               pluginConfigCaptor.capture(),
+              eq(false),
+              eq(ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink)),
+              eq(ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink)),
+              eq(deploymentState.ntpEndpoint),
+              eq(true),
+              any());
+
+      assertThat(pluginConfigCaptor.getValue().isStats_enabled(), is(deploymentState.statsEnabled));
+
+      verify(agentControlClient, times(6)).getAgentStatus(any());
+
+      verifyNoMoreInteractions(agentControlClient);
+
+      HostService.State finalHostState = cloudStoreEnvironment.getServiceState(hostState.documentSelfLink,
+          HostService.State.class);
+      assertThat(finalHostState.reportedDatastores, containsInAnyOrder("datastore1", "datastore2"));
+    }
+
+    @Test
+    public void testSuccessWithNsxSkipsMgmtHost() throws Throwable {
+      hostState = TestHelper.createHostService(cloudStoreEnvironment,
+          Collections.singleton(UsageTag.MGMT.name()),
+          HostState.NOT_PROVISIONED);
+      startState.hostServiceLink = hostState.documentSelfLink;
+
+      ProvisionHostTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              ProvisionHostTaskFactoryService.SELF_LINK,
+              startState,
+              ProvisionHostTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      TestHelper.assertTaskStateFinished(finalState.taskState);
+
+      verifyNoMoreInteractions(fabricApi);
+
+      verify(agentControlClient, times(7))
+          .setIpAndPort(eq(hostState.hostAddress), eq(hostState.agentPort));
+
+      ArgumentCaptor<StatsPluginConfig> pluginConfigCaptor = ArgumentCaptor.forClass(StatsPluginConfig.class);
+
+      verify(agentControlClient)
+          .provision(
+              eq((List<String>) null),
+              eq(deploymentState.imageDataStoreNames),
+              eq(deploymentState.imageDataStoreUsedForVMs),
+              eq(hostState.hostAddress),
+              eq(hostState.agentPort),
+              eq(0.0),
+              pluginConfigCaptor.capture(),
               eq(true),
               eq(ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink)),
               eq(ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink)),
@@ -642,7 +696,7 @@ public class ProvisionHostTaskServiceTest {
               eq(hostState.agentPort),
               eq(0.0),
               pluginConfigCaptor.capture(),
-              eq(true),
+              eq(false),
               eq(ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink)),
               eq(ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink)),
               eq(deploymentState.ntpEndpoint),

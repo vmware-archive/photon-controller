@@ -519,7 +519,9 @@ public class ProvisionHostTaskService extends StatefulService {
                 if (e != null) {
                   failTask(e);
                 } else {
-                  processGetNetworkManagerInfoSubStage(o.getBody(DeploymentService.State.class));
+                  processGetNetworkManagerInfoSubStage(
+                      currentState,
+                      o.getBody(DeploymentService.State.class));
                 }
               } catch (Throwable t) {
                 failTask(t);
@@ -527,10 +529,40 @@ public class ProvisionHostTaskService extends StatefulService {
             }));
   }
 
-  private void processGetNetworkManagerInfoSubStage(DeploymentService.State deploymentState) {
+  private void processGetNetworkManagerInfoSubStage(State currentState,
+                                                    DeploymentService.State deploymentState) {
 
     if (!deploymentState.sdnEnabled) {
       ServiceUtils.logInfo(this, "Skipping virtual network configuration (disabled)");
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONFIGURE_SYSLOG);
+      return;
+    }
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processGetNetworkManagerInfoSubStage(
+                      currentState,
+                      deploymentState,
+                      o.getBody(HostService.State.class));
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processGetNetworkManagerInfoSubStage(State currentState,
+                                                    DeploymentService.State deploymentState,
+                                                    HostService.State hostState) {
+    if (!hostState.usageTags.contains(UsageTag.CLOUD.name())) {
+      ServiceUtils.logInfo(this, "Skipping virtual network configuration (not CLOUD host)");
       sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONFIGURE_SYSLOG);
       return;
     }
