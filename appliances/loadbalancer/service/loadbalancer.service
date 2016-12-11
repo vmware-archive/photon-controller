@@ -1,0 +1,11 @@
+[Unit]
+Description=Loadbalancer Service
+After=syslog.target network.target
+
+[Service]
+Type=oneshot
+ExecStart=exec haproxy -d -f /etc/photon/haproxy.cfg -p /var/run/haproxy.pid
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
