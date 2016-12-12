@@ -44,18 +44,6 @@ task photoncoreNoBase(type: DockerBuildImage) {
   tag = "photon/photon-controller-core"
 }
 
-task photoncore_lightwave_client(type: DockerBuildImage) {
-  dependsOn servicebase, copyRpms
-  inputDir = file("photon-controller-lightwave-client")
-  tag = "photon/photon-controller-lightwave-client"
-}
-
-task photoncore_lightwave_server(type: DockerBuildImage) {
-  dependsOn servicebase, copyRpms
-  inputDir = file("photon-controller-lightwave-server")
-  tag = "photon/photon-controller-lightwave-server"
-}
-
 task photoncore(type: DockerBuildImage) {
   dependsOn(
     servicebase,
