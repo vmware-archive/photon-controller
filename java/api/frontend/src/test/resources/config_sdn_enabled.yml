@@ -4,7 +4,7 @@ use_virtual_network: true
 
 auth:
   enableAuth: true
-  authDomain: 10.146.64.236
+  authServerAddress: 10.146.64.236
   authServerPort: 443
   authDomain: esxcloud
 
