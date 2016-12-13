@@ -144,6 +144,8 @@ fi
 if [ "${PC_DOCKER_IMAGE_FILE}TEST" != "TEST" ]; then
 	if [ -f ${PC_DOCKER_IMAGE_FILE}  ]; then
     docker load -i ${PC_DOCKER_IMAGE_FILE}
+    PC_CONTAINER_VERSION=local
+    docker tag vmware/photon-controller vmware/photon-controller:$PC_CONTAINER_VERSION
   else
     echo "Error: File not found: ${PC_DOCKER_IMAGE_FILE}"
     exit 1

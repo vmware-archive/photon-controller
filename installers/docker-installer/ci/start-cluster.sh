@@ -14,10 +14,10 @@ fi
 
 docker build -t vmware/photon-controller-seed .
 
-docker run --rm --net=host -it \
+docker run --rm --net=host -t \
        -v /var/run/docker.sock:/var/run/docker.sock \
        vmware/photon-controller-seed \
-       start-pc.sh -p 'Photon123$'
+       start-pc.sh -p 'Photon123$' -D
 
 # Basic sanity test. Need to extend.
 ./helpers/basic-test-helper.sh
