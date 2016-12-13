@@ -430,9 +430,9 @@ public class ConfigureRoutingTaskService extends StatefulService {
       try {
         RoutingAdvertisementUpdateSpec spec = new RoutingAdvertisementUpdateSpecBuilder()
             .advertiseNatRoutes(true)
-            .advertiseNsxConnectedRoutes(true)
+            .advertiseNsxConnectedRoutes(false)
             .advertiseNatRoutes(true)
-            .advertiseStaticRoutes(true)
+            .advertiseStaticRoutes(false)
             .enabled(true)
             .revision(revision)
             .build();
