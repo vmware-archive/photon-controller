@@ -21,7 +21,7 @@ if [ "$OS_NAME" == "Boot2Docker" -o "$HOSTNAME" == "moby" ]; then
   # docker-machine VM or Docker For Mac VM needs to be prepared to get systemd working inside container.
   # This preparation script runs from inside the container but effects few things on the VM it is running on
   # by mounting / inside. That script creates some mount points which are required for systemd. Insanity will prevail!
-  docker run --rm --net=host -it \
+  docker run --rm --net=host -t \
        -v /var/run/docker.sock:/var/run/docker.sock -v /:/tmp/root --cap-add=SYS_ADMIN --security-opt=seccomp:unconfined \
        vmware/photon-controller-seed:1.0.3 ./helpers/prepare-docker-machine-helper.sh /tmp/root/ > /dev/null 2>&1
 fi
