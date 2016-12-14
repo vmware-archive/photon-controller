@@ -62,11 +62,11 @@ if [ -z "$VIB_PATH" ]; then
     --net=host \
     -v `pwd`:`pwd` \
     -v /var/run/docker.sock:/var/run/docker.sock \
-    -w `pwd`/python \
+    -w `pwd`/agent \
     vmware/photon-controller-rpm-builder \
     make clean vib-only
 
-  cp "${ROOT}"/python/dist/* "${SOURCES_DIR}"
+  cp "${ROOT}"/agent/dist/* "${SOURCES_DIR}"
 else
   cp ${VIB_PATH} ${SOURCES_DIR}
 fi
