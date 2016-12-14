@@ -3,7 +3,7 @@
 ## Pre-requisites
 
 ### Devbox
-Photon devbox contains everything needed to develop, test and build python
+Photon devbox contains everything needed to develop, test and build agent
 agent.
 
 See [here](../devbox-photon) for details of how to use Photon devbox.
@@ -20,7 +20,7 @@ brew install thrift
 ```
 
 #### Python
-System python can be used locally to build and test python code. Make sure you
+System python can be used locally to build and test agent code. Make sure you
 have both python 2.6 and 2.7 installed.
 
 ```bash
@@ -42,7 +42,7 @@ brew install coreutils gnu-sed
 ```
 
 #### Vibauthor
-Vibauthor is the tool to package all the python code into a bundle that can be
+Vibauthor is the tool to package all the agent code into a bundle that can be
 installed on ESX server. Unfortunately, the tool isn't available in OS X. Thus,
 to build agent, you have to find a Linux box or use linux container method.
 
@@ -58,7 +58,7 @@ Check the official [document](https://thrift.apache.org/docs/install/) to
 install thrift 0.9.3.
 
 #### Python
-System python can be used locally to build and test python code. Make sure you
+System python can be used locally to build and test agent code. Make sure you
 have both python 2.6 and 2.7 installed.
 
 virtualenv 1.9.1 is also required to be installed. Newer or older version could
@@ -73,10 +73,10 @@ Follow the instruction here:
 Only RPM is available, so all the DEB based OSes are not supported.
 
 ## Development environment
-We use make for building the python components. There is a single top level
+We use make for building the agent components. There is a single top level
 Makefile which calls out to per-package Makefiles in src/\*/Makefile.
 
-The python/Makefile defines aggregate targets that will be run on all the
+The agent/Makefile defines aggregate targets that will be run on all the
 src packages. You can also run the targets on the individual package.
 
 To setup development environment:

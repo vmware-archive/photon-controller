@@ -8,7 +8,7 @@ REVISION=${GIT_REVISION:-$(git rev-parse HEAD)}
 
 DIRTY=""
 set +x
-if [ "$(git diff-files $TOPLEVEL/python $TOPLEVEL/thrift)" != "" ]; then
+if [ "$(git diff-files $TOPLEVEL/agent $TOPLEVEL/thrift)" != "" ]; then
 	DIRTY="-dirty"
 fi
 set -x
