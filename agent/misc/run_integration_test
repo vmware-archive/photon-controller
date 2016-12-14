@@ -46,7 +46,7 @@ echo "Using ESX server $ESX_IP"
 cd $WORKSPACE
 git submodule update --init
 
-cd $WORKSPACE/python
+cd $WORKSPACE/agent
 make clean
 make develop
 

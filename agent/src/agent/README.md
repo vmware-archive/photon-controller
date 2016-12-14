@@ -14,7 +14,7 @@ To create the vib package, run:
 
     make vib
 
-from python/ directory. The vib file is created under python/dist/.
+from agent/ directory. The vib file is created under agent/dist/.
 
 ## Installing the vib package
 
@@ -54,7 +54,7 @@ You can check the status of the agent by looking at these log files:
 
 ## Running `test_remote_agent.py`
 
-Follow python/README.md file to setup a virtualenv. Once the virtualenv is set
+Follow agent/README.md file to setup a virtualenv. Once the virtualenv is set
 up, run:
 
     nosetests --tc agent_remote_test.servers:10.36.7.32 \
