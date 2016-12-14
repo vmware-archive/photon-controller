@@ -51,12 +51,13 @@ docker pull gcr.io/google_containers/hyperkube-amd64:$kubernetes_version
 docker pull gcr.io/google_containers/pause-amd64:3.0
 
 # Pull the containers to provide the Kubernetes add-ons (DNS & UI)
-# We extracted the versions from a running version of Kubernetes 1.4.1
+# We extracted the versions from a running version of Kubernetes 1.5.1
 # with hyperkube (Look in /etc/kubernetes)
-docker pull gcr.io/google-containers/kube-addon-manager-amd64:v5.1
-docker pull gcr.io/google_containers/kubernetes-dashboard-amd64:v1.4.1
-docker pull gcr.io/google_containers/kubedns-amd64:1.8
+docker pull gcr.io/google_containers/kube-addon-manager-amd64:v6.1
+docker pull gcr.io/google_containers/kubernetes-dashboard-amd64:v1.5.0
+docker pull gcr.io/google_containers/kubedns-amd64:1.9
 docker pull gcr.io/google_containers/kube-dnsmasq-amd64:1.4
+docker pull gcr.io/google_containers/dnsmasq-metrics-amd64:1.0
 docker pull gcr.io/google_containers/exechealthz-amd64:1.2 # For DNS
 
 # Now we create the hyperkube container so we can copy its configuration
