@@ -88,3 +88,16 @@ task renew() {
 task renewPhoton() {
   dependsOn cleanAll, destroy, upPhoton
 }
+
+// Start Photon Controller through a Docker installer
+task upContainer(type: Exec) {
+  workingDir "../../installers/docker-installer"
+
+  executable "docker"
+  args "run", "--rm", "--net=host", "-t",
+      "-v", "/var/run/docker.sock:/var/run/docker.sock",
+      "vmware/photon-controller-seed", "start-pc.sh", "-D"
+  if (project.hasProperty('datastores')) {
+    args "-a", "$datastores"
+  }
+}
