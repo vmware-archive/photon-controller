@@ -66,8 +66,9 @@ ENABLE_FQDN=0
 UI_CONTAINER_VERSION=develop
 PC_CONTAINER_VERSION=develop
 LW_CONTAINER_VERSION=1.0.2
+IMAGE_DATASTORE_NAMES="datastore1"
 
-while getopts "h?mDonsu:p:l:d:i:x:v:" opt; do
+while getopts "h?mDonsu:p:l:d:i:x:v:a:" opt; do
     case "$opt" in
     h|\?)
         print_help
@@ -94,6 +95,8 @@ while getopts "h?mDonsu:p:l:d:i:x:v:" opt; do
     v)  VM_DRIVER=$OPTARG
         ;;
     s)  ENABLE_FQDN=1
+        ;;
+    a)  IMAGE_DATASTORE_NAMES=$OPTARG
         ;;
     D)  DEBUG=1
     esac
@@ -221,7 +224,7 @@ echo "---------------------------------"
 echo "Step 4/7: Start Photon Controller"
 echo "---------------------------------"
 
-./helpers/make-pc-cluster.sh $MULTI_CONTAINER_PC "$LIGHTWAVE_PASSWORD" $LIGHTWAVE_DOMAIN $ENABLE_FQDN $PC_CONTAINER_VERSION $LOAD_BALANCER_IP
+./helpers/make-pc-cluster.sh $MULTI_CONTAINER_PC "$LIGHTWAVE_PASSWORD" $LIGHTWAVE_DOMAIN $ENABLE_FQDN $PC_CONTAINER_VERSION $LOAD_BALANCER_IP $IMAGE_DATASTORE_NAMES
 if [ $? -ne 0 ]; then
   echo "Could not make Photon Controller , please fix the errors and try again."
   exit 1

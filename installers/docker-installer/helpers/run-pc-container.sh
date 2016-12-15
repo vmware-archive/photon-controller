@@ -24,6 +24,7 @@ LIGHTWAVE_PASSWORD=$9
 LIGHTWAVE_DOMAIN=${10}
 ENABLE_FQDN=${11}
 PC_CONTAINER_VERSION=${12}
+IMAGE_DATASTORE_NAMES=${13}
 
 LIGHTWAVE_USERNAME=Administrator
 LIGHTWAVE_SECURITY_GROUPS="${LIGHTWAVE_DOMAIN}\\admins"
@@ -78,7 +79,7 @@ deployer:
     loadBalancerEnabled: true
     loadBalancerAddress: ${LOAD_BALANCER_IP}
     imageDataStoreNames:
-    - datastore1
+    - ${IMAGE_DATASTORE_NAMES}
     imageDataStoreUsedForVMs: "True"
     apifeEndpoint: "https://${PEER0_IP}:9000"
     configDirectory: "/etc/esxcloud-deployer/configurations/"
