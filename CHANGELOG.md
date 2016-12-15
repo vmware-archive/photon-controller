@@ -3,6 +3,7 @@
 ## New Features
 
 * Improved API error responses when internal exceptions occur.
+* Upgraded Kubernetes from 1.4.3 to 1.5.1.
 
 ## Bug Fixes
 
