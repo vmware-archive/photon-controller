@@ -8,27 +8,26 @@ Script to run Photon Controller and Lightwave containers for demo purpose.
 
 Options:
 
-  -m         Create three containers for Photon Controller for HA
-  -o         Create three containers for Lightwave for HA
-  -n         Creates three VMs using docker-machine to run
-             all containers in multi-host environment connected with
-             the help of overlay network.
-  -u         Photon Controller username
-  -p         Photon Controller password
-  -l         Lightwave Administrator password
-  -d         Lightwave domain name
-  -i         Photon Controller Docker image tar file
-             (If not specified then Docker Hub image will be used.)
-  -x         UI Docker image tar file
-  -S         Skip deleting old containers
-  -D         Debug
-  -h         Print usage
+  -a <datastore>  Image datastore name (default: datastore1)
+  -b <ip>         Syslog endpint (default: None)
+  -c <ip>         NTP endpoint (default: None)
+  -e <ip>         Load balancer IP address
+  -u <username>   Photon Controller username (default: photon)
+  -p <passwrod>   Photon Controller password (default: <random>)
+  -l <password>   Lightwave Administrator password (default: <random>)
+  -d <domain>     Lightwave domain name (default: photon.local)
+  -i <path>       Photon Controller Docker image tar file
+                  (If not specified then Docker Hub image will be used.)
+  -x <path>       UI Docker image tar file
+  -m              Create three containers for Photon Controller for HA
+  -o              Create three containers for Lightwave for HA
+  -S              Skip deleting old containers
+  -D              Debug mode prints more output
+  -h              Print usage
 
 Usage Examples:
   ./start-pc.sh
-  ./start-pc.sh -m
   ./start-pc.sh -i ./photon-controller-docker-develop.tar
-  ./start-pc.sh -m -n -u scott -p tiger -l Admin123! -d photon.com
 "
 }
 
@@ -67,8 +66,11 @@ UI_CONTAINER_VERSION=develop
 PC_CONTAINER_VERSION=develop
 LW_CONTAINER_VERSION=1.0.2
 IMAGE_DATASTORE_NAMES="datastore1"
+SYSLOG_ENDPOINT=""
+NTP_ENDPOINT=""
+LOAD_BALANCER_IP=""
 
-while getopts "h?mDonsu:p:l:d:i:x:v:a:" opt; do
+while getopts "h?mDonsu:p:l:d:i:x:v:a:b:c:e:" opt; do
     case "$opt" in
     h|\?)
         print_help
@@ -97,6 +99,12 @@ while getopts "h?mDonsu:p:l:d:i:x:v:a:" opt; do
     s)  ENABLE_FQDN=1
         ;;
     a)  IMAGE_DATASTORE_NAMES=$OPTARG
+        ;;
+    b)  SYSLOG_ENDPOINT=$OPTARG
+        ;;
+    c)  NTP_ENDPOINT=$OPTARG
+        ;;
+    e)  LOAD_BALANCER_IP=$OPTARG
         ;;
     D)  DEBUG=1
     esac
@@ -204,19 +212,21 @@ HOSTNAME=$(docker run --rm --net=host -t -v /etc:/host-etc vmware/photon-control
 OS_NAME=$(docker run --rm --net=host -t -v /etc:/host-etc vmware/photon-controller-seed:$PC_CONTAINER_VERSION /bin/bash -c "cat /host-etc/os-release | grep '^NAME=' | sed -e 's/NAME=//g' | tr -d '[:space:]'")
 HYPERVISOR=$(docker run --rm --net=host -t -v /etc:/host-etc vmware/photon-controller-seed:$PC_CONTAINER_VERSION /bin/bash -c "dmidecode -s system-product-name | tr -d '[:space:]'")
 
-if [ "$OS_NAME" == "Boot2Docker" ]; then
-  if [ "$HYPERVISOR" == "VirtualBox" ]; then
-    LOAD_BALANCER_IP=$(ip route get 8.8.8.8 dev eth1 | awk 'NR==1 {print $NF}')
+if [ "${LOAD_BALANCER_IP}TEST" == "TEST" ]; then
+  if [ "$OS_NAME" == "Boot2Docker" ]; then
+    if [ "$HYPERVISOR" == "VirtualBox" ]; then
+      LOAD_BALANCER_IP=$(ip route get 8.8.8.8 dev eth1 | awk 'NR==1 {print $NF}')
+    else
+      LOAD_BALANCER_IP=$(ip route get 8.8.8.8 dev eth0 | awk 'NR==1 {print $NF}')
+    fi
   else
-    LOAD_BALANCER_IP=$(ip route get 8.8.8.8 dev eth0 | awk 'NR==1 {print $NF}')
-  fi
-else
-  if [ "$HOSTNAME" == "moby" ]; then
-    # Get Load balancer IP from docker-machine if this is one VM setup.
-    LOAD_BALANCER_IP=127.0.0.1
-  else
-    # User localhost as load balancer if this is a local setup running all containers locally without a VM.
-    LOAD_BALANCER_IP=$(ip route get 8.8.8.8 | awk 'NR==1 {print $NF}')
+    if [ "$HOSTNAME" == "moby" ]; then
+      # Get Load balancer IP from docker-machine if this is one VM setup.
+      LOAD_BALANCER_IP=127.0.0.1
+    else
+      # User localhost as load balancer if this is a local setup running all containers locally without a VM.
+      LOAD_BALANCER_IP=$(ip route get 8.8.8.8 | awk 'NR==1 {print $NF}')
+    fi
   fi
 fi
 
@@ -224,7 +234,7 @@ echo "---------------------------------"
 echo "Step 4/7: Start Photon Controller"
 echo "---------------------------------"
 
-./helpers/make-pc-cluster.sh $MULTI_CONTAINER_PC "$LIGHTWAVE_PASSWORD" $LIGHTWAVE_DOMAIN $ENABLE_FQDN $PC_CONTAINER_VERSION $LOAD_BALANCER_IP $IMAGE_DATASTORE_NAMES
+./helpers/make-pc-cluster.sh $MULTI_CONTAINER_PC "$LIGHTWAVE_PASSWORD" $LIGHTWAVE_DOMAIN $ENABLE_FQDN $PC_CONTAINER_VERSION $LOAD_BALANCER_IP $IMAGE_DATASTORE_NAMES $SYSLOG_ENDPOINT $NTP_ENDPOINT
 if [ $? -ne 0 ]; then
   echo "Could not make Photon Controller , please fix the errors and try again."
   exit 1

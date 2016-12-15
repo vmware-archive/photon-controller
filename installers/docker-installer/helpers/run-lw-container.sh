@@ -40,7 +40,6 @@ site-name=$LIGHTWAVE_SITE
 hostname=$LIGHTWAVE_IP
 first-instance=false
 replication-partner-hostname=$LIGHTWAVE_MASTER_IP
-disable-dns=1
 EOF
 
 docker run -d --volumes-from photon-config-data -v $LIGHTWAVE_CONFIG_DIR:/config --name volume-helper vmware/photon-controller-seed:$PC_CONTAINER_VERSION /bin/sh -c "while true; do ping 8.8.8.8; done" > /dev/null 2>&1
