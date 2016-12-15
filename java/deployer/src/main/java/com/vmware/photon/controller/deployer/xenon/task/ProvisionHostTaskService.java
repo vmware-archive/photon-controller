@@ -1343,9 +1343,15 @@ public class ProvisionHostTaskService extends StatefulService {
     if (deploymentState.oAuthTenantName != null) {
       oAuthDomain = deploymentState.oAuthTenantName;
     }
-    if (deploymentState.oAuthServerAddress != null) {
-      oAuthAddress = deploymentState.oAuthServerAddress;
+
+    if (deploymentState.oAuthLoadBalancerAddress != null) {
+      oAuthAddress = deploymentState.oAuthLoadBalancerAddress;
+    } else {
+      if (deploymentState.oAuthServerAddress != null) {
+        oAuthAddress = deploymentState.oAuthServerAddress;
+      }
     }
+
     if (deploymentState.oAuthPassword != null) {
       oAuthPassword = deploymentState.oAuthPassword;
     }
