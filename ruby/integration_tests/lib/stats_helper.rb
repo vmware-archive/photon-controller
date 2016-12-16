@@ -52,7 +52,7 @@ module StatsHelper
 
 
   def delete_graphite_data_devbox
-    whisper_dir = File.join(@@git_dir, "devbox-photon", "stats_data", "graphite", "graphite", "whisper", "photon")
+    whisper_dir = File.join(@@git_dir, "devbox", "stats_data", "graphite", "graphite", "whisper", "photon")
     FileUtils.rm_rf(whisper_dir)
   end
 

@@ -30,13 +30,13 @@ In order to control the devbox VM, Vagrant needs a plugin for Photon OS. The plu
 
 #### Start and provision devbox
 
-We use Gradle for building and provisioning the devbox. From `/java` or `/devbox-photon`, run:
+We use Gradle for building and provisioning the devbox. From `/java` or `/devbox`, run:
 
 	./gradlew :devbox:up
 
 This will bring up Vagrant, create one VM (two if ENABLE_AUTH is set to `true`), build all service containers, then start them. Your devbox is now ready.
 
-If devbox is being used as a management VM, you need to seed a deployment document into Photon Controller for some system properties. These properties can be set from environment variables (see below). From `/devbox-photon`, run:
+If devbox is being used as a management VM, you need to seed a deployment document into Photon Controller for some system properties. These properties can be set from environment variables (see below). From `/devbox`, run:
 
     ./seed_deployment.sh
 
@@ -315,4 +315,4 @@ To start everything:
 These start scripts will stop, remove, and restart their respective service containers.
 
 ## Gradle wrapper
-The root of the Gradle project is under `/java`, so a wrapper is provided under `/devbox-photon` that forwards calls to `/java/gradlew`. This is just for the convenience of invoking `./gradlew` from `/devbox-photon` without having to change directories or open another shell.
+The root of the Gradle project is under `/java`, so a wrapper is provided under `/devbox` that forwards calls to `/java/gradlew`. This is just for the convenience of invoking `./gradlew` from `/devbox` without having to change directories or open another shell.
