@@ -37,7 +37,11 @@ fi
 
 # Start fresh devbox and build services
 rm -rf "$DEVBOX/log/"
-./gradlew :devbox:renewPhoton
+if [ -n "$DEPLOYER_TEST" ]; then
+  ./gradlew :devbox:renewPhoton
+else
+  ./gradlew :devbox:upContainer -PD -PloadbalancerIP=$PUBLIC_NETWORK_IP
+fi
 
 # Seed deployment entity into CloudStore
 ./seed_deployment.sh
