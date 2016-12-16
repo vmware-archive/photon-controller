@@ -37,10 +37,7 @@ fi
 
 # Start fresh devbox and build services
 rm -rf "$DEVBOX/log/"
-./gradlew :devbox:renewPhoton
-
-# Seed deployment entity into CloudStore
-./seed_deployment.sh
+./gradlew :devbox:upContainer -PD
 
 # Register real agent to devbox
 if [ -n "$REAL_AGENT" ]; then
