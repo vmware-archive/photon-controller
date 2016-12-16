@@ -22,7 +22,7 @@ If you're looking to play with the code, keep reading.
 
 The product is arranged in a single repository, with subdirectories arranged by language. See the individual READMEs for instructions on building the code.
 
-* [Devbox](devbox-photon/README.md): Devbox uses [Vagrant](http://vagrantup.com) to create a small standalone deployment of Photon Controller for test purposes.
+* [Devbox](devbox/README.md): Devbox uses [Vagrant](http://vagrantup.com) to create a small standalone deployment of Photon Controller for test purposes.
 * [Java](java/README.md): Most of the Photon Controller management plane is written in Java, with many individual services implemented on top of the [Xenon framework](http://vmware.github.io/xenon).
 * [Python](python/README.md): The ESX agent and its test and analysis collateral are implemented in Python.
 * [Ruby](ruby/README.md): The Photon Controller CLI is implemented in Ruby, as are the integration tests for the product.
@@ -38,7 +38,7 @@ If you have not signed our contributor license agreement (CLA), our bot will upd
 All pull requests satisfy the following criteria:
 
 1. Pass **unit tests** according to the instructions in the appropriate language-specific README file.
-2. Pass **integration tests** according to the instructions for [Devbox](devbox-photon/README.md).
+2. Pass **integration tests** according to the instructions for [Devbox](devbox/README.md).
 
 We will run any changes through our own validation process which ensures that both conditions are met, but it's in everyone's interest if you take care of this on your own first.
 
