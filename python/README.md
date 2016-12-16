@@ -6,7 +6,7 @@
 Photon devbox contains everything needed to develop, test and build python
 agent.
 
-See [here](../devbox-photon) for details of how to use Photon devbox.
+See [here](../devbox) for details of how to use Photon devbox.
 
 ### OS X
 

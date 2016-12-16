@@ -33,7 +33,7 @@ vagrant ssh -c "sudo docker cp photon-controller-core:/etc/esxcloud-deployer/ /e
 vagrant ssh -c "sudo mkdir -p /usr/lib/esxcloud/photon-controller-core/"
 vagrant ssh -c "sudo docker cp photon-controller-core:/usr/lib/esxcloud/photon-controller-core/scripts/ /usr/lib/esxcloud/photon-controller-core/"
 
-photon_vm=$(VBoxManage list runningvms | grep devbox-photon_photon | sed 's/"\(.*\)".*/\1/')
+photon_vm=$(VBoxManage list runningvms | grep devbox_photon | sed 's/"\(.*\)".*/\1/')
 
 # removing all docker containers in the vagrant box
 #

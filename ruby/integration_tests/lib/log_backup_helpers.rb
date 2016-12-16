@@ -65,7 +65,7 @@ module EsxCloud
        end
 
        def verify_logs
-         service_log_folder = File.join(ENV["WORKSPACE"], "devbox-photon", "log")
+         service_log_folder = File.join(ENV["WORKSPACE"], "devbox", "log")
 
          sensitive_phrases_list = ["username", "password", "ssh-rsa"]
          if ENV["ESX_PASSWORD"]
