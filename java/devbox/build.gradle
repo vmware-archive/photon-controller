@@ -89,15 +89,73 @@ task renewPhoton() {
   dependsOn cleanAll, destroy, upPhoton
 }
 
+task cleanContainer(type: Exec) {
+  executable "bash"
+  args "-c", "rm -rf build/photon-controller.tar"
+}
+
+task photoncoreBuild(type: Exec) {
+  workingDir "../containers/photon-controller-core"
+  executable "docker"
+  args "build", "--no-cache", "-t", "vmware/photon-controller", "."
+  dependsOn ':containers:copyRpms'
+}
+
+task photoncoreTar(type: Exec) {
+  executable "docker"
+  args "save", "-o", "build/photon-controller.tar", "vmware/photon-controller"
+  dependsOn photoncoreBuild
+  mustRunAfter cleanContainer
+}
+
 // Start Photon Controller through a Docker installer
 task upContainer(type: Exec) {
-  workingDir "../../installers/docker-installer"
-
   executable "docker"
+
+  def tarDir = buildDir
   args "run", "--rm", "--net=host", "-t",
       "-v", "/var/run/docker.sock:/var/run/docker.sock",
-      "vmware/photon-controller-seed", "start-pc.sh"
+      "-v", "$tarDir/photon-controller.tar:/photon-controller.tar",
+      "vmware/photon-controller-seed", "start-pc.sh", "-i", "/photon-controller.tar"
+
   if (project.hasProperty('datastores')) {
     args "-a", "$datastores"
   }
+  if (project.hasProperty('syslog')) {
+    args "-b", "$syslog"
+  }
+  if (project.hasProperty('ntpEndpoint')) {
+    args "-c", "$ntpEndpoint"
+  }
+  if (project.hasProperty('lwdomain')) {
+    args "-d", "$lwdomain"
+  }
+  if (project.hasProperty('loadbalancerIP')) {
+    args "-e", "$loadbalancerIP"
+  }
+  if (project.hasProperty('pcusername')) {
+    args "-u", "$pcusername"
+  }
+  if (project.hasProperty('pcpassword')) {
+    args "-p", "$pcpassword"
+  }
+  if (project.hasProperty('lwpassword')) {
+    args "-l", "$lwpassword"
+  }
+  if (project.hasProperty('pcuiimage')) {
+    args "-x", "$pcuiimage"
+  }
+  if (project.hasProperty('m')) {
+    args "-m"
+  }
+  if (project.hasProperty('o')) {
+    args "-o"
+  }
+  if (project.hasProperty('S')) {
+    args "-S"
+  }
+  if (project.hasProperty('D')) {
+    args "-D"
+  }
+  dependsOn cleanContainer, photoncoreTar
 }
