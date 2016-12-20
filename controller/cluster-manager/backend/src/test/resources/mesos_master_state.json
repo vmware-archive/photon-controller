@@ -1,0 +1,113 @@
+{
+   "activated_slaves":3,
+   "build_date":"2014-09-23 05:36:09",
+   "build_time":1411450569,
+   "build_user":"root",
+   "completed_frameworks":[
+
+   ],
+   "deactivated_slaves":0,
+   "elected_time":1439580021.95018,
+   "failed_tasks":0,
+   "finished_tasks":0,
+   "flags":{
+      "allocation_interval":"1secs",
+      "authenticate":"false",
+      "authenticate_slaves":"false",
+      "framework_sorter":"drf",
+      "help":"false",
+      "hostname":"10.146.22.70",
+      "initialize_driver_logging":"true",
+      "ip":"10.146.22.70",
+      "log_auto_initialize":"true",
+      "log_dir":"\/var\/log\/mesos",
+      "logbufsecs":"0",
+      "logging_level":"INFO",
+      "port":"5050",
+      "quiet":"false",
+      "quorum":"3",
+      "recovery_slave_removal_limit":"100%",
+      "registry":"in_memory",
+      "registry_fetch_timeout":"1mins",
+      "registry_store_timeout":"5secs",
+      "registry_strict":"false",
+      "root_submissions":"true",
+      "slave_reregister_timeout":"10mins",
+      "user_sorter":"drf",
+      "version":"false",
+      "webui_dir":"\/usr\/local\/share\/mesos\/webui",
+      "whitelist":"*",
+      "work_dir":"\/var\/lib\/mesos",
+      "zk":"zk:\/\/10.146.22.50:2181,10.146.22.51:2181,10.146.22.51:2181\/mesos",
+      "zk_session_timeout":"10secs"
+   },
+   "frameworks":[
+
+   ],
+   "git_sha":"fe0a39112f3304283f970f1b08b322b1e970829d",
+   "git_tag":"0.20.1",
+   "hostname":"10.146.22.70",
+   "id":"20150814-192021-1175884298-5050-1",
+   "killed_tasks":0,
+   "leader":"master@10.146.22.70:5050",
+   "log_dir":"\/var\/log\/mesos",
+   "lost_tasks":0,
+   "orphan_tasks":[
+
+   ],
+   "pid":"master@10.146.22.70:5050",
+   "slaves":[
+      {
+         "attributes":{
+
+         },
+         "hostname":"worker-69b546aa-eab3-42d4-9196-a9d3b1786b0d",
+         "id":"20150814-192021-1175884298-5050-1-2",
+         "pid":"worker(1)@10.146.22.76:5051",
+         "registered_time":1439580685.4203,
+         "resources":{
+            "cpus":1,
+            "disk":75382,
+            "mem":1000,
+            "ports":"[31000-32000]"
+         }
+      },
+      {
+         "attributes":{
+
+         },
+         "hostname":"worker-09461c65-7822-4c31-8f33-f10e2b6cb7e4",
+         "id":"20150814-192021-1175884298-5050-1-1",
+         "pid":"worker(1)@10.146.22.74:5051",
+         "registered_time":1439580670.56625,
+         "resources":{
+            "cpus":1,
+            "disk":75382,
+            "mem":1000,
+            "ports":"[31000-32000]"
+         }
+      },
+      {
+         "attributes":{
+
+         },
+         "hostname":"worker-b717db52-8e2c-4924-bf73-4e7a7503bee4",
+         "id":"20150814-192021-1175884298-5050-1-0",
+         "pid":"worker(1)@10.146.22.73:5051",
+         "registered_time":1439580654.35118,
+         "resources":{
+            "cpus":1,
+            "disk":75382,
+            "mem":1000,
+            "ports":"[31000-32000]"
+         }
+      }
+   ],
+   "staged_tasks":0,
+   "start_time":1439580021.88184,
+   "started_tasks":0,
+   "unregistered_frameworks":[
+
+   ],
+   "version":"0.20.1"
+}

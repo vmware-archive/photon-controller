@@ -1,0 +1,20 @@
+{
+  "sdnEnabled": true,
+  "networkManagerAddress": "1.2.3.4",
+  "networkManagerUsername": "networkManagerUsername",
+  "networkManagerPassword": "networkManagerPassword",
+  "networkZoneId": "networkZoneId",
+  "networkTopRouterId": "networkTopRouterId",
+  "networkEdgeIpPoolId": "networkEdgeIpPoolId",
+  "networkHostUplinkPnic": "networkHostUplinkPnic",
+  "edgeClusterId": "edgeClusterId",
+  "ipRange": "10.0.0.1/24",
+  "floatingIpRange": {
+    "start": "192.168.0.2",
+    "end": "192.168.0.253"
+  },
+  "dhcpServers": [
+      "192.10.0.1",
+      "192.20.0.1"
+  ]
+}

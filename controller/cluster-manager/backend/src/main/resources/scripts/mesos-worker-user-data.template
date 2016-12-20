@@ -1,0 +1,91 @@
+#cloud-config
+bootcmd:
+  - rm -f /etc/systemd/network/*.network
+  - systemctl stop systemd-networkd
+
+write_files:
+  - content: |
+        eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
+        cat > "/etc/systemd/network/10-dhcp-${eno_name}.network" << EOF
+        [Match]
+        Name=${eno_name}
+
+        [Network]
+        DHCP=yes
+        EOF
+        ip addr flush label "${eno_name}"
+        systemctl restart systemd-networkd
+        while :
+        do
+          eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
+          ipAddress=`ifconfig ${eno_name} | sed -n '/addr:/{;s/.*addr://;s/ .*//;p;}'`
+          echo ${ipAddress}
+          if [ -n "${ipAddress}" ]; then
+            echo "Successfully acquired DHCP IP address"
+            break
+          fi
+          sleep 1
+        done
+    owner: root:root
+    permissions: 0644
+    path: /tmp/init-network.sh
+  - content: |
+        eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
+        ipAddress=`ifconfig ${eno_name} | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
+
+        echo "Starting mesos worker"
+
+        docker run -d \
+          --entrypoint="mesos-slave" \
+          --net=host \
+          --restart=always \
+          --pid=host \
+          --privileged=true \
+          --name=photon-mesos-slave \
+          -v /sys:/sys \
+          -v /tmp/mesos:/tmp/mesos \
+          -v /var/log/mesos:/var/log/mesos \
+          -v /usr/bin/docker:/usr/bin/docker:ro \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          -e "MESOS_HOSTNAME=$LOCAL_HOSTNAME" \
+          -e "MESOS_IP=${ipAddress}" \
+          -e "MESOS_MASTER=zk://$ZK_QUORUM/mesos" \
+          -e "MESOS_LOG_DIR=/var/log/mesos" \
+          -e "MESOS_LOGGING_LEVEL=INFO" \
+          -e "MESOS_ADVERTISE_IP=${ipAddress}" \
+          -e "MESOS_WORK_DIR=/tmp/mesos" \
+          -e "MESOS_CONTAINERIZERS=docker,mesos" \
+          mesosphere/mesos-slave:0.26.0-0.2.145.ubuntu1404
+
+        echo "done"
+    owner: root:root
+    permissions: 0644
+    path: /tmp/start-mesos-worker.sh
+  - content: |
+        retry_max="60"
+        retry="0"
+        while [ "$retry" -lt "$retry_max" ]
+        do
+          docker version
+          if [ "$?" == "0" ]; then
+            echo "Docker daemon is up and running!"
+            break
+          fi
+          sleep 1
+          retry=`expr $retry + 1`
+        done
+
+        if [ "$retry" -eq "$retry_max" ]
+        then
+          echo "Docker daemon is not up yet!"
+        fi
+    owner: root:root
+    permissions: 0644
+    path: /tmp/check-docker.sh
+
+runcmd:
+  - sh /tmp/init-network.sh
+  - systemctl enable docker
+  - systemctl start docker
+  - sh /tmp/check-docker.sh
+  - sh /tmp/start-mesos-worker.sh > /var/log/mesos-worker.log

@@ -1,0 +1,47 @@
+repositories {
+  mavenLocal()
+  mavenCentral()
+  maven {
+    url "http://dl.bintray.com/vmware/lightwave-maven"
+  }
+}
+
+dependencies {
+  // Reference maven repository files.
+  compile 'org.bouncycastle:bcpkix-jdk15on:1.52'
+  compile 'org.bouncycastle:bcprov-jdk15on:1.52'
+
+  compile(group: 'com.vmware.identity', name: 'openidconnect-client-lib', version: '6.6.0')
+  compile(group: 'com.vmware.identity.rest.idm', name: 'vmware-identity-rest-idm-client', version: '6.6.0')
+  compile(group: 'com.vmware.identity.rest.afd', name: 'vmware-identity-rest-afd-client', version: '6.6.0')
+
+  compile "com.google.guava:guava:${versions.guava}"
+  compile "com.google.inject.extensions:guice-assistedinject:${versions.guice}"
+  compile "com.google.inject:guice:${versions.guice}"
+
+  compile 'com.vmware.identity:authentication-framework:6.6.0'
+
+  compile 'commons-cli:commons-cli:1.3'
+
+  compile 'com.fasterxml.jackson.core:jackson-databind:${versions.jackson_core}'
+
+  testCompile 'org.hamcrest:hamcrest-all:1.3'
+  testCompile 'org.testng:testng:6.8'
+  testCompile "org.mockito:mockito-core:${versions.mockito}"
+  testCompile("org.powermock:powermock-api-mockito:${versions.powermock}") {
+    exclude group: 'org.mockito', module: 'mockito-all'
+  }
+  testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
+}
+
+tasks.withType(Test) {
+  scanForTestClasses = false
+  include "**/*Test.class"
+  exclude "**/helpers/*.class"
+}
+
+test {
+  useTestNG() {
+    excludeGroups 'flaky'
+  }
+}

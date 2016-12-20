@@ -1,0 +1,145 @@
+#!/bin/bash
+tools=$(readlink -nf $(dirname $0))
+source $tools/common.sh
+
+function usage() {
+  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD VIB_PATH CREATE_CERT LW_DOMAIN LW_ADDRESS LW_PASSWORD" 1>&2
+  echo
+  echo "Supplied args:"
+  echo $*
+  exit 1
+}
+
+host_address=""
+username=""
+password=""
+vib_path=""
+create_cert=""
+lightwave_domain=""
+lightwave_address=""
+lightwave_password=""
+
+if [ "$#" -lt 8 ]
+then
+  usage $*
+fi
+
+host_address=$1
+shift
+username=$1
+shift
+password=$1
+shift
+vib_path=$1
+shift
+create_cert=$1
+shift
+lightwave_domain=$1
+shift
+lightwave_address=$1
+shift
+lightwave_password=$1
+shift
+
+
+while getopts d:l:n:h flag
+do
+  case $flag in
+    ?)
+      usage $*
+      ;;
+  esac
+done
+
+SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+function install_vib() {
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} esxcli software vib install -f -v $vib_path
+  if [[ $? -ne 0 ]]
+  then
+    echo "retrying installing vib"
+	  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} esxcli software vib install -f -v $vib_path
+
+	  if [[ $? -ne 0 ]]
+	  then
+	    exit 1
+	  fi
+	fi
+  sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} esxcli software vib list
+}
+
+# Add java home and other required binaries to path. We need this here even though we are doing this during container
+# build because systemd service does not seem to honor the environment variables set at container build time.
+export JAVA_HOME="/usr/java/default"
+export PATH=$PATH:$JAVA_HOME/bin:/opt/esxcli:/opt/vmware/bin:/opt/likewise/bin
+
+host_cert_dir="/etc/vmware/ssl"
+priv_key_name="rui.key"
+crt_name="rui.crt"
+
+function join_lightwave_domain() {
+  # Join lightwave domain. param 1 means use notify services instead of put node to maintenance mode
+  join_domain_cmd="/usr/lib/vmware/ic-deploy/bin/configure-lightwave.py ${lightwave_address} ${lightwave_domain} '${lightwave_password}' 1 ${host_address} '$password'"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $join_domain_cmd
+
+  # Listing /etc/vmware/ssl contents after copying
+  echo "listing ${host_cert_dir} contents after copying"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls -l ${host_cert_dir}
+
+  # restart photon-controller-agent
+  restart_agent_cmd="if [ -f /etc/init.d/photon-controller-agent ]; then /etc/init.d/photon-controller-agent restart; fi"
+  echo $restart_agent_cmd
+  sshpass -p "$password" ssh -tt $SSH_OPTS ${username}@${host_address} $restart_agent_cmd
+}
+
+function create_and_copy_certificate_no_auth() {
+  cert_dir="./host_cert_no_auth_${host_address}"
+  priv_key_path="${cert_dir}/${priv_key_name}"
+  host_crt_path="${cert_dir}/${crt_name}"
+
+  if [ ! -d "$cert_dir" ]; then
+    mkdir -p ${cert_dir}
+
+    echo "Creating cert for ${host_address}"
+    openssl req -subj '/CN=photon-controller.com/O=VMware Inc./C=US' -new -newkey rsa:1024 -days 1095 -nodes -x509 -keyout ${priv_key_path} -out ${host_crt_path}
+
+    # no need to import into keystore since in the non-auth case we accept any cert
+  else
+    echo "Use existing certs at ${cert_dir}"
+  fi
+
+  sshpass -p "$password" scp $SSH_OPTS ${host_crt_path} ${username}@${host_address}:/tmp
+  sshpass -p "$password" scp $SSH_OPTS ${priv_key_path} ${username}@${host_address}:/tmp
+
+  # apply new cert and notify affected services
+  apply_cert_cmd="/opt/vmware/photon/controller/sh/apply_cert.py ${host_address} '$password' /tmp/${crt_name} /tmp/${priv_key_name}"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} $apply_cert_cmd
+
+  # clean up tmp files
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} rm /tmp/${crt_name} /tmp/${priv_key_name}
+
+  # listing /etc/vmware/ssl contents after copying
+  echo "listing ${host_cert_dir} contents after copying"
+  sshpass -p "$password" ssh $SSH_OPTS ${username}@${host_address} ls -l ${host_cert_dir}
+
+  # restart photon-controller-agent
+  restart_agent_cmd="if [ -f /etc/init.d/photon-controller-agent ]; then /etc/init.d/photon-controller-agent restart; fi"
+  echo $restart_agent_cmd
+  sshpass -p "$password" ssh -tt $SSH_OPTS ${username}@${host_address} $restart_agent_cmd
+}
+
+sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} date
+echo "create_cert=${create_cert}, vib_path=${vib_path}"
+
+install_vib
+
+if [[ "$vib_path" == *"photon-controller-agent"* ]]; then
+  if [ "$create_cert" != "true" ]; then
+    create_and_copy_certificate_no_auth
+  fi
+elif [[ "$vib_path" == *"lightwave"* ]]; then
+  if [ "$create_cert" == "true" ]; then
+    join_lightwave_domain
+  fi
+fi
+sshpass -p "$password"  ssh $SSH_OPTS ${username}@${host_address} date

@@ -232,7 +232,7 @@ EOM
       #
       # Generate Lightwave container start script
       #
-      lightwave_config_file="/devbox_data/java/containers/lightwave/config/lightwave_test.json"
+      lightwave_config_file="/devbox_data/controller/containers/lightwave/config/lightwave_test.json"
       lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
       set -ex
   out="#{SCRIPT_DIR}/start-lightwave"
@@ -243,7 +243,7 @@ sed -i s/photon-.*/"lightwave.#{ENV['LW_DOMAIN_NAME']} lightwave"/ /etc/hosts
 echo "#{network_ip}  lightwave.#{ENV['LW_DOMAIN_NAME']} lightwave" >> /etc/hosts
 hostnamectl set-hostname lightwave
 hostnamectl set-hostname --static lightwave
-config_build_dir="/devbox_data/java/containers/lightwave/build/config"
+config_build_dir="/devbox_data/controller/containers/lightwave/build/config"
 mkdir -p $config_build_dir
 combined_params=$(jq -s '.[0] * (.[1]#{CONFIG_JQ_FILTER})' #{dynamic_params_file} #{lightwave_config_file})
 cd $(dirname #{lightwave_config_file})
@@ -292,8 +292,8 @@ EOS
 cat >> $out <<-'EOM'
   # Restart to pick up the networking changes.
   systemctl restart systemd-networkd systemd-resolved
-  chmod +x /devbox_data/java/containers/lightwave/config/add_lightwave_users.sh
-  chmod +x /devbox_data/java/containers/lightwave/config/update_token_expiration.sh
+  chmod +x /devbox_data/controller/containers/lightwave/config/add_lightwave_users.sh
+  chmod +x /devbox_data/controller/containers/lightwave/config/update_token_expiration.sh
   echo "Checking to connect to Lightwave REST client to start"
   attempts=1
   reachable="false"
@@ -308,9 +308,9 @@ cat >> $out <<-'EOM'
     else
       reachable="true"
       echo "Adding Lightwave users."
-      /devbox_data/java/containers/lightwave/config/add_lightwave_users.sh #{ENV['LW_PASSWORD']} #{ENV['LW_DOMAIN_NAME']}
+      /devbox_data/controller/containers/lightwave/config/add_lightwave_users.sh #{ENV['LW_PASSWORD']} #{ENV['LW_DOMAIN_NAME']}
       echo "Updating tenant token expiration time."
-      /devbox_data/java/containers/lightwave/config/update_token_expiration.sh #{ENV['LW_PASSWORD']} #{ENV['LW_DOMAIN_NAME']}
+      /devbox_data/controller/containers/lightwave/config/update_token_expiration.sh #{ENV['LW_PASSWORD']} #{ENV['LW_DOMAIN_NAME']}
       break
     fi
   done
@@ -592,8 +592,8 @@ EOM
   #
   SERVICE_CONFIG_MAP.each do | key, servicePath |
     service = SERVICE_NAME_MAP[key]
-    config_build_dir = "/devbox_data/java/#{servicePath}/build/configuration"
-    config_dir = "/devbox_data/java/#{servicePath}/src/dist/configuration"
+    config_build_dir = "/devbox_data/controller/#{servicePath}/build/configuration"
+    config_dir = "/devbox_data/controller/#{servicePath}/src/dist/configuration"
     config_file="#{config_dir}/#{service}_test.json"
 
     # Write service start script
@@ -645,12 +645,12 @@ chmod +x $out
   #
   # Generate HAProxy container start script
   #
-  haproxy_config_file="/devbox_data/java/containers/haproxy/config/haproxy_test.json"
+  haproxy_config_file="/devbox_data/controller/containers/haproxy/config/haproxy_test.json"
   photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="#{SCRIPT_DIR}/start-haproxy"
 cat > $out <<-'EOM'
   #!/bin/bash
-  config_build_dir="/devbox_data/java/containers/haproxy/build/config"
+  config_build_dir="/devbox_data/controller/containers/haproxy/build/config"
   mkdir -p $config_build_dir
   combined_params=$(jq -s '.[0] * (.[1]#{CONFIG_JQ_FILTER})' #{dynamic_params_file} #{haproxy_config_file})
 

@@ -1,0 +1,22 @@
+{
+    "apiVersion": "v1",
+    "swaggerVersion": "1.2",
+    "basePath": "",
+    "resourcePath": "/test",
+    "apis": [
+        {
+            "path": "/test",
+            "operations": [
+                {
+                    "httpMethod": "GET",
+                    "summary": "Description.",
+                    "notes": "",
+                    "responseClass": "int",
+                    "nickname": "getTest",
+                    "parameters": []
+                }
+            ]
+        }
+    ],
+    "models": {}
+}
