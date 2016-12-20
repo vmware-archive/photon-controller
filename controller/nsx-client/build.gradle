@@ -1,0 +1,50 @@
+apply plugin: 'java'
+
+dependencies {
+  compile "org.apache.httpcomponents:httpclient:${versions.http_client}"
+  compile "org.apache.httpcomponents:httpasyncclient:${versions.http_async_client}"
+  compile "org.apache.httpcomponents:httpcore:${versions.http_core}"
+  compile "com.google.guava:guava:${versions.guava}"
+  compile "com.fasterxml.jackson.core:jackson-databind:${versions.jackson_core}"
+  compile "javax.validation:validation-api:${versions.javax_validation}"
+  compile "commons-io:commons-io:${versions.commons_io}"
+
+  testCompile "commons-io:commons-io:${versions.commons_io}"
+  testCompile "org.hamcrest:hamcrest-all:${versions.hamcrest}"
+  testCompile "org.testng:testng:${versions.testng}"
+  testCompile "org.mockito:mockito-core:${versions.mockito}"
+  testCompile("org.powermock:powermock-api-mockito:${versions.powermock}") {
+    exclude group: 'org.mockito', module: 'mockito-all'
+  }
+  testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
+}
+
+jar {
+  baseName = 'nsx-client'
+  manifest {
+    attributes 'Specification-Title': 'NSX Client Library',
+        'Specification-Version': base_version,
+        'Implementation-Version': full_version,
+        'Built-By': System.getProperty('user.name'),
+        'Built-Date': build_timestamp,
+        'Built-JDK': System.getProperty('java.version'),
+        'Built-Gradle': gradle.gradleVersion,
+        'Git-Commit': git_commit
+  }
+  into("META-INF/maven/$project.group/$project.name") {
+      from "$buildDir/pom.xml"
+      rename ".*", "pom.xml"
+  }
+}
+
+tasks.withType(Test) {
+  scanForTestClasses = false
+  include "**/*Test.class"
+  exclude "**/helpers/*.class"
+}
+
+test {
+  useTestNG() {
+    excludeGroups 'flaky'
+  }
+}

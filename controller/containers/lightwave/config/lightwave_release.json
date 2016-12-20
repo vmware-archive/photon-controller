@@ -1,0 +1,32 @@
+{
+  "serviceName": "Lightwave",
+  "cpuCount": 1,
+  "memoryMb": 4096,
+  "diskGb": 8,
+  "isReplicated": false,
+  "isPrivileged": true,
+  "useHostNetwork": true,
+  "containerImage": "vmware/lightwave-sts:1.0.2",
+  "portBindings": {
+    "443": 443,
+    "22": 22,
+    "53": 53,
+    "88": 88,
+    "389": 389,
+    "636": 636,
+    "2012": 2012,
+    "2014": 2014,
+    "2015": 2015,
+    "2020": 2020
+  },
+  "udpPortBindings": {
+    "53": 53,
+    "88": 88
+  },
+  "volumeBindings": {
+    "/var/log/esxcloud": "/var/log/vmware",
+    "/tmp/empty": "/etc/systemd/network"
+  },
+  "dynamicParameters": {
+  }
+}

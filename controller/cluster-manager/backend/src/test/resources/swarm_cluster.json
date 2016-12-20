@@ -1,0 +1,88 @@
+{
+  "ID": "",
+  "Containers": 2,
+  "Driver": "",
+  "DriverStatus": [
+    [
+      "\u0008Role",
+      "primary"
+    ],
+    [
+      "\u0008Strategy",
+      "spread"
+    ],
+    [
+      "\u0008Filters",
+      "affinity, health, constraint, port, dependency"
+    ],
+    [
+      "\u0008Nodes",
+      "2"
+    ],
+    [
+      "master-aaf38c9a-ee0a-426e-bf0f-3ae9c07fd9c7",
+      "10.146.37.216:2375"
+    ],
+    [
+      " â”” Containers",
+      "2"
+    ],
+    [
+      " â”” Reserved CPUs",
+      "0 / 1"
+    ],
+    [
+      " â”” Reserved Memory",
+      "0 B / 2.052 GiB"
+    ],
+    [
+      " â”” Labels",
+      "executiondriver=native-0.2, kernelversion=4.0.9, operatingsystem=VMware Photon/Linux, storagedriver=overlay"
+    ],
+    [
+      "worker-c6814407-dcc0-499b-8a7d-fd5115dfaf66",
+      "10.146.37.143:2375"
+    ],
+    [
+      " â”” Containers",
+      "1"
+    ],
+    [
+      " â”” Reserved CPUs",
+      "0 / 1"
+    ],
+    [
+      " â”” Reserved Memory",
+      "0 B / 2.052 GiB"
+    ],
+    [
+      " â”” Labels",
+      "executiondriver=native-0.2, kernelversion=4.0.9, operatingsystem=VMware Photon/Linux, storagedriver=overlay"
+    ]
+  ],
+  "ExecutionDriver": "",
+  "Images": 4,
+  "KernelVersion": "",
+  "OperatingSystem": "",
+  "NCPU": 2,
+  "MemTotal": 4407468440,
+  "Name": "bb31ab186cdd",
+  "Labels": null,
+  "Debug": false,
+  "NFd": 0,
+  "NGoroutines": 0,
+  "SystemTime": "2015-09-30T00:24:17.481245509Z",
+  "NEventsListener": 0,
+  "InitPath": "",
+  "InitSha1": "",
+  "IndexServerAddress": "",
+  "MemoryLimit": true,
+  "SwapLimit": true,
+  "IPv4Forwarding": true,
+  "BridgeNfIptables": true,
+  "BridgeNfIp6tables": true,
+  "DockerRootDir": "",
+  "HttpProxy": "",
+  "HttpsProxy": "",
+  "NoProxy": ""
+}

@@ -16,7 +16,7 @@ The logs from the Photon Controller services are synced to the host and are loca
 * [VirtualBox](https://www.virtualbox.org/)
 * [Vagrant plugin for Photon OS](https://github.com/vmware/vagrant-guests-photon-controller)
 
-Bringing up devbox also requires that you build the Photon Controller product code locally. Please see the prerequisites for the [Java](../java/README.md#requirements) and [Python](../python/README.md#pre-requisites) code.
+Bringing up devbox also requires that you build the Photon Controller product code locally. Please see the prerequisites for the [Controller](../controller/README.md#requirements) and [Agent](../agent/README.md#pre-requisites) code.
 
 ## Instructions
 
@@ -30,7 +30,7 @@ In order to control the devbox VM, Vagrant needs a plugin for Photon OS. The plu
 
 #### Start and provision devbox
 
-We use Gradle for building and provisioning the devbox. From `/java` or `/devbox`, run:
+We use Gradle for building and provisioning the devbox. From `/controller` or `/devbox`, run:
 
 	./gradlew :devbox:up
 
@@ -229,7 +229,7 @@ to use CLI, please refer to the Readme under ruby/cli.
 
 
 ## Controlling devbox from Gradle
-The Gradle build system under `/java` provides tasks for managing the devbox.
+The Gradle build system under `/controller` provides tasks for managing the devbox.
 
 	# Equivalent to vagrant up
 	./gradlew :devbox:vagrantUp
@@ -276,7 +276,7 @@ The Gradle build system under `/java` provides tasks for managing the devbox.
 	# Starts/restarts container for serviceName, e.g. deployer, housekeeper, etc
 	./gradlew :serviceName:start
 
-Task definitions can be found in their respective Gradle build files. The usual Gradle project layout is used. E.g., devbox tasks are under `/java/devbox/build.gradle`, deployer tasks are under `/java/deployer/build.gradle`, etc.
+Task definitions can be found in their respective Gradle build files. The usual Gradle project layout is used. E.g., devbox tasks are under `/controller/devbox/build.gradle`, deployer tasks are under `/controller/deployer/build.gradle`, etc.
 
 Note that management-api tasks are under `api-frontend:management`, e.g.:
 
@@ -315,4 +315,4 @@ To start everything:
 These start scripts will stop, remove, and restart their respective service containers.
 
 ## Gradle wrapper
-The root of the Gradle project is under `/java`, so a wrapper is provided under `/devbox` that forwards calls to `/java/gradlew`. This is just for the convenience of invoking `./gradlew` from `/devbox` without having to change directories or open another shell.
+The root of the Gradle project is under `/controller`, so a wrapper is provided under `/devbox` that forwards calls to `/controller/gradlew`. This is just for the convenience of invoking `./gradlew` from `/devbox` without having to change directories or open another shell.

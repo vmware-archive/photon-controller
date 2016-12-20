@@ -1,0 +1,89 @@
+apply plugin: 'thrift'
+
+dependencies {
+
+  compile "org.apache.commons:commons-lang3:${versions.commons_lang3}"
+
+  // custom build thrift jar supporting non-blocking ssl
+  // downloaded from s3 see task below
+  compile files('libthrift-0.9.3-ssl.jar')
+  // now we need to add thrift jar dependencies manually
+  compile 'org.apache.httpcomponents:httpclient:4.4.1'
+  compile 'org.apache.httpcomponents:httpcore:4.4.1'
+
+  compile 'ch.qos.logback:logback-classic:1.0.9'
+  compile "com.fasterxml.jackson.core:jackson-databind:${versions.jackson_core}"
+  compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${versions.jackson_core}"
+  compile "com.google.guava:guava:${versions.guava}"
+  compile "com.google.inject.extensions:guice-assistedinject:${versions.guice}"
+  compile "com.google.inject:guice:${versions.guice}"
+  compile "io.dropwizard.metrics:metrics-graphite:${versions.metrics}"
+  compile("org.apache.curator:curator-recipes:${versions.curator}") {
+    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    exclude group: 'log4j', module: 'log4j'
+    exclude group: 'io.netty', module: 'netty'
+  }
+  compile 'io.netty:netty-all:4.1.0.Final'
+  compile("org.apache.zookeeper:zookeeper:3.5.1-alpha"){
+    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    exclude group: 'log4j', module: 'log4j'
+    exclude group: 'io.netty', module: 'netty'
+  }
+  compile 'cglib:cglib:3.1'
+  compile "org.hibernate:hibernate-validator:${versions.hibernate_validator}"
+  compile 'org.glassfish.web:el-impl:2.2'
+
+  thrift files('../../thrift/agent.thrift',
+      '../../thrift/aggregator.thrift',
+      '../../thrift/flavors.thrift',
+      '../../thrift/host.thrift',
+      '../../thrift/resource.thrift',
+      '../../thrift/roles.thrift',
+      '../../thrift/scheduler.thrift',
+      '../../thrift/server_address.thrift',
+      '../../thrift/status.thrift',
+      '../../thrift/stats_plugin.thrift',
+      '../../thrift/tracing.thrift')
+
+  testCompile("org.apache.curator:curator-test:${versions.curator}") {
+    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    exclude group: 'log4j', module: 'log4j'
+    exclude group: 'io.netty', module: 'netty'
+  }
+  testCompile 'org.hamcrest:hamcrest-all:1.3'
+  testCompile 'org.testng:testng:6.8'
+  testCompile "org.mockito:mockito-core:${versions.mockito}"
+  testCompile("org.powermock:powermock-api-mockito:${versions.powermock}") {
+    exclude group: 'org.mockito', module: 'mockito-all'
+  }
+  testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
+  testThrift files(fileTree(dir: 'src/test/resources').matching { include '**/*.thrift' })
+}
+
+// This enables us to access sun.security which is needed to generate certs in java 8
+compileJava {
+  options.fork = true
+  options.forkOptions.executable = 'javac'
+  options.compilerArgs << "-XDignore.symbol.file=true"
+}
+
+task testJar(type: Jar, dependsOn: testClasses) {
+  baseName = "test-${project.archivesBaseName}"
+  from sourceSets.test.output
+}
+
+configurations {
+  tests
+}
+
+artifacts {
+  tests testJar
+}
+
+task downloadThriftJar(type: Exec) {
+  workingDir "."
+  executable "bash"
+  args "-c", "rm -f libthrift-0.9.3-ssl.jar && wget https://s3.amazonaws.com/photon-platform/artifacts/thrift/non-blocking-ssl/libthrift-0.9.3-ssl.jar"
+}
+
+compileJava.dependsOn downloadThriftJar

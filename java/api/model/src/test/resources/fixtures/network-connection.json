@@ -1,7 +1,0 @@
-{
-    "network": "public",
-    "macAddress": "00:50:56:02:00:30",
-    "ipAddress": "10.146.30.120",
-    "netmask": "255.255.255.128",
-    "isConnected": "True"
-}

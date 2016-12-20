@@ -1,0 +1,16 @@
+{
+  "id": "id",
+  "name": "name",
+  "type": "KUBERNETES",
+  "state": "READY",
+  "projectId": "projectId",
+  "slaveCount": 3,
+  "workerCount": 3,
+  "masterVmFlavorName": "flavor",
+  "otherVmFlavorName": "flavor",
+  "imageId": "image",
+  "extendedProperties": {
+    "containerNetwork": "10.1.0.0/16"
+  },
+  "kind": "cluster"
+}

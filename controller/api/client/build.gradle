@@ -1,0 +1,44 @@
+apply plugin: 'java'
+
+dependencies {
+  compile(project(':api:model'))
+
+  compile 'org.apache.httpcomponents:httpclient:4.3.3'
+  compile 'org.apache.httpcomponents:httpasyncclient:4.0.1'
+  compile 'org.apache.commons:commons-lang3:3.1'
+  compile 'com.fasterxml.jackson.core:jackson-databind:2.5.1'
+  compile 'org.apache.httpcomponents:httpmime:4.2.3'
+  compile 'com.google.code.findbugs:jsr305:2.0.1'
+
+  testCompile 'commons-io:commons-io:2.4'
+  testCompile 'org.hamcrest:hamcrest-all:1.3'
+  testCompile 'org.testng:testng:6.8'
+  testCompile "org.mockito:mockito-core:${versions.mockito}"
+  testCompile("org.powermock:powermock-api-mockito:${versions.powermock}") {
+    exclude group: 'org.mockito', module: 'mockito-all'
+  }
+  testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
+}
+
+jar {
+  manifest {
+    attributes 'Specification-Title': 'Photon Controller API Client Library',
+        'Specification-Version': base_version,
+        'Implementation-Version': full_version,
+        'Built-By': System.getProperty('user.name'),
+        'Built-Date': build_timestamp,
+        'Built-JDK': System.getProperty('java.version'),
+        'Built-Gradle': gradle.gradleVersion,
+        'Git-Commit': git_commit
+  }
+  into("META-INF/maven/$project.group/$project.name") {
+      from "$buildDir/pom.xml"
+      rename ".*", "pom.xml"
+  }
+}
+
+test {
+  useTestNG() {
+    excludeGroups 'flaky'
+  }
+}

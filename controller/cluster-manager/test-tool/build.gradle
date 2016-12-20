@@ -1,0 +1,48 @@
+apply plugin: 'application'
+
+mainClassName = 'com.vmware.photon.controller.clustermanager.testtool.Main'
+
+dependencies {
+    compile project(':api:client')
+    compile project(':cloud-store')
+    compile project(':common')
+    compile project(':common-xenon')
+    compile project(':common-logging')
+    compile project(':cluster-manager:service-documents')
+
+    // Reference maven repository files.
+    compile 'net.sourceforge.argparse4j:argparse4j:0.4.0'
+    compile 'ch.qos.logback:logback-classic:1.0.9'
+    compile "com.google.guava:guava:${versions.guava}"
+    compile "com.google.inject.extensions:guice-assistedinject:${versions.guice}"
+    compile "com.google.inject:guice:${versions.guice}"
+
+    testCompile 'org.hamcrest:hamcrest-all:1.3'
+    testCompile 'org.testng:testng:6.8'
+    testCompile "org.mockito:mockito-core:${versions.mockito}"
+	  testCompile("org.powermock:powermock-api-mockito:${versions.powermock}") {
+	    exclude group: 'org.mockito', module: 'mockito-all'
+	  }
+    testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
+}
+
+// Build a self contained executable jar.
+jar {
+    baseName = 'cm-test-tool'
+    manifest {
+        attributes 'Main-Class': 'com.vmware.photon.controller.clustermanager.testtool.Main',
+                'Specification-Version': base_version,
+                'Implementation-Version': full_version,
+                'Built-By': System.getProperty('user.name'),
+                'Built-Date': build_timestamp,
+                'Built-JDK': System.getProperty('java.version'),
+                'Built-Gradle': gradle.gradleVersion,
+                'Git-Commit': git_commit
+    }
+}
+
+tasks.withType(Test) {
+    scanForTestClasses = false
+    include "**/*Test.class"
+    exclude "**/helpers/*.class"
+}

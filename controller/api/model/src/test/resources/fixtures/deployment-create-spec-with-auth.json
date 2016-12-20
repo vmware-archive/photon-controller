@@ -1,0 +1,30 @@
+{
+    "imageDatastores": [
+      "image-datastore"
+    ],
+    "syslogEndpoint": "0.0.0.1",
+    "ntpEndpoint": "0.0.0.2",
+    "stats": {
+        "enabled": false
+    },
+    "useImageDatastoreForVms": false,
+    "auth": {
+        "enabled": true,
+        "tenant": "t",
+        "password": "p",
+        "securityGroups": [
+            "adminGroup1",
+            "adminGroup2"
+        ]
+    },
+    "networkConfiguration": {
+      "sdnEnabled": true,
+      "networkManagerAddress": "1.2.3.4",
+      "networkManagerUsername": "networkManagerUsername",
+      "networkManagerPassword": "networkManagerPassword",
+      "networkTopRouterId": "networkTopRouterId",
+      "networkEdgeIpPoolId": "networkEdgeIpPoolId",
+      "networkHostUplinkPnic": "networkHostUplinkPnic"
+    },
+    "loadBalancerEnabled": true
+}

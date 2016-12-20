@@ -1,0 +1,20 @@
+{
+    "id": "id",
+    "selfLink": "selfLink",
+    "name": "core-10",
+    "tags": [],
+    "kind": "vm",
+    "state": "CREATING",
+    "cost": [
+        {
+            "key": "vm.cpu",
+            "value": 2.0,
+            "unit": "COUNT"
+        },
+        {
+            "key": "vm.memory",
+            "value": 4.0,
+            "unit": "GB"
+        }
+    ]
+}

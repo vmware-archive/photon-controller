@@ -1,6 +1,0 @@
-{
-    "name": "mydisk",
-    "kind": "ephemeral-disk",
-    "flavor": "good-flavor",
-    "bootDisk": true
-}
