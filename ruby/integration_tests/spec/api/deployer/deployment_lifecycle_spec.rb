@@ -260,6 +260,7 @@ describe "deployment lifecycle", order: :defined, deployer: true do
         raise e
       end
     end
+    puts service_json
     docs_count = service_json["documentCount"].to_i
     expect(docs_count).to eq(0)
   end
