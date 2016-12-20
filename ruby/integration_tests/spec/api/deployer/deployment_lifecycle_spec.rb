@@ -199,7 +199,8 @@ describe "deployment lifecycle", order: :defined, deployer: true do
                       "/photon/task-schedulers",
                       "/photon/cloudstore/datastores",
                       "/photon/cloudstore/images-to-image-datastore-mapping",
-                      "/photon/cloudstore/entity-locks",]
+                      "/photon/cloudstore/entity-locks",
+                      "/photon/cloudstore/sched-const-generators"]
 
     get_cloudstore_services(cloud_store).each do |service_factory|
       if (!exclusion_list.include?(service_factory) and service_factory.include?("/photon/cloudstore"))
