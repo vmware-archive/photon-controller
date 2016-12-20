@@ -10,7 +10,11 @@
       "guest_additions_mode": "disable",
       "shutdown_command": "shutdown -P now",
       "headless": true,
-      "output_directory": "build/"
+      "output_directory": "build/",
+      "vboxmanage": [
+        ["modifyvm", "{{.Name}}", "--nic2", "nat"],
+        ["modifyvm", "{{.Name}}", "--cableconnected2", "on"]
+      ]
     }
   ],
   "provisioners": [
