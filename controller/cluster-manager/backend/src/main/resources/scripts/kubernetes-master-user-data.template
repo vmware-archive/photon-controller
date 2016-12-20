@@ -1,0 +1,31 @@
+#cloud-config
+
+write_files:
+  - content: |
+        $CA_CERT
+    owner: root:root
+    permissions: 0644
+    path: /tmp/ca.crt
+  - content: |
+        echo "Starting Kubernetes master"
+        export ETCD_IPS=$ETCD_QUORUM
+        export FLANNEL_NETWORK=$CONTAINER_NETWORK
+        /root/docker-multinode/master.sh
+        echo "done"
+    owner: root:root
+    permissions: 0644
+    path: /root/setup-kubernetes-master.sh
+
+users:
+  - name: root
+    lock_passwd: false
+    ssh-authorized-keys:
+      - $SSH_KEY
+
+runcmd:
+  - source /root/env_variables.txt
+  - echo "Starting Kubernetes master" >> /var/log/start-kubernetes-node.log
+  - sh /root/setup-static-ip.sh $DNS $ADDRESS $GATEWAY >> /var/log/start-kubernetes-node.log 2>&1
+  - sh /root/copy-ca-cert.sh /tmp/ca.crt >> /var/log/start-kubernetes-node.log 2>&1
+  - sh /root/check-docker.sh >> /var/log/start-kubernetes-node.log 2>&1
+  - sh /root/setup-kubernetes-master.sh >> /var/log/start-kubernetes-node.log 2>&1

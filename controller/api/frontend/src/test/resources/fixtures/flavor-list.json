@@ -1,0 +1,35 @@
+{
+    "kind": "vm",
+    "flavors": [
+        {
+            "name": "core-100",
+            "cost": [
+                {
+                    "key": "system.oomph",
+                    "value": 2.0,
+                    "unit": "COUNT"
+                },
+                {
+                    "key": "vm.bar",
+                    "value": 8.3,
+                    "unit": "GB"
+                }
+            ]
+        },
+        {
+            "name": "core-200",
+            "cost": [
+                {
+                    "key": "system.foo",
+                    "value": 2.0,
+                    "unit": "KB"
+                },
+                {
+                    "key": "vm.baz",
+                    "value": 3.14,
+                    "unit": "COUNT"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,202 @@
+{
+  "kind": "NodeList",
+  "apiVersion": "v1beta3",
+  "metadata": {
+    "selfLink": "/api/v1beta3/nodes",
+    "resourceVersion": "6216"
+  },
+  "items": [
+    {
+      "metadata": {
+        "name": "worker-6a8e2d24-3118-4848-bdff-fe9daabf38b9",
+        "selfLink": "/api/v1beta3/nodes/10.146.22.40",
+        "uid": "1983665c-2b18-11e5-900e-000c2926acac",
+        "resourceVersion": "6216",
+        "creationTimestamp": "2015-07-15T17:37:01Z",
+        "labels": {
+          "kubernetes.io/hostname": "worker-6a8e2d24-3118-4848-bdff-fe9daabf38b9",
+          "vm-hostname": "worker-6a8e2d24-3118-4848-bdff-fe9daabf38b9"
+        }
+      },
+      "spec": {
+        "externalID": "worker-6a8e2d24-3118-4848-bdff-fe9daabf38b9"
+      },
+      "status": {
+        "capacity": {
+          "cpu": "0m",
+          "memory": "0m",
+          "pods": "100"
+        },
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True",
+            "lastHeartbeatTime": "2015-07-15T21:19:42Z",
+            "lastTransitionTime": "2015-07-15T17:37:01Z",
+            "reason": "kubelet is posting ready status"
+          }
+        ],
+        "addresses": [
+          {
+            "type": "LegacyHostIP",
+            "address": "10.146.22.40"
+          }
+        ],
+        "nodeInfo": {
+          "machineID": "",
+          "systemUUID": "",
+          "bootID": "",
+          "kernelVersion": "",
+          "osImage": "",
+          "containerRuntimeVersion": "",
+          "kubeletVersion": "",
+          "kubeProxyVersion": ""
+        }
+      }
+    },
+    {
+      "metadata": {
+        "name": "worker-2e4ead33-7c01-4308-8669-7ebcb65bf98f",
+        "selfLink": "/api/v1beta3/nodes/10.146.22.41",
+        "uid": "4ef51f0c-2b18-11e5-900e-000c2926acac",
+        "resourceVersion": "6213",
+        "creationTimestamp": "2015-07-15T17:38:30Z",
+        "labels": {
+          "kubernetes.io/hostname": "worker-2e4ead33-7c01-4308-8669-7ebcb65bf98f",
+          "vm-hostname": "worker-2e4ead33-7c01-4308-8669-7ebcb65bf98f"
+        }
+      },
+      "spec": {
+        "externalID": "worker-2e4ead33-7c01-4308-8669-7ebcb65bf98f"
+      },
+      "status": {
+        "capacity": {
+          "cpu": "0m",
+          "memory": "0m",
+          "pods": "100"
+        },
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True",
+            "lastHeartbeatTime": "2015-07-15T21:19:41Z",
+            "lastTransitionTime": "2015-07-15T17:38:30Z",
+            "reason": "kubelet is posting ready status"
+          }
+        ],
+        "addresses": [
+          {
+            "type": "LegacyHostIP",
+            "address": "10.146.22.41"
+          }
+        ],
+        "nodeInfo": {
+          "machineID": "",
+          "systemUUID": "",
+          "bootID": "",
+          "kernelVersion": "",
+          "osImage": "",
+          "containerRuntimeVersion": "",
+          "kubeletVersion": "",
+          "kubeProxyVersion": ""
+        }
+      }
+    },
+    {
+      "metadata": {
+        "name": "master-71251c24-592f-4fab-ac23-6640032da897",
+        "selfLink": "/api/v1beta3/nodes/10.146.22.42",
+        "uid": "4b01afe1-2b18-11e5-900e-000c2926acac",
+        "resourceVersion": "6215",
+        "creationTimestamp": "2015-07-15T17:38:24Z",
+        "labels": {
+          "kubernetes.io/hostname": "master-71251c24-592f-4fab-ac23-6640032da897",
+          "vm-hostname": "master-71251c24-592f-4fab-ac23-6640032da897"
+        }
+      },
+      "spec": {
+        "externalID": "master-71251c24-592f-4fab-ac23-6640032da897"
+      },
+      "status": {
+        "capacity": {
+          "cpu": "0m",
+          "memory": "0m",
+          "pods": "100"
+        },
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "True",
+            "lastHeartbeatTime": "2015-07-15T21:19:41Z",
+            "lastTransitionTime": "2015-07-15T17:38:23Z",
+            "reason": "kubelet is posting ready status"
+          }
+        ],
+        "addresses": [
+          {
+            "type": "LegacyHostIP",
+            "address": "10.146.22.42"
+          }
+        ],
+        "nodeInfo": {
+          "machineID": "",
+          "systemUUID": "",
+          "bootID": "",
+          "kernelVersion": "",
+          "osImage": "",
+          "containerRuntimeVersion": "",
+          "kubeletVersion": "",
+          "kubeProxyVersion": ""
+        }
+      }
+    },
+    {
+      "metadata": {
+        "name": "worker-8bd8b53b-e665-45cc-b7c9-83d9c02cc942",
+        "selfLink": "/api/v1beta3/nodes/10.146.22.43",
+        "uid": "4ba3f796-2b18-11e5-900e-000c2926acac",
+        "resourceVersion": "6214",
+        "creationTimestamp": "2015-07-15T17:38:25Z",
+        "labels": {
+          "kubernetes.io/hostname": "worker-8bd8b53b-e665-45cc-b7c9-83d9c02cc942",
+          "vm-hostname": "worker-8bd8b53b-e665-45cc-b7c9-83d9c02cc942"
+        }
+      },
+      "spec": {
+        "externalID": "worker-8bd8b53b-e665-45cc-b7c9-83d9c02cc942"
+      },
+      "status": {
+        "capacity": {
+          "cpu": "0m",
+          "memory": "0m",
+          "pods": "100"
+        },
+        "conditions": [
+          {
+            "type": "Ready",
+            "status": "Unknown",
+            "lastHeartbeatTime": "2015-07-15T21:19:41Z",
+            "lastTransitionTime": "2015-07-15T17:38:25Z",
+            "reason": "Kubelet stopped posting node status."
+          }
+        ],
+        "addresses": [
+          {
+            "type": "LegacyHostIP",
+            "address": "10.146.22.43"
+          }
+        ],
+        "nodeInfo": {
+          "machineID": "",
+          "systemUUID": "",
+          "bootID": "",
+          "kernelVersion": "",
+          "osImage": "",
+          "containerRuntimeVersion": "",
+          "kubeletVersion": "",
+          "kubeProxyVersion": ""
+        }
+      }
+    }
+  ]
+}

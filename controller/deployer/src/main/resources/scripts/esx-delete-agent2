@@ -1,0 +1,55 @@
+#!/bin/bash
+
+tools=$(readlink -nf $(dirname $0))
+source $tools/common.sh
+
+function usage() {
+  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD VIB_NAME" 1>&2
+  echo
+  echo "Supplied args:"
+  echo $*
+  exit 1
+}
+
+if [ "$#" -lt 4 ]
+then
+  usage $*
+fi
+
+host_address=$1
+shift
+username=$1
+shift
+password=$1
+shift
+vibname=$1
+shift
+
+echo `date`
+echo "vibname: $vibname"
+echo "host: $host_address"
+
+max_retires=3
+
+function remove() {
+  retVal=0
+  vib_existing=`sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list | grep "$vibname " | wc -l`
+  if [ $vib_existing -ne 0 ]
+  then
+    sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n $vibname
+    retVal=$?
+  fi
+  return $retVal
+}
+
+
+for i in $(seq 1 $max_retires); do
+	remove
+	ret=$?
+	if [ $ret -eq 0 ]
+	then
+	  exit 0
+	fi
+done
+
+exit $ret

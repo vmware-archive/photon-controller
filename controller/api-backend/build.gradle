@@ -1,0 +1,64 @@
+apply plugin: 'java'
+
+dependencies {
+  compile project(':common')
+  compile project(':common-xenon')
+  compile project(':cloud-store')
+  compile project(':nsx-client')
+  compile project(':dhcp-agent')
+
+  compile 'com.google.code.findbugs:jsr305:2.0.1'
+  compile 'joda-time:joda-time:2.2'
+
+  testCompile "org.hamcrest:hamcrest-all:${versions.hamcrest}"
+  testCompile "org.testng:testng:${versions.testng}"
+  testCompile "org.mockito:mockito-core:${versions.mockito}"
+  testCompile("org.powermock:powermock-api-mockito:${versions.powermock}") {
+    exclude group: 'org.mockito', module: 'mockito-all'
+  }
+  testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
+  testCompile(project(path: ':common-tests'))
+}
+
+jar {
+  baseName = 'api-backend'
+  manifest {
+    attributes 'Specification-Title': 'Photon Controller Management API Backend',
+        'Specification-Version': base_version,
+        'Implementation-Version': full_version,
+        'Git-Commit': git_commit,
+        'Built-By': System.getProperty('user.name'),
+        'Built-Date': build_timestamp,
+        'Built-JDK': System.getProperty('java.version'),
+        'Built-Gradle': gradle.gradleVersion
+  }
+  into("META-INF/maven/$project.group/$project.name") {
+      from "$buildDir/pom.xml"
+      rename ".*", "pom.xml"
+  }
+}
+
+task testJar(type: Jar, dependsOn: testClasses) {
+  baseName = "test-${project.archivesBaseName}"
+  from sourceSets.test.output
+}
+
+tasks.withType(Test) {
+  scanForTestClasses = false
+  include "**/*Test.class"
+  exclude "**/helpers/*.class"
+}
+
+configurations {
+  tests
+}
+
+artifacts {
+  tests testJar
+}
+
+test {
+  useTestNG() {
+    excludeGroups 'flaky'
+  }
+}

@@ -1,7 +1,0 @@
-{
-    "operation": "SUSPEND_VM",
-    "arguments": {
-        "disk": "id-disk-00",
-        "retention": "4w"
-    }
-}

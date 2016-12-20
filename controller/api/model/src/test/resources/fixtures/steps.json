@@ -1,0 +1,29 @@
+{
+    "sequence": 1,
+    "state": "ERROR",
+    "errors": [
+        {
+            "code": "ErrorCode",
+            "message": "Some message",
+            "data": {
+                "foo": "bar"
+            }
+        }
+    ],
+    "warnings": [
+        {
+            "code": "ErrorCode",
+            "message": "Some message",
+            "data": {
+                "foo": "bar"
+            }
+        }
+    ],
+    "operation": "DeleteVm",
+    "queuedTime": 10,
+    "startedTime": 11,
+    "endTime": 12,
+    "options": {
+        "key": "value"
+    }
+}

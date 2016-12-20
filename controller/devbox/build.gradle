@@ -1,0 +1,103 @@
+// Tasks executed against devbox
+import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
+import com.bmuschko.gradle.vagrant.tasks.VagrantUp
+import com.bmuschko.gradle.vagrant.tasks.VagrantDestroy
+import com.bmuschko.gradle.vagrant.tasks.VagrantHalt
+import com.bmuschko.gradle.vagrant.tasks.VagrantReload
+import com.bmuschko.gradle.vagrant.tasks.VagrantStatus
+
+task vagrantDestroy(type: VagrantDestroy) {
+  boxDir = devboxDir
+}
+
+task vagrantUp(type: VagrantUp) {
+  boxDir = devboxDir
+  mustRunAfter vagrantDestroy
+}
+
+task vagrantHalt(type: VagrantHalt) {
+  boxDir = devboxDir
+}
+
+task vagrantReload(type: VagrantReload) {
+  boxDir = devboxDir
+}
+
+task vagrantStatus(type: VagrantStatus) {
+  boxDir = devboxDir
+}
+
+// Ensures left over data such as cloud-store sandboxes are removed
+task cleanAll() {
+  dependsOn(
+    ":containers:cleanAll",
+  )
+}
+
+task buildAll() {
+  dependsOn(
+    ":containers:all",
+    ":devbox:agent:buildVib"
+  )
+  mustRunAfter vagrantUp, cleanAll
+}
+
+task buildPhoton() {
+  dependsOn(
+    ":containers:photon"
+  )
+  mustRunAfter vagrantUp, cleanAll
+}
+
+task rebuild() {
+  dependsOn cleanAll, buildAll
+}
+
+task startAll(type: VagrantSsh) {
+  mustRunAfter buildAll, rebuild
+  description = 'Start all containers inside devbox'
+  boxDir = devboxDir
+  sshCommand = 'start-all 2>&1 | tee -a start-all.log'
+  // Only start fake agent when REAL_AGENT is not defined
+  if (!System.getenv('REAL_AGENT')?.trim()) {
+    dependsOn ":devbox:agent:start"
+  }
+}
+
+task destroy() {
+  dependsOn vagrantDestroy
+}
+
+// Replaces the old "vagrant up"
+task up() {
+  dependsOn vagrantUp, buildAll, startAll
+  mustRunAfter destroy
+}
+
+task upPhoton() {
+  dependsOn vagrantUp, buildPhoton, startAll
+  mustRunAfter destroy
+}
+
+// Destroys existing devbox and brings up a new one
+task renew() {
+  dependsOn cleanAll, destroy, up
+}
+
+// Destroys existing photon services
+task renewPhoton() {
+  dependsOn cleanAll, destroy, upPhoton
+}
+
+// Start Photon Controller through a Docker installer
+task upContainer(type: Exec) {
+  workingDir "../../installers/docker-installer"
+
+  executable "docker"
+  args "run", "--rm", "--net=host", "-t",
+      "-v", "/var/run/docker.sock:/var/run/docker.sock",
+      "vmware/photon-controller-seed", "start-pc.sh"
+  if (project.hasProperty('datastores')) {
+    args "-a", "$datastores"
+  }
+}

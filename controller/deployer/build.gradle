@@ -1,0 +1,90 @@
+apply plugin: 'application'
+apply plugin: 'thrift'
+
+
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
+
+mainClassName = 'com.vmware.photon.controller.deployer.Main'
+
+
+dependencies {
+  compile project(':api:client')
+  compile project(':nsx-client')
+  compile project(':cloud-store')
+  compile project(':common')
+  compile project(':common-xenon')
+  compile project(':common-logging')
+  compile project(':common-auth')
+  compile project(':cluster-manager:backend')
+  compile project(':cluster-manager:service-documents')
+
+  compile "commons-io:commons-io:2.4"
+  compile "com.google.guava:guava:${versions.guava}"
+  compile 'net.sourceforge.argparse4j:argparse4j:0.4.0'
+  compile 'com.github.docker-java:docker-java:1.3.0'
+  compile 'org.eclipse.jetty:jetty-util:8.1.10.v20130312'
+  compile 'commons-net:commons-net:2.0'
+  compile 'com.github.spullara.mustache.java:compiler:0.9.0'
+
+  thrift files(
+      '../../thrift/tracing.thrift',
+      '../../thrift/status.thrift')
+
+  testCompile("org.apache.curator:curator-test:${versions.curator}") {
+    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    exclude group: 'log4j', module: 'log4j'
+    exclude group: 'io.netty', module: 'netty'
+  }
+
+  testCompile 'org.hamcrest:hamcrest-all:1.3'
+  testCompile 'org.testng:testng:6.8'
+  testCompile "org.mockito:mockito-core:${versions.mockito}"
+  testCompile("org.powermock:powermock-api-mockito:${versions.powermock}") {
+    exclude group: 'org.mockito', module: 'mockito-all'
+  }
+  testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
+  testCompile(project(path: ':common-tests'))
+  testCompile(project(path: ':cloud-store', configuration: 'tests'))
+}
+
+ext.sharedManifest = manifest {
+  attributes 'Specification-Title': 'Photon Controller Deployer',
+          'Specification-Version': base_version,
+          'Implementation-Version': full_version,
+          'Built-By': System.getProperty('user.name'),
+          'Built-Date': build_timestamp,
+          'Built-JDK': System.getProperty('java.version'),
+          'Built-Gradle': gradle.gradleVersion,
+          'Git-Commit': git_commit
+}
+
+
+jar {
+  manifest = project.manifest {
+    from sharedManifest
+  }
+  into("META-INF/maven/$project.group/$project.name") {
+      from "$buildDir/pom.xml"
+      rename ".*", "pom.xml"
+  }
+}
+
+task fatJar(type: Jar) {
+  manifest = project.manifest {
+    from sharedManifest
+  }
+  baseName = project.name + '-with-dependencies'
+  from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+  with jar
+}
+
+tasks.withType(Test) {
+  scanForTestClasses = false
+  include "**/*Test.class"
+  exclude "**/helpers/*.class"
+}
+
+distTar << extractRelease(this, project.name)

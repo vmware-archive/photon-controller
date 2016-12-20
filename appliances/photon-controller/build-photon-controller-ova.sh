@@ -25,7 +25,7 @@ fi
 if [ -z "$NO_PHOTON_RPM_REBUILD" ]; then
   echo "Building Photon Controller RPM"
   rm -rf ${SCRIPT_DIR}/photon-controller*.rpm
-  pushd ${SCRIPT_DIR}/../../java
+  pushd ${SCRIPT_DIR}/../../controller
   ./gradlew :rpm
   cp ${SCRIPT_DIR}/../../artifacts/build/RPMS/x86_64/photon-controller-*.rpm ${SCRIPT_DIR}
   rm -rf photon-controller-debuginfo*.rpm
@@ -34,10 +34,10 @@ fi
 
 rm -rf ${SCRIPT_DIR}/photon/config-templates
 mkdir -p ${SCRIPT_DIR}/photon/config-templates
-cp ${SCRIPT_DIR}/../../java/photon-controller-core/src/dist/configuration/photon-controller-core.yml ${SCRIPT_DIR}/photon/config-templates
-cp ${SCRIPT_DIR}/../../java/photon-controller-core/src/dist/configuration/photon-controller-core_release.json ${SCRIPT_DIR}/photon/config-templates
-cp ${SCRIPT_DIR}/../../java/photon-controller-core/src/dist/configuration/run.sh ${SCRIPT_DIR}/photon/config-templates
-cp ${SCRIPT_DIR}/../../java/photon-controller-core/src/dist/configuration/swagger-config.js ${SCRIPT_DIR}/photon/config-templates
+cp ${SCRIPT_DIR}/../../controller/photon-controller-core/src/dist/configuration/photon-controller-core.yml ${SCRIPT_DIR}/photon/config-templates
+cp ${SCRIPT_DIR}/../../controller/photon-controller-core/src/dist/configuration/photon-controller-core_release.json ${SCRIPT_DIR}/photon/config-templates
+cp ${SCRIPT_DIR}/../../controller/photon-controller-core/src/dist/configuration/run.sh ${SCRIPT_DIR}/photon/config-templates
+cp ${SCRIPT_DIR}/../../controller/photon-controller-core/src/dist/configuration/swagger-config.js ${SCRIPT_DIR}/photon/config-templates
 
 export SOURCE_OVA=${SCRIPT_DIR}/../photon-ova/build/`basename ${SCRIPT_DIR}/../photon-ova/build/photon*.ova`
 

@@ -1,0 +1,27 @@
+{
+  "serviceName": "LoadBalancer",
+  "cpuCount": 1,
+  "memoryMb": 1024,
+  "diskGb": 1,
+  "isReplicated": false,
+  "isPrivileged": true,
+  "containerImage": "photon/haproxy",
+  "containerName": "haproxy",
+  "portBindings": {
+    "28080": 28080,
+    "4343": 4343,
+    "8088": 8088,
+    "443": 443,
+    "80": 80
+  },
+  "volumeBindings": {
+    "/devbox_data/java/containers/haproxy/build/config": "/etc/haproxy",
+    "/vagrant/log/haproxy": "/var/log"
+  },
+  "dynamicParameters": {
+    "LOG_DIRECTORY": "/vagrant/log",
+    "LOAD_BALANCER_HTTPS_PORT" : 443,
+    "MANAGEMENT_UI_HTTP_PORT" : 80,
+    "MANAGEMENT_UI_HTTPS_PORT" : 4343
+  }
+}

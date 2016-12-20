@@ -1,9 +1,0 @@
-{
-  "kind": "virtualSubnet",
-  "tags": [],
-  "name": "vn1",
-  "description": "desc",
-  "state": "READY",
-  "routingType": "ROUTED",
-  "isDefault": true
-}

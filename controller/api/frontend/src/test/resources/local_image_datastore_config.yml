@@ -1,0 +1,6 @@
+background_workers: 500
+background_workers_queue_size: 200
+
+image:
+  use_esx_store: false
+  datastore: datastore1
