@@ -1,0 +1,6 @@
+{
+    "id": "id",
+    "selfLink": "self link",
+    "kind": "datastore",
+    "tags": ["tag1"]
+}

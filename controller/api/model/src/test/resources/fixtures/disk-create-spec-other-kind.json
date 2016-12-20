@@ -1,0 +1,17 @@
+{
+    "name": "mydisk",
+    "kind": "other-kind",
+    "flavor": "good-flavor",
+    "capacityGb": 2,
+    "tags": ["bosh:job=ccdb", "sys:sla=cesspool"],
+    "affinities": [
+        {
+            "id": "vm-1",
+            "kind": "vm"
+        },
+        {
+            "id": "disk-1",
+            "kind": "disk"
+        }
+    ]
+}

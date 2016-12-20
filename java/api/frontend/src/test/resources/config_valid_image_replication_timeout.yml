@@ -1,5 +1,0 @@
-background_workers: 500
-background_workers_queue_size: 200
-
-image:
-  replicationTimeout: 600 seconds

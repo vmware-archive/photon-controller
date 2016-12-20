@@ -1,0 +1,62 @@
+#!/bin/bash -ex
+#
+# It assumes
+#   1. the install box contains the target esx ssh key.
+#   2. the target esx has script copied to its /tmp/esxcloud/scripts folder.
+#   3. the target esx has image tar file copied to its datastore image folder(mgmt-vm-image).
+#   4. the bash for esx is copied to /tmp/esxcloud/bash4esx folder.
+#
+
+function usage() {
+  echo "Usage $0 ISO_NAME USER_DATA META_DATA" 1>&2
+  echo
+  echo "Supplied args:"
+  echo $*
+  exit 1
+}
+
+# Require at least 3 initial arguments
+[ $# -ge 3 ] || usage
+
+iso_file=$1
+shift
+
+user_data_file=$1
+shift
+
+meta_data_file=$1
+shift
+
+if [ -n "$1" ]
+then
+  config_dir=$1
+  shift
+fi
+
+tools=$(readlink -nf $(dirname $0))
+source $tools/common.sh
+
+echo "Create VM CD-ROM ($iso_file) ..."
+
+# generate the ISO
+iso_cmd=$(which genisoimage)
+if [ -z "$iso_cmd" ]
+then
+    echo "Error: No tool that can generate iso images from a file was found."
+    exit 1
+fi
+
+# create the ISO file with settings.env inside it
+tmp_dir=$(mktemp -d)
+
+cp $user_data_file $tmp_dir/user-data
+cp $meta_data_file $tmp_dir/meta-data
+
+if [ -n "$config_dir" ]
+then
+  mkdir -p $tmp_dir/mustache
+  cp -r $config_dir/* $tmp_dir/mustache
+fi
+
+$iso_cmd -o $iso_file -volid cidata -joliet -rock $tmp_dir
+rm -rf $tmp_dir

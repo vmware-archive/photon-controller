@@ -1,0 +1,9 @@
+{
+    "enabled": true,
+    "tenant": "t",
+    "password": "p",
+    "securityGroups": [
+        "adminGroup1",
+        "adminGroup2"
+    ]
+}

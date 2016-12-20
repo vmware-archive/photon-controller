@@ -1,0 +1,17 @@
+{
+  AUTH_SERVER_ADDRESS=0.0.0.0,
+  "ENABLE_SYSLOG": "true",
+  "ESX_HOST": "hostAddress",
+  "SHARED_SECRET": "shared-secret",
+  "APIFE_IP": "0.0.0.0",
+  "ENABLE_AUTH": "true",
+  "SYSLOG_ENDPOINT": "SYSLOG_ENDPOINT",
+  "HTTPS_PORT": "4343",
+  "memoryMb": "1024",
+  "MGMT_UI_LOGOUT_URL": "MGMT_UI_LOGOUT_URL",
+  "APIFE_PORT": "443",
+  "REGISTRATION_ADDRESS": "0.0.0.2",
+  "diskGb": "8",
+  "MGMT_UI_LOGIN_URL": "MGMT_UI_LOGIN_URL",
+  "cpuCount": "1"
+}

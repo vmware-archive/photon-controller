@@ -1,0 +1,13 @@
+{
+  "id": "id",
+  "name": "subnet1",
+  "tags": [],
+  "kind": "subnet",
+  "description": "VM Subnet",
+  "state": "READY",
+  "portGroups": [
+    "PG1",
+    "PG2"
+  ],
+  "isDefault": false
+}

@@ -1,0 +1,51 @@
+{
+    "id": "id",
+    "kind": "deployment",
+    "syslogEndpoint": "0.0.0.1",
+    "stats": {
+        "enabled": true,
+        "storeEndpoint": "10.146.64.111",
+        "storePort": 2004,
+        "storeType": "GRAPHITE"
+    },
+    "ntpEndpoint": "0.0.0.2",
+    "imageDatastores": [
+      "image-datastore"
+    ],
+    "useImageDatastoreForVms": false,
+    "state": "CREATING",
+    "auth": {
+        "enabled": true,
+        "endpoint": "10.146.64.236",
+        "port": 443,
+        "tenant": "t",
+        "username": "u",
+        "password": "p",
+        "securityGroups": [
+            "adminGroup1",
+            "adminGroup2"
+        ]
+    },
+    "networkConfiguration": {
+        "sdnEnabled": true,
+        "networkManagerAddress": "1.2.3.4",
+        "networkManagerUsername": "networkManagerUsername",
+        "networkManagerPassword": "networkManagerPassword",
+        "networkZoneId": "networkZoneId",
+        "networkTopRouterId": "networkTopRouterId",
+        "networkEdgeIpPoolId": "networkEdgeIpPoolId",
+        "networkHostUplinkPnic": "networkHostUplinkPnic",
+        "edgeClusterId": "edgeClusterId",
+        "ipRange": "10.0.0.1/24",
+        "floatingIpRange": {
+            "start": "192.168.0.2",
+            "end": "192.168.0.254"
+        },
+        "dhcpServers": [
+            "192.10.0.1",
+            "192.20.0.1"
+        ]
+    },
+    "loadBalancerEnabled": true,
+    "loadBalancerAddress": "0.0.0.4"
+}

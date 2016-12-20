@@ -1,7 +1,0 @@
-background_workers: 500
-background_workers_queue_size: 200
-
-image:
-  use_esx_store: true
-  endpoint: https://172.16.111.252/sdk
-  datastore: datastore1

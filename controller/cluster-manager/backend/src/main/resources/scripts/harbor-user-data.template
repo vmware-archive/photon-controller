@@ -1,0 +1,14 @@
+#cloud-config
+
+users:
+  - name: root
+    lock_passwd: false
+    ssh-authorized-keys:
+      - $SSH_KEY
+
+runcmd:
+  - sh /root/setup-static-ip.sh $DNS $ADDRESS $GATEWAY >> /var/log/start-harbor.log 2>&1
+  - systemctl enable docker
+  - systemctl start docker
+  - sh /root/check-docker.sh >> /var/log/start-harbor.log 2>&1
+  - sh /root/start-harbor.sh $ADMIN_PASSWORD >> /var/log/start-harbor.log 2>&1

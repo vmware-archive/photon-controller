@@ -1,0 +1,17 @@
+{
+  "ENABLE_SYSLOG": "true",
+  "SHARED_SECRET": "shared-secret",
+  "MGMT_API_HTTP_SERVERS": "[{\"serverName\":\"server-0\",\"serverAddress\":\"0.0.0.0:9000\"},{\"serverName\":\"server-1\",\"serverAddress\":\"0.0.0.1:9000\"},{\"serverName\":\"server-2\",\"serverAddress\":\"0.0.0.2:9000\"}]",
+  "MGMT_UI_HTTPS_SERVERS": "[{\"serverName\":\"server-0\",\"serverAddress\":\"0.0.0.0:20001\"},{\"serverName\":\"server-1\",\"serverAddress\":\"0.0.0.1:20001\"},{\"serverName\":\"server-2\",\"serverAddress\":\"0.0.0.2:20001\"}]",
+  "ENABLE_AUTH": "false",
+  "SYSLOG_ENDPOINT": "SYSLOG_ENDPOINT",
+  "MGMT_UI_HTTP_SERVERS": "[{\"serverName\":\"server-0\",\"serverAddress\":\"0.0.0.0:20000\"},{\"serverName\":\"server-1\",\"serverAddress\":\"0.0.0.1:20000\"},{\"serverName\":\"server-2\",\"serverAddress\":\"0.0.0.2:20000\"}]",
+  "LOG_DIRECTORY": "/var/log",
+  "memoryMb": "1024",
+  "MANAGEMENT_UI_HTTPS_PORT": "4343",
+  "APIFE_PORT": "28080",
+  "REGISTRATION_ADDRESS": "0.0.0.0",
+  "diskGb": "1",
+  "MANAGEMENT_UI_HTTP_PORT": "80",
+  "cpuCount": "1"
+}

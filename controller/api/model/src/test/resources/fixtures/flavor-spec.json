@@ -1,0 +1,16 @@
+{
+    "name": "core-100",
+    "kind": "vm",
+    "cost": [
+        {
+            "key": "system.oomph",
+            "value": 2.0,
+            "unit": "COUNT"
+        },
+        {
+            "key": "vm.bar",
+            "value": 8.3,
+            "unit": "GB"
+        }
+    ]
+}

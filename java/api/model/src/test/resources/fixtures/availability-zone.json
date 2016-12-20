@@ -1,8 +1,0 @@
-{
-    "id": "id",
-    "selfLink": "selfLink",
-    "name": "zone1",
-    "tags": [],
-    "kind": "availabilityZone",
-    "state": "CREATING"
-}

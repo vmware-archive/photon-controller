@@ -1,0 +1,9 @@
+{
+    "id": "id",
+    "name": "name",
+    "kind": "kind",
+    "flavor": "flavor",
+    "state": "CREATING",
+    "capacityGb": 1024,
+    "bootDisk": true
+}

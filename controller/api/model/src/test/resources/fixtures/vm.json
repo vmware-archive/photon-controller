@@ -1,0 +1,79 @@
+{
+    "id": "1-vm-full",
+    "selfLink": "http://localhost:9080/v1/vms/1-vm-full",
+    "tags": ["bosh:job=ccdb", "sys:sla=cesspool"],
+    "name": "myvm",
+    "flavor": "core-100",
+    "cost": [
+        {
+            "key": "vm",
+            "value": 1.0,
+            "unit": "COUNT"
+        },
+        {
+            "key": "vm.flavor.core-100",
+            "value": 1.0,
+            "unit": "COUNT"
+        },
+        {
+            "key": "vm.cpu",
+            "value": 1.0,
+            "unit": "COUNT"
+        },
+        {
+            "key": "vm.memory",
+            "value": 2.0,
+            "unit": "GB"
+        },
+        {
+            "key": "vm.cost",
+            "value": 1.0,
+            "unit": "COUNT"
+        }
+    ],
+    "state": "CREATING",
+    "attachedDisks": [
+        {
+            "id": null,
+            "name": "bootdisk",
+            "kind": "ephemeral-disk",
+            "flavor": "core-100",
+            "state": "CREATING",
+            "capacityGb": 32,
+            "bootDisk": true
+        },
+        {
+            "id": null,
+            "name": "datadisk0",
+            "kind": "persistent-disk",
+            "flavor": "core-100",
+            "state": "CREATING",
+            "capacityGb": 100,
+            "bootDisk": false
+        },
+        {
+            "id": null,
+            "name": "datadisk1",
+            "kind": "ephemeral-disk",
+            "flavor": "core-100",
+            "state": "CREATING",
+            "capacityGb": 400,
+            "bootDisk": false
+        }
+    ],
+    "kind": "vm",
+    "host": "1.1.1.1",
+    "datastore": "datastore",
+    "metadata": {
+        "cpi": "{\"key\":\"value\"}"
+    },
+    "attachedIsos": [
+        {
+            "id": null,
+            "name": "isoName",
+            "kind": "iso",
+            "size": 100
+        }
+    ],
+    "floatingIp": "1.2.3.4"
+}

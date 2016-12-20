@@ -1,0 +1,37 @@
+#!/bin/bash
+
+function usage() {
+  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD SRC_PATH DEST_PATH" 1>&2
+  echo
+  echo "Supplied args:"
+  echo $*
+  exit 1
+}
+
+if [ "$#" -lt 5 ]
+then
+  usage $*
+fi
+
+host_address=$1
+shift
+username=$1
+shift
+password=$1
+shift
+src_path=$1
+shift
+dest_path=$1
+shift
+
+echo `date`
+echo "host: $host_address"
+echo "src: $src_path"
+echo "dest: $dest_path"
+
+SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+if sshpass -p "${password}" ssh $SSH_OPTS -q ${username}@${host_address} [[ ! -f "${dest_path}" ]]; then
+  sshpass -p "${password}" ssh $SSH_OPTS ${username}@${host_address} mkdir -p $(dirname "${dest_path}");
+  sshpass -p "${password}" scp $SSH_OPTS ${src_path} ${username}@${host_address}:${dest_path};
+fi

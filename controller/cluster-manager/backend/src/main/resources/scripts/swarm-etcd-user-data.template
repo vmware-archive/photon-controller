@@ -1,0 +1,90 @@
+#cloud-config
+bootcmd:
+  - rm -f /etc/systemd/network/*.network
+  - systemctl stop systemd-networkd
+
+write_files:
+  - content: |
+        eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
+        cat > "/etc/systemd/network/10-dhcp-${eno_name}.network" << EOF
+        [Match]
+        Name=${eno_name}
+
+        [Network]
+        $DNS
+
+        [Address]
+        Address=$ADDRESS
+
+        [Route]
+        Gateway=$GATEWAY
+        EOF
+        ip addr flush label "${eno_name}"
+        systemctl restart systemd-networkd
+        ip=`grep Address= /etc/systemd/network/10-dhcp-${eno_name}.network | sed 's/.*=\.*//' | sed 's/\/.*//'`
+        echo ip
+        c_ip=`ifconfig ${eno_name} | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
+        while [ "$ip" != "$c_ip" ]
+        do
+          ip addr flush label "${eno_name}"
+          systemctl restart systemd-networkd
+          c_ip=`ifconfig ${eno_name} | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
+          echo $c_ip
+          sleep 1
+        done
+        ping -q -c 4 $GATEWAY
+    owner: root:root
+    permissions: 0644
+    path: /tmp/init-network.sh
+
+  - content: |
+        eno_name=$(ip addr | grep eno | sed 's/.*\(eno.*\):.*/\1/' | head -n 1)
+        ipAddress=`ifconfig ${eno_name} | sed -n '/dr:/{;s/.*dr://;s/ .*//;p;}'`
+        etcdImage=quay.io/coreos/etcd:v2.0.8
+
+        echo "Starting etcd"
+        docker run -d -v /usr/share/ca-certificates/:/etc/ssl/certs -p 4001:4001 \
+         -p $ETCD_PEER_PORT:$ETCD_PEER_PORT -p $ETCD_PORT:$ETCD_PORT \
+         --restart=always \
+         --name etcd ${etcdImage} \
+         -name etcd$ETCD_ID \
+         -advertise-client-urls http://${ipAddress}:$ETCD_PORT,http://${ipAddress}:4001 \
+         -listen-client-urls http://0.0.0.0:$ETCD_PORT,http://0.0.0.0:4001 \
+         -initial-advertise-peer-urls http://${ipAddress}:$ETCD_PEER_PORT \
+         -listen-peer-urls http://0.0.0.0:$ETCD_PEER_PORT \
+         -initial-cluster $ETCD_PARAMETERS \
+         -initial-cluster-state new
+
+        echo "done"
+    owner: root:root
+    permissions: 0644
+    path: /tmp/start-etcd.sh
+
+  - content: |
+        retry_max="60"
+        retry="0"
+        while [ "$retry" -lt "$retry_max" ]
+        do
+          docker version
+          if [ "$?" == "0" ]; then
+            echo "Docker daemon is up and running!"
+            break
+          fi
+          sleep 1
+          retry=`expr $retry + 1`
+        done
+
+        if [ "$retry" -eq "$retry_max" ]
+        then
+          echo "Docker daemon is not up yet!"
+        fi
+    owner: root:root
+    permissions: 0644
+    path: /tmp/check-docker.sh
+
+runcmd:
+  - sh /tmp/init-network.sh
+  - systemctl enable docker
+  - systemctl start docker
+  - sh /tmp/check-docker.sh
+  - sh /tmp/start-etcd.sh > /var/log/start-etcd.log

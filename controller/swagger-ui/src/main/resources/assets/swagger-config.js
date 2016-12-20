@@ -1,0 +1,3 @@
+window.swaggerConfig = {
+    enableAuth: false
+};

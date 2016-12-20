@@ -1,0 +1,68 @@
+#cloud-config
+write_files:
+  - content: |
+        en_name=$(ip addr show label "en*" | head -n 1 | sed 's/^[0-9]*: \(en.*\): .*/\1/')
+        cat > "/etc/systemd/network/10-static-${en_name}.network" << EOF
+        [Match]
+        Name=$en_name
+
+        [Network]
+        $DNS
+        $DOMAINS
+        DHCP=no
+
+        [Address]
+        Address=$ADDRESS
+
+        [Route]
+        Gateway=$GATEWAY
+        EOF
+    owner: root:root
+    permissions: 0644
+    path: /tmp/init-network.sh
+  - content: |
+        myhostname="$(hostname)"
+        if [ -z "$(grep $myhostname /etc/hosts)" ]
+        then
+          echo "127.0.0.1       $myhostname.$DOMAIN_NAME $myhostname" >> /etc/hosts
+        fi
+    owner: root:root
+    permissions: 0644
+    path: /tmp/update-hostname.sh
+  - content: |
+        ntp="$1"
+        if [ -n "$ntp" ]
+        then
+          echo "NTP=$ntp" >> /etc/systemd/timesyncd.conf
+        fi
+    owner: root:root
+    permissions: 0644
+    path: /tmp/update-ntp.sh
+  - content: |
+        [Unit]
+        ConditionVirtualization=
+    owner: root:root
+    permissions: 0644
+    path: /etc/systemd/system/systemd-timesyncd.service.d/allow_virt.conf
+
+runcmd:
+  - mkdir -p /etc/esxcloud/
+  - mkdir -p /tmp/config/
+  - mount /dev/cdrom /tmp/config
+  - cp -r /tmp/config/mustache/ /etc/esxcloud/
+  - echo "iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT" >> /etc/systemd/scripts/iptables
+  - echo "iptables -I INPUT -p tcp --dport 22 -j ACCEPT" >> /etc/systemd/scripts/iptables
+  - cat /etc/esxcloud/mustache/firewall.rules >> /etc/systemd/scripts/iptables
+  - systemctl restart iptables
+  - ping -t 4 $GATEWAY
+  - chmod +x /etc/esxcloud/*/*/run.sh
+  - umount /tmp/config
+  - rm -f /etc/systemd/network/*.network
+  - sh /tmp/init-network.sh
+  - sh /tmp/update-hostname.sh
+  - sh /tmp/update-ntp.sh $NTP
+  - mkdir -p /tmp/empty
+  - systemctl restart systemd-networkd
+  - systemctl enable docker
+  - systemctl start docker
+  - sh /etc/esxcloud/mustache/docker-run-commands

@@ -1,0 +1,14 @@
+{
+  "ENABLE_SYSLOG": "true",
+  "SHARED_SECRET": "shared-secret",
+  "LIGHTWAVE_ADDRESS": "0.0.0.0",
+  "ENABLE_AUTH": "true",
+  "SYSLOG_ENDPOINT": "SYSLOG_ENDPOINT",
+  "LIGHTWAVE_PASSWORD": "PASSWORD",
+  "memoryMb": "4096",
+  "APIFE_PORT": "443",
+  "REGISTRATION_ADDRESS": "0.0.0.0",
+  "diskGb": "8",
+  "LIGHTWAVE_DOMAIN": "TENANT_NAME",
+  "cpuCount": "1"
+}

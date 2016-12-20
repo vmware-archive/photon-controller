@@ -22,7 +22,7 @@ SOURCES_DIR="${ROOT}/artifacts/rpms/SOURCES"
 SPECS_DIR="${ROOT}/artifacts/rpms/SPECS"
 RPMS_DIR="${ROOT}/artifacts/build/RPMS"
 TEMP_DIR=$(mktemp -d "${ROOT}/create_tar.XXXXX")
-TAR_PATH="/java/photon-controller-core/build/distributions/"
+TAR_PATH="/controller/photon-controller-core/build/distributions/"
 TAR_PREFIX="photon-controller-core"
 RPM_PREFIX="photon-controller"
 ENVOY_VIB_URL=${ENVOY_VIB_URL:="http://s3.amazonaws.com/photon-platform/artifacts/vibs/envoy/develop/latest/vmware-envoy-latest.vib"}

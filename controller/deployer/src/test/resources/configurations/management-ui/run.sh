@@ -1,0 +1,1 @@
+../../../../dist/configuration-management-ui/run.sh

@@ -1,0 +1,16 @@
+{
+{{#AGENT_BIND_ADDRESS}}
+  "hostname": "{{{AGENT_BIND_ADDRESS}}}",
+{{/AGENT_BIND_ADDRESS}}
+  "datastores": ["devbox_datastore"],
+  "image_datastore": "devbox_datastore",
+  "image_datastore_for_vms": true,
+  "hypervisor": "fake",
+  "zookeeper": "{{{AGENT_ZOOKEEPER}}}",
+  "logging_file": "{{{AGENT_LOG_PATH}}}/esxcloud-agent.log",
+  "no_syslog": true,
+  "fault_domain_id": "fake_fault_domain",
+  "vm_network": "Public",
+  "host_id": "00000000-0000-0000-0000-000000000000",
+  "availability_zone": "az1"
+}
