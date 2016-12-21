@@ -1,0 +1,11 @@
+[Unit]
+Description=DHCP Manager Guest Configuration
+
+[Service]
+Type=oneshot
+ExecStart=/etc/photon/configure-guest.sh
+ExecStop=
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

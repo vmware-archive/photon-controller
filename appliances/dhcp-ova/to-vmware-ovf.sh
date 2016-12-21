@@ -1,6 +1,7 @@
 #!/bin/bash -xe
 inputVM=$1
 outputVM=$2
+customscript=$3
 
 ovftool --lax -o ${inputVM}.ova ${outputVM}.ovf
 oldOvfSha=$(sha1sum ${outputVM}.ovf | awk '{ print $1 }')
@@ -192,6 +193,10 @@ Photon OS 1.0 GA EULA_2016May19 \
       </License> \
     </EulaSection> \
     <VirtualHardwareSection@' ${outputVM}.ovf
+
+if [ ! -z "$customscript" ]; then
+    eval $customscript $inputVM $outputVM
+fi
 
 newOvfSha=$(sha1sum ${outputVM}.ovf | awk '{ print $1 }')
 sed -i.bak "s/$oldOvfSha/$newOvfSha/" ${outputVM}.mf

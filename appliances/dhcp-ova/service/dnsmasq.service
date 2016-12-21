@@ -1,0 +1,12 @@
+[Unit]
+Description=DHCP server
+After=network.target
+
+[Service]
+ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/dnsmasq.conf --dhcp-hostsdir=/etc/dhcp-hosts --dhcp-optsdir=/etc/dhcp-options
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
