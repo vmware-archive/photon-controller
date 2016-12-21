@@ -19,6 +19,11 @@
   ],
   "provisioners": [
     {
+      "type": "file",
+      "source": "photon",
+      "destination": "/etc"
+    },
+    {
       "type": "shell",
       "inline": "tdnf update -y tdnf && tdnf update -y rpm && tdnf makecache"
     },
@@ -62,6 +67,33 @@
     {
       "type": "shell",
       "inline": "tar xf /usr/local/dhcp-agent/dhcp-agent.tar --strip-components=1 -C /usr/local/dhcp-agent && rm /usr/local/dhcp-agent/dhcp-agent.tar"
+    },
+    {
+      "type": "file",
+      "source": "service/configure-guest.service",
+      "destination": "/lib/systemd/system/configure-guest.service"
+    },
+    {
+      "type": "shell",
+      "inline": "systemctl enable configure-guest"
+    },
+    {
+      "type": "file",
+      "source": "service/dnsmasq.service",
+      "destination": "/lib/systemd/system/dnsmasq.service"
+    },
+    {
+      "type": "shell",
+      "inline": "systemctl enable dnsmasq"
+    },
+    {
+      "type": "file",
+      "source": "service/dhcp-agent.service",
+      "destination": "/lib/systemd/system/dhcp-agent.service"
+    },
+    {
+      "type": "shell",
+      "inline": "systemctl enable dhcp-agent"
     },
     {
       "type": "shell",

@@ -1,6 +1,7 @@
 #!/bin/bash -xe
 inputVM=$1
 outputVM=$2
+customscript=$3
 
 ovftool --lax -o ${inputVM}.ova ${outputVM}.ovf
 oldOvfSha=$(sha1sum ${outputVM}.ovf | awk '{ print $1 }')
@@ -13,6 +14,10 @@ sed -i.bak 's/<rasd:Description>SATA Controller/<rasd:Description>SCSI Controlle
 sed -i.bak 's/<rasd:ElementName>sataController0/<rasd:ElementName>SCSIController/' ${outputVM}.ovf
 sed -i.bak 's/<rasd:ResourceSubType>AHCI/<rasd:ResourceSubType>lsilogic/' ${outputVM}.ovf
 sed -i.bak 's/<rasd:ResourceType>20</<rasd:ResourceType>6</' ${outputVM}.ovf
+
+if [ ! -z "$customscript" ]; then
+    eval $customscript $inputVM $outputVM
+fi
 
 newOvfSha=$(sha1sum ${outputVM}.ovf | awk '{ print $1 }')
 sed -i.bak "s/$oldOvfSha/$newOvfSha/" ${outputVM}.mf

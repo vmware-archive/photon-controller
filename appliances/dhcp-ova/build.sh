@@ -33,5 +33,5 @@ packer build -force \
         dhcp-ova.json
 
 cd build
-../to-vmware-ovf.sh "dhcp-ova-virtualbox" "dhcp-ova"
+../to-vmware-ovf.sh "dhcp-ova-virtualbox" "dhcp-ova" "../add-ovf-params.sh"
 cd ..
