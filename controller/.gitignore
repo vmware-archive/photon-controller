@@ -4,6 +4,7 @@ build
 out
 target
 tags
+libthrift-*.jar
 
 # IDEA
 *.iml
