@@ -54,7 +54,7 @@ function print_warning_if_value_mssing ()
   config_file=$3
   if [ -z "${value}" ]
   then
-    echo "INFO: Missing value for '${key}' in ${PHOTON_CONTROLLER_CORE_CONFIG}. Will continue without it."
+    echo "WARNING: Missing value for '${key}' in ${PHOTON_CONTROLLER_CORE_CONFIG}. Will continue without it."
   fi
 }
 
@@ -86,7 +86,8 @@ print_warning_if_value_mssing "${REGISTRATION_ADDRESS}"    "registrationAddress"
 print_warning_if_value_mssing "${LOG_DIRECTORY}"           "logDirectory"          "$PHOTON_CONTROLLER_CORE_CONFIG"
 print_warning_if_value_mssing "${memoryMb}"                "memoryMb"              "$PHOTON_CONTROLLER_CORE_CONFIG"
 print_warning_if_value_mssing "${ENABLE_AUTH}"             "enableAuth"            "$PHOTON_CONTROLLER_CORE_CONFIG"
-print_warning_if_value_mssing "${LIGHTWAVE_PASSWORD}"      "keyStorePassword"      "$PHOTON_CONTROLLER_CORE_CONFIG"
+print_warning_if_value_mssing "${LIGHTWAVE_PASSWORD}"      "lightwavePassword"      "$PHOTON_CONTROLLER_CORE_CONFIG"
+print_warning_if_value_mssing "${KEYSTORE_PASSWORD}"      "keyStorePassword"      "$PHOTON_CONTROLLER_CORE_CONFIG"
 print_warning_if_value_mssing "${LIGHTWAVE_DOMAIN}"        "authDomain"            "$PHOTON_CONTROLLER_CORE_CONFIG"
 print_warning_if_value_mssing "${LIGHTWAVE_HOST_ADDRESS}"  "authServerAddress"     "$PHOTON_CONTROLLER_CORE_CONFIG"
 
@@ -199,11 +200,11 @@ then
 
   # Generate pkcs12 keystore
   openssl pkcs12 -export -in /etc/keys/machine.crt -inkey /etc/keys/machine.privkey -out keystore.p12 -name __MACHINE_CERT \
-    -password pass:${LIGHTWAVE_PASSWORD}
+    -password pass:${KEYSTORE_PASSWORD}
 
   # Convert it into JKS
-  keytool -importkeystore -deststorepass ${LIGHTWAVE_PASSWORD} -destkeypass ${LIGHTWAVE_PASSWORD} \
-    -destkeystore /keystore.jks -srckeystore keystore.p12 -srcstoretype PKCS12 -srcstorepass ${LIGHTWAVE_PASSWORD} \
+  keytool -importkeystore -deststorepass ${KEYSTORE_PASSWORD} -destkeypass ${KEYSTORE_PASSWORD} \
+    -destkeystore /keystore.jks -srckeystore keystore.p12 -srcstoretype PKCS12 -srcstorepass ${KEYSTORE_PASSWORD} \
     -alias __MACHINE_CERT
 
   # Get the trusted roots certificate
@@ -214,7 +215,7 @@ then
     vecs-cli entry getcert --store TRUSTED_ROOTS --alias $cert --output /etc/keys/cacert.crt
 
     keytool -import -trustcacerts -alias "$cert" -file /etc/keys/cacert.crt \
-       -keystore /keystore.jks -storepass ${LIGHTWAVE_PASSWORD} -noprompt
+       -keystore /keystore.jks -storepass ${KEYSTORE_PASSWORD} -noprompt
   done
 
   # Delete temporary cacert file. For test purpose, curl command should be passed with --capath /etc/ssl/certs.
@@ -222,6 +223,9 @@ then
 
   # Restrict permission on the key files
   chmod 0400 /etc/keys/machine.privkey
+  chmod 0444 /etc/keys/machine.pubkey
+  chmod 0600 /keystore.jks
+  chmod 0600 keystore.p12
 fi
 
 # Move vecs jar out of classpath
