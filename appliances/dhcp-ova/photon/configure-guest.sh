@@ -29,7 +29,7 @@ function mask2cidr()
             192) let bits+=2 ; break ;;
             128) let bits+=1 ; break ;;
             0);;
-            *) echo "Error: $dig is not correct"; exit -1
+            *) echo "Error: $dig is not correct"; exit 1
         esac
     done
     unset IFS
@@ -57,7 +57,7 @@ function set_network_properties()
          ;;
         *)
          echo "Error: Unexpected number of network interfaces"
-         exit -1
+         exit 1
          ;;
      esac
      (( en_idx=en_idx + 1 ))
@@ -156,7 +156,7 @@ function parse_ovf_env() {
   if [ $missing_values -ne 0 ]
   then
      echo "Some configuration parameters are missing"
-     exit -1
+     exit 1
   fi
 }
 
