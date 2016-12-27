@@ -20,7 +20,7 @@ dependencies {
   compile project(':housekeeper')
   compile project(':nfc-client')
   compile project(':nsx-client')
-  compile project(':root-scheduler')
+  compile project(':scheduler')
   compile project(':swagger-ui')
   compile project(':swagger-jersey')
 

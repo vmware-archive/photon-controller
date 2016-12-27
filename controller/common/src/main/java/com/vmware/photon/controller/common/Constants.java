@@ -34,7 +34,7 @@ public class Constants {
 
   public static final String HOUSEKEEPER_SERVICE_NAME = "housekeeper";
 
-  public static final String SCHEDULER_SERVICE_NAME = "root-scheduler";
+  public static final String SCHEDULER_SERVICE_NAME = "scheduler";
 
   public static final int LOADBALANCER_API_HTTP_PORT = 28080;
 

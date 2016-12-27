@@ -56,7 +56,7 @@ public class ApiFeStaticConfiguration extends Configuration implements ApiFeConf
   @Valid
   @NotNull
   @JsonProperty("root_scheduler")
-  private RootSchedulerConfig rootScheduler = new RootSchedulerConfig();
+  private SchedulerConfig scheduler = new SchedulerConfig();
 
   @Valid
   @JsonProperty("image")
@@ -89,8 +89,8 @@ public class ApiFeStaticConfiguration extends Configuration implements ApiFeConf
   }
 
   @Override
-  public RootSchedulerConfig getRootScheduler() {
-    return rootScheduler;
+  public SchedulerConfig getScheduler() {
+    return scheduler;
   }
 
   @Override

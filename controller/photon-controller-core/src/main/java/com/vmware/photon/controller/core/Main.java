@@ -51,10 +51,10 @@ import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.housekeeper.xenon.HousekeeperServiceGroup;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
-import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
-import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
-import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
-import com.vmware.photon.controller.rootscheduler.xenon.SchedulerServiceGroup;
+import com.vmware.photon.controller.scheduler.SchedulingConfig;
+import com.vmware.photon.controller.scheduler.service.CloudStoreConstraintChecker;
+import com.vmware.photon.controller.scheduler.service.ConstraintChecker;
+import com.vmware.photon.controller.scheduler.xenon.SchedulerServiceGroup;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceClient;
 import com.vmware.xenon.common.ServiceHost;
@@ -347,7 +347,7 @@ public class Main {
     return new CloudStoreServiceGroup(isInstaller);
   }
 
-  private static SchedulerServiceGroup createSchedulerServiceGroup(SchedulerConfig root,
+  private static SchedulerServiceGroup createSchedulerServiceGroup(SchedulingConfig root,
           ConstraintChecker constraintChecker) throws Throwable {
     return new SchedulerServiceGroup(root, constraintChecker);
   }

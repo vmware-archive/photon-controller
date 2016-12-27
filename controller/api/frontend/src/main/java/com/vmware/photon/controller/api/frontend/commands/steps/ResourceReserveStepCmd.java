@@ -75,9 +75,9 @@ import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.photon.controller.resource.gen.resourceConstants;
-import com.vmware.photon.controller.rootscheduler.xenon.task.PlacementTask;
-import com.vmware.photon.controller.rootscheduler.xenon.task.PlacementTaskService;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
+import com.vmware.photon.controller.scheduler.xenon.task.PlacementTask;
+import com.vmware.photon.controller.scheduler.xenon.task.PlacementTaskService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.TaskState;
 

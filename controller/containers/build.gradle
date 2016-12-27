@@ -84,6 +84,6 @@ task cleanAll() {
     ":deployer:clean",
     ":housekeeper:clean",
     ":photon-controller-core:clean",
-    ":root-scheduler:clean"
+    ":scheduler:clean"
   )
 }

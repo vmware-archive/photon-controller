@@ -25,7 +25,7 @@ import javax.inject.Named;
 public interface ZookeeperServerSetFactory {
   /**
    * Factory method to create a server set to monitor services. Services are typically management plane services that
-   * hearbeat through zookeeper. E.g. rootScheduler.
+   * hearbeat through zookeeper. E.g. scheduler.
    *
    * @param serviceName        The service name to monitor
    * @param subscribeToUpdates A true value will result in the the monitoring of the service entries on an ongoing

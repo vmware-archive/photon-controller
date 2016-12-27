@@ -26,7 +26,7 @@ public interface ApiFeConfiguration {
 
   public AuthConfig getAuth();
 
-  public RootSchedulerConfig getRootScheduler();
+  public SchedulerConfig getScheduler();
 
   public int getBackgroundWorkers();
 

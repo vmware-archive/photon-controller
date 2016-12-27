@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
-import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
+import com.vmware.photon.controller.scheduler.SchedulingConfig;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -40,7 +40,7 @@ public class PhotonControllerConfig {
 
   @Valid
   @NotNull
-  private SchedulerConfig root = new SchedulerConfig();
+  private SchedulingConfig root = new SchedulingConfig();
 
   @Valid
   @NotNull
@@ -60,7 +60,7 @@ public class PhotonControllerConfig {
     return this.xenonConfig;
   }
 
-  public SchedulerConfig getRoot() {
+  public SchedulingConfig getRoot() {
     return root;
   }
 

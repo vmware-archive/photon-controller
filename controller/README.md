@@ -142,7 +142,7 @@ generated sources:
   * common
   * deployer
   * housekeeper
-  * root-scheduler
+  * scheduler
 
 For details on the upcoming changes to Buildship to address this problem:
 * [Discssion](https://discuss.gradle.org/t/build-folder-keeps-disappearing/12570)
