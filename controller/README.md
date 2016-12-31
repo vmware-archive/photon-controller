@@ -107,47 +107,24 @@ Gradle most likely has integration with your favorite IDE. You can browse the [G
 
 ### Eclipse
 
-To edit source code in Eclipse, we recommend using Eclipse's built-in
-support for importing Gradle projects (Buildship) or Enide Gralde for
-Eclipse.
+To edit source code in Eclipse, we recommend using Eclipse Neon and
+Eclipse's built-in support for importing Gradle projects, known as
+Buildship.
 
 Before you import into Eclipse, pleease do one build from the
-command-line using: `./gradlew clean build -x text` (as above). This
+command-line using: `./gradlew clean build -x test` (as above). This
 will generate source code using Thrift and is not done within
 Eclipse.
 
+When you import into a recent version of Eclipse (including Neon),
+you may receive errors beginning with "Access restriction: ...". This
+is normal an expected. You can decrease the severity of these to
+"warning" or "info" in the Workspace preferences under Java / Compiler
+/ Errors Warnings / Deprecated and restricted API / Forbidden
+Reference (access rules)"
+
 Code should follow our formatting guidelines. You will find an Eclipse Java
 formatter profile in java/ide-support/photon-controller-eclipse.xml.
-
-When you import Photon Controller into Eclipse, the project is
-automatically configured with a Resource Filter that ignores anything
-in the "build" directory. Unfortunately, the thrift sources that were
-generated in the previous step are in build/generated-sources, and are
-therefore ignored. The only way to fix this is to edit each project to
-remove the Resource Filter for the build folder.
-
-Please note: If you use Buildship to import Photon Controller, it will
-re-create the resource filter every time you do "Refresh Gradle
-Project". It looks like a future version of Buildship will allow you
-to disable Buildship's generation of the Resource Filter. Until that
-time, you have two options:
-
-1. Use Enide Gradle instead of Buildship
-2. Remove the resource filters every time you refresh the Gradle
-project. You only need to remove them from the seven projects that use
-generated sources:
-  * api
-  * api-frontend
-  * chairman
-  * common
-  * deployer
-  * housekeeper
-  * scheduler
-
-For details on the upcoming changes to Buildship to address this problem:
-* [Discssion](https://discuss.gradle.org/t/build-folder-keeps-disappearing/12570)
-* [Bug](https://bugs.eclipse.org/bugs/show_bug.cgi?id=478530)
-* [Possible Buildship Change](https://github.com/eclipse/buildship/pull/180)
 
 ### IntelliJ
 
