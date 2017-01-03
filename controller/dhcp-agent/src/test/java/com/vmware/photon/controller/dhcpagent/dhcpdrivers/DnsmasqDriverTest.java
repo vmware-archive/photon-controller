@@ -187,11 +187,11 @@ public class DnsmasqDriverTest {
         }
 
         if (!line.contains(ipAddress)) {
-          fail(String.format("IP address not found in host file:", ipAddress));
+          fail(String.format("IP address not found in host file: %s", ipAddress));
         }
 
         if (!line.contains(macAddress)) {
-          fail(String.format("MAC address not found in host file:", macAddress));
+          fail(String.format("MAC address not found in host file: %s", macAddress));
         }
       }
       bufferedReader.close();

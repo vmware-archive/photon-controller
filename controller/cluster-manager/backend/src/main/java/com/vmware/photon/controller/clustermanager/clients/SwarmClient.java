@@ -105,7 +105,7 @@ public class SwarmClient {
                         nodes.add(key);
                         break;
                       default:
-                        new UnsupportedOperationException(
+                        throw new UnsupportedOperationException(
                             "NodeProperty is not supported. NodeProperty: " + nodeProperty);
                     }
                   }

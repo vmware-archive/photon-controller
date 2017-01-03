@@ -39,6 +39,12 @@ public class Available {
   }
 
   @Override
+  // This is safe because all objects are identical
+  public int hashCode() {
+    return 3;
+  }
+
+  @Override
   public String toString() {
     return toStringHelper().toString();
   }
