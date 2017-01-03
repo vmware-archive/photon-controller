@@ -18,16 +18,6 @@ if [ ! -d "$TESTS" ]; then
     exit 1
 fi
 
-if [ -z "$CLI" ]; then
-    export CLI=$WORKSPACE/ruby/cli
-    echo Assume default CLI root $CLI
-fi
-
-if [ ! -d "$CLI" ]; then
-    echo CLI root directory does not exist.
-    exit 1
-fi
-
 cd $WORKSPACE
 
 git submodule update --init --recursive
