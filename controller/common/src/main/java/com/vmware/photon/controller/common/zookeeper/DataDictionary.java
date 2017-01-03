@@ -222,7 +222,7 @@ public class DataDictionary {
     // Write an empty string to base in order to increment
     // its version
     transaction = transaction
-        .setData().withVersion(version).forPath(ZKPaths.makePath(basePath, ""), "".getBytes()).and();
+        .setData().withVersion(version).forPath(ZKPaths.makePath(basePath, ""), "".getBytes("UTF-8")).and();
 
 
     if (transaction instanceof CuratorTransactionFinal) {
@@ -239,7 +239,7 @@ public class DataDictionary {
   public void write(List<String> newValues) throws Exception {
     Map<String, byte[]> map = new HashMap<>();
     for (String entry : newValues) {
-      map.put(entry, "".getBytes());
+      map.put(entry, "".getBytes("UTF-8"));
     }
     write(map);
   }

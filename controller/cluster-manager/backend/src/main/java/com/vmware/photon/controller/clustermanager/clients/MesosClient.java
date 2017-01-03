@@ -158,7 +158,7 @@ public class MesosClient {
                     }
                     break;
                   default:
-                    new UnsupportedOperationException(
+                    throw new UnsupportedOperationException(
                         "NodeProperty is not supported. NodeProperty: " + nodeProperty);
                 }
               }

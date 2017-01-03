@@ -29,6 +29,8 @@ import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.services.common.QueryTask;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -126,6 +128,7 @@ public class ProjectService extends StatefulService {
       this.inherited = inherited;
     }
 
+    @Override
     public boolean equals(Object o) {
       if (this == o) {
         return true;
@@ -137,6 +140,11 @@ public class ProjectService extends StatefulService {
       SecurityGroup other = (SecurityGroup) o;
       return Objects.equals(this.name, other.name)
           && this.inherited == other.inherited;
+    }
+
+    @Override
+    public int hashCode() {
+      return new HashCodeBuilder(17, 37).append(name).append(inherited).toHashCode();
     }
   }
 

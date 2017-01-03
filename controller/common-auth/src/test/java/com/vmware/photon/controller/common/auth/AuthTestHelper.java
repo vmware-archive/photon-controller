@@ -31,7 +31,7 @@ public class AuthTestHelper {
   public static final String PASSWORD = "lotus_password";
   public static RSAPrivateKey privateKey;
   public static RSAPublicKey publicKey;
-  public static Date issueTime;
+  public static final Date ISSUE_TIME;
   public static Date expirationTime;
 
   static {
@@ -47,8 +47,8 @@ public class AuthTestHelper {
     }
 
     long lifetimeSeconds = 300;
-    issueTime = new Date();
-    expirationTime = new Date(issueTime.getTime() + (lifetimeSeconds * 1000L));
+    ISSUE_TIME = new Date();
+    expirationTime = new Date(ISSUE_TIME.getTime() + (lifetimeSeconds * 1000L));
   }
 
 }

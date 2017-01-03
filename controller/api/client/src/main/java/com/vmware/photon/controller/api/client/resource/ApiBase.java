@@ -38,7 +38,7 @@ import java.util.logging.Logger;
  * Base class for Apis.
  */
 public abstract class ApiBase {
-  protected static ObjectMapper objectMapper = new ObjectMapper();
+  protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   protected final RestClient restClient;
 
   public ApiBase(RestClient restClient) {
@@ -48,14 +48,14 @@ public abstract class ApiBase {
   public abstract String getBasePath();
 
   public static StringEntity serializeObjectAsJson(Object o) throws JsonProcessingException {
-    String payload = objectMapper.writeValueAsString(o);
+    String payload = OBJECT_MAPPER.writeValueAsString(o);
 
     return new StringEntity(payload, ContentType.APPLICATION_JSON);
   }
 
   public static <T> T deserializeObjectFromJson(String jsonString, TypeReference<T> typeReference)
       throws IOException {
-    return objectMapper.readValue(jsonString, typeReference);
+    return OBJECT_MAPPER.readValue(jsonString, typeReference);
   }
 
   public final Task parseTaskFromHttpResponse(HttpResponse httpResponse) throws IOException {
