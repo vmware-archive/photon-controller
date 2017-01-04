@@ -33,9 +33,6 @@ ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key
 sed -i 's/#Storage=auto/Storage=persistent/' /etc/systemd/journald.conf
 
 # install lightwave
-tdnf install -y procps-ng
-tdnf install -y likewise-open
-tdnf install -y boost
 tdnf install -y vmware-lightwave-clients
 
 # open iptables ports
