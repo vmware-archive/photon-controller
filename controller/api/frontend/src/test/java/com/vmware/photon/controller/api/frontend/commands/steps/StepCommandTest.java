@@ -47,8 +47,8 @@ import java.util.UUID;
 @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
 public class StepCommandTest {
 
-  private static ApiFeXenonRestClient xenonClient;
-  private static BasicServiceHost host;
+  private ApiFeXenonRestClient xenonClient;
+  private BasicServiceHost host;
 
   protected String reservationId = "r-00";
 
@@ -67,7 +67,7 @@ public class StepCommandTest {
   private ApiFeXenonRestClient apiFeXenonRestClient;
 
   @AfterClass
-  public static void afterClassCleanup() throws Throwable {
+  public void afterClassCleanup() throws Throwable {
     if (xenonClient != null) {
       xenonClient.stop();
       xenonClient = null;

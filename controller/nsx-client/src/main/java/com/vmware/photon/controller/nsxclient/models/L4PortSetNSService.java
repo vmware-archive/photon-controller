@@ -76,7 +76,7 @@ public class L4PortSetNSService extends NSServiceElement {
     }
 
     L4PortSetNSService other = (L4PortSetNSService) o;
-    return Objects.equals(getProtocolType(), other.getResourceType())
+    return Objects.equals(getProtocolType(), other.getProtocolType())
         && Objects.deepEquals(getSourcePorts(), other.getSourcePorts())
         && Objects.deepEquals(getDestinationPorts(), other.getDestinationPorts())
         && super.equals(o);

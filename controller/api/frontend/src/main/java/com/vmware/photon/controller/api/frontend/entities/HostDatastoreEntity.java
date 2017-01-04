@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.api.frontend.entities;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import java.util.Objects;
 
 /**
@@ -65,5 +67,10 @@ public class HostDatastoreEntity {
     return Objects.equals(this.getDatastoreId(), other.getDatastoreId())
         && Objects.equals(this.getMountPoint(), other.getMountPoint())
         && this.isImageDatastore() == other.isImageDatastore();
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder(23, 29).append(datastoreId).append(mountPoint).toHashCode();
   }
 }

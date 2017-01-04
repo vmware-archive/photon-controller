@@ -55,7 +55,7 @@ public class OvfFileTest {
     TarFileStreamReader.TarFile file = tarFile.iterator().next();
     // Will throw on failure.
     try {
-      OvfFile ovfFile = new OvfFile(file.content);
+      new OvfFile(file.content);
     } catch (Exception e) {
       fail("Unexpected exception.", e);
     }
