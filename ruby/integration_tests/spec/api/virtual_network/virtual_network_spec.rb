@@ -56,7 +56,7 @@ describe "virtual_network", :virtual_network => true do
       expect(network_found).to eq network
     end
 
-    it "should create two virtual network successfully with the same names" do
+    xit "should create two virtual network successfully with the same names" do
       create_virtual_network(@project.id, spec)
       network = create_virtual_network(@project.id, spec)
       expect(network.name).to eq virtual_network_name
