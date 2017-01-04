@@ -19,6 +19,8 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 
+import java.util.UUID;
+
 /**
  * Class FlavorServiceFactory is a factory to create a FlavorService instances.
  */
@@ -46,5 +48,14 @@ public class FlavorServiceFactory extends FactoryService {
   public void handleDelete(Operation delete) {
     ServiceUtils.logWarning(this, "Deleting factory service %s", delete);
     super.handleDelete(delete);
+  }
+
+  /**
+   * Use GUID instead of Xenon generated IDs for readability.
+   * The time difference of computing GUID and hash is insignificant in our case because the rate of creation is low.
+   */
+  @Override
+  protected String buildDefaultChildSelfLink() {
+    return UUID.randomUUID().toString();
   }
 }

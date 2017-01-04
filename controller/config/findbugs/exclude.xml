@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!-- Findbug report this has a cast error. I don't have an easy fix for-->
+  <Match>
+    <BugInstance type="BC_UNCONFIRMED_CAST" priority="1" rank="15" abbrev="BC" category="STYLE" />
+    <Class name="com.vmware.photon.controller.apibackend.utils.ServiceHostUtils" />
+  </Match>
+
+  <!-- We sometimes name the child class to be the same as the parent but with a different namespace. It is okay-->
+  <!-- We always default to UTF-8-->
+  <Match>
+    <Or>
+      <Bug pattern="NM_SAME_SIMPLE_NAME_AS_SUPERCLASS" />
+      <Bug pattern="DM_DEFAULT_ENCODING" />
+    </Or>
+  </Match>
+
+  <!-- Instance method write to a static field is in general bad behavior. However, here, we know this is the only instance-->
+  <Match>
+    <BugInstance type="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" priority="1" rank="15" abbrev="ST" category="STYLE" />
+      <Class name="com.vmware.photon.controller.api.frontend.commands.steps.StepCommandFactoryTest" />
+  </Match>
+</FindBugsFilter>

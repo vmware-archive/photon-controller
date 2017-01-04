@@ -18,16 +18,6 @@ if [ ! -d "$TESTS" ]; then
     exit 1
 fi
 
-if [ -z "$CLI" ]; then
-    export CLI=$WORKSPACE/ruby/cli
-    echo Assume default CLI root $CLI
-fi
-
-if [ ! -d "$CLI" ]; then
-    echo CLI root directory does not exist.
-    exit 1
-fi
-
 cd $WORKSPACE
 
 git submodule update --init --recursive
@@ -47,9 +37,6 @@ export GEM_HOME=$PWD/.ruby/gems
 rm -rf $WORKSPACE/.ruby
 
 gem install bundler --no-ri --no-rdoc
-
-cd $CLI
-bundle install --retry 10
 
 cd $TESTS
 rm -rf reports/log

@@ -17,10 +17,10 @@ dependencies {
   compile project(':common-xenon')
   compile project(':cloud-store')
   compile project(':deployer')
-  compile project(':housekeeper')
+  compile project(':storage:housekeeper')
   compile project(':nfc-client')
   compile project(':nsx-client')
-  compile project(':scheduler')
+  compile project(':compute:scheduler')
   compile project(':swagger-ui')
   compile project(':swagger-jersey')
 
