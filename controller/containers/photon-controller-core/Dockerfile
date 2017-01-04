@@ -25,7 +25,7 @@ RUN sed -i 's/^jdk.tls.disabledAlgorithms=/jdk.tls.disabledAlgorithms=TLSv1.1, T
 RUN tdnf install -y procps-ng; \
     tdnf install -y likewise-open; \
     tdnf install -y boost; \
-    tdnf install -y vmware-lightwave-clients-6.6.2
+    tdnf install -y vmware-lightwave-clients-6.6.3
 
 ADD *.rpm /tmp/
 RUN find /tmp -iname "*.rpm" | xargs rpm -Uvh
