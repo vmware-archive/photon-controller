@@ -1,6 +1,7 @@
 {
   "variables": {
-    "source_ova": "{{env `SOURCE_OVA`}}"
+    "source_ova": "{{env `SOURCE_OVA`}}",
+    "ui_container_url": "{{env `MGMT_UI_CONTAINER_URL`}}"
   },
   "builders": [
     {
@@ -37,6 +38,11 @@
       "type": "file",
       "source": "{{ user `photon_rpm` }}",
       "destination": "/tmp/{{ user `photon_rpm` }}"
+    },
+    {
+      "type": "shell",
+      "environment_vars": [ "MGMT_UI_CONTAINER_URL={{user `ui_container_url`}}" ],
+      "script": "scripts/install-ui.sh"
     },
     {
       "type": "file",

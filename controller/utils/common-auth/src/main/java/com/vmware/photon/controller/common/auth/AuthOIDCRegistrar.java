@@ -28,8 +28,11 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Command line utility that registers redirect addresses with Lightwave.
@@ -43,6 +46,13 @@ public class AuthOIDCRegistrar {
   private static final String MANAGEMENT_UI_REG_FILE_ARG = "mgmt_ui_reg_path";
   private static final String SWAGGER_UI_REG_FILE_ARG = "swagger_ui_reg_path";
   private static final String HELP_ARG = "help";
+
+  public static final String CORRELATION_ID = "correlation_id";
+  public static final String SCOPE = "scope";
+  public static final String STATE = "state";
+  public static final String NONCE = "nonce";
+  public static final String ID_TOKEN_HINT = "id_token_hint";
+  public static final String ID_GROUPS = "id_groups";
 
   private static final int ERROR_PARSE_EXCEPTION = 1;
   private static final int ERROR_USAGE_EXCEPTION = 2;
@@ -108,19 +118,22 @@ public class AuthOIDCRegistrar {
     }
   }
 
-  private void writeToFile(AuthClientHandler.ImplicitClient client, String path) throws IOException {
+  private void writeToFile(AuthClientHandler.ImplicitClient client, String path) throws IOException, URISyntaxException {
     Map<String, Object> clientJson = new HashMap<String, Object>();
 
+    String loginUrl = parseURL(client.loginURI, new String[] {CORRELATION_ID, STATE, NONCE});
+    String logoutUrl = parseURL(client.logoutURI, new String[] {CORRELATION_ID, STATE, NONCE, ID_TOKEN_HINT});
+
     clientJson.put("ClientID", client.clientID);
-    clientJson.put("LoginURI", client.loginURI);
-    clientJson.put("LogoutURI", client.logoutURI);
+    clientJson.put("LoginURI", loginUrl);
+    clientJson.put("LogoutURI", logoutUrl);
 
     ObjectMapper mapper = new ObjectMapper();
 
     mapper.writeValue(new File(path), clientJson);
   }
 
-  public static int main(String[] args) {
+  public static void main(String[] args) {
     Options options = new Options();
     options.addOption(USERNAME_ARG, true, "Lightwave user name");
     options.addOption(PASSWORD_ARG, true, "Password");
@@ -144,7 +157,7 @@ public class AuthOIDCRegistrar {
 
       if (cmd.hasOption(HELP_ARG)) {
         showUsage(options);
-        return 0;
+        System.exit(0);
       }
 
       if (cmd.hasOption(USERNAME_ARG)) {
@@ -182,17 +195,17 @@ public class AuthOIDCRegistrar {
 
       registrar.register(registrationAddress, username, password, mgmtUiRegPath, swaggerUiRegPath);
 
-      return 0;
+      System.exit(0);
     } catch (ParseException e) {
       System.err.println(e.getMessage());
-      return ERROR_PARSE_EXCEPTION;
+      System.exit(ERROR_PARSE_EXCEPTION);
     } catch (UsageException e) {
       System.err.println(e.getMessage());
       showUsage(options);
-      return ERROR_USAGE_EXCEPTION;
+      System.exit(ERROR_USAGE_EXCEPTION);
     } catch (AuthException e) {
       System.err.println(e.getMessage());
-      return ERROR_AUTH_EXCEPTION;
+      System.exit(ERROR_AUTH_EXCEPTION);
     }
   }
 
@@ -206,5 +219,48 @@ public class AuthOIDCRegistrar {
     public UsageException(String message) {
       super(message);
     }
+  }
+
+  /**
+   * This method modifies a URI by removing a set of query parameters from the URI and editing the scope parameter to
+   * include ID_GROUPS. The parameters that are removed are session related and will be set by the UI as needed.
+   */
+  private String parseURL(String url, String[] removeParams) throws URISyntaxException {
+    if (url == null || url.isEmpty()) {
+      return url;
+    }
+
+    // Get the query parameters from the URL and return if empty
+    URI uri = new URI(url);
+    String urlQuery = uri.getQuery();
+    if (urlQuery == null || url.isEmpty()) {
+      return url;
+    }
+
+    // Remove the query parameters specified in removeParams
+    List<String> queryParams = Arrays.asList(urlQuery.split("&"));
+    queryParams = queryParams.stream().filter(param -> {
+      for (String removeParam : removeParams) {
+        if (param.startsWith(removeParam + "=")) {
+          return false;
+        }
+      }
+      return true;
+    }).collect(Collectors.toList());
+
+    // Edit the scope query parameter to add id_groups to it. id_groups requests that the groups from the id token are
+    // included.
+    for (String parameter : queryParams) {
+      if (parameter.startsWith(SCOPE + "=")) {
+        queryParams.set(queryParams.indexOf(parameter), parameter + "+" + ID_GROUPS);
+      }
+    }
+
+    // Append the modified query parameters to the base URL and return the new URL
+    String baseUrl = url.split("\\?")[0];
+    if (queryParams.size() > 0) {
+      baseUrl = baseUrl + "?" + String.join("&", queryParams);
+    }
+    return baseUrl;
   }
 }
