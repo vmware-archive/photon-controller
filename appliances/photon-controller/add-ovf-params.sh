@@ -62,6 +62,10 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
         <Label>Lightwave hostaddress</Label> \
         <Description>Hostaddress of the Lightwave master. (default: 172.16.127.67)</Description> \
       </Property> \
+      <Property ovf:key="lw_external_address" ovf:userConfigurable="true" ovf:type="string"> \
+        <Label>Lightwave externally reachable hostaddress</Label> \
+        <Description>Externally reachable hostaddress of the Lightwave master. (default: 172.16.127.67)</Description> \
+      </Property> \
       <Property ovf:key="lw_port" ovf:userConfigurable="true" ovf:type="string"> \
         <Label>Lightwave HTTPS port</Label> \
         <Description>HTTPS Lightwave port. (default: 443)</Description> \
@@ -81,6 +85,10 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
       <Property ovf:key="create_default_deployment" ovf:type="string" ovf:userConfigurable="true" > \
         <Label>Boolean value</Label> \
         <Description>Indicates whether to create the default deployment (last node in deployment must specify this)</Description> \
+      </Property> \
+      <Property ovf:key="external_uri" ovf:type="string" ovf:userConfigurable="true" > \
+        <Label>External uri for Photon-Platform</Label> \
+        <Description>The uri used to access Photon-Platform (e.g. https://photon-controller).</Description> \
       </Property> \
     </ProductSection> \
     <VirtualHardwareSection ovf:transport="com.vmware.guestInfo"@' ${outputVM}.ovf

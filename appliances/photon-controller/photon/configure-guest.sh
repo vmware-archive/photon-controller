@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 # Copyright 2016 VMware, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -10,7 +10,7 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
 # specific language governing permissions and limitations under the License.
 #
- 
+
 #
 # This script is run during first start up to configure the vm.
 #
@@ -19,10 +19,10 @@ CONFIG_XML_FILE=configovf.xml
 
 function cleanup()
 {
-    rm -rf $CONFIG_XML_FILE
+  rm -rf $CONFIG_XML_FILE
 
-    #remove itself from startup
-    systemctl disable configure-guest
+  #remove itself from startup
+  systemctl disable configure-guest
 }
 
 function set_ntp_servers()
@@ -53,24 +53,24 @@ function set_ntp_servers()
 
 function mask2cidr()
 {
-    bits=0
-    IFS=.
-    for dig in $netmask0 ; do
-        case $dig in
-            255) let bits+=8;;
-            254) let bits+=7 ; break ;;
-            252) let bits+=6 ; break ;;
-            248) let bits+=5 ; break ;;
-            240) let bits+=4 ; break ;;
-            224) let bits+=3 ; break ;;
-            192) let bits+=2 ; break ;;
-            128) let bits+=1 ; break ;;
-            0);;
-            *) echo "Error: $dig is not correct"; exit -1
-        esac
-    done
-    unset IFS
-    echo "$bits"
+  bits=0
+  IFS=.
+  for dig in $netmask0 ; do
+    case $dig in
+      255) let bits+=8;;
+      254) let bits+=7 ; break ;;
+      252) let bits+=6 ; break ;;
+      248) let bits+=5 ; break ;;
+      240) let bits+=4 ; break ;;
+      224) let bits+=3 ; break ;;
+      192) let bits+=2 ; break ;;
+      128) let bits+=1 ; break ;;
+      0);;
+      *) echo "Error: $dig is not correct"; exit -1
+    esac
+  done
+  unset IFS
+  echo "$bits"
 }
 
 function set_network_properties()
@@ -105,9 +105,9 @@ function set_network_properties()
     nwConfig="DHCP=yes"
   else
     nwConfig=$(cat <<-EOF
-	[Address]
-	Address=${ip0}/$(mask2cidr)
-	EOF
+[Address]
+Address=${ip0}/$(mask2cidr)
+EOF
     )
   fi
 
@@ -118,17 +118,17 @@ function set_network_properties()
             sed 's/^[0-9]*: \(e.*\): .*/\1/')
 
   cat > "/etc/systemd/network/10-dhcp-${en_name}.network" <<-EOF
-	[Match]
-	Name=$en_name
-	
-	[Network]
-	$multiline_dns
-	
-	$nwConfig
-	
-	[Route]
-	Gateway=${gateway}
-	EOF
+[Match]
+Name=$en_name
+
+[Network]
+$multiline_dns
+
+$nwConfig
+
+[Route]
+Gateway=${gateway}
+EOF
 
   systemctl restart systemd-networkd
 }
@@ -277,8 +277,46 @@ function configure_photon()
   systemctl start photon-controller
 }
 
-function parse_ovf_env()
+function configure_management_ui()
 {
+  systemctl start docker
+  if [ -z "`docker images | grep photon-controller-ui`" ]; then
+    echo "Skipping management ui setup."
+    systemctl stop docker
+  else
+    external_ip=`echo ${external_uri} | awk -F/ '{print $3}'`
+    cd /usr/lib/esxcloud/photon-controller-core/lib
+    /var/opt/OpenJDK-*/bin/java -cp "*" com.vmware.photon.controller.common.auth.AuthOIDCRegistrar \
+      -password ${lw_password} \
+      -username ${lw_username}@${lw_domain} \
+      -target ${external_ip} \
+      -mgmt_ui_reg_path /tmp/management_ui_auth_reg.json \
+      -swagger_ui_reg_path /tmp/swagger_ui_auth_reg.json
+
+    # getting the login/logout URIs from the output json and replacing the
+    # lightwave FQDN (requires lightwave as DNS) with and externally accessible
+    # address
+    ui_login=`cat /tmp/management_ui_auth_reg.json | jq '.LoginURI' | sed "s|https://.*/openidconnect|https://${lw_external_address}/openidconnect|" | sed -e 's/^"//' -e 's/"$//'`
+    ui_logout=`cat /tmp/management_ui_auth_reg.json | jq '.LogoutURI' | sed "s|https://.*/openidconnect|https://${lw_external_address}/openidconnect|" | sed -e 's/^"//' -e 's/"$//'`
+    swagger_login=`cat /tmp/swagger_ui_auth_reg.json | jq '.LoginURI' | sed "s|https://.*/openidconnect|https://${lw_external_address}/openidconnect|" | sed -e 's/^"//' -e 's/"$//'`
+    swagger_logput=`cat /tmp/swagger_ui_auth_reg.json | jq '.LogoutURI' | sed "s|https://.*/openidconnect|https://${lw_external_address}/openidconnect|" | sed -e 's/^"//' -e 's/"$//'`
+
+    docker run \
+      -p 20000:80 \
+      -p 20001:443 \
+      -e API_ORIGIN=${external_uri} \
+      -e HTTPS_PORT=20001 \
+      -e MGMT_UI_LOGIN_URL=${ui_login} \
+      -e MGMT_UI_LOGOUT_URL=${ui_logout} \
+      -e LOGINREDIRECTENDPOINT=${ui_login} \
+      -e LOGOUTREDIRECTENDPOINT=${ui_logout} \
+      -e ENABLE_AUTH="true" \
+      -d --name photon-controller-ui \
+      vmware/photon-controller-ui
+  fi
+}
+
+function parse_ovf_env() {
   # vm config
   ip0=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ip0']/../@*[local-name()='value'])")
   netmask0=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='netmask0']/../@*[local-name()='value'])")
@@ -292,10 +330,12 @@ function parse_ovf_env()
 
   # photon Controller
   pc_syslog_endpoint=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_syslog_endpoint']/../@*[local-name()='value'])")
+
   # host,host
   pc_peer_nodes_comma_seperated=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_peer_nodes']/../@*[local-name()='value'])")
   pc_secret_password=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_secret_password']/../@*[local-name()='value'])")
   create_default_deployment=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='create_default_deployment']/../@*[local-name()='value'])")
+  external_uri=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='external_uri']/../@*[local-name()='value'])")
 
   if [ -z "$create_default_deployment" ]; then
         create_default_deployment="false"
@@ -306,6 +346,7 @@ function parse_ovf_env()
   lw_username=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_username']/../@*[local-name()='value'])") # administrator
   lw_password=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_password']/../@*[local-name()='value'])")
   lw_port=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_port']/../@*[local-name()='value'])")
+  lw_external_address=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_external_address']/../@*[local-name()='value'])")
   pc_secret_password=$(date +%s | base64 | head -c 8)
   pc_keystore_password=$(date +%s | base64 | head -c 8)
 
@@ -325,6 +366,10 @@ function parse_ovf_env()
   if [ -z "$lw_domain" ]; then
     missing_values=1
     echo "Missing value [lw_domain]"
+  fi
+  if [ -z "$external_uri" ]; then
+    missing_values=1
+    echo "Missing value [external_uri]"
   fi
   if [ $missing_values -ne 0 ]; then
     exit -1
@@ -356,10 +401,9 @@ then
   set_root_password
   set_photon_password
   configure_lightwave
+  configure_management_ui
   configure_photon
 
 fi
 
 set -e
-
-
