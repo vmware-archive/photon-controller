@@ -22,7 +22,7 @@ dependencies {
   compile(project(':cluster-manager:service-documents'))
   compile(project(':deployer'))
   compile(project(':housekeeper'))
-  compile(project(':scheduler'))
+  compile(project(':compute:scheduler'))
 
   compile "com.google.inject.extensions:guice-assistedinject:${versions.guice}"
   compile "com.google.inject:guice:${versions.guice}"
