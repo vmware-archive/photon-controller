@@ -120,7 +120,7 @@ public class AuthOIDCRegistrar {
     mapper.writeValue(new File(path), clientJson);
   }
 
-  public static int main(String[] args) {
+  public static void main(String[] args) {
     Options options = new Options();
     options.addOption(USERNAME_ARG, true, "Lightwave user name");
     options.addOption(PASSWORD_ARG, true, "Password");
@@ -144,7 +144,7 @@ public class AuthOIDCRegistrar {
 
       if (cmd.hasOption(HELP_ARG)) {
         showUsage(options);
-        return 0;
+        System.exit(0);
       }
 
       if (cmd.hasOption(USERNAME_ARG)) {
@@ -182,17 +182,17 @@ public class AuthOIDCRegistrar {
 
       registrar.register(registrationAddress, username, password, mgmtUiRegPath, swaggerUiRegPath);
 
-      return 0;
+      System.exit(0);
     } catch (ParseException e) {
       System.err.println(e.getMessage());
-      return ERROR_PARSE_EXCEPTION;
+      System.exit(ERROR_PARSE_EXCEPTION);
     } catch (UsageException e) {
       System.err.println(e.getMessage());
       showUsage(options);
-      return ERROR_USAGE_EXCEPTION;
+      System.exit(ERROR_USAGE_EXCEPTION);
     } catch (AuthException e) {
       System.err.println(e.getMessage());
-      return ERROR_AUTH_EXCEPTION;
+      System.exit(ERROR_AUTH_EXCEPTION);
     }
   }
 

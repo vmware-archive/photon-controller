@@ -62,6 +62,10 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
         <Label>Lightwave HTTPS port</Label> \
         <Description>HTTPS Lightwave port. (default: 443)</Description> \
       </Property> \
+      <Property ovf:key="lw_password" ovf:userConfigurable="true" ovf:type="password"> \
+        <Label>Lightwave admin password.</Label> \
+        <Description>Lightwave admin password.</Description> \
+      </Property> \
       <Property ovf:key="pc_peer_nodes" ovf:userConfigurable="true" ovf:type="string"> \
         <Label>Peer node list</Label> \
         <Description>Comma seperated list of Photon Controller hostaddresses. (optional)</Description> \
@@ -77,6 +81,10 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
       <Property ovf:key="create_default_deployment" ovf:type="string" ovf:userConfigurable="true" > \
         <Label>Boolean value</Label> \
         <Description>Indicates whether to create the default deployment (last node in deployment must specify this)</Description> \
+      </Property> \
+      <Property ovf:key="external_uri" ovf:type="string" ovf:userConfigurable="true" > \
+        <Label>External uri for Photon-Platform</Label> \
+        <Description>The uri used to access Photon-Platform (e.g. https://photon-controller).</Description> \
       </Property> \
     </ProductSection> \
     <VirtualHardwareSection ovf:transport="com.vmware.guestInfo"@' ${outputVM}.ovf
