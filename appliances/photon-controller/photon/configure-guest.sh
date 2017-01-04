@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 # Copyright 2016 VMware, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -125,7 +125,7 @@ function set_root_password(){
      return
   fi
 
-  echo "root:${root_password}" | chpasswd
+  echo -e "${root_password}\n${root_password}" | passwd
   exit_code=$?
   if [ 0 -ne $exit_code ]
   then
@@ -141,7 +141,7 @@ function set_photon_password(){
      return
   fi
 
-  echo "photon:${photon_password}" | chpasswd
+  echo -e "${photon_password}\n${photon_password}" | passwd photon
   exit_code=$?
   if [ 0 -ne $exit_code ]
   then
@@ -150,22 +150,54 @@ function set_photon_password(){
   fi
 }
 
-function configure_photon() {
+function configure_lightwave()
+{
+  echo "Starting required services"
+
+  systemctl start lwsmd
+
+  echo "Joining system to Lightwave domain $lw_domain"
+
+  exec 3<<<"$lw_password"
+
+  /opt/vmware/bin/ic-join --domain $lw_domain \
+                          --ssl-subject-alt-name $ip0 \
+                          <&3
+  exit_code=$?
+  if [ 0 -ne $exit_code ]
+  then
+    echo "Failed to join Lightwave domain $lw_domain with $exit_code"
+    exit $exit_code
+  fi
+
+  lw_host=`/opt/vmware/bin/vmafd-cli get-dc-name --server-name localhost`
+  exit_code=$?
+  if [ 0 -ne $exit_code ]
+  then
+    echo "Failed to get Lightwave Domain Controller. Exit code; $exit_code"
+    exit $exit_code
+  fi
+}
+
+function configure_photon()
+{
   pc_auth_enabled="true"
   pc_enabled_syslog="true"
-  if [ -z "$pc_syslog_endpoint" ]; then
+
+  if [ -z "$pc_syslog_endpoint" ]
+  then
     pc_enabled_syslog="false"
   fi
-  if [ -z "$lw_host" ] || [ -z "$lw_port" ] || [ -z "$lw_domain" ]; then
-    pc_auth_enabled="false"
-  fi
+
   pc_peer_nodes="{\"${ip0}\" : \"19000\"}"
+
   # convert to array using , as seperator
   IFS=','
   read -a node_arr <<< "$pc_peer_nodes_comma_seperated"
   len=${#node_arr[@]}
   pc_peer_nodes="{ \"peerAddress\" : \"${ip0}\", \"peerPort\" : 19000 }"
-  for ((i=0;i<len;i++)); do
+  for ((i=0;i<len;i++))
+  do
     pc_peer_nodes=${pc_peer_nodes}", { \"peerAddress\" : \"${node_arr[i]}\", \"peerPort\" : 19000 } "
     dns_entry=$(echo "${dns_arr[i]}" | sed 's/^[[:blank:]]*//')
     dns_arr[i]="DNS=${dns_entry}"
@@ -228,6 +260,37 @@ function configure_photon() {
   systemctl start photon-controller
 }
 
+function configure_management_ui() {
+  systemctl start docker
+  if [ -z "`docker images | grep photon-controller-ui`" ]; then
+    echo "Skipping management ui setup."
+  else
+    external_ip=`echo ${external_uri} | awk -F/ '{print $3}'`
+    cd /usr/lib/esxcloud/photon-controller-core/lib
+    /var/opt/OpenJDK-*/bin/java -cp "*" com.vmware.photon.controller.common.auth.AuthOIDCRegistrar \
+      -password ${lw_password} \
+      -username ${lw_username}@${lw_domain} \
+      -target ${external_ip} \
+      -mgmt_ui_reg_path /tmp/management_ui_auth_reg.json \
+      -swagger_ui_reg_path /tmp/swagger_ui_auth_reg.json
+
+    ui_login=`cat /tmp/management_ui_auth_reg.json | jq '.LoginURI'`
+    ui_logout=`cat /tmp/management_ui_auth_reg.json | jq '.LogoutURI'`
+    swagger_login=`cat /tmp/swagger_ui_auth_reg.json | jq '.LoginURI'`
+    swagger_logput=`cat /tmp/swagger_ui_auth_reg.json | jq '.LogoutURI'`
+
+    docker run \
+      -p 20000:80 \
+      -p 20001:443 \
+      -e API_ORIGIN=${external_uri} \
+      -e HTTPS_PORT=20001 \
+      -e MGMT_UI_LOGIN_URL=${ui_login} \
+      -e MGMT_UI_LOGOUT_URL=${ui_logout} \
+      -d --name photon-controller-ui \
+      vmware/photon-controller-ui
+  fi
+}
+
 function parse_ovf_env() {
   # vm config
   ip0=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ip0']/../@*[local-name()='value'])")
@@ -242,25 +305,27 @@ function parse_ovf_env() {
 
   # photon Controller
   pc_syslog_endpoint=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_syslog_endpoint']/../@*[local-name()='value'])")
+
   # host,host
-  pc_peer_nodes_comma_seperated=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_peer_nodes']/../@*[local-name()='value'])")
-  pc_secret_password=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_secret_password']/../@*[local-name()='value'])")
-  create_default_deployment=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='create_default_deployment']/../@*[local-name()='value'])")
+  pc_peer_nodes_comma_seperated=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_peer_nodes']/../@*[local-name()='value'])")
+  pc_secret_password=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pc_secret_password']/../@*[local-name()='value'])")
+  create_default_deployment=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='create_default_deployment']/../@*[local-name()='value'])")
+  external_uri=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='external_uri']/../@*[local-name()='value'])")
 
   if [ -z "$create_default_deployment" ]; then
         create_default_deployment="false"
   fi
 
   # lightwave config
-  lw_domain=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_domain']/../@*[local-name()='value'])") # some.domain.com
-  lw_username=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_username']/../@*[local-name()='value'])") # administrator
-  lw_password=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_password']/../@*[local-name()='value'])")
-  lw_port=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_port']/../@*[local-name()='value'])")
+  lw_domain=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_domain']/../@*[local-name()='value'])") # some.domain.com
+  lw_username=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_username']/../@*[local-name()='value'])") # administrator
+  lw_password=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_password']/../@*[local-name()='value'])")
+  lw_port=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='lw_port']/../@*[local-name()='value'])")
   pc_secret_password=$(date +%s | base64 | head -c 8)
   pc_keystore_password=$(date +%s | base64 | head -c 8)
 
   if [ -z "$lw_port" ]; then
-    missing_values = "Missing lw_port"
+    lw_port="443"
   fi
 
   if [ -z "$lw_username" ]; then
@@ -273,10 +338,14 @@ function parse_ovf_env() {
     echo "Missing value [lw_password]"
   fi
   if [ -z "$lw_domain" ]; then
-    missing_values = ${missing_values}", lw_domain"
+      missing_values=1
+      echo "Missing value [lw_domain]"
   fi
-  if [ ! -z "$missing_values" ]; then
-    echo $missing_values
+  if [ -z "$external_uri" ]; then
+    missing_values=1
+    echo "Missing value [external_uri]"
+  fi
+  if [ $missing_values -ne 0 ]; then
     exit -1
   fi
 }
@@ -295,6 +364,8 @@ if [ ! -z "$ovf_env" ]; then
   set_network_properties
   set_root_password
   set_photon_password
+  configure_lightwave
+  configure_management_ui
   configure_photon
 
   # the XML file contains passwords
