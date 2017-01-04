@@ -13,12 +13,14 @@ Options:
   -c <ip>         NTP endpoint (default: None)
   -e <ip>         Load balancer IP address
   -u <username>   Photon Controller username (default: photon)
-  -p <passwrod>   Photon Controller password (default: <random>)
+  -p <password>   Photon Controller password (default: <random>)
   -l <password>   Lightwave Administrator password (default: <random>)
   -d <domain>     Lightwave domain name (default: photon.local)
   -i <path>       Photon Controller Docker image tar file
                   (If not specified then Docker Hub image will be used.)
+                  Note: the tar file must be mounted through Docker
   -x <path>       UI Docker image tar file
+                  Note: the tar file must be mounted through Docker
   -m              Create three containers for Photon Controller for HA
   -o              Create three containers for Lightwave for HA
   -S              Skip deleting old containers
@@ -155,8 +157,7 @@ fi
 if [ "${PC_DOCKER_IMAGE_FILE}TEST" != "TEST" ]; then
 	if [ -f ${PC_DOCKER_IMAGE_FILE}  ]; then
     docker load -i ${PC_DOCKER_IMAGE_FILE}
-    PC_CONTAINER_VERSION=local
-    docker tag vmware/photon-controller vmware/photon-controller:$PC_CONTAINER_VERSION
+    docker tag vmware/photon-controller:latest vmware/photon-controller:$PC_CONTAINER_VERSION
   else
     echo "Error: File not found: ${PC_DOCKER_IMAGE_FILE}"
     exit 1
@@ -287,6 +288,8 @@ Start with following CLI commands to interact with this new deployment.
 photon target set https://$LOAD_BALANCER_IP:9000 -c
 photon target login --username ${USERNAME}@${LIGHTWAVE_DOMAIN} --password '${PASSWORD}'
 photon deployment show
+photon tenant set cloud
+photon project set cloud-staging
 
 "
 
