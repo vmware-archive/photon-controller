@@ -28,6 +28,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.NsxConfigurationService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
@@ -118,6 +119,7 @@ public class CloudStoreServiceGroup
 
   public static final Map<Class<? extends Service>, Supplier<FactoryService>> FACTORY_SERVICES_MAP =
       ImmutableMap.<Class<? extends Service>, Supplier<FactoryService>>builder()
+          .put(NsxConfigurationService.class, NsxConfigurationService::createFactory)
           .put(VirtualNetworkService.class, VirtualNetworkService::createFactory)
           .put(SubnetAllocatorService.class, SubnetAllocatorService::createFactory)
           .put(DhcpSubnetService.class, DhcpSubnetService::createFactory)
@@ -190,7 +192,8 @@ public class CloudStoreServiceGroup
 
     return
         // entities
-        photonControllerXenonHost.checkServiceAvailable(VirtualNetworkService.FACTORY_LINK)
+        photonControllerXenonHost.checkServiceAvailable(NsxConfigurationService.FACTORY_LINK)
+            && photonControllerXenonHost.checkServiceAvailable(VirtualNetworkService.FACTORY_LINK)
             && photonControllerXenonHost.checkServiceAvailable(SubnetAllocatorService.FACTORY_LINK)
             && photonControllerXenonHost.checkServiceAvailable(DhcpSubnetService.FACTORY_LINK)
             && photonControllerXenonHost.checkServiceAvailable(IpLeaseService.FACTORY_LINK)
