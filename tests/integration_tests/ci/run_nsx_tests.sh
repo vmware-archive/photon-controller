@@ -18,4 +18,4 @@ env
 cd "$TESTS"
 
 bundle exec rake esxcloud:virtual_network
-bundle exec rake esxcloud:vm_on_virtual_network
+# bundle exec rake esxcloud:vm_on_virtual_network
