@@ -82,7 +82,7 @@ task cleanAll() {
     ":api:frontend:clean",
     ":cloud-store:clean",
     ":deployer:clean",
-    ":housekeeper:clean",
+    ":storage:housekeeper:clean",
     ":photon-controller-core:clean",
     ":compute:scheduler:clean"
   )
