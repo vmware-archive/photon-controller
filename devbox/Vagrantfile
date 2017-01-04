@@ -549,6 +549,9 @@ EOM
     # Note: Gateway needs to be set to only get a static IP, otherwise a secondary IP will
     # be made by networkd.
     if ENV['ENABLE_AUTH'] == 'true'
+      mv run.sh run2.sh
+      echo "/opt/vmware/bin/ic-join --domain =#{ENV['LW_DOMAIN_NAME']} --ssl-subject-alt-name #{ENV['PUBLIC_NETWORK_IP']} " > run.sh
+      cat run2.sh >> run.sh
       if ENV['PUBLIC_LW_NETWORK_IP']
         photon.vm.provision :shell, :privileged => true, :inline => <<-EOS
             set -ex
