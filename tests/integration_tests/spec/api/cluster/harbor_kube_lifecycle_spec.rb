@@ -288,7 +288,7 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true, devbox: true do
   end
 
   def populate_busybox_config_file()
-    busybox_yaml_path = "#{ENV['WORKSPACE']}/ruby/integration_tests/spec/api/cluster/busybox.yaml"
+    busybox_yaml_path = "#{ENV['WORKSPACE']}/tests/integration_tests/spec/api/cluster/busybox.yaml"
     busybox_yaml_content = File.read(busybox_yaml_path)
 
     busybox_yaml_content["$HARBOR_MASTER_IP"] = ENV["SWARM_ETCD_1_IP"]

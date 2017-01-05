@@ -12,7 +12,7 @@
 require 'yaml'
 require 'net/ssh'
 
-# Sample usage: ruby esxcloud/ruby/integration_tests/ci/UWSim/mount_shared_nas.rb 10.146.58.19
+# Sample usage: ruby photon-controller/tests/integration_tests/ci/UWSim/mount_shared_nas.rb 10.146.58.19
 abort('Please provide Shared NAS ip address') if ARGV.empty?
 
 shared_nas_ip = ARGV.first

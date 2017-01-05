@@ -24,16 +24,16 @@ export PATH=/opt/ruby/bin:$PATH
 export BUNDLE_PATH=/tmp/bundle
 
 # run rubocop
-cd $WORKSPACE/ruby/
+cd $WORKSPACE/tests/
 bundle install
 bundle exec rubocop
 
 # run rubocop-photon specs
-cd $WORKSPACE/ruby/rubocop-photon
+cd $WORKSPACE/tests/rubocop-photon
 bundle install
 bundle exec rspec --format RspecJunitFormatter --out reports/rspec.xml
 
 # Run the ruby rspecs
-cd $WORKSPACE/ruby/common
+cd $WORKSPACE/tests/common
 bundle install
 bundle exec rspec --format RspecJunitFormatter --out reports/rspec.xml

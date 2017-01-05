@@ -49,13 +49,13 @@ Extra hosts are needed when tests of uploading images and creating vms are to ex
 
 * Set the following environment variable
 
-      export export CUSTOM_TEST_CONFIG=<workspace>/ruby/integration_tests/ci/environment_setup.sh
+      export CUSTOM_TEST_CONFIG=<workspace>/tests/integration_tests/ci/environment_setup.sh
 
 * Make sure the start_devbox.sh statement is not commented in file environment_setup.sh
 
 * Run the integration test
 
-      cd <workspace>/ruby/integeration_test/ci
+      cd <workspace>/tests/integeration_test/ci
       ./run_test.sh
 
 ### Use a Real Deployment

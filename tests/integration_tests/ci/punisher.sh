@@ -11,7 +11,7 @@ SYSLOG_HOST=${IP_RANGE}.102
 export API_ADDRESS=http://$APIFE_HOST:9000
 export no_proxy=$APIFE_HOST,$no_proxy
 
-cd $WORKSPACE/ruby
+cd $WORKSPACE/tests
 ./bin/load-flavors $API_ADDRESS common/test_files/flavors
 
 cd $TESTS

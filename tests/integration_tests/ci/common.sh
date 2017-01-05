@@ -9,7 +9,7 @@ then
 fi
 
 if [ -z "$TESTS" ]; then
-    export TESTS=$WORKSPACE/ruby/integration_tests
+    export TESTS=$WORKSPACE/tests/integration_tests
     echo Assume default TESTS root $TESTS
 fi
 

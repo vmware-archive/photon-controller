@@ -225,7 +225,7 @@ Then run the script `./prepare-devbox-deployment.sh`. On successful completion o
 that `devbox is ready for deployment`.
 
 Then you can point the CLI against the endpoint `http://PUBLIC_NETWORK_IP:9000` and do a deployment. To find out how
-to use CLI, please refer to the Readme under ruby/cli.
+to use CLI, please refer to the Readme under tests/cli.
 
 
 ## Controlling devbox from Gradle
