@@ -176,7 +176,11 @@ describe "Harbor-Kube cluster-service lifecycle", cluster: true, devbox: true do
     end
 
     Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
+      sleep(300)
+      puts "Sleep before copy ca cert for 5 mins"
       copy_ca_cert_to_devbox(ssh)
+      sleep(2400)
+      puts "Sleep before harbor login for 40 mins"
       pull_and_push_busybox_image(ssh)
       copy_over_the_kubectl_from_master_node_to_devbox(ssh)
       create_kubernetes_application(ssh)
