@@ -30,7 +30,7 @@ tags
 *.gem
 
 tmp/
-ruby/common/test_files/deployment/dcmap.yml
+tests/common/test_files/deployment/dcmap.yml
 
 #image building related
 **/build/
