@@ -30,7 +30,7 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
         <Label>Netmask</Label> \
         <Description>The netmask for the Photon Controller VM network. (default: 255.255.255.0)</Description> \
       </Property> \
-      <Property ovf:key="gateway" ovf:userConfigurable="true" ovf:type="string"> \
+      <Property ovf:key="gateway0" ovf:userConfigurable="true" ovf:type="string"> \
         <Label>Default Gateway</Label> \
         <Description>The default gateway address for the Photon Controller VM network. (default: 172.16.127.2)</Description> \
       </Property> \
