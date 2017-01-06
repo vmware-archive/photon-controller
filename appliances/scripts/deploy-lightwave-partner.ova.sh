@@ -44,7 +44,7 @@ ovftool \
     --X:injectOvfEnv \
     --prop:ip0=$VM_IP_0 \
     --prop:netmask0=$VM_NETMASK_0 \
-    --prop:gateway=$VM_GATEWAY_0 \
+    --prop:gateway0=$VM_GATEWAY_0 \
     --prop:DNS=$VM_DNS \
     --prop:ntp_servers=$VM_NTP \
     --prop:root_password=$VM_ROOT_PASSWORD \
@@ -54,4 +54,3 @@ ovftool \
     --prop:lw_hostname=$LW_HOSTNAME \
     $OVA_PATH \
     vi://root@$ESX_HOSTNAME/
-
