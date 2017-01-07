@@ -166,6 +166,8 @@ Vagrant.configure("2") do |config|
       # Assign correct default gateway to public network
       lightwave.vm.provision :shell, :inline => <<-EOS
         set -ex
+        sleep 5
+        ip route show table all
         ip route del default
         ip route add default via #{public_network_gateway} dev enp0s8
       EOS
