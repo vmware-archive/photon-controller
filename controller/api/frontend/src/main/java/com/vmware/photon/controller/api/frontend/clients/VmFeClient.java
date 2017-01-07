@@ -13,6 +13,10 @@
 
 package com.vmware.photon.controller.api.frontend.clients;
 
+import com.vmware.photon.controller.api.backend.servicedocuments.AssignFloatingIpToVmWorkflowDocument;
+import com.vmware.photon.controller.api.backend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
+import com.vmware.photon.controller.api.backend.workflows.AssignFloatingIpToVmWorkflowService;
+import com.vmware.photon.controller.api.backend.workflows.RemoveFloatingIpFromVmWorkflowService;
 import com.vmware.photon.controller.api.frontend.BackendTaskExecutor;
 import com.vmware.photon.controller.api.frontend.backends.TaskBackend;
 import com.vmware.photon.controller.api.frontend.backends.VmBackend;
@@ -33,10 +37,6 @@ import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
 import com.vmware.photon.controller.api.model.VmFloatingIpSpec;
-import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIpToVmWorkflowDocument;
-import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
-import com.vmware.photon.controller.apibackend.workflows.AssignFloatingIpToVmWorkflowService;
-import com.vmware.photon.controller.apibackend.workflows.RemoveFloatingIpFromVmWorkflowService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 
 import com.google.common.base.Optional;

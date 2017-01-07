@@ -16,7 +16,6 @@ package com.vmware.photon.controller.api.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wordnik.swagger.annotations.ApiModelProperty;
-
 import static com.google.common.base.Objects.toStringHelper;
 
 import javax.validation.constraints.NotNull;

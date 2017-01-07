@@ -31,7 +31,6 @@ import com.vmware.photon.controller.api.model.builders.StatsInfoBuilder;
 
 import org.mockito.Mock;
 import org.testng.annotations.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;

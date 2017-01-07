@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper.xenon;
 
-import com.vmware.photon.controller.apibackend.ApiBackendFactory;
+import com.vmware.photon.controller.api.backend.ApiBackendFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;

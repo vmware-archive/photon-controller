@@ -13,6 +13,10 @@
 
 package com.vmware.photon.controller.api.frontend.utils;
 
+import com.vmware.photon.controller.api.backend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.api.backend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
+import com.vmware.photon.controller.api.backend.workflows.DeleteVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.api.backend.workflows.RemoveFloatingIpFromVmWorkflowService;
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
@@ -20,10 +24,6 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidNetw
 import com.vmware.photon.controller.api.frontend.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.SubnetState;
-import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
-import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmWorkflowDocument;
-import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
-import com.vmware.photon.controller.apibackend.workflows.RemoveFloatingIpFromVmWorkflowService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;

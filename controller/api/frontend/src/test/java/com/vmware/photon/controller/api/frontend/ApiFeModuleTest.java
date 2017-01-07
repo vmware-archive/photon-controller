@@ -79,7 +79,6 @@ import com.google.inject.name.Named;
 import com.google.inject.servlet.RequestScoped;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
