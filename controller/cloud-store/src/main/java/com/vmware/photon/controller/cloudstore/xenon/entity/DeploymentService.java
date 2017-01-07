@@ -322,10 +322,6 @@ public class DeploymentService extends StatefulService {
      * This value represents the list of the DHCP servers.
      */
     public List<String> dhcpServers;
-    /**
-     * This value represents the ID of the DHCP relay profile.
-     */
-    public String dhcpRelayProfileId;
 
     /**
      * This value represents the ID of the DHCP relay service.

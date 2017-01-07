@@ -69,6 +69,11 @@ public class NetworkConfigurationBuilder {
     return this;
   }
 
+  public NetworkConfigurationBuilder networkDhcpRelayId(String networkDhcpRelayId) {
+    this.networkConfiguration.setNetworkDhcpRelayId(networkDhcpRelayId);
+    return this;
+  }
+
   public NetworkConfigurationBuilder edgeClusterId(String edgeClusterId) {
     this.networkConfiguration.setEdgeClusterId(edgeClusterId);
     return this;

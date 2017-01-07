@@ -69,6 +69,11 @@ public class NetworkConfigurationCreateSpecBuilder {
     return this;
   }
 
+  public NetworkConfigurationCreateSpecBuilder networkDhcpRelayId(String networkDhcpRelayId) {
+    this.networkConfigurationCreateSpec.setNetworkDhcpRelayId(networkDhcpRelayId);
+    return this;
+  }
+
   public NetworkConfigurationCreateSpecBuilder ipRange(String ipRange) {
     this.networkConfigurationCreateSpec.setIpRange(ipRange);
     return this;

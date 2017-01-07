@@ -75,7 +75,6 @@ deployment_create_spec_json="{ \
       \"networkEdgeIpPoolId\" : \"${NETWORK_EDGE_IP_POOL_ID}\", \
       \"networkHostUplinkPnic\" : \"${NETWORK_HOST_UPLINK_PNIC}\", \
       \"edgeClusterId\" : \"${NETWORK_EDGE_CLUSTER_ID}\", \
-      \"dhcpRelayProfileId\": \"${NETWORK_DHCP_RELAY_PROFILE_ID}\", \
       \"dhcpRelayServiceId\": \"${NETWORK_DHCP_RELAY_SERVICE_ID}\", \
       \"ipRange\" : \"${NETWORK_IP_RANGE}\", \
       \"floatingIpRange\" : {\"start\" : \"${NETWORK_EXTERNAL_IP_START}\", \"end\" : \"${NETWORK_EXTERNAL_IP_END}\"}, \

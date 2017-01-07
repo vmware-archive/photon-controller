@@ -56,7 +56,6 @@ public class DefaultDeployment {
     }
     startState.imageDataStoreNames = deploymentContext.getImageDataStoreNames();
     startState.imageDataStoreUsedForVMs = deploymentContext.getImageDataStoreUsedForVMs();
-    startState.dhcpRelayProfileId = deploymentContext.getDhcpRelayProfileId();
     startState.dhcpRelayServiceId = deploymentContext.getDhcpRelayServiceId();
     startState.imageId = deploymentContext.getImageId();
     startState.projectId = deploymentContext.getProjectId();
@@ -78,7 +77,6 @@ public class DefaultDeployment {
     startState.networkManagerPassword = deploymentContext.getNetworkManagerPassword();
     startState.networkTopRouterId = deploymentContext.getNetworkTopRouterId();
     startState.networkZoneId = deploymentContext.getNetworkZoneId();
-    startState.dhcpRelayProfileId = deploymentContext.getDhcpRelayProfileId();
     startState.dhcpRelayServiceId = deploymentContext.getDhcpRelayServiceId();
     startState.ipRange = deploymentContext.getIpRange();
     startState.floatingIpRange = deploymentContext.getFloatingIpRange();

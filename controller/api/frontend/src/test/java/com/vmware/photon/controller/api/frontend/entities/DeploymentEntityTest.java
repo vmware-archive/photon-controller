@@ -68,6 +68,7 @@ public class DeploymentEntityTest {
       entity.setNetworkManagerPassword("networkManagerPassword");
       entity.setNetworkZoneId("networkZoneId");
       entity.setNetworkTopRouterId("networkTopRouterId");
+      entity.setNetworkDhcpRelayId("networkDhcpRelayId");
       entity.setIpRange("10.0.0.1/24");
 
       IpRange floatingIpRange = new IpRange();
@@ -96,6 +97,7 @@ public class DeploymentEntityTest {
       assertThat(entity.getNetworkManagerPassword(), is("networkManagerPassword"));
       assertThat(entity.getNetworkZoneId(), is("networkZoneId"));
       assertThat(entity.getNetworkTopRouterId(), is("networkTopRouterId"));
+      assertThat(entity.getNetworkDhcpRelayId(), is("networkDhcpRelayId"));
       assertThat(entity.getIpRange(), is("10.0.0.1/24"));
       assertThat(entity.getFloatingIpRange(), is(floatingIpRange));
       assertThat(entity.getNtpEndpoint(), is("http://ntp"));
@@ -130,6 +132,7 @@ public class DeploymentEntityTest {
       entity.setNetworkManagerPassword("networkManagerPassword");
       entity.setNetworkZoneId("networkZoneId");
       entity.setNetworkTopRouterId("networkTopRouterId");
+      entity.setNetworkDhcpRelayId("networkDhcpRelayId");
       entity.setIpRange("10.0.0.1/24");
 
       IpRange floatingIpRange = new IpRange();

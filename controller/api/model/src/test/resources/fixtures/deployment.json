@@ -35,6 +35,7 @@
         "networkTopRouterId": "networkTopRouterId",
         "networkEdgeIpPoolId": "networkEdgeIpPoolId",
         "networkHostUplinkPnic": "networkHostUplinkPnic",
+        "networkDhcpRelayId": "networkDhcpRelayId",
         "edgeClusterId": "edgeClusterId",
         "ipRange": "10.0.0.1/24",
         "floatingIpRange": {

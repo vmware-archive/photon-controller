@@ -163,7 +163,6 @@ To enable virtual network in Photon Controller, some NSX parameters are needed t
 * `NETWORK_EDGE_IP_POOL_ID` - ID of the NSX Edge IP pool
 * `NETWORK_HOST_UPLINK_PNIC` - Name of the host uplink physical nic
 * `NETWORK_EDGE_CLUSTER_ID` - ID of the NSX Edge Cluster
-* `NETWORK_DHCP_RELAY_PROFILE_ID` - ID of the NSX DHCP relay profile
 * `NETWORK_DHCP_RELAY_SERVICE_ID` - ID of the NSX DHCP relay service
 * `NETWORK_IP_RANGE` - range of the global private IP pool
 * `NETWORK_EXTERNAL_IP_START` - start IP of the global external IP pool

@@ -88,6 +88,12 @@ public class NetworkConfigurationCreateSpec {
   private String networkHostUplinkPnic;
 
   @JsonProperty
+  @ApiModelProperty(value = "The ID of the DHCP relay service")
+  @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
+  @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
+  private String networkDhcpRelayId;
+
+  @JsonProperty
   @ApiModelProperty(value = "The global IP range for allocating private IP range to virtual network")
   @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
   @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
@@ -172,6 +178,14 @@ public class NetworkConfigurationCreateSpec {
     this.networkHostUplinkPnic = networkHostUplinkPnic;
   }
 
+  public String getNetworkDhcpRelayId() {
+    return networkDhcpRelayId;
+  }
+
+  public void setNetworkDhcpRelayId(String networkDhcpRelayId) {
+    this.networkDhcpRelayId = networkDhcpRelayId;
+  }
+
   public String getIpRange() {
     return ipRange;
   }
@@ -214,6 +228,7 @@ public class NetworkConfigurationCreateSpec {
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
         && Objects.equals(this.getNetworkEdgeIpPoolId(), other.getNetworkEdgeIpPoolId())
         && Objects.equals(this.getNetworkHostUplinkPnic(), other.getNetworkHostUplinkPnic())
+        && Objects.equals(this.getNetworkDhcpRelayId(), other.getNetworkDhcpRelayId())
         && Objects.equals(this.getIpRange(), other.getIpRange())
         && Objects.equals(this.getExternalIpRange(), other.getExternalIpRange())
         && Objects.deepEquals(this.getDhcpServers(), other.getDhcpServers());
@@ -231,6 +246,7 @@ public class NetworkConfigurationCreateSpec {
         this.getNetworkTopRouterId(),
         this.getNetworkEdgeIpPoolId(),
         this.getNetworkHostUplinkPnic(),
+        this.getNetworkDhcpRelayId(),
         this.getIpRange(),
         this.getExternalIpRange(),
         this.getDhcpServers());
@@ -246,6 +262,7 @@ public class NetworkConfigurationCreateSpec {
         .add("networkTopRouterId", this.getNetworkTopRouterId())
         .add("networkEdgeIpPoolId", this.getNetworkEdgeIpPoolId())
         .add("networkHostUplinkPnic", this.getNetworkHostUplinkPnic())
+        .add("networkDhcpRelayId", this.getNetworkDhcpRelayId())
         .add("ipRange", this.getIpRange())
         .add("externalIpRange", this.getExternalIpRange())
         .add("dhcpServers", StringUtils.join(this.getDhcpServers(), ','));
