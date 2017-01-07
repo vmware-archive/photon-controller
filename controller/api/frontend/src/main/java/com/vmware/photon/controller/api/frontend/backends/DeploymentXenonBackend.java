@@ -310,6 +310,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     networkConfiguration.setNetworkTopRouterId(deploymentEntity.getNetworkTopRouterId());
     networkConfiguration.setNetworkEdgeIpPoolId(deploymentEntity.getNetworkEdgeIpPoolId());
     networkConfiguration.setNetworkHostUplinkPnic(deploymentEntity.getNetworkHostUplinkPnic());
+    networkConfiguration.setNetworkDhcpRelayId(deploymentEntity.getNetworkDhcpRelayId());
     networkConfiguration.setEdgeClusterId(deploymentEntity.getEdgeClusterId());
     networkConfiguration.setIpRange(deploymentEntity.getIpRange());
     networkConfiguration.setFloatingIpRange(deploymentEntity.getFloatingIpRange());
@@ -530,6 +531,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
       deployment.networkTopRouterId = spec.getNetworkConfiguration().getNetworkTopRouterId();
       deployment.networkEdgeIpPoolId = spec.getNetworkConfiguration().getNetworkEdgeIpPoolId();
       deployment.networkHostUplinkPnic = spec.getNetworkConfiguration().getNetworkHostUplinkPnic();
+      deployment.dhcpRelayServiceId = spec.getNetworkConfiguration().getNetworkDhcpRelayId();
       deployment.ipRange = spec.getNetworkConfiguration().getIpRange();
       deployment.dhcpServers = spec.getNetworkConfiguration().getDhcpServers();
       deployment.floatingIpRange = spec.getNetworkConfiguration().getExternalIpRange();
@@ -579,6 +581,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     entity.setNetworkTopRouterId(deployment.networkTopRouterId);
     entity.setNetworkEdgeIpPoolId(deployment.networkEdgeIpPoolId);
     entity.setNetworkHostUplinkPnic(deployment.networkHostUplinkPnic);
+    entity.setNetworkDhcpRelayId(deployment.dhcpRelayServiceId);
     entity.setEdgeClusterId(deployment.edgeClusterId);
     entity.setIpRange(deployment.ipRange);
     entity.setFloatingIpRange(deployment.floatingIpRange);
@@ -621,10 +624,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
         taskEntity, deploymentEntity, Operation.CREATE_SUBNET_ALLOCATOR);
     this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.CREATE_DHCP_SUBNET);
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.CONFIGURE_DHCP_RELAY_PROFILE);
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.CONFIGURE_DHCP_RELAY_SERVICE);
     this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.MIGRATE_DEPLOYMENT_DATA);
 

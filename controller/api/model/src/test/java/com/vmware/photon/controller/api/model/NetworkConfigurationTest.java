@@ -51,6 +51,7 @@ public class NetworkConfigurationTest {
       .networkTopRouterId("networkTopRouterId")
       .networkEdgeIpPoolId("networkEdgeIpPoolId")
       .networkHostUplinkPnic("networkHostUplinkPnic")
+      .networkDhcpRelayId("networkDhcpRelayId")
       .edgeClusterId("edgeClusterId")
       .ipRange("10.0.0.1/24")
       .floatingIpRange(sampleIpRange)
@@ -96,6 +97,7 @@ public class NetworkConfigurationTest {
           "networkTopRouterId may not be null (was null)",
           "networkEdgeIpPoolId may not be null (was null)",
           "networkHostUplinkPnic may not be null (was null)",
+          "networkDhcpRelayId may not be null (was null)",
           "edgeClusterId may not be null (was null)",
           "ipRange invalidIpRange is invalid CIDR (was invalidIpRange)",
           "floatingIpRange.start s is invalid IPv4 Address (was s)"
@@ -116,10 +118,15 @@ public class NetworkConfigurationTest {
     public void testCorrectString() {
       String expectedString =
           "NetworkConfiguration{sdnEnabled=true, networkManagerAddress=1.2.3.4, " +
-          "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, " +
-              "networkEdgeIpPoolId=networkEdgeIpPoolId, networkHostUplinkPnic=networkHostUplinkPnic, " +
-          "ipRange=10.0.0.1/24, floatingIpRange=IpRange{start=192.168.0.2, end=192.168.0.253}, " +
-          "edgeClusterId=edgeClusterId, dhcpServers=192.10.0.1,192.20.0.1}";
+          "networkZoneId=networkZoneId, " +
+          "networkTopRouterId=networkTopRouterId, " +
+          "networkEdgeIpPoolId=networkEdgeIpPoolId, " +
+          "networkHostUplinkPnic=networkHostUplinkPnic, " +
+          "networkDhcpRelayId=networkDhcpRelayId, " +
+          "ipRange=10.0.0.1/24, " +
+          "floatingIpRange=IpRange{start=192.168.0.2, end=192.168.0.253}, " +
+          "edgeClusterId=edgeClusterId, " +
+          "dhcpServers=192.10.0.1,192.20.0.1}";
       assertThat(sampleNetworkConfiguration.toString(), is(expectedString));
     }
   }

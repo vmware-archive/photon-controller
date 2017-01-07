@@ -24,7 +24,8 @@
       "networkManagerPassword": "networkManagerPassword",
       "networkTopRouterId": "networkTopRouterId",
       "networkEdgeIpPoolId": "networkEdgeIpPoolId",
-      "networkHostUplinkPnic": "networkHostUplinkPnic"
+      "networkHostUplinkPnic": "networkHostUplinkPnic",
+      "networkDhcpRelayId": "networkDhcpRelayId"
     },
     "loadBalancerEnabled": true
 }

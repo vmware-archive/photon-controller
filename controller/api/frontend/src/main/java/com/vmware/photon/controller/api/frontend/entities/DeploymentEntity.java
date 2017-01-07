@@ -81,6 +81,8 @@ public class DeploymentEntity extends BaseEntity {
 
   private String networkHostUplinkPnic;
 
+  private String networkDhcpRelayId;
+
   private String edgeClusterId;
 
   private String ipRange;
@@ -305,6 +307,14 @@ public class DeploymentEntity extends BaseEntity {
     this.networkHostUplinkPnic = networkHostUplinkPnic;
   }
 
+  public String getNetworkDhcpRelayId() {
+    return networkDhcpRelayId;
+  }
+
+  public void setNetworkDhcpRelayId(String networkDhcpRelayId) {
+    this.networkDhcpRelayId = networkDhcpRelayId;
+  }
+
   public String getEdgeClusterId() {
     return edgeClusterId;
   }
@@ -444,6 +454,7 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
         && Objects.equals(this.getNetworkEdgeIpPoolId(), other.getNetworkEdgeIpPoolId())
         && Objects.equals(this.getNetworkHostUplinkPnic(), other.getNetworkHostUplinkPnic())
+        && Objects.equals(this.getNetworkDhcpRelayId(), other.getNetworkDhcpRelayId())
         && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId())
         && Objects.equals(this.getIpRange(), other.getIpRange())
         && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange())
@@ -483,6 +494,7 @@ public class DeploymentEntity extends BaseEntity {
         .add("networkTopRouterId", this.getNetworkTopRouterId())
         .add("networkEdgeIpPoolId", this.getNetworkEdgeIpPoolId())
         .add("networkHostUplinkPnic", this.getNetworkHostUplinkPnic())
+        .add("networkDhcpRelayId", this.getNetworkDhcpRelayId())
         .add("edgeClusterId", this.getEdgeClusterId())
         .add("ipRange", this.getIpRange())
         .add("floatingIpRange", this.getFloatingIpRange())

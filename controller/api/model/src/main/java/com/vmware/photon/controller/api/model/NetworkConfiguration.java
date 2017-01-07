@@ -78,6 +78,11 @@ public class NetworkConfiguration {
   private String networkHostUplinkPnic;
 
   @JsonProperty
+  @ApiModelProperty(value = "The ID of the DHCP relay service")
+  @NotNull
+  private String networkDhcpRelayId;
+
+  @JsonProperty
   @ApiModelProperty(value = "The ID of the edge cluster that connects virtual network to physical network",
       required = true)
   @NotNull
@@ -180,6 +185,14 @@ public class NetworkConfiguration {
     this.networkHostUplinkPnic = networkHostUplinkPnic;
   }
 
+  public String getNetworkDhcpRelayId() {
+    return networkDhcpRelayId;
+  }
+
+  public void setNetworkDhcpRelayId(String networkDhcpRelayId) {
+    this.networkDhcpRelayId = networkDhcpRelayId;
+  }
+
   public String getEdgeClusterId() {
     return edgeClusterId;
   }
@@ -215,6 +228,7 @@ public class NetworkConfiguration {
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
         && Objects.equals(this.getNetworkEdgeIpPoolId(), other.getNetworkEdgeIpPoolId())
         && Objects.equals(this.getNetworkHostUplinkPnic(), other.getNetworkHostUplinkPnic())
+        && Objects.equals(this.getNetworkDhcpRelayId(), other.getNetworkDhcpRelayId())
         && Objects.equals(this.getEdgeClusterId(), other.getEdgeClusterId())
         && Objects.equals(this.getIpRange(), other.getIpRange())
         && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange())
@@ -233,6 +247,7 @@ public class NetworkConfiguration {
         this.getNetworkTopRouterId(),
         this.getNetworkEdgeIpPoolId(),
         this.getNetworkHostUplinkPnic(),
+        this.getNetworkDhcpRelayId(),
         this.getEdgeClusterId(),
         this.getFloatingIpRange(),
         this.getDhcpServers());
@@ -248,6 +263,7 @@ public class NetworkConfiguration {
         .add("networkTopRouterId", this.getNetworkTopRouterId())
         .add("networkEdgeIpPoolId", this.getNetworkEdgeIpPoolId())
         .add("networkHostUplinkPnic", this.getNetworkHostUplinkPnic())
+        .add("networkDhcpRelayId", this.getNetworkDhcpRelayId())
         .add("ipRange", this.getIpRange())
         .add("floatingIpRange", this.getFloatingIpRange())
         .add("edgeClusterId", this.edgeClusterId)

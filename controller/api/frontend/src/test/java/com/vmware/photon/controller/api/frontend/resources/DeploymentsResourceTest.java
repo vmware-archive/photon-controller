@@ -237,6 +237,7 @@ public class DeploymentsResourceTest extends ResourceTest {
         .networkTopRouterId("rid")
         .networkEdgeIpPoolId("networkEdgeIpPoolId")
         .networkHostUplinkPnic("networkHostUplinkPnic")
+        .networkDhcpRelayId("networkDhcpRelayId")
         .networkZoneId("zid")
         .ipRange("192.168.1.1/24")
         .externalIpRange(externalIpRange)
