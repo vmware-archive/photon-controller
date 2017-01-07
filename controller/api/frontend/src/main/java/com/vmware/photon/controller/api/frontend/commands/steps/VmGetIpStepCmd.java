@@ -29,11 +29,9 @@ import com.vmware.photon.controller.housekeeper.xenon.SubnetIPLeaseSyncTriggerSe
 import com.vmware.xenon.common.Operation;
 
 import com.google.common.base.Preconditions;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 

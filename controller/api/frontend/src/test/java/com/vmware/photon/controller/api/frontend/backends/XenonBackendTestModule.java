@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.api.frontend.backends;
 
+import com.vmware.photon.controller.api.backend.helpers.TestHost;
+import com.vmware.photon.controller.api.backend.helpers.mocks.MockSubnetConfigurationService;
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
 import com.vmware.photon.controller.api.frontend.utils.PhysicalNetworkHelper;
-import com.vmware.photon.controller.apibackend.helpers.TestHost;
-import com.vmware.photon.controller.apibackend.helpers.mocks.MockSubnetConfigurationService;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;

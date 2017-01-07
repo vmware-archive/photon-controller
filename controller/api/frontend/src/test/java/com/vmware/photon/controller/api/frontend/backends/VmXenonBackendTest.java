@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.api.frontend.backends;
 
+import com.vmware.photon.controller.api.backend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.api.frontend.TestModule;
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControllerXenonRestClient;
@@ -64,7 +65,6 @@ import com.vmware.photon.controller.api.model.VmCreateSpec;
 import com.vmware.photon.controller.api.model.VmOperation;
 import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.api.model.builders.AttachedDiskCreateSpecBuilder;
-import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DiskService;

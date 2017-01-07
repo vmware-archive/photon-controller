@@ -18,10 +18,8 @@ import com.vmware.photon.controller.api.model.constraints.NullableDomainOrIP;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
-
 import org.apache.commons.lang3.StringUtils;
 
 import javax.validation.constraints.NotNull;

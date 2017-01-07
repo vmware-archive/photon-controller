@@ -23,7 +23,6 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.services.common.NodeGroupService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
-
 import static com.vmware.photon.controller.api.frontend.Responses.generateCustomResponse;
 
 import com.google.inject.Inject;

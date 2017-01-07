@@ -19,7 +19,6 @@ import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRo
 import com.vmware.photon.controller.api.frontend.resources.routes.VmResourceRoutes;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.VmFloatingIpSpec;
-
 import static com.vmware.photon.controller.api.frontend.Responses.generateCustomResponse;
 
 import com.google.inject.Inject;

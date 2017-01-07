@@ -13,6 +13,10 @@
 
 package com.vmware.photon.controller.api.frontend.clients;
 
+import com.vmware.photon.controller.api.backend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.api.backend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.api.backend.workflows.CreateVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.api.backend.workflows.DeleteVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.api.frontend.backends.TaskBackend;
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.backends.clients.PhotonControllerXenonRestClient;
@@ -31,10 +35,6 @@ import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.VirtualNetworkCreateSpec;
 import com.vmware.photon.controller.api.model.VirtualSubnet;
-import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
-import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
-import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
-import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;

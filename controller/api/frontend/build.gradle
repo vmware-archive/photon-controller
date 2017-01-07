@@ -15,7 +15,7 @@ dependencies {
   compile(project(':common-auth'))
   compile(project(':common-xenon'))
   compile(project(':cloud-store'))
-  compile(project(':api-backend'))
+  compile(project(':api:api-backend'))
   compile(project(':swagger-ui'))
   compile(project(':swagger-jersey'))
   compile(project(':nfc-client'))
@@ -50,7 +50,7 @@ dependencies {
 
   testCompile(project(path: ':common-tests'))
   testCompile(project(path: ':api:model', configuration: 'tests'))
-  testCompile(project(path: ':api-backend', configuration: 'tests'))
+  testCompile(project(path: ':api:api-backend', configuration: 'tests'))
 
   testCompile("org.apache.curator:curator-test:${versions.curator}") {
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'

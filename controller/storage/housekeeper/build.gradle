@@ -17,7 +17,7 @@ dependencies {
   compile project(':cloud-store')
   compile project(':dhcp-agent')
   compile project(':nsx-client')
-  compile project(':api-backend')
+  compile project(':api:api-backend')
 
   compile "com.google.guava:guava:${versions.guava}"
   compile 'net.sourceforge.argparse4j:argparse4j:0.4.0'
