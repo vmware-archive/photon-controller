@@ -96,11 +96,6 @@ public class DeployerContextTest {
     }
 
     @Test
-    public void testVibDirectory() {
-      assertThat(deployerContext.getVibDirectory(), is("/tmp/deployAgent/vibs"));
-    }
-
-    @Test
     public void testSharedSecret() {
       assertThat(deployerContext.getSharedSecret(), is("shared-secret"));
     }
@@ -179,11 +174,6 @@ public class DeployerContextTest {
     }
 
     @Test
-    public void testVibDirectory() {
-      assertThat(deployerContext.getVibDirectory(), is("/tmp/deployAgent/vibs"));
-    }
-
-    @Test
     public void testSharedSecret() {
       UUID uuid = UUID.fromString(deployerContext.getSharedSecret());
       assertThat(deployerContext.getSharedSecret(), is(uuid.toString()));
@@ -237,8 +227,7 @@ public class DeployerContextTest {
           "scriptDirectory: \"/tmp/scriptRunnerTest/scripts\"\n" +
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
-          "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: \"/tmp/scriptRunnerTest/vibs\"\n";
+          "syslogEndpoint: \"syslog endpoint\"\n";
 
       File configFile = new File(storageDirectory, "config.yml");
       createConfigFile(configFile, configFileContents);
@@ -258,8 +247,7 @@ public class DeployerContextTest {
           "enableSyslog: true\n" +
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
-          "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: \"/tmp/scriptRunnerTest/vibs\"\n";
+          "syslogEndpoint: \"syslog endpoint\"\n";
 
       File configFile = new File(storageDirectory, "config.yml");
       createConfigFile(configFile, configFileContents);
@@ -280,8 +268,7 @@ public class DeployerContextTest {
           "scriptDirectory:\n" +
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
-          "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: \"/tmp/scriptRunnerTest/vibs\"\n";
+          "syslogEndpoint: \"syslog endpoint\"\n";
 
       File configFile = new File(storageDirectory, "config.yml");
       createConfigFile(configFile, configFileContents);
@@ -301,8 +288,7 @@ public class DeployerContextTest {
           "enableSyslog: true\n" +
           "scriptDirectory: \"/tmp/scriptRunnerTest/scripts\"\n" +
           "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
-          "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: \"/tmp/scriptRunnerTest/vibs\"\n";
+          "syslogEndpoint: \"syslog endpoint\"\n";
 
       File configFile = new File(storageDirectory, "config.yml");
       createConfigFile(configFile, configFileContents);
@@ -323,8 +309,7 @@ public class DeployerContextTest {
           "scriptDirectory: \"/tmp/scriptRunnerTest/scripts\"\n" +
           "scriptLogDirectory:\n" +
           "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
-          "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: \"/tmp/scriptRunnerTest/vibs\"\n";
+          "syslogEndpoint: \"syslog endpoint\"\n";
 
       File configFile = new File(storageDirectory, "config.yml");
       createConfigFile(configFile, configFileContents);
@@ -344,8 +329,7 @@ public class DeployerContextTest {
           "enableSyslog: true\n" +
           "scriptDirectory: \"/tmp/scriptRunnerTest/scripts\"\n" +
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
-          "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: \"/tmp/scriptRunnerTest/vibs\"\n";
+          "syslogEndpoint: \"syslog endpoint\"\n";
 
       File configFile = new File(storageDirectory, "config.yml");
       createConfigFile(configFile, configFileContents);
@@ -367,8 +351,7 @@ public class DeployerContextTest {
           "scriptDirectory: \"/tmp/scriptRunnerTest/scripts\"\n" +
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "configDirectory: \n" +
-          "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: \"/tmp/scriptRunnerTest/vibs\"\n";
+          "syslogEndpoint: \"syslog endpoint\"\n";
 
       File configFile = new File(storageDirectory, "config.yml");
       createConfigFile(configFile, configFileContents);
@@ -382,49 +365,6 @@ public class DeployerContextTest {
     }
 
     @Test
-    public void testMissingVibDirectory() throws IOException {
-
-      String configFileContents = "" +
-          "enableSyslog: true\n" +
-          "scriptDirectory: \"/tmp/scriptRunnerTest/scripts\"\n" +
-          "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
-          "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
-          "syslogEndpoint: \"syslog endpoint\"\n";
-
-      File configFile = new File(storageDirectory, "config.yml");
-      createConfigFile(configFile, configFileContents);
-
-      try {
-        deployerContext = ConfigBuilder.build(DeployerContext.class, configFile.getAbsolutePath());
-        fail("Building deployer config object should fail with missing vibDirectory field");
-      } catch (BadConfigException e) {
-        assertThat(e.getMessage(), containsString("vibDirectory may not be empty (was null)"));
-      }
-    }
-
-    @Test
-    public void testBlankVibDirectory() throws IOException {
-
-      String configFileContents = "" +
-          "enableSyslog: true\n" +
-          "scriptDirectory: \"/tmp/scriptRunnerTest/scripts\"\n" +
-          "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
-          "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
-          "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory:\n";
-
-      File configFile = new File(storageDirectory, "config.yml");
-      createConfigFile(configFile, configFileContents);
-
-      try {
-        deployerContext = ConfigBuilder.build(DeployerContext.class, configFile.getAbsolutePath());
-        fail("Building deployer config object should fail with blank vibDirectory field");
-      } catch (BadConfigException e) {
-        assertThat(e.getMessage(), containsString("vibDirectory may not be empty (was )"));
-      }
-    }
-
-    @Test
     public void testMissingTenantName() throws IOException {
 
       String configFileContents = "" +
@@ -432,7 +372,6 @@ public class DeployerContextTest {
           "scriptDirectory: \"/tmp/scriptRunnerTest/scripts\"\n" +
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: vibdir\n" +
           "apifeEndpoint: endpoint\n" +
           "projectName: project\n" +
           "resourceTicketName: \n" +
@@ -459,7 +398,6 @@ public class DeployerContextTest {
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
           "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: vibdir\n" +
           "apifeEndpoint: endpoint\n" +
           "tenantName: \n" +
           "projectName: project\n" +
@@ -487,7 +425,6 @@ public class DeployerContextTest {
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
           "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: vibdir\n" +
           "apifeEndpoint: endpoint\n" +
           "tenantName: tenant\n" +
           "resourceTicketName: \n" +
@@ -513,7 +450,6 @@ public class DeployerContextTest {
           "scriptDirectory: \"/tmp/scriptRunnerTest/scripts\"\n" +
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: vibdir\n" +
           "apifeEndpoint: endpoint\n" +
           "tenantName: tenant\n" +
           "projectName: \n" +
@@ -541,7 +477,6 @@ public class DeployerContextTest {
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
           "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: vibdir\n" +
           "apifeEndpoint: endpoint\n" +
           "tenantName: tenant\n" +
           "projectName: project\n" +
@@ -568,7 +503,6 @@ public class DeployerContextTest {
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
           "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: vibdir\n" +
           "apifeEndpoint: endpoint\n" +
           "tenantName: tenant\n" +
           "projectName: project\n" +
@@ -595,7 +529,6 @@ public class DeployerContextTest {
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
           "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: vibdir\n" +
           "apifeEndpoint: endpoint\n" +
           "tenantName: tenant\n" +
           "projectName: project\n" +
@@ -621,7 +554,6 @@ public class DeployerContextTest {
           "scriptDirectory: \"/tmp/scriptRunnerTest/scripts\"\n" +
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: vibdir\n" +
           "apifeEndpoint: endpoint\n" +
           "tenantName: tenant\n" +
           "projectName: project\n" +
@@ -648,7 +580,6 @@ public class DeployerContextTest {
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
           "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: vibdir\n" +
           "apifeEndpoint: endpoint\n" +
           "tenantName: tenant\n" +
           "projectName: project\n" +
@@ -674,7 +605,6 @@ public class DeployerContextTest {
           "scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"\n" +
           "configDirectory: \"/tmp/deployAgent/configurations\"\n" +
           "syslogEndpoint: \"syslog endpoint\"\n" +
-          "vibDirectory: vibdir\n" +
           "apifeEndpoint: endpoint\n" +
           "tenantName: tenant\n" +
           "projectName: project\n" +
@@ -726,7 +656,6 @@ public class DeployerContextTest {
         sb.append("scriptLogDirectory: \"/tmp/scriptRunnerTest/logs\"").append("\n");
         sb.append("configDirectory: \"/tmp/deployAgent/configurations\"").append("\n");
         sb.append("syslogEndpoint: \"syslog endpoint\"").append("\n");
-        sb.append("vibDirectory: vibdir").append("\n");
         sb.append("apifeEndpoint: endpoint").append("\n");
         sb.append("tenantName: tenant").append("\n");
         sb.append("projectName: project").append("\n");

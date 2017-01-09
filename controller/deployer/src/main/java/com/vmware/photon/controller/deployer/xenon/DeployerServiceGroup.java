@@ -42,7 +42,6 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactor
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactoryProvider;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateFactoryService;
-import com.vmware.photon.controller.deployer.xenon.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateClusterManagerResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateDhcpVmResourcesTaskFactoryService;
@@ -69,8 +68,6 @@ import com.vmware.photon.controller.deployer.xenon.task.RegisterAuthClientTaskFa
 import com.vmware.photon.controller.deployer.xenon.task.SetDatastoreTagsTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.UpgradeAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.UploadImageTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.UploadVibTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.UploadVibTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.ValidateHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.upgrade.ReflectionTransformationService;
 import com.vmware.photon.controller.deployer.xenon.workflow.AddCloudHostWorkflowFactoryService;
@@ -87,12 +84,8 @@ import com.vmware.photon.controller.deployer.xenon.workflow.InitializeDeployment
 import com.vmware.photon.controller.deployer.xenon.workflow.RemoveDeploymentWorkflowFactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
-import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
-import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.QueryTask;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -125,12 +118,6 @@ public class DeployerServiceGroup
 
   public static final String FACTORY_SERVICE_FIELD_NAME_SELF_LINK = "SELF_LINK";
 
-  private static final String UPLOAD_VIB_WORK_QUEUE_NAME = "vib-uploads";
-
-  @VisibleForTesting
-  public static final String UPLOAD_VIB_WORK_QUEUE_SELF_LINK = UriUtils.buildUriPath(
-      RateLimitedWorkQueueFactoryService.SELF_LINK, UPLOAD_VIB_WORK_QUEUE_NAME);
-
   public static final Map<String, TaskSchedulerServiceStateBuilder> TASK_SCHEDULERS = ImmutableMap.of(
       COPY_STATE_SCHEDULER_SERVICE,
         new TaskSchedulerServiceStateBuilder(CopyStateTaskService.class, 5)
@@ -153,7 +140,6 @@ public class DeployerServiceGroup
       // Entity Services
       ContainerFactoryService.class,
       ContainerTemplateFactoryService.class,
-      VibFactoryService.class,
       VmFactoryService.class,
 
       // Task Services
@@ -181,7 +167,6 @@ public class DeployerServiceGroup
       SetDatastoreTagsTaskFactoryService.class,
       UpgradeAgentTaskFactoryService.class,
       UploadImageTaskFactoryService.class,
-      UploadVibTaskFactoryService.class,
       ValidateHostTaskFactoryService.class,
 
       // Workflow services
@@ -368,7 +353,6 @@ public class DeployerServiceGroup
 
     ServiceHostUtils.startServices(photonControllerXenonHost, getFactoryServices());
     photonControllerXenonHost.addPrivilegedService(CopyStateTaskService.class);
-    startWorkQueueServices();
     startTaskSchedulerServices();
   }
 
@@ -379,10 +363,6 @@ public class DeployerServiceGroup
    */
   @Override
   public boolean isReady() {
-
-    if (!photonControllerXenonHost.checkServiceAvailable(UPLOAD_VIB_WORK_QUEUE_SELF_LINK)) {
-      return false;
-    }
 
     for (String selfLink : TASK_SCHEDULERS.keySet()) {
       if (!photonControllerXenonHost.checkServiceAvailable(selfLink)) {
@@ -431,36 +411,5 @@ public class DeployerServiceGroup
     post.setReferer(UriUtils.buildUri(photonControllerXenonHost, DEPLOYER_URI));
     photonControllerXenonHost.sendRequest(post);
   }
-
-  private void startWorkQueueServices() {
-
-    photonControllerXenonHost.registerForServiceAvailability(
-        (o, e) -> {
-          if (e != null) {
-            logger.error("Failed to start work queue factory service: " + Utils.toString(e));
-            return;
-          }
-
-          QueryTask.Query pendingTaskServiceQuery = QueryTask.Query.Builder.create()
-              .addKindFieldClause(UploadVibTaskService.State.class)
-              .addCompositeFieldClause("taskState", "stage",
-                  QueryTask.QuerySpecification.toMatchValue(TaskState.TaskStage.CREATED))
-              .build();
-
-          RateLimitedWorkQueueService.State startState = new RateLimitedWorkQueueService.State();
-          startState.documentSelfLink = UPLOAD_VIB_WORK_QUEUE_NAME;
-          startState.pendingTaskServiceQuery = pendingTaskServiceQuery;
-          startState.startPatchBody = Utils.toJson(UploadVibTaskService.buildPatch(TaskState.TaskStage.STARTED,
-              UploadVibTaskService.TaskState.SubStage.BEGIN_EXECUTION));
-          startState.concurrencyLimit = 4;
-
-          photonControllerXenonHost.sendRequest(Operation
-              .createPost(photonControllerXenonHost, RateLimitedWorkQueueFactoryService.SELF_LINK)
-              .setBody(startState)
-              .setReferer(UriUtils.buildUri(photonControllerXenonHost, DEPLOYER_URI)));
-        },
-        RateLimitedWorkQueueFactoryService.SELF_LINK);
-  }
-
 
 }

@@ -181,7 +181,6 @@ public class MigrationStatusUpdateTriggerServiceTest {
     public void successWithFinishedTasks() throws Throwable {
       startTestEnvironment();
       createFinishedCopystateTaskService(testEnvironment);
-      createFinishedUploadVibTaskService(testEnvironment);
 
       Operation postResult = testEnvironment
           .sendPostAndWait(MigrationStatusUpdateTriggerFactoryService.SELF_LINK, startState);
@@ -197,15 +196,12 @@ public class MigrationStatusUpdateTriggerServiceTest {
           deploymentState.dataMigrationProgress
               .get(MigrationUtils.findAllUpgradeServices().iterator().next().sourceFactoryServicePath + "/"),
           is(1));
-      assertThat(deploymentState.vibsUploaded, is(1L));
-      assertThat(deploymentState.vibsUploading, is(0L));
     }
 
     @Test
     public void successWithoutFinishedTasks() throws Throwable {
       startTestEnvironment();
       createRunningCopystateTaskService(testEnvironment);
-      createRunningUploadVibTaskService(testEnvironment);
 
       Operation postResult = testEnvironment
           .sendPostAndWait(MigrationStatusUpdateTriggerFactoryService.SELF_LINK, startState);
@@ -218,8 +214,6 @@ public class MigrationStatusUpdateTriggerServiceTest {
           .getServiceState(state.deploymentServiceLink, DeploymentService.State.class);
       assertThat(deploymentState.dataMigrationProgress.size(), is(MigrationUtils.findAllUpgradeServices().size()));
       assertThat(deploymentState.dataMigrationProgress.values().stream().mapToInt(value -> value).sum(), is(0));
-      assertThat(deploymentState.vibsUploaded, is(0L));
-      assertThat(deploymentState.vibsUploading, is(1L));
     }
 
     private void startTestEnvironment() {
@@ -243,14 +237,6 @@ public class MigrationStatusUpdateTriggerServiceTest {
       testEnvironment.sendPostAndWait(CopyStateTaskFactoryService.SELF_LINK, buildCopyStateState(TaskStage.STARTED));
     }
 
-    private void createFinishedUploadVibTaskService(TestEnvironment testEnvironment) throws Throwable {
-      testEnvironment.sendPostAndWait(UploadVibTaskFactoryService.SELF_LINK, buildUploadVibState(TaskStage.FINISHED));
-    }
-
-    private void createRunningUploadVibTaskService(TestEnvironment testEnvironment) throws Throwable {
-      testEnvironment.sendPostAndWait(UploadVibTaskFactoryService.SELF_LINK, buildUploadVibState(TaskStage.STARTED));
-    }
-
     private CopyStateTaskService.State buildCopyStateState(TaskStage stage) {
       CopyStateTaskService.State startState = new CopyStateTaskService.State();
       startState.taskState = new TaskState();
@@ -265,20 +251,6 @@ public class MigrationStatusUpdateTriggerServiceTest {
       return startState;
     }
 
-    private ServiceDocument buildUploadVibState(TaskStage stage) {
-      UploadVibTaskService.State startState = new UploadVibTaskService.State();
-      startState.taskState = new UploadVibTaskService.TaskState();
-      startState.taskState.stage = stage;
-
-      if (stage == TaskStage.STARTED) {
-        startState.taskState.subStage = UploadVibTaskService.TaskState.SubStage.UPLOAD_VIB;
-      }
-
-      startState.taskControlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-      startState.workQueueServiceLink = "link";
-      startState.vibServiceLink = "link";
-      return startState;
-    }
   }
 
   private State buildValidStartState() {

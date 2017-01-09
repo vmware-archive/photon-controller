@@ -104,26 +104,6 @@ public class DeploymentEntity extends BaseEntity {
 
   private Map<String, Integer> migrationProgress;
 
-  private long vibsUploaded;
-
-  private long vibsUploading;
-
-  public long getVibsUploaded() {
-    return vibsUploaded;
-  }
-
-  public void setVibsUploaded(long vibsUploaded) {
-    this.vibsUploaded = vibsUploaded;
-  }
-
-  public long getVibsUploading() {
-    return vibsUploading;
-  }
-
-  public void setVibsUploading(long vibsUploading) {
-    this.vibsUploading = vibsUploading;
-  }
-
   @Override
   public String getKind() {
     return Deployment.KIND;
@@ -453,9 +433,7 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getUseImageDatastoreForVms(), other.getUseImageDatastoreForVms())
         && Objects.equals(this.getLoadBalancerEnabled(), other.getLoadBalancerEnabled())
         && Objects.equals(this.getLoadBalancerAddress(), other.getLoadBalancerAddress())
-        && Objects.equals(this.getMigrationProgress(), other.getMigrationProgress())
-        && Objects.equals(this.getVibsUploaded(), other.getVibsUploaded())
-        && Objects.equals(this.getVibsUploading(), other.getVibsUploading());
+        && Objects.equals(this.getMigrationProgress(), other.getMigrationProgress());
   }
 
   @Override
@@ -493,8 +471,6 @@ public class DeploymentEntity extends BaseEntity {
         .add("operationId", this.getOperationId())
         .add("loadBalancerEnabled", this.getLoadBalancerEnabled())
         .add("loadBalancerAddress", this.getLoadBalancerAddress())
-        .add("migrationProgress", this.getMigrationProgress())
-        .add("vibsUploaded", this.getVibsUploaded())
-        .add("vibsUploading", this.getVibsUploading());
+        .add("migrationProgress", this.getMigrationProgress());
   }
 }
