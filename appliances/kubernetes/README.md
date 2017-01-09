@@ -23,7 +23,7 @@ appropriate IP addresses).
 ETCD_IPS=1.2.3.4,2.3.4.5 ./master.sh
 ```
 
-To run the master, create two environment variables. One is ETCD_IPS (as above),
+To run the worker, create two environment variables. One is ETCD_IPS (as above),
 while the other is MASTER_IP for the master's IP address. Then run something like
 the following (with the appropriate IP addresses):
 
