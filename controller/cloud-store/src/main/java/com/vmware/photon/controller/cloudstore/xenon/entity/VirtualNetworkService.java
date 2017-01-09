@@ -33,7 +33,6 @@ import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -43,7 +42,7 @@ import java.util.Map;
 /**
  * Used for persisting the virtual network information.
  */
-public class VirtualNetworkService extends StatefulService {
+public class VirtualNetworkService extends EntityBaseService {
 
   public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/virtual-networks";
 
@@ -53,10 +52,6 @@ public class VirtualNetworkService extends StatefulService {
 
   public VirtualNetworkService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

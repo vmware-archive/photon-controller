@@ -31,7 +31,6 @@ import com.vmware.xenon.common.OperationProcessingChain;
 import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceErrorResponse;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
 
 import org.apache.commons.lang3.StringUtils;
@@ -41,7 +40,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * Used for tracking allocations/leases of IPs of a given subnet.
  */
-public class IpLeaseService extends StatefulService {
+public class IpLeaseService extends EntityBaseService {
 
   public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/ip-leases";
 
@@ -56,10 +55,6 @@ public class IpLeaseService extends StatefulService {
 
   public IpLeaseService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

@@ -417,11 +417,6 @@ public class CopyStateTaskService extends StatefulService {
           .setUri(uri)
           .setBody(documentWithRenamedFields)
           .forceRemote()
-          // PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE is a workaround needed
-          // because Xenon 0.7.0 does not allow POST to a previously deleted service
-          // we will need to implement an alternative solution using idempotent posts so that this workaround can
-          // be removed https://www.pivotaltracker.com/story/show/114425679
-          .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE)
           .setReferer(uri);
       return postOp;
     } catch (Throwable ex) {

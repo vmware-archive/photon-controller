@@ -26,6 +26,7 @@ import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.UriUtils;
 
 import org.apache.http.HttpStatus;
+import org.hamcrest.Matchers;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeMethod;
@@ -37,6 +38,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetSocketAddress;
+import java.util.EnumSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -66,6 +68,27 @@ public class IpLeaseServiceTest {
 
   @Test(enabled = false)
   private void dummy() {
+  }
+
+  /**
+   * This class implements tests for the constructor.
+   */
+  public class ConstructorTest {
+
+    @Test
+    public void testServiceOptions() {
+
+      EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
+          Service.ServiceOption.OWNER_SELECTION,
+          Service.ServiceOption.PERSISTENCE,
+          Service.ServiceOption.REPLICATION,
+          Service.ServiceOption.INSTRUMENTATION,
+          Service.ServiceOption.IDEMPOTENT_POST);
+
+      IpLeaseService service = new IpLeaseService();
+      assertThat(service.getOptions(), Matchers.is(expected));
+    }
   }
 
   /**

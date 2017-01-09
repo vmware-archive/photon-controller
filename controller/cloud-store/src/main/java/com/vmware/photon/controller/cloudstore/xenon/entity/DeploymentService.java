@@ -30,7 +30,6 @@ import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
-import com.vmware.xenon.common.StatefulService;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -42,14 +41,10 @@ import java.util.Set;
  * This class implements a Xenon micro-service which provides a plain data object
  * representing deployment metadata.
  */
-public class DeploymentService extends StatefulService {
+public class DeploymentService extends EntityBaseService {
 
   public DeploymentService() {
     super(State.class);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

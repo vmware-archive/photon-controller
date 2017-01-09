@@ -29,7 +29,6 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -49,7 +48,7 @@ import java.util.Map;
  * Class implementing service to delete dangling IpLeaseService from the cloud store.
  * Service will query IpLeaseService with pagination, and delete the dangling IpLeaseService.
  */
-public class IpLeaseDeleteService extends StatefulService {
+public class IpLeaseDeleteService extends TaskBaseService {
 
   public static final String FACTORY_LINK = com.vmware.photon.controller.common.xenon.ServiceUriPaths.CLOUDSTORE_ROOT
       + "/ip-leases-deletes";
@@ -61,10 +60,6 @@ public class IpLeaseDeleteService extends StatefulService {
 
   public IpLeaseDeleteService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

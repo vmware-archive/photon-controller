@@ -26,7 +26,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
 
 import java.util.Map;
 
@@ -34,13 +33,10 @@ import java.util.Map;
  * This class implements a Xenon micro-service which provides a plain data object
  * representing a cluster.
  */
-public class ClusterService extends StatefulService {
+public class ClusterService extends EntityBaseService {
 
   public ClusterService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
   }
 
   @Override

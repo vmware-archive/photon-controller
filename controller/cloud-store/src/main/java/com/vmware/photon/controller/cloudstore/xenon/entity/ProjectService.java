@@ -26,7 +26,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.services.common.QueryTask;
 
 import java.util.List;
@@ -36,7 +35,7 @@ import java.util.Set;
 /**
  * Class ProjectService is used for data persistence of entity lock.
  */
-public class ProjectService extends StatefulService {
+public class ProjectService extends EntityBaseService {
 
   public static final String FIELD_NAME_SECURITY_GROUPS = "securityGroups";
   public static final String SECURITY_GROUPS_KEY =
@@ -46,10 +45,6 @@ public class ProjectService extends StatefulService {
 
   public ProjectService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

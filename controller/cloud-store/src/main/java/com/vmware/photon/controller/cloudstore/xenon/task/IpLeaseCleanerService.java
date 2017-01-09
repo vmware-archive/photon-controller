@@ -28,7 +28,6 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -49,7 +48,7 @@ import java.util.Map;
  * in the case that vm has been deleted,
  * but the ownerVmId in IpLeaseService has not been cleared.
  */
-public class IpLeaseCleanerService extends StatefulService {
+public class IpLeaseCleanerService extends TaskBaseService {
 
   public static final String FACTORY_LINK = com.vmware.photon.controller.common.xenon.ServiceUriPaths.CLOUDSTORE_ROOT
       + "/ip-leases-cleaners";
@@ -62,10 +61,6 @@ public class IpLeaseCleanerService extends StatefulService {
 
   public IpLeaseCleanerService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

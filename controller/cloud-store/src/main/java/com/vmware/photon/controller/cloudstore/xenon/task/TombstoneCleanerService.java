@@ -31,7 +31,6 @@ import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -65,13 +64,9 @@ import java.util.Set;
  * The TombstoneCleanerService keeps the tasks for five hours so that audits can be done or problems debugged after the
  * object has been deleted.
  */
-public class TombstoneCleanerService extends StatefulService {
+public class TombstoneCleanerService extends TaskBaseService {
   public TombstoneCleanerService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

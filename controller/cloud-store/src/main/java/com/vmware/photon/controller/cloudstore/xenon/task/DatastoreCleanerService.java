@@ -28,7 +28,6 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -42,14 +41,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * Class implementing service to trigger datastore delete task for all the datastores in batches.
  */
-public class DatastoreCleanerService extends StatefulService {
+public class DatastoreCleanerService extends TaskBaseService {
 
   public DatastoreCleanerService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

@@ -31,7 +31,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -49,7 +48,7 @@ import java.util.Map;
  * Class implementing service to remove dangling entity locks from the cloud store.
  * Service will query entity locks with pagination and continually process all pages by patching itself.
  */
-public class EntityLockCleanerService extends StatefulService {
+public class EntityLockCleanerService extends TaskBaseService {
 
   public static final Integer DEFAULT_PAGE_LIMIT = 1000;
   public static final long DEFAULT_DELETE_WATERMARK_TIME_MILLIS = 5 * 60 * 1000L;
@@ -57,10 +56,6 @@ public class EntityLockCleanerService extends StatefulService {
 
   public EntityLockCleanerService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

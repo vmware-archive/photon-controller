@@ -34,7 +34,6 @@ import com.vmware.xenon.common.OperationProcessingChain;
 import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
-import com.vmware.xenon.common.StatefulService;
 
 import org.apache.commons.net.util.SubnetUtils;
 
@@ -50,7 +49,7 @@ import java.util.stream.Collectors;
 /**
  * Used for carving out subnets from the network represented by rootCidr.
  */
-public class SubnetAllocatorService extends StatefulService {
+public class SubnetAllocatorService extends EntityBaseService {
 
   public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/subnet-allocators";
 
@@ -67,10 +66,6 @@ public class SubnetAllocatorService extends StatefulService {
 
   public SubnetAllocatorService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

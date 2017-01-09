@@ -27,7 +27,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationProcessingChain;
 import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
 
 import java.util.Date;
 import java.util.List;
@@ -36,14 +35,10 @@ import java.util.Map;
 /**
  * Class TaskService is used for data persistence of task information.
  */
-public class TaskService extends StatefulService {
+public class TaskService extends EntityBaseService {
 
   public TaskService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

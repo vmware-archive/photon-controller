@@ -28,7 +28,6 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceErrorResponse;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
 
 import java.util.ArrayList;
@@ -41,7 +40,7 @@ import java.util.Set;
 /**
  * Class ResourceTicketService is used for data persistence of Resource Ticket information.
  */
-public class ResourceTicketService extends StatefulService {
+public class ResourceTicketService extends EntityBaseService {
 
   private static final double BYTES_PER_KB = 1024.0;
   private static final double BYTES_PER_MB = BYTES_PER_KB * 1024.0;
@@ -49,10 +48,6 @@ public class ResourceTicketService extends StatefulService {
 
   public ResourceTicketService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

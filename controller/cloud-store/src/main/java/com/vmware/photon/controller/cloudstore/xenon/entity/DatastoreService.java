@@ -26,7 +26,6 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.services.common.QueryTask;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -39,17 +38,13 @@ import java.util.concurrent.TimeUnit;
  * This class implements a Xenon micro-service which provides a plain data object
  * representing a datastore.
  */
-public class DatastoreService extends StatefulService {
+public class DatastoreService extends EntityBaseService {
 
   public static final String TAGS_KEY =
       QueryTask.QuerySpecification.buildCollectionItemName(DatastoreService.State.FIELD_NAME_TAGS);
 
   public DatastoreService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

@@ -382,7 +382,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     state.imageId = spec.getImageId();
     state.documentSelfLink = spec.getType().toString().toLowerCase();
 
-    xenonClient.post(true, ClusterConfigurationServiceFactory.SELF_LINK, state);
+    xenonClient.post(false, ClusterConfigurationServiceFactory.SELF_LINK, state);
     return taskBackend.createCompletedTask(null, Operation.CONFIGURE_CLUSTER);
   }
 

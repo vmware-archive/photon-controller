@@ -36,7 +36,6 @@ import com.vmware.xenon.common.OperationProcessingChain;
 import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceErrorResponse;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.base.Preconditions;
@@ -48,7 +47,7 @@ import java.util.Map;
 /**
  * Used for allocating IPs from a subnet and also to track ownership of a CIDR range by a network.
  */
-public class DhcpSubnetService extends StatefulService {
+public class DhcpSubnetService extends EntityBaseService {
 
   public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/dhcp-subnets";
 
@@ -64,10 +63,6 @@ public class DhcpSubnetService extends StatefulService {
 
   public DhcpSubnetService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   public static FactoryService createFactory() {

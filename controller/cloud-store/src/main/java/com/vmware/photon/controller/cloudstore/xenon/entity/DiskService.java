@@ -30,7 +30,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
 
 import java.util.List;
 import java.util.Set;
@@ -38,14 +37,10 @@ import java.util.Set;
 /**
  * Class DiskService is used for data persistence of disk.
  */
-public class DiskService extends StatefulService {
+public class DiskService extends EntityBaseService {
 
   public DiskService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

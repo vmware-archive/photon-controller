@@ -32,7 +32,6 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -49,7 +48,7 @@ import java.util.Map;
 /**
  * Class implementing service to remove stale availability zones and associated tasks from the cloud store.
  */
-public class AvailabilityZoneCleanerService extends StatefulService {
+public class AvailabilityZoneCleanerService extends TaskBaseService {
 
   private static final String DOCUMENT_UPDATE_TIME_MICROS = "documentUpdateTimeMicros";
   private static final String AVAILABILITY_ZONE_STATE_PENDING_DELETE = "PENDING_DELETE";
@@ -59,10 +58,6 @@ public class AvailabilityZoneCleanerService extends StatefulService {
 
   public AvailabilityZoneCleanerService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

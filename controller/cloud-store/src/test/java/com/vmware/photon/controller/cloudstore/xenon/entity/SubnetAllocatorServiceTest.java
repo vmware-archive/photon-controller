@@ -29,6 +29,7 @@ import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.UriUtils;
 
 import org.apache.http.HttpStatus;
+import org.hamcrest.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -45,6 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -187,6 +189,27 @@ public class SubnetAllocatorServiceTest {
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE)
       );
+    }
+  }
+
+  /**
+   * This class implements tests for the constructor.
+   */
+  public class ConstructorTest {
+
+    @Test
+    public void testServiceOptions() {
+
+      EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
+          Service.ServiceOption.OWNER_SELECTION,
+          Service.ServiceOption.PERSISTENCE,
+          Service.ServiceOption.REPLICATION,
+          Service.ServiceOption.INSTRUMENTATION,
+          Service.ServiceOption.IDEMPOTENT_POST);
+
+      SubnetAllocatorService service = new SubnetAllocatorService();
+      assertThat(service.getOptions(), Matchers.is(expected));
     }
   }
 

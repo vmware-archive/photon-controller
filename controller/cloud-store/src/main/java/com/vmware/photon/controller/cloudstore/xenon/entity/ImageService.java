@@ -30,7 +30,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationProcessingChain;
 import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -39,14 +38,10 @@ import java.util.List;
 /**
  * Class ImageService is used for data persistence of image information.
  */
-public class ImageService extends StatefulService {
+public class ImageService extends EntityBaseService {
 
   public ImageService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

@@ -124,7 +124,8 @@ public class HostServiceTest {
           Service.ServiceOption.OWNER_SELECTION,
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.REPLICATION,
-          Service.ServiceOption.PERIODIC_MAINTENANCE);
+          Service.ServiceOption.PERIODIC_MAINTENANCE,
+          Service.ServiceOption.IDEMPOTENT_POST);
 
       HostService service = new HostService();
       assertThat(service.getMaintenanceIntervalMicros(),

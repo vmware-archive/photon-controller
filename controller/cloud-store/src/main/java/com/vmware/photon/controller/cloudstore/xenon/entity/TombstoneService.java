@@ -26,7 +26,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
 
 /**
  * A tombstone is created whenever we delete an object (e.g. a VM) with associated tasks.
@@ -41,14 +40,10 @@ import com.vmware.xenon.common.StatefulService;
  *
  * The TombstoneCleanerService does the cleanup.
  */
-public class TombstoneService extends StatefulService {
+public class TombstoneService extends EntityBaseService {
 
   public TombstoneService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

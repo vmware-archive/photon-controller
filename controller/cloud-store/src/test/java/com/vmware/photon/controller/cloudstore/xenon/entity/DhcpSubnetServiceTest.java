@@ -28,6 +28,7 @@ import com.vmware.xenon.common.UriUtils;
 
 import org.apache.commons.net.util.SubnetUtils;
 import org.apache.http.HttpStatus;
+import org.hamcrest.Matchers;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -37,6 +38,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetSocketAddress;
+import java.util.EnumSet;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -71,6 +73,27 @@ public class DhcpSubnetServiceTest {
 
   @Test
   private void dummy() {
+  }
+
+  /**
+   * This class implements tests for the constructor.
+   */
+  public class ConstructorTest {
+
+    @Test
+    public void testServiceOptions() {
+
+      EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.CONCURRENT_GET_HANDLING,
+          Service.ServiceOption.OWNER_SELECTION,
+          Service.ServiceOption.PERSISTENCE,
+          Service.ServiceOption.REPLICATION,
+          Service.ServiceOption.INSTRUMENTATION,
+          Service.ServiceOption.IDEMPOTENT_POST);
+
+      DhcpSubnetService service = new DhcpSubnetService();
+      assertThat(service.getOptions(), Matchers.is(expected));
+    }
   }
 
   /**

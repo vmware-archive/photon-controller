@@ -1292,7 +1292,7 @@ public class DeploymentXenonBackendTest {
       state.imageId = "imageId";
       state.documentSelfLink = ClusterType.KUBERNETES.toString().toLowerCase();
 
-      xenonClient.post(true, ClusterConfigurationServiceFactory.SELF_LINK, state);
+      xenonClient.post(false, ClusterConfigurationServiceFactory.SELF_LINK, state);
 
       TaskEntity taskEntity = deploymentBackend.deleteClusterConfiguration(ClusterType.KUBERNETES);
       assertThat(taskEntity.getState(), is(TaskEntity.State.COMPLETED));

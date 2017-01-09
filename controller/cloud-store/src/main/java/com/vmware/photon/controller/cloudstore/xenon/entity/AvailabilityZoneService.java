@@ -26,7 +26,6 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -34,14 +33,10 @@ import static com.google.common.base.Preconditions.checkState;
 /**
  * Class AvailabilityZoneService is used for data persistence of availabilityZone information.
  */
-public class AvailabilityZoneService extends StatefulService {
+public class AvailabilityZoneService extends EntityBaseService {
 
   public AvailabilityZoneService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

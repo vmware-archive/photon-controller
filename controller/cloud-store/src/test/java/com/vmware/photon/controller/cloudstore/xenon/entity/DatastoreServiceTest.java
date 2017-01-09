@@ -99,7 +99,8 @@ public class DatastoreServiceTest {
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.REPLICATION,
           Service.ServiceOption.OWNER_SELECTION,
-          Service.ServiceOption.INSTRUMENTATION);
+          Service.ServiceOption.INSTRUMENTATION,
+          Service.ServiceOption.IDEMPOTENT_POST);
       assertThat(new DatastoreService().getOptions(), is(expected));
     }
   }

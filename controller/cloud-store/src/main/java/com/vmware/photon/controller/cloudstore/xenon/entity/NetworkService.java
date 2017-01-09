@@ -28,7 +28,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.services.common.QueryTask;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -38,14 +37,10 @@ import java.util.List;
 /**
  * Class NetworkService is used for data persistence of network information.
  */
-public class NetworkService extends StatefulService {
+public class NetworkService extends EntityBaseService {
 
   public NetworkService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

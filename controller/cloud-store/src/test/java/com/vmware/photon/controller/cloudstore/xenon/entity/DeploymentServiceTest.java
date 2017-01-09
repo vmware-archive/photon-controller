@@ -83,7 +83,8 @@ public class DeploymentServiceTest {
           Service.ServiceOption.OWNER_SELECTION,
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.REPLICATION,
-          Service.ServiceOption.INSTRUMENTATION);
+          Service.ServiceOption.INSTRUMENTATION,
+          Service.ServiceOption.IDEMPOTENT_POST);
 
       DeploymentService deploymentService = new DeploymentService();
       assertThat(deploymentService.getOptions(), is(expected));

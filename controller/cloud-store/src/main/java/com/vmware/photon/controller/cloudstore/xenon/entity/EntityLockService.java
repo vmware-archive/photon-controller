@@ -29,7 +29,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
-import com.vmware.xenon.common.StatefulService;
 
 import org.apache.commons.lang3.StringUtils;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -49,7 +48,7 @@ import java.util.Map;
  * POST to acquire a lock (works if lock exists or not)
  * PUT to release a lock
  */
-public class EntityLockService extends StatefulService {
+public class EntityLockService extends EntityBaseService {
 
   public static final String LOCK_TAKEN_MESSAGE = "Lock already taken";
 
@@ -66,10 +65,6 @@ public class EntityLockService extends StatefulService {
 
   public EntityLockService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override

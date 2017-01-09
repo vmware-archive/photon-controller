@@ -88,7 +88,8 @@ public class ClusterServiceTest {
           Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.REPLICATION,
-          Service.ServiceOption.OWNER_SELECTION);
+          Service.ServiceOption.OWNER_SELECTION,
+          Service.ServiceOption.IDEMPOTENT_POST);
       assertThat(service.getOptions(), is(expected));
     }
   }

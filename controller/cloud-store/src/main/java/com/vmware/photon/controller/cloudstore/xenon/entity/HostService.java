@@ -53,7 +53,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
@@ -79,7 +78,7 @@ import java.util.stream.Collectors;
  * This class implements a Xenon micro-service which provides a plain data object
  * representing an ESX host.
  */
-public class HostService extends StatefulService {
+public class HostService extends EntityBaseService {
 
   private final Random random = new Random();
 
@@ -143,9 +142,6 @@ public class HostService extends StatefulService {
 
   public HostService() {
     super(State.class);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
     super.toggleOption(ServiceOption.PERIODIC_MAINTENANCE, true);
     super.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(DEFAULT_MAINTENANCE_INTERVAL_MILLIS));
     this.lastHostMetadataUpdateTime = System.currentTimeMillis();

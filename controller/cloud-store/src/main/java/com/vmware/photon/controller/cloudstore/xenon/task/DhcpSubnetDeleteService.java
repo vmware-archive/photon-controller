@@ -26,7 +26,6 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
-import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -44,7 +43,7 @@ import java.util.Map;
  * and deletes the IpLeaseService associated with the deleted DhcpSubnetService,
  * and delete the dangling DhcpSubnetService documents as well.
  */
-public class DhcpSubnetDeleteService extends StatefulService {
+public class DhcpSubnetDeleteService extends TaskBaseService {
 
   public static final String FACTORY_LINK = com.vmware.photon.controller.common.xenon.ServiceUriPaths.CLOUDSTORE_ROOT
       + "/dhcp-subnet-deletes";
@@ -57,10 +56,6 @@ public class DhcpSubnetDeleteService extends StatefulService {
 
   public DhcpSubnetDeleteService() {
     super(State.class);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override
