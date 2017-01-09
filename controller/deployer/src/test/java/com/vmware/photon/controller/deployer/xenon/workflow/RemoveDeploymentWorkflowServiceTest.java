@@ -66,7 +66,6 @@ import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
-import com.vmware.photon.controller.deployer.xenon.task.DeleteAgentTaskService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -726,8 +725,6 @@ public class RemoveDeploymentWorkflowServiceTest {
                                       boolean removeFromApifeSuccess,
                                       boolean deprovisionHostSuccess) throws Throwable {
       mockApiClient(removeFromApifeSuccess);
-
-      MockHelper.mockCreateScriptFile(deployerContext, DeleteAgentTaskService.SCRIPT_NAME, deprovisionHostSuccess);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, deprovisionHostSuccess);
 
       testEnvironment = new TestEnvironment.Builder()

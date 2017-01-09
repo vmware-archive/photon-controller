@@ -18,7 +18,6 @@ deployer:
     scriptDirectory: "/tmp/deployAgent/scripts"
     scriptLogDirectory: "/tmp/deployAgent/logs"
     tenantName: "mgmt-tenant"
-    vibDirectory: "/tmp/deployAgent/vibs"
 
   xenon:
     bindAddress: localhost

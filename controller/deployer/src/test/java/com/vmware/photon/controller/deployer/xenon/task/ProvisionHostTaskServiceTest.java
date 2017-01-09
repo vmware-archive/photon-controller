@@ -337,7 +337,6 @@ public class ProvisionHostTaskServiceTest {
     private final File scriptDirectory = new File("/tmp/deployAgent/scripts");
     private final File scriptLogDirectory = new File("/tmp/deployAgent/logs");
     private final File storageDirectory = new File("/tmp/deployAgent");
-    private final File vibDirectory = new File("/tmp/deployAgent/vibs");
 
     private AgentControlClient agentControlClient;
     private AgentControlClientFactory agentControlClientFactory;
@@ -391,15 +390,8 @@ public class ProvisionHostTaskServiceTest {
 
       assertTrue(scriptDirectory.mkdirs());
       assertTrue(scriptLogDirectory.mkdirs());
-      assertTrue(vibDirectory.mkdirs());
 
       TestHelper.createSuccessScriptFile(deployerContext, ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME);
-      TestHelper.createSuccessScriptFile(deployerContext, ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME);
-      TestHelper.createSuccessScriptFile(deployerContext, UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME);
-
-      TestHelper.createSourceFile("vib1.vib", vibDirectory);
-      TestHelper.createSourceFile("vib2.vib", vibDirectory);
-      TestHelper.createSourceFile("vib3.vib", vibDirectory);
 
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, DeploymentService.State.class);
@@ -715,23 +707,6 @@ public class ProvisionHostTaskServiceTest {
     }
 
     @Test
-    public void testSuccessWithSingleVib() throws Throwable {
-
-      FileUtils.deleteDirectory(vibDirectory);
-      assertTrue(vibDirectory.mkdirs());
-      TestHelper.createSourceFile("vib1.vib", vibDirectory);
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      TestHelper.assertTaskStateFinished(finalState.taskState);
-    }
-
-    @Test
     public void testSucessWithAllowedDevices() throws Throwable {
 
       HostService.State hostStartState = TestHelper.getHostServiceStartState(UsageTag.MGMT, HostState.NOT_PROVISIONED);
@@ -907,44 +882,6 @@ public class ProvisionHostTaskServiceTest {
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message,
           is("Configuring syslog on host hostAddress failed with exit code 1"));
-    }
-
-    @Test
-    public void testUploadVibFailure() throws Throwable {
-
-      TestHelper.createFailScriptFile(deployerContext, UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME);
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString("Uploading VIB file"));
-      assertThat(finalState.taskState.failure.message, containsString("to host hostAddress failed with exit code 1"));
-    }
-
-    @Test
-    public void testInstallVibFailure() throws Throwable {
-
-      TestHelper.createFailScriptFile(deployerContext, ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME);
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString("Installing VIB file"));
-      assertThat(finalState.taskState.failure.message, containsString("to host hostAddress failed with exit code 1"));
     }
 
     @Test

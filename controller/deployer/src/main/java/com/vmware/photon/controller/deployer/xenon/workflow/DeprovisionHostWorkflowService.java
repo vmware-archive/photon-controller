@@ -35,8 +35,6 @@ import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.task.ChangeHostModeTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.ChangeHostModeTaskService;
-import com.vmware.photon.controller.deployer.xenon.task.DeleteAgentTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.DeleteAgentTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
 import com.vmware.photon.controller.host.gen.HostMode;
@@ -83,7 +81,6 @@ public class DeprovisionHostWorkflowService extends StatefulService {
      */
     public enum SubStage {
       PUT_HOST_TO_DEPROVISION_MODE,
-      DELETE_AGENT,
       DEPROVISION_NETWORK,
       DELETE_ENTITIES,
     }
@@ -278,9 +275,6 @@ public class DeprovisionHostWorkflowService extends StatefulService {
                     case PUT_HOST_TO_DEPROVISION_MODE:
                       putHostToDeprovisionMode(currentState, ignoreError);
                       break;
-                    case DELETE_AGENT:
-                      handleDeleteAgent(currentState, ignoreError);
-                      break;
                     case DEPROVISION_NETWORK:
                       deprovisionNetwork(currentState, hostState, ignoreError);
                       break;
@@ -305,11 +299,11 @@ public class DeprovisionHostWorkflowService extends StatefulService {
           public void onSuccess(@Nullable ChangeHostModeTaskService.State result) {
             switch (result.taskState.stage) {
               case FINISHED:
-                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DEPROVISION_NETWORK);
                 break;
               case FAILED:
                 if (ignoreError) {
-                  sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
+                  sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DEPROVISION_NETWORK);
                 } else {
                   State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
                   patchState.taskState.failure = result.taskState.failure;
@@ -325,7 +319,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
           @Override
           public void onFailure(Throwable t) {
             if (ignoreError) {
-              sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
+              sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DEPROVISION_NETWORK);
             } else {
               failTask(t);
             }
@@ -339,59 +333,6 @@ public class DeprovisionHostWorkflowService extends StatefulService {
         ChangeHostModeTaskService.State.class,
         currentState.taskPollDelay,
         futureCallback);
-  }
-
-  private void handleDeleteAgent(State currentState, boolean ignoreError) {
-    final Service service = this;
-
-    FutureCallback<DeleteAgentTaskService.State> futureCallback = new FutureCallback<DeleteAgentTaskService.State>() {
-      @Override
-      public void onSuccess(@Nullable DeleteAgentTaskService.State result) {
-        switch (result.taskState.stage) {
-          case FINISHED:
-            sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DEPROVISION_NETWORK);
-            break;
-          case FAILED:
-            if (ignoreError) {
-              sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
-            } else {
-              State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-              patchState.taskState.failure = result.taskState.failure;
-              TaskUtils.sendSelfPatch(service, patchState);
-            }
-            break;
-          case CANCELLED:
-            sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
-            break;
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        if (ignoreError) {
-          sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
-        } else {
-          failTask(t);
-        }
-      }
-    };
-
-    TaskUtils.startTaskAsync(this,
-        DeleteAgentTaskFactoryService.SELF_LINK,
-        createDeleteAgentStartState(currentState),
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        DeleteAgentTaskService.State.class,
-        currentState.taskPollDelay,
-        futureCallback);
-  }
-
-  private DeleteAgentTaskService.State createDeleteAgentStartState(State currentState) {
-    DeleteAgentTaskService.State startState = new DeleteAgentTaskService.State();
-    startState.taskState = new com.vmware.xenon.common.TaskState();
-    startState.taskState.stage = com.vmware.xenon.common.TaskState.TaskStage.CREATED;
-    startState.hostServiceLink = currentState.hostServiceLink;
-    startState.uniqueID = currentState.uniqueId;
-    return startState;
   }
 
   private void deprovisionNetwork(State currentState, HostService.State hostState, boolean ignoreError) {
