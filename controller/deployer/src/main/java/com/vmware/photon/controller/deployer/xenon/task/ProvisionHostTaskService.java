@@ -26,8 +26,6 @@ import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
-import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
-import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -42,11 +40,7 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
-import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
-import com.vmware.photon.controller.deployer.xenon.entity.VibFactoryService;
-import com.vmware.photon.controller.deployer.xenon.entity.VibService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
-import com.vmware.photon.controller.deployer.xenon.util.VibUtils;
 import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.photon.controller.nsxclient.models.FabricNode;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeCreateSpec;
@@ -66,9 +60,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.QueryTask;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -89,10 +81,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -106,11 +95,6 @@ public class ProvisionHostTaskService extends StatefulService {
    * This string specifies the script which is used to configure syslog on a host.
    */
   public static final String CONFIGURE_SYSLOG_SCRIPT_NAME = "esx-configure-syslog";
-
-  /**
-   * This string specifies the script which is used to install a VIB.
-   */
-  public static final String INSTALL_VIB_SCRIPT_NAME = "esx-install-agent2";
 
   /**
    * This class defines the state of a {@link ProvisionHostTaskService} task.
@@ -127,9 +111,6 @@ public class ProvisionHostTaskService extends StatefulService {
       CREATE_TRANSPORT_NODE,
       WAIT_FOR_TRANSPORT_NODE,
       CONFIGURE_SYSLOG,
-      REMOVE_VIBS,
-      UPLOAD_VIBS,
-      INSTALL_VIBS,
       WAIT_FOR_AGENT_START,
       PROVISION_AGENT,
       WAIT_FOR_AGENT_RESTART,
@@ -256,7 +237,7 @@ public class ProvisionHostTaskService extends StatefulService {
 
     /**
      * This value represents the maximum number of polling iterations which should be attempted
-     * while waiting for the agent to become ready after VIB installation.
+     * while waiting for the agent to become ready.
      */
     @DefaultInteger(value = 60)
     @Immutable
@@ -264,7 +245,7 @@ public class ProvisionHostTaskService extends StatefulService {
 
     /**
      * This value represents the number of polling iterations which have been attempted by the
-     * current task while waiting for the agent to become ready after VIB installation.
+     * current task while waiting for the agent to become ready.
      */
     @DefaultInteger(value = 0)
     public Integer agentStartPollCount;
@@ -440,9 +421,6 @@ public class ProvisionHostTaskService extends StatefulService {
           case CREATE_TRANSPORT_NODE:
           case WAIT_FOR_TRANSPORT_NODE:
           case CONFIGURE_SYSLOG:
-          case REMOVE_VIBS:
-          case UPLOAD_VIBS:
-          case INSTALL_VIBS:
           case WAIT_FOR_AGENT_START:
           case PROVISION_AGENT:
           case WAIT_FOR_AGENT_RESTART:
@@ -480,15 +458,6 @@ public class ProvisionHostTaskService extends StatefulService {
         break;
       case CONFIGURE_SYSLOG:
         processConfigureSyslogSubStage(currentState);
-        break;
-      case REMOVE_VIBS:
-        processRemoveVibSubStage(currentState);
-        break;
-      case UPLOAD_VIBS:
-        processUploadVibsSubStage(currentState);
-        break;
-      case INSTALL_VIBS:
-        processInstallVibsSubStage(currentState);
         break;
       case WAIT_FOR_AGENT_START:
         processWaitForAgentSubStage(currentState);
@@ -984,7 +953,7 @@ public class ProvisionHostTaskService extends StatefulService {
 
     if (deploymentState.syslogEndpoint == null) {
       ServiceUtils.logInfo(this, "Skipping syslog endpoint configuration (disabled)");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.REMOVE_VIBS);
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT_START);
       return;
     }
 
@@ -1036,7 +1005,7 @@ public class ProvisionHostTaskService extends StatefulService {
               if (result != 0) {
                 logSyslogConfigurationErrorAndFail(hostState, result, scriptLogFile);
               } else {
-                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.REMOVE_VIBS);
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT_START);
               }
             } catch (Throwable t) {
               failTask(t);
@@ -1060,388 +1029,6 @@ public class ProvisionHostTaskService extends StatefulService {
         result);
   }
 
-  //
-  // REMOVE_VIBS sub-stage routines
-  //
-
-  private void processRemoveVibSubStage(State currentState) {
-    sendRequest(HostUtils
-        .getCloudStoreHelper(this)
-        .createGet(currentState.hostServiceLink)
-        .setCompletion(
-            (o, e) -> {
-              try {
-                if (e != null) {
-                  failTask(e);
-                } else {
-                  processRemoveVibSubStage(o.getBody(HostService.State.class), currentState);
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void processRemoveVibSubStage(HostService.State hostState, State currentState) {
-    HostUtils.getListeningExecutorService(this).submit(
-      VibUtils.removeVibs(hostState,  this, (e) ->{
-        if (e != null) {
-          failTask(e);
-          return;
-        }
-        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
-      })
-    );
-  }
-
-  //
-  // UPLOAD_VIBS sub-stage routines
-  //
-
-  private void processUploadVibsSubStage(State currentState) {
-
-    QueryTask queryTask = QueryTask.Builder.createDirectTask()
-        .setQuery(QueryTask.Query.Builder.create()
-            .addKindFieldClause(VibService.State.class)
-            .addFieldClause(VibService.State.FIELD_NAME_HOST_SERVICE_LINK, currentState.hostServiceLink)
-            .build())
-        .addOptions(EnumSet.of(
-            QueryTask.QuerySpecification.QueryOption.BROADCAST,
-            QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
-        .build();
-
-    sendRequest(Operation
-        .createPost(this, ServiceUriPaths.XENON.CORE_QUERY_TASKS)
-        .setBody(queryTask)
-        .setCompletion(
-            (o, e) -> {
-              try {
-                if (e != null) {
-                  failTask(e);
-                } else {
-                  processUploadVibsSubStage(currentState, o.getBody(QueryTask.class).results.documents);
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void processUploadVibsSubStage(State currentState, Map<String, Object> vibDocuments) {
-
-    Set<String> existingVibNames = vibDocuments.values().stream()
-        .map((vibDocument) -> Utils.fromJson(vibDocument, VibService.State.class))
-        .map((vibState) -> vibState.vibName)
-        .collect(Collectors.toSet());
-
-    File sourceDirectory = new File(HostUtils.getDeployerContext(this).getVibDirectory());
-    if (!sourceDirectory.exists() || !sourceDirectory.isDirectory()) {
-      throw new IllegalStateException("Invalid VIB source directory " + sourceDirectory);
-    }
-
-    File[] vibFiles = sourceDirectory.listFiles((file) -> file.getName().toUpperCase().endsWith(".VIB"));
-    if (vibFiles.length == 0) {
-      throw new IllegalStateException("No VIB files were found in source directory " + sourceDirectory);
-    }
-
-    Set<File> vibFilesToUpload = Stream.of(vibFiles)
-        .filter((vibFile) -> !existingVibNames.contains(vibFile.getName()))
-        .collect(Collectors.toSet());
-
-    if (vibFilesToUpload.isEmpty()) {
-      ServiceUtils.logInfo(this, "Found no VIB files to upload");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.INSTALL_VIBS);
-      return;
-    }
-
-    Stream<Operation> vibStartOps = vibFilesToUpload.stream().map((vibFile) -> {
-      VibService.State startState = new VibService.State();
-      startState.vibName = vibFile.getName();
-      startState.hostServiceLink = currentState.hostServiceLink;
-      return Operation.createPost(this, VibFactoryService.SELF_LINK).setBody(startState);
-    });
-
-    OperationJoin
-        .create(vibStartOps)
-        .setCompletion(
-            (ops, exs) -> {
-              try {
-                if (exs != null && !exs.isEmpty()) {
-                  failTask(exs.values());
-                } else {
-                  createUploadVibTasks(ops.values());
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            })
-        .sendWith(this);
-  }
-
-  private void createUploadVibTasks(Collection<Operation> vibStartOps) {
-
-    ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
-    startState.parentTaskLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(false, false, buildPatch(TaskState.TaskStage.STARTED,
-        TaskState.SubStage.INSTALL_VIBS));
-    startState.pendingCompletionCount = vibStartOps.size();
-    startState.errorThreshold = 0.0;
-
-    sendRequest(Operation
-        .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
-        .setBody(startState)
-        .setCompletion(
-            (o, e) -> {
-              try {
-                if (e != null) {
-                  failTask(e);
-                } else {
-                  createUploadVibTasks(vibStartOps, o.getBody(ServiceDocument.class).documentSelfLink);
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void createUploadVibTasks(Collection<Operation> vibStartOps, String aggregatorServiceLink) {
-
-    Stream<Operation> taskStartOps = vibStartOps.stream().map(
-        (vibStartOp) -> {
-          UploadVibTaskService.State startState = new UploadVibTaskService.State();
-          startState.parentTaskServiceLink = aggregatorServiceLink;
-          startState.workQueueServiceLink = DeployerServiceGroup.UPLOAD_VIB_WORK_QUEUE_SELF_LINK;
-          startState.vibServiceLink = vibStartOp.getBody(ServiceDocument.class).documentSelfLink;
-          return Operation.createPost(this, UploadVibTaskFactoryService.SELF_LINK).setBody(startState);
-        });
-
-    OperationJoin
-        .create(taskStartOps)
-        .setCompletion(
-            (ops, exs) -> {
-              try {
-                if (exs != null && !exs.isEmpty()) {
-                  failTask(exs.values());
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            })
-        .sendWith(this);
-  }
-
-  //
-  // INSTALL_VIBS sub-stage routines
-  //
-  // N.B. Multiple VIBs may have been uploaded to the host -- either by this task, or previously
-  // during upgrae initialization. ESX does not handle parallel VIB installation gracefully, so
-  // this sub-stage will install VIBs in sequence. It does this by querying the set of VIB service
-  // entities associated with the host and -- if any are found -- by selecting one at random,
-  // installing it, deleting the VIB service entity, and self-patching to the same sub-stage (e.g.
-  // INSTALL_VIBS) to retry the query. Only when the query returns no results will the service
-  // transition to the next sub-stage.
-  //
-
-  private void processInstallVibsSubStage(State currentState) {
-
-    //
-    // N.B. This query uses EXPAND_CONTENT so that only documents which are returned by their
-    // respective owner nodes will be included in the final result set. This addresses a previous
-    // bug which surfaced as HTTP timeouts when trying to GET an already-deleted {@link VibService}
-    // document.
-    //
-
-    QueryTask queryTask = QueryTask.Builder.createDirectTask()
-        .setQuery(QueryTask.Query.Builder.create()
-            .addKindFieldClause(VibService.State.class)
-            .addFieldClause(VibService.State.FIELD_NAME_HOST_SERVICE_LINK, currentState.hostServiceLink)
-            .build())
-        .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT)
-        .build();
-
-
-    sendRequest(Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR))
-        .setBody(queryTask)
-        .setCompletion(
-            (o, e) -> {
-              try {
-                if (e != null) {
-                  failTask(e);
-                } else {
-                  processInstallVibsSubStage(currentState,
-                      QueryTaskUtils.getBroadcastQueryDocuments(VibService.State.class, o));
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void processInstallVibsSubStage(State currentState, List<VibService.State> vibStateList) {
-
-    if (vibStateList.isEmpty()) {
-      ServiceUtils.logInfo(this, "Found no remaining VIBs to install");
-      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT_START);
-      patchState.agentStartPollCount = 1;
-      sendStageProgressPatch(patchState);
-      return;
-    }
-
-    VibService.State vibState = vibStateList.get(0);
-
-    sendRequest(HostUtils
-        .getCloudStoreHelper(this)
-        .createGet(currentState.deploymentServiceLink)
-        .setCompletion(
-            (o, e) -> {
-              try {
-                if (e != null) {
-                  failTask(e);
-                } else {
-                  final DeploymentService.State deploymentState = o.getBody(DeploymentService.State.class);
-                  processInstallVibSubStage(vibState, deploymentState,
-                      currentState.createCert);
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-
-  }
-
-  private void processInstallVibSubStage(VibService.State vibState, DeploymentService.State deploymentState,
-                                         Boolean createCert) {
-    sendRequest(HostUtils
-        .getCloudStoreHelper(this)
-        .createGet(vibState.hostServiceLink)
-        .setCompletion(
-            (o, e) -> {
-              try {
-                if (e != null) {
-                  failTask(e);
-                } else {
-                  processInstallVibsSubStage(vibState,
-                      deploymentState,
-                      o.getBody(HostService.State.class),
-                      createCert);
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void processInstallVibsSubStage(VibService.State vibState, DeploymentService.State deploymentState,
-                                          HostService.State hostState, Boolean createCert) {
-
-    String oAuthDomain = "";
-    String oAuthAddress = "";
-    String oAuthPassword = "";
-    if (deploymentState.oAuthTenantName != null) {
-      oAuthDomain = deploymentState.oAuthTenantName;
-    }
-
-    if (deploymentState.oAuthLoadBalancerAddress != null) {
-      oAuthAddress = deploymentState.oAuthLoadBalancerAddress;
-    } else {
-      if (deploymentState.oAuthServerAddress != null) {
-        oAuthAddress = deploymentState.oAuthServerAddress;
-      }
-    }
-
-    if (deploymentState.oAuthPassword != null) {
-      oAuthPassword = deploymentState.oAuthPassword;
-    }
-
-    ServiceUtils.logInfo(this, "Installing %s vib with following arguments : %s %s %s %s %s %s",
-        vibState.vibName,
-        hostState.hostAddress,
-        hostState.userName,
-        vibState.uploadPath,
-        createCert.toString(),
-        oAuthDomain,
-        oAuthAddress);
-
-    List<String> command = Arrays.asList(
-        "./" + INSTALL_VIB_SCRIPT_NAME,
-        hostState.hostAddress,
-        hostState.userName,
-        hostState.password,
-        vibState.uploadPath,
-        createCert.toString(),
-        oAuthDomain,
-        oAuthAddress,
-        oAuthPassword);
-
-    DeployerContext deployerContext = HostUtils.getDeployerContext(this);
-
-    File scriptLogFile = new File(deployerContext.getScriptLogDirectory(), INSTALL_VIB_SCRIPT_NAME + "-" +
-        hostState.hostAddress + "-" + ServiceUtils.getIDFromDocumentSelfLink(vibState.documentSelfLink) + ".log");
-
-    ScriptRunner scriptRunner = new ScriptRunner.Builder(command, deployerContext.getScriptTimeoutSec())
-        .directory(deployerContext.getScriptDirectory())
-        .redirectOutput(ProcessBuilder.Redirect.to(scriptLogFile))
-        .redirectErrorStream(true)
-        .build();
-
-    ListenableFutureTask<Integer> futureTask = ListenableFutureTask.create(scriptRunner);
-    HostUtils.getListeningExecutorService(this).submit(futureTask);
-
-    Futures.addCallback(futureTask,
-        new FutureCallback<Integer>() {
-          @Override
-          public void onSuccess(@javax.validation.constraints.NotNull Integer result) {
-            try {
-              if (result != 0) {
-                logVibInstallationFailureAndFail(vibState, hostState, result, scriptLogFile);
-              } else {
-                deleteVibService(vibState);
-              }
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            failTask(throwable);
-          }
-        });
-  }
-
-  private void logVibInstallationFailureAndFail(VibService.State vibState,
-                                                HostService.State hostState,
-                                                int result,
-                                                File scriptLogFile) throws Throwable {
-
-    ServiceUtils.logSevere(this, INSTALL_VIB_SCRIPT_NAME + " returned " + result);
-    ServiceUtils.logSevere(this, "Script output: " + FileUtils.readFileToString(scriptLogFile));
-    throw new IllegalStateException("Installing VIB file " + vibState.vibName + " to host " + hostState.hostAddress +
-        " failed with exit code " + result);
-  }
-
-  private void deleteVibService(VibService.State vibState) {
-
-    sendRequest(Operation
-        .createDelete(this, vibState.documentSelfLink)
-        .setCompletion(
-            (o, e) -> {
-              try {
-                if (e != null) {
-                  failTask(e);
-                } else {
-                  sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.INSTALL_VIBS);
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  //
   // WAIT_FOR_AGENT_START sub-stage routines
   //
 

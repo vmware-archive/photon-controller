@@ -29,7 +29,6 @@ deployer:
     taskPollDelay: 50
     nsxPollDelay: 10
     tenantName: "mgmt-tenant"
-    vibDirectory: "/tmp/deployAgent/vibs"
     waitForServiceMaxRetryCount: 17
     sharedSecret: "shared-secret"
     imageDataStoreNames:
