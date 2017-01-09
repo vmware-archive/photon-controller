@@ -42,6 +42,9 @@ rm -rf "$DEVBOX/log/"
 # Seed deployment entity into CloudStore
 ./seed_deployment.sh
 
+# Install the agent on ESX Host
+./install_agent.sh
+
 # Register real agent to devbox
 if [ -n "$REAL_AGENT" ]; then
 

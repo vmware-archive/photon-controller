@@ -1,8 +1,5 @@
 #!/bin/bash
 
-tools=$(readlink -nf $(dirname $0))
-source $tools/common.sh
-
 function usage() {
   echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD VIB_NAME" 1>&2
   echo
@@ -33,7 +30,7 @@ max_retires=3
 
 function remove() {
   retVal=0
-  vib_existing=`sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list | grep "$vibname " | wc -l`
+  vib_existing=`sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list | grep "$vibname" | wc -l`
   if [ $vib_existing -ne 0 ]
   then
     sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n $vibname

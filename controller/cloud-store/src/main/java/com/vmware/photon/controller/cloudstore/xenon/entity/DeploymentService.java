@@ -388,16 +388,6 @@ public class DeploymentService extends StatefulService {
     public Map<String, Integer> dataMigrationProgress;
 
     /**
-     * This value represents the number of vibs already uploaded.
-     */
-    public Long vibsUploaded;
-
-    /**
-     * This value represents the number of vibs still uploading.
-     */
-    public Long vibsUploading;
-
-    /**
      * This structure stores the image and flavor information we need
      * to deploy a dhcp server for a network.
      * A null value here indicates that dhcp feature is not supported.

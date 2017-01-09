@@ -44,8 +44,6 @@ import com.vmware.photon.controller.deployer.xenon.entity.ContainerFactoryServic
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
-import com.vmware.photon.controller.deployer.xenon.entity.VibFactoryService;
-import com.vmware.photon.controller.deployer.xenon.entity.VibService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.resource.gen.ImageReplication;
@@ -228,20 +226,6 @@ public class TestHelper {
     return startState;
   }
 
-  public static VibService.State getVibServiceStartState() {
-    VibService.State startState = new VibService.State();
-    startState.vibName = "VIB_NAME";
-    startState.hostServiceLink = "HOST_SERVICE_LINK";
-    return startState;
-  }
-
-  public static VibService.State getVibServiceStartState(HostService.State hostState, File sourceFile) {
-    VibService.State startState = new VibService.State();
-    startState.vibName = sourceFile.getName();
-    startState.hostServiceLink = hostState.documentSelfLink;
-    return startState;
-  }
-
   public static VmService.State getVmServiceStartState() {
     VmService.State startState = new VmService.State();
     startState.name = "NAME";
@@ -374,19 +358,6 @@ public class TestHelper {
         HostServiceFactory.SELF_LINK,
         startState,
         HostService.State.class);
-  }
-
-  public static VibService.State createVibService(
-      TestEnvironment testEnvironment, HostService.State hostState, File sourceFile) throws Throwable {
-    return createVibService(testEnvironment, getVibServiceStartState(hostState, sourceFile));
-  }
-
-  public static VibService.State createVibService(
-      TestEnvironment testEnvironment, VibService.State startState) throws Throwable {
-    return testEnvironment.callServiceSynchronously(
-        VibFactoryService.SELF_LINK,
-        startState,
-        VibService.State.class);
   }
 
   public static VmService.State createVmService(
@@ -528,7 +499,7 @@ public class TestHelper {
     sourceDirectory.mkdirs();
 
     if (sourceFileName == null) {
-      sourceFileName = "esxcloud-" + UUID.randomUUID().toString() + ".vib";
+      sourceFileName = "photon-" + UUID.randomUUID().toString() + ".file";
     }
 
     File sourceFile = new File(sourceDirectory, sourceFileName);
