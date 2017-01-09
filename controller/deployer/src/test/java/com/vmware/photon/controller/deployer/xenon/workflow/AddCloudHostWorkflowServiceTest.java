@@ -36,7 +36,6 @@ import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskService;
-import com.vmware.photon.controller.deployer.xenon.task.UploadVibTaskService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
@@ -395,7 +394,7 @@ public class AddCloudHostWorkflowServiceTest {
     private final File scriptDirectory = new File("/tmp/deployAgent/scripts");
     private final File scriptLogDirectory = new File("/tmp/deployAgent/logs");
     private final File storageDirectory = new File("/tmp/deployAgent");
-    private final File vibDirectory = new File("/tmp/deployAgent/vibs");
+
 
     private AddCloudHostWorkflowService.State startState;
     private DeployerContext deployerContext;
@@ -404,15 +403,12 @@ public class AddCloudHostWorkflowServiceTest {
     private ListeningExecutorService listeningExecutorService;
     private TestEnvironment testEnvironment;
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
-    private File vibSourceFile;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
       FileUtils.deleteDirectory(storageDirectory);
       scriptDirectory.mkdirs();
       scriptLogDirectory.mkdirs();
-      vibDirectory.mkdirs();
-      vibSourceFile = TestHelper.createSourceFile(null, vibDirectory);
 
       deployerContext = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
@@ -468,8 +464,6 @@ public class AddCloudHostWorkflowServiceTest {
     public void testSuccess() throws Throwable {
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockCreateScriptFile(deployerContext, ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerContext, ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerContext, UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       createTestEnvironment();
 
       startState.hostServiceLink =

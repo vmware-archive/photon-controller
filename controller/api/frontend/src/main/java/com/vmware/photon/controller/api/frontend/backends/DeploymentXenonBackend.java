@@ -339,8 +339,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     status.setCompletedDataMigrationCycles(completedCycles);
     status.setDataMigrationCycleProgress(dataMigrationCycleProgress);
     status.setDataMigrationCycleSize(dataMigrationCycleSize);
-    status.setVibsUploaded(entity.getVibsUploaded());
-    status.setVibsUploading(entity.getVibsUploading());
 
     return status;
   }
@@ -586,8 +584,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     entity.setLoadBalancerEnabled(deployment.loadBalancerEnabled);
     entity.setLoadBalancerAddress(deployment.loadBalancerAddress);
     entity.setMigrationProgress(deployment.dataMigrationProgress);
-    entity.setVibsUploaded(toLong(deployment.vibsUploaded, 0));
-    entity.setVibsUploading(toLong(deployment.vibsUploading, 0));
 
     return entity;
   }

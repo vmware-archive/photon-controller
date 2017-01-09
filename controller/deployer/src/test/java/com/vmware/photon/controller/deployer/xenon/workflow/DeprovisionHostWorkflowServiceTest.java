@@ -36,7 +36,6 @@ import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
-import com.vmware.photon.controller.deployer.xenon.task.DeleteAgentTaskService;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -53,7 +52,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -170,7 +168,6 @@ public class DeprovisionHostWorkflowServiceTest {
           {null, null},
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.PUT_HOST_TO_DEPROVISION_MODE},
-          {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT},
           {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK},
           {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_ENTITIES},
           {TaskState.TaskStage.FINISHED, null},
@@ -318,13 +315,6 @@ public class DeprovisionHostWorkflowServiceTest {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.CANCELLED, null},
 
-          {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT,
-              TaskState.TaskStage.CANCELLED, null},
-
           {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK,
@@ -377,8 +367,6 @@ public class DeprovisionHostWorkflowServiceTest {
 
           {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.PUT_HOST_TO_DEPROVISION_MODE,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT,
-              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_ENTITIES,
@@ -390,8 +378,6 @@ public class DeprovisionHostWorkflowServiceTest {
               TaskState.TaskStage.STARTED,
               DeprovisionHostWorkflowService.TaskState.SubStage.PUT_HOST_TO_DEPROVISION_MODE},
           {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT},
-          {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_ENTITIES},
@@ -408,8 +394,6 @@ public class DeprovisionHostWorkflowServiceTest {
               TaskState.TaskStage.STARTED,
               DeprovisionHostWorkflowService.TaskState.SubStage.PUT_HOST_TO_DEPROVISION_MODE},
           {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT},
-          {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_ENTITIES},
@@ -425,8 +409,6 @@ public class DeprovisionHostWorkflowServiceTest {
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED,
               DeprovisionHostWorkflowService.TaskState.SubStage.PUT_HOST_TO_DEPROVISION_MODE},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DELETE_AGENT},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, DeprovisionHostWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK},
           {TaskState.TaskStage.CANCELLED, null,
@@ -508,39 +490,6 @@ public class DeprovisionHostWorkflowServiceTest {
         cloudStoreMachine.stop();
         cloudStoreMachine = null;
       }
-    }
-
-    @Test(dataProvider = "HostCounts")
-    public void testEndToEndSuccess(Integer hostCount) throws Throwable {
-      MockHelper.mockCreateScriptFile(deployerContext, DeleteAgentTaskService.SCRIPT_NAME, true);
-      startTestEnvironment(hostCount, HostState.READY);
-
-      DeprovisionHostWorkflowService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              DeprovisionHostWorkflowFactoryService.SELF_LINK,
-              startState,
-              DeprovisionHostWorkflowService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      TestHelper.assertTaskStateFinished(finalState.taskState);
-      assertThat(finalState.taskState.subStage, nullValue());
-    }
-
-    @Test(dataProvider = "HostCounts")
-    public void testEndToEndFailureDeleteAgentFailure(Integer hostCount) throws Throwable {
-      MockHelper.mockCreateScriptFile(deployerContext, DeleteAgentTaskService.SCRIPT_NAME, false);
-      startTestEnvironment(hostCount, HostState.READY);
-
-      DeprovisionHostWorkflowService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              DeprovisionHostWorkflowFactoryService.SELF_LINK,
-              startState,
-              DeprovisionHostWorkflowService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.failure.message, containsString(
-          "Deleting the agent on host hostAddress failed with exit code 1"));
     }
 
     @Test(dataProvider = "HostCounts")

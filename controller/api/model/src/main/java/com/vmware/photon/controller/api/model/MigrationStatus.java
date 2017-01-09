@@ -38,32 +38,6 @@ public class MigrationStatus {
   @Min(0)
   private long dataMigrationCycleSize = 0;
 
-  @JsonProperty
-  @ApiModelProperty(value = "Number of finished vib uploads.", required = true)
-  @Min(0)
-  private long vibsUploaded = 0;
-
-  @JsonProperty
-  @ApiModelProperty(value = "Number of putstanding vib uploads.", required = true)
-  @Min(0)
-  private long vibsUploading = 0;
-
-  public long getVibsUploaded() {
-    return vibsUploaded;
-  }
-
-  public void setVibsUploaded(long vibsUploaded) {
-    this.vibsUploaded = vibsUploaded;
-  }
-
-  public long getVibsUploading() {
-    return vibsUploading;
-  }
-
-  public void setVibsUploading(long vibsUploading) {
-    this.vibsUploading = vibsUploading;
-  }
-
   public long getCompletedDataMigrationCycles() {
     return completedDataMigrationCycles;
   }
@@ -102,9 +76,7 @@ public class MigrationStatus {
     return super.equals(other)
         && Objects.equals(this.getCompletedDataMigrationCycles(), other.getCompletedDataMigrationCycles())
         && Objects.equals(this.getDataMigrationCycleProgress(), other.getDataMigrationCycleProgress())
-        && Objects.deepEquals(this.getDataMigrationCycleSize(), other.getDataMigrationCycleSize())
-        && Objects.equals(this.getVibsUploaded(), other.getVibsUploaded())
-        && Objects.equals(this.getVibsUploading(), other.getVibsUploading());
+        && Objects.deepEquals(this.getDataMigrationCycleSize(), other.getDataMigrationCycleSize());
   }
 
   @Override
@@ -113,17 +85,13 @@ public class MigrationStatus {
         super.hashCode(),
         this.getCompletedDataMigrationCycles(),
         this.getDataMigrationCycleProgress(),
-        this.getDataMigrationCycleSize(),
-        this.getVibsUploaded(),
-        this.getVibsUploading());
+        this.getDataMigrationCycleSize());
   }
 
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
     return com.google.common.base.Objects.toStringHelper(this)
         .add("completedDataMigrationCycles", this.getCompletedDataMigrationCycles())
         .add("dataMigrationCycleProgress", this.getDataMigrationCycleProgress())
-        .add("dataMigrationCycleSize", this.getDataMigrationCycleSize())
-        .add("vibsUploaded", this.getVibsUploaded())
-        .add("vibsUploading", this.getVibsUploading());
+        .add("dataMigrationCycleSize", this.getDataMigrationCycleSize());
   }
 }

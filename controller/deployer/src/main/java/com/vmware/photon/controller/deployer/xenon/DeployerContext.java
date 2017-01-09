@@ -28,7 +28,6 @@ import org.hibernate.validator.constraints.Range;
 
 import javax.validation.constraints.NotNull;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -220,9 +219,6 @@ public class DeployerContext {
   @NotBlank
   private final String tenantName;
 
-  @NotBlank
-  private final String vibDirectory;
-
   @Range(min = 1)
   private int waitForServiceMaxRetryCount = DeployerDefaults.DEFAULT_WAIT_FOR_SERVICE_MAX_RETRY_COUNT;
 
@@ -237,12 +233,6 @@ public class DeployerContext {
 
   @NotNull
   private final Boolean isInstaller;
-
-  /**
-   * This list defines the order in which to un-install vibs that may be on the system.
-   * This may be important
-   */
-  private final List<String> vibUninstallOrder = new ArrayList<String>();
 
   private final String keyStorePath;
 
@@ -273,7 +263,6 @@ public class DeployerContext {
     syslogEndpoint = null;
     taskPollDelay = DeployerDefaults.DEFAULT_TASK_POLL_DELAY;
     tenantName = null;
-    vibDirectory = null;
     waitForServiceMaxRetryCount = DeployerDefaults.DEFAULT_WAIT_FOR_SERVICE_MAX_RETRY_COUNT;
     sharedSecret = UUID.randomUUID().toString();
     configDirectory = null;
@@ -360,10 +349,6 @@ public class DeployerContext {
     return tenantName;
   }
 
-  public String getVibDirectory() {
-    return vibDirectory;
-  }
-
   public List<UpgradeInformation> getUpgradeInformation() {
     return MigrationUtils.findAllUpgradeServices();
   }
@@ -394,10 +379,6 @@ public class DeployerContext {
 
   public Collection<DeploymentMigrationInformation> getDeploymentMigrationInformation() {
     return MigrationUtils.findAllMigrationServices();
-  }
-
-  public List<String> getVibUninstallOrder() {
-    return vibUninstallOrder;
   }
 
   public List<String> getoAuthSecurityGroups() {

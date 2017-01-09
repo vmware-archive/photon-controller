@@ -67,7 +67,6 @@ import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskService;
-import com.vmware.photon.controller.deployer.xenon.task.UploadVibTaskService;
 import com.vmware.photon.controller.resource.gen.DatastoreType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -122,7 +121,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Executors;
 
 /**
@@ -526,7 +524,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     private final File storageDirectory = new File("/tmp/deployAgent");
     private final File scriptDirectory = new File("/tmp/deployAgent/scripts");
     private final File scriptLogDirectory = new File("/tmp/deployAgent/logs");
-    private final File vibDirectory = new File("/tmp/deployAgent/vibs");
 
     private TestEnvironment sourceEnvironment;
     private TestEnvironment destinationEnvironment;
@@ -543,10 +540,8 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       FileUtils.deleteDirectory(storageDirectory);
-      vibDirectory.mkdirs();
       scriptDirectory.mkdirs();
       scriptLogDirectory.mkdirs();
-      TestHelper.createSourceFile("esxcloud-" + UUID.randomUUID().toString() + ".vib", vibDirectory);
       Files.createFile(Paths.get(scriptDirectory.getAbsolutePath(), "user-data.template"));
       Files.createFile(Paths.get(scriptDirectory.getAbsolutePath(), "meta-data.template"));
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
@@ -793,10 +788,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
-          ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
-          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
 
