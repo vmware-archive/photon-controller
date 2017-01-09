@@ -166,8 +166,8 @@ Vagrant.configure("2") do |config|
       # Assign correct default gateway to public network
       lightwave.vm.provision :shell, :inline => <<-EOS
         set -ex
-        ip route del default
         ip route add default via #{public_network_gateway} dev enp0s8
+        ip route show table all
       EOS
     else
       private_network_lw_ip = ENV["PRIVATE_NETWORK_LW_IP"] || "172.31.253.67"
@@ -398,8 +398,8 @@ end
       # Assign correct default gateway to public network
       photon.vm.provision :shell, :inline => <<-EOS
         set -ex
-        ip route del default
         ip route add default via #{public_network_gateway} dev enp0s8
+        ip route show table all
       EOS
       ENV["DOCKER_URL"] = ENV["DOCKER_URL"] || "http://#{public_network_ip}:#{DOCKER_PORT}"
     else
