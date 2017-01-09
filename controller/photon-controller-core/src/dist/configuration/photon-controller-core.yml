@@ -43,14 +43,9 @@ deployer:
     scriptLogDirectory: "{{{LOG_DIRECTORY}}}/script_logs"
     syslogEndpoint: "{{{SYSLOG_ENDPOINT}}}"
     tenantName: "{{{TENANT_NAME}}}"
-    vibDirectory: "{{{VIB_DIRECTORY}}}"
     sharedSecret: "{{{SHARED_SECRET}}}"
     enableAuth: {{{ENABLE_AUTH}}}
     isInstaller: {{{IS_INSTALLER}}}
-    vibUninstallOrder:
-    - photon-controller-agent
-    - envoy
-    - lightwave-esx
     memoryMb: {{{memoryMb}}}
     installDirectory: "/usr/lib/esxcloud/photon-controller-core"
     logDirectory: {{{LOG_DIRECTORY}}}

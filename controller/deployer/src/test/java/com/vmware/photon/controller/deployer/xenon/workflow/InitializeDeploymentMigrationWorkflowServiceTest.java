@@ -133,8 +133,6 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
       if (TaskState.TaskStage.STARTED == startStage) {
         switch (startSubStage) {
           case CONTINOUS_MIGRATE_DATA:
-          case UPLOAD_VIBS:
-            startState.sourceURIs = Collections.singletonList(UriUtils.buildUri("http://127.0.0.1:1234"));
             break;
         }
       }
@@ -160,7 +158,6 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
     if (TaskState.TaskStage.STARTED == patchStage) {
       switch (patchSubStage) {
         case CONTINOUS_MIGRATE_DATA:
-        case UPLOAD_VIBS:
           break;
       }
     }
@@ -246,37 +243,10 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
           {null, null},
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS},
-          {TaskState.TaskStage.STARTED,
               InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.CONTINOUS_MIGRATE_DATA},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
-      };
-    }
-
-    @Test(dataProvider = "TransitionalStartStages")
-    public void testTransitionalStartState(
-        TaskState.TaskStage startStage,
-        InitializeDeploymentMigrationWorkflowService.TaskState.SubStage startSubStage) throws Throwable {
-      startService(buildValidStartState(startStage, startSubStage));
-
-      InitializeDeploymentMigrationWorkflowService.State serviceState =
-          testHost.getServiceState(InitializeDeploymentMigrationWorkflowService.State.class);
-
-      assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(
-          serviceState.taskState.subStage,
-          is(InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS));
-    }
-
-    @DataProvider(name = "TransitionalStartStages")
-    public Object[][] getTransitionalStartStages() {
-      return new Object[][]{
-          {null, null},
-          {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS},
       };
     }
 
@@ -421,7 +391,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
 
       InitializeDeploymentMigrationWorkflowService.State patchState = buildValidPatchState(
           TaskState.TaskStage.STARTED,
-          InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.UPLOAD_VIBS);
+          InitializeDeploymentMigrationWorkflowService.TaskState.SubStage.CONTINOUS_MIGRATE_DATA);
 
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);
       if (declaredField.getType() == Integer.class) {
@@ -455,7 +425,6 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
   public class EndToEndTest {
 
     private final File storageDirectory = new File("/tmp/deployAgent");
-    private final File vibDirectory = new File("/tmp/deployAgent/vibs");
     private static final String configFilePath = "/config.yml";
 
     private TestEnvironment sourceEnvironment;
@@ -481,8 +450,6 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
       destinationCloudStore = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
       FileUtils.deleteDirectory(storageDirectory);
-      vibDirectory.mkdirs();
-      TestHelper.createSourceFile(null, vibDirectory);
 
       deployerTestConfig = spy(ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath()));

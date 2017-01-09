@@ -50,7 +50,6 @@ import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.CreateVmSpecLayoutTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskService;
-import com.vmware.photon.controller.deployer.xenon.task.UploadVibTaskService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -93,7 +92,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 
@@ -609,7 +607,6 @@ public class DeploymentWorkflowServiceTest {
     private final File storageDirectory = new File("/tmp/deployAgent");
     private final File scriptDirectory = new File("/tmp/deployAgent/scripts");
     private final File scriptLogDirectory = new File("/tmp/deployAgent/logs");
-    private final File vibDirectory = new File("/tmp/deployAgent/vibs");
 
     private DeployerTestConfig deployerTestConfig;
     private ContainersConfig containersConfig;
@@ -629,10 +626,9 @@ public class DeploymentWorkflowServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       FileUtils.deleteDirectory(storageDirectory);
-      vibDirectory.mkdirs();
+
       scriptDirectory.mkdirs();
       scriptLogDirectory.mkdirs();
-      TestHelper.createSourceFile("esxcloud-" + UUID.randomUUID().toString() + ".vib", vibDirectory);
       Files.createFile(Paths.get(scriptDirectory.getAbsolutePath(), "user-data.template"));
       Files.createFile(Paths.get(scriptDirectory.getAbsolutePath(), "meta-data.template"));
 
@@ -736,10 +732,6 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockApiClient(apiClientFactory, localDeployer, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
-          ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
-          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
@@ -816,10 +808,6 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockApiClient(apiClientFactory, localDeployer, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
-          ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
-          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
@@ -849,10 +837,6 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockApiClient(apiClientFactory, localDeployer, false);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
-          ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
-          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
@@ -882,10 +866,6 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockApiClient(apiClientFactory, localDeployer, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
-          ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
-          UploadVibTaskService.UPLOAD_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, false);
