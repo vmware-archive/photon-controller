@@ -4,8 +4,8 @@ dependencies {
   compile project(':common')
   compile project(':common-xenon')
   compile project(':cloud-store')
-  compile project(':nsx-client')
-  compile project(':dhcp-agent')
+  compile project(':network:nsx-client')
+  compile project(':network:dhcp-agent')
 
   compile 'com.google.code.findbugs:jsr305:2.0.1'
   compile 'joda-time:joda-time:2.2'
