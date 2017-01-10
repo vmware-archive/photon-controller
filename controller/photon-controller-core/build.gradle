@@ -13,8 +13,8 @@ dependencies {
   compile project(':api:api-backend')
   compile project(':api:frontend')
   compile project(':cluster-manager:service-documents')
-  compile project(':common')
-  compile project(':common-xenon')
+  compile project(':utils:common')
+  compile project(':utils:common-xenon')
   compile project(':cloud-store')
   compile project(':deployer')
   compile project(':storage:housekeeper')
@@ -27,7 +27,7 @@ dependencies {
   compile "org.apache.commons:commons-lang3:${versions.commons_lang3}"
   compile 'net.sourceforge.argparse4j:argparse4j:0.4.0'
 
-  testCompile(project(path: ':common-tests'))
+  testCompile(project(path: ':utils:common-tests'))
   testCompile(project(path: ':cloud-store', configuration: 'tests'))
 }
 

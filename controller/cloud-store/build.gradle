@@ -9,8 +9,8 @@ import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
 mainClassName = 'com.vmware.photon.controller.cloudstore.Main'
 
 dependencies {
-  compile project(':common')
-  compile project(':common-xenon')
+  compile project(':utils:common')
+  compile project(':utils:common-xenon')
   compile project(':api:model')
 
   compile "org.apache.commons:commons-lang3:${versions.commons_lang3}"

@@ -1,8 +1,8 @@
 apply plugin: 'java'
 
 dependencies {
-  compile project(':common')
-  compile project(':common-xenon')
+  compile project(':utils:common')
+  compile project(':utils:common-xenon')
   compile project(':cloud-store')
   compile project(':nsx-client')
   compile project(':dhcp-agent')
@@ -17,7 +17,7 @@ dependencies {
     exclude group: 'org.mockito', module: 'mockito-all'
   }
   testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
-  testCompile(project(path: ':common-tests'))
+  testCompile(project(path: ':utils:common-tests'))
 }
 
 jar {
