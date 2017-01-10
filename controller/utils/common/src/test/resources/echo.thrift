@@ -13,7 +13,7 @@
 
 namespace java com.example.echo
 
-include "../../../../../thrift/tracing.thrift"
+include "../../../../../../thrift/tracing.thrift"
 
 struct EchoRequest {
   1: required string message

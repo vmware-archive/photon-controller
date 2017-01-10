@@ -14,10 +14,10 @@ dependencies {
   compile project(':api:client')
   compile project(':nsx-client')
   compile project(':cloud-store')
-  compile project(':common')
-  compile project(':common-xenon')
-  compile project(':common-logging')
-  compile project(':common-auth')
+  compile project(':utils:common')
+  compile project(':utils:common-xenon')
+  compile project(':utils:common-logging')
+  compile project(':utils:common-auth')
   compile project(':cluster-manager:backend')
   compile project(':cluster-manager:service-documents')
 
@@ -46,7 +46,7 @@ dependencies {
     exclude group: 'org.mockito', module: 'mockito-all'
   }
   testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
-  testCompile(project(path: ':common-tests'))
+  testCompile(project(path: ':utils:common-tests'))
   testCompile(project(path: ':cloud-store', configuration: 'tests'))
 }
 

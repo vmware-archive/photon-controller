@@ -11,9 +11,9 @@ mainClassName = 'com.vmware.photon.controller.api.frontend.ApiFeService'
 
 dependencies {
   compile(project(':api:model'))
-  compile(project(':common'))
-  compile(project(':common-auth'))
-  compile(project(':common-xenon'))
+  compile(project(':utils:common'))
+  compile(project(':utils:common-auth'))
+  compile(project(':utils:common-xenon'))
   compile(project(':cloud-store'))
   compile(project(':api:api-backend'))
   compile(project(':swagger-ui'))
@@ -48,7 +48,7 @@ dependencies {
       '../../../thrift/tracing.thrift',
       '../../../thrift/status.thrift')
 
-  testCompile(project(path: ':common-tests'))
+  testCompile(project(path: ':utils:common-tests'))
   testCompile(project(path: ':api:model', configuration: 'tests'))
   testCompile(project(path: ':api:api-backend', configuration: 'tests'))
 
