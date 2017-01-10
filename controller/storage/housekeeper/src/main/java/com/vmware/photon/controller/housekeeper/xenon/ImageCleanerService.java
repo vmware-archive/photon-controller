@@ -502,7 +502,7 @@ public class ImageCleanerService extends StatefulService {
         .setDirect(true);
 
     Operation queryPost = Operation
-        .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_QUERY_TASKS))
+        .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.XENON.CORE_QUERY_TASKS))
         .setBody(task)
         .setCompletion(handler);
 
@@ -587,7 +587,7 @@ public class ImageCleanerService extends StatefulService {
     querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
     return getCloudStoreHelper()
-        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .createBroadcastPost(ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR)
         .setBody(QueryTask.create(querySpecification).setDirect(true));
   }
 

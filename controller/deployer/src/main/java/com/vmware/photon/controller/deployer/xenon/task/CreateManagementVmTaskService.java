@@ -27,6 +27,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -57,7 +58,6 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -68,7 +68,6 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.net.util.SubnetUtils;
-
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -1035,7 +1034,7 @@ public class CreateManagementVmTaskService extends StatefulService {
         .build();
 
     sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .createPost(this, ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(containerQueryTask)
         .setCompletion(
             (o, e) -> {
@@ -1220,7 +1219,7 @@ public class CreateManagementVmTaskService extends StatefulService {
         .build();
 
     sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .createPost(this, ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(containerQueryTask)
         .setCompletion(
             (o, e) -> {

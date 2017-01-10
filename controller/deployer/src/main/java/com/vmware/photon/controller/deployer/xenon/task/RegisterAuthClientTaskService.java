@@ -18,6 +18,7 @@ import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -45,7 +46,6 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -321,8 +321,8 @@ public class RegisterAuthClientTaskService extends StatefulService {
 
     Operation queryPostOperation = Operation
         .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+            UriUtils.buildUri(getHost(), ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
         .setCompletion(new Operation.CompletionHandler() {
           @Override
@@ -363,8 +363,8 @@ public class RegisterAuthClientTaskService extends StatefulService {
 
     Operation queryPostOperation = Operation
         .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+            UriUtils.buildUri(getHost(), ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
         .setCompletion(new Operation.CompletionHandler() {
           @Override

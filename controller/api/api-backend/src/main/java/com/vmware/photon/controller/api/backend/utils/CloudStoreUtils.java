@@ -81,7 +81,7 @@ public class CloudStoreUtils {
     QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
     ServiceHostUtils.getCloudStoreHelper(service.getHost())
-        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .createBroadcastPost(ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR)
         .setBody(queryTask)
         .setCompletion((op, ex) -> {
           if (ex != null) {

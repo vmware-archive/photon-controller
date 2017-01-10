@@ -17,6 +17,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.EntityLockService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
@@ -34,7 +35,6 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 import static com.vmware.xenon.common.OperationJoin.JoinedCompletionHandler;
 
 import java.util.Collection;
@@ -149,7 +149,7 @@ public class EntityLockDeleteService extends StatefulService {
       if (!isFinalStage(current)) {
         if (current.nextPageLink == null) {
           Operation queryEntityLocksPagination = Operation
-              .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
+              .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS))
               .setBody(buildEntityLockQuery(current));
           queryEntityLocksPagination
               .setCompletion(((op, failure) -> {

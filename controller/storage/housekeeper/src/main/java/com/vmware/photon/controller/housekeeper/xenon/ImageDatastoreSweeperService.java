@@ -576,7 +576,8 @@ public class ImageDatastoreSweeperService extends StatefulService {
 
     sendRequest(
         getCloudStoreHelper()
-            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .createBroadcastPost(ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS,
+                ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR)
             .setBody(QueryTask.create(spec).setDirect(true))
             .setCompletion(
                 (completedOp, failure) -> {
@@ -845,7 +846,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
     querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
     return getCloudStoreHelper()
-        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .createBroadcastPost(ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR)
         .setBody(QueryTask.create(querySpecification).setDirect(true));
   }
 
