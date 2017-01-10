@@ -107,7 +107,7 @@ public class StatusFeClient {
 
     // Get all the nodes in the node group
     try {
-      Operation result = xenonClient.get(ServiceUriPaths.DEFAULT_NODE_GROUP);
+      Operation result = xenonClient.get(ServiceUriPaths.XENON.DEFAULT_NODE_GROUP);
       Collection<NodeState> nodes = result.getBody(NodeGroupService.NodeGroupState.class).nodes.values();
       List<InetSocketAddress> servers = nodes.stream()
           .map(item -> new InetSocketAddress(item.groupReference.getHost(), item.groupReference.getPort()))

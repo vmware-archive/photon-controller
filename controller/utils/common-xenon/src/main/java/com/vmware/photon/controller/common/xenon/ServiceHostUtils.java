@@ -302,7 +302,7 @@ public class ServiceHostUtils {
     updateQuorumRequest.setMembershipQuorum(quorumSize);
 
     Operation updateQuorumOp = Operation
-        .createPatch(UriUtils.buildUri(serviceHost, ServiceUriPaths.DEFAULT_NODE_GROUP))
+        .createPatch(UriUtils.buildUri(serviceHost, ServiceUriPaths.XENON.DEFAULT_NODE_GROUP))
         .setBody(updateQuorumRequest);
 
     sendRequestAndWait(serviceHost, updateQuorumOp, referrer);
@@ -549,7 +549,7 @@ public class ServiceHostUtils {
    * @param peerPort
    */
   public static void joinNodeGroup(ServiceHost host, String peerHost, int peerPort) {
-    if (!host.checkServiceAvailable(ServiceUriPaths.DEFAULT_NODE_GROUP)) {
+    if (!host.checkServiceAvailable(ServiceUriPaths.XENON.DEFAULT_NODE_GROUP)) {
       logger.warn("DEFAULT_NODE_GROUP service is unavailable!");
       return;
     }
@@ -557,7 +557,7 @@ public class ServiceHostUtils {
     URI peerNodeGroup = UriUtils.buildUri(peerHost, peerPort, "", null);
 
     // send the request to the node group instance we have picked as the "initial" one
-    host.joinPeers(ImmutableList.of(peerNodeGroup), ServiceUriPaths.DEFAULT_NODE_GROUP);
+    host.joinPeers(ImmutableList.of(peerNodeGroup), ServiceUriPaths.XENON.DEFAULT_NODE_GROUP);
     logger.info("Joining group through {}", peerNodeGroup);
   }
 
@@ -587,8 +587,8 @@ public class ServiceHostUtils {
 
     Operation queryPostOperation = Operation
         .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(host, ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+            UriUtils.buildUri(host, ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR))
         .setBody(query);
 
     return sendRequestAndWait(host, queryPostOperation, referrer).getBody(NodeGroupBroadcastResponse.class);
@@ -620,7 +620,7 @@ public class ServiceHostUtils {
   public static QueryTask sendQueryAndWait(ServiceHost host, String referrer, QueryTask query) throws Throwable {
 
     Operation queryOp = Operation
-        .createPost(UriUtils.buildUri(host, ServiceUriPaths.CORE_QUERY_TASKS))
+        .createPost(UriUtils.buildUri(host, ServiceUriPaths.XENON.CORE_QUERY_TASKS))
         .setBody(query);
 
     return sendRequestAndWait(host, queryOp, referrer).getBody(QueryTask.class);

@@ -18,6 +18,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -37,7 +38,6 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -175,7 +175,8 @@ public class AddCloudHostWorkflowService extends StatefulService {
 
     sendRequest(
         HostUtils.getCloudStoreHelper(this)
-            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .createBroadcastPost(ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS,
+                ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR)
             .setBody(QueryTask.create(querySpecification).setDirect(true))
             .setCompletion(
                 (completedOp, failure) -> {

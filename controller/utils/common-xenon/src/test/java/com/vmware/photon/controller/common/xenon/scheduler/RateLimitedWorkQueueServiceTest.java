@@ -271,7 +271,7 @@ public class RateLimitedWorkQueueServiceTest {
           .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
           .build();
 
-      Operation op = basicHostEnvironment.sendPostAndWait(ServiceUriPaths.CORE_QUERY_TASKS, queryTask);
+      Operation op = basicHostEnvironment.sendPostAndWait(ServiceUriPaths.XENON.CORE_QUERY_TASKS, queryTask);
       checkState(op.getStatusCode() == Operation.STATUS_CODE_OK);
       checkState(op.getBody(QueryTask.class).results.documentLinks.size() == 0);
     }
@@ -286,7 +286,7 @@ public class RateLimitedWorkQueueServiceTest {
           .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
           .build();
 
-      Operation op = basicHostEnvironment.sendPostAndWait(ServiceUriPaths.CORE_QUERY_TASKS, queryTask);
+      Operation op = basicHostEnvironment.sendPostAndWait(ServiceUriPaths.XENON.CORE_QUERY_TASKS, queryTask);
       checkState(op.getStatusCode() == Operation.STATUS_CODE_OK);
 
       for (String documentLink : op.getBody(QueryTask.class).results.documentLinks) {

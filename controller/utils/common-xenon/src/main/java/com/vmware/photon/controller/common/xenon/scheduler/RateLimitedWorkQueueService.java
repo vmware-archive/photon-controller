@@ -276,7 +276,7 @@ public class RateLimitedWorkQueueService extends StatefulService {
         .build();
 
     sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_LOCAL_QUERY_TASKS)
+        .createPost(this, ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS)
         .setBody(queryTask)
         .setCompletion(
             (o, e) -> {

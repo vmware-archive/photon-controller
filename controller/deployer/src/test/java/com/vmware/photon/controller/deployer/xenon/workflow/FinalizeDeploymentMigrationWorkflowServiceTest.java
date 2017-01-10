@@ -628,7 +628,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .getServers(eq("127.0.0.1:2181"), eq("cloudstore"));
 
       ServiceHost sourceHost = sourceCloudStore.getHosts()[0];
-      startState.sourceNodeGroupReference = UriUtils.buildUri(sourceHost, ServiceUriPaths.DEFAULT_NODE_GROUP);
+      startState.sourceNodeGroupReference = UriUtils.buildUri(sourceHost, ServiceUriPaths.XENON.DEFAULT_NODE_GROUP);
       startState.sourceURIs = null;
 
       List<UpgradeInformation> upgradeInfo = ImmutableList.<UpgradeInformation>builder()

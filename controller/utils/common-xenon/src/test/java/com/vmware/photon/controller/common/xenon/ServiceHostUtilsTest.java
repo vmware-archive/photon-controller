@@ -153,13 +153,13 @@ public class ServiceHostUtilsTest {
     public void testSuccess(
         int hostCount
     ) throws Throwable {
-      hosts = buildHosts(hostCount, ServiceUriPaths.DEFAULT_NODE_GROUP, true);
-      ServiceHostUtils.waitForNodeGroupConvergence(hosts, ServiceUriPaths.DEFAULT_NODE_GROUP);
+      hosts = buildHosts(hostCount, ServiceUriPaths.XENON.DEFAULT_NODE_GROUP, true);
+      ServiceHostUtils.waitForNodeGroupConvergence(hosts, ServiceUriPaths.XENON.DEFAULT_NODE_GROUP);
 
       // check the final state
       for (ServiceHost host : hosts) {
         NodeGroupService.NodeGroupState response = ServiceHostUtils.getNodeGroupState(host,
-            ServiceUriPaths.DEFAULT_NODE_GROUP);
+            ServiceUriPaths.XENON.DEFAULT_NODE_GROUP);
 
         assertThat(response, notNullValue());
         assertThat(response.nodes.size(), is(hostCount));
@@ -184,10 +184,10 @@ public class ServiceHostUtilsTest {
      */
     @Test
     public void testTimeout() throws Throwable {
-      hosts = buildHosts(3, ServiceUriPaths.DEFAULT_NODE_GROUP, false);
+      hosts = buildHosts(3, ServiceUriPaths.XENON.DEFAULT_NODE_GROUP, false);
 
       try {
-        ServiceHostUtils.waitForNodeGroupConvergence(hosts, ServiceUriPaths.DEFAULT_NODE_GROUP);
+        ServiceHostUtils.waitForNodeGroupConvergence(hosts, ServiceUriPaths.XENON.DEFAULT_NODE_GROUP);
         fail("did not throw exception when waited for convergence");
       } catch (IllegalStateException ex) {
         assertThat(ex.getMessage(), is("Update time did not converge"));
@@ -277,7 +277,7 @@ public class ServiceHostUtilsTest {
     public void testSuccess() throws Throwable {
       host = BasicServiceHost.create();
       NodeGroupService.NodeGroupState response =
-          ServiceHostUtils.getNodeGroupState(host, ServiceUriPaths.DEFAULT_NODE_GROUP);
+          ServiceHostUtils.getNodeGroupState(host, ServiceUriPaths.XENON.DEFAULT_NODE_GROUP);
 
       assertThat(response, notNullValue());
       assertThat(response.nodes.size(), is(1));

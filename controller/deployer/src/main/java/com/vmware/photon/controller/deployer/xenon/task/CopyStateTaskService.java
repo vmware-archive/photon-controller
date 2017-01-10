@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -49,7 +50,6 @@ import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.NumericRange;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.base.Objects;
 
@@ -227,7 +227,7 @@ public class CopyStateTaskService extends StatefulService {
 
     Stream<Operation> queryOps = currentState.sourceURIs.stream().map((sourceURI) -> {
       Operation queryOp = Operation
-          .createPost(UriUtils.buildUri(sourceURI, ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
+          .createPost(UriUtils.buildUri(sourceURI, ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS))
           .setBody(retrieveDocumentsQuery(currentState));
       AuthenticationUtils.addSystemUserAuthcontext(queryOp, getSystemAuthorizationContext());
       return queryOp;

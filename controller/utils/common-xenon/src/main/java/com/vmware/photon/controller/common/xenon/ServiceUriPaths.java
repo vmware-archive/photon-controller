@@ -14,9 +14,12 @@
 package com.vmware.photon.controller.common.xenon;
 
 /**
- * ESX cloud service paths.
+ * Photon Controller service paths.
  */
-public class ServiceUriPaths extends com.vmware.xenon.services.common.ServiceUriPaths {
+public class ServiceUriPaths {
+
+  public static final com.vmware.xenon.services.common.ServiceUriPaths XENON = null;
+
   public static final String SERVICES_ROOT = "/photon";
 
   public static final String STATUS_SERVICE = SERVICES_ROOT + "/status";

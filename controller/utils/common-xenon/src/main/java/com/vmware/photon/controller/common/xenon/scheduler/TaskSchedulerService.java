@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
@@ -33,7 +34,6 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 /**
  * Class TaskSchedulerService: periodically starts new services based on the threshold of how many services
@@ -260,7 +260,7 @@ public class TaskSchedulerService extends StatefulService {
 
       QueryTask query = QueryTask.create(spec).setDirect(true);
       Operation queryPost = Operation
-          .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_QUERY_TASKS))
+          .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.XENON.CORE_QUERY_TASKS))
           .setBody(query)
           .setCompletion(handler);
       sendRequest(queryPost);

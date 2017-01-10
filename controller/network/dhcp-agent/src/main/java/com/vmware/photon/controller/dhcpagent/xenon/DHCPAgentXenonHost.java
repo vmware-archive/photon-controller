@@ -24,7 +24,6 @@ import com.vmware.photon.controller.dhcpagent.xenon.service.StatusService;
 import com.vmware.photon.controller.dhcpagent.xenon.service.SubnetConfigurationService;
 import com.vmware.photon.controller.dhcpagent.xenon.service.SubnetIPLeaseService;
 import com.vmware.xenon.common.ServiceHost;
-import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -69,15 +68,6 @@ public class DHCPAgentXenonHost
   @Override
   public ServiceHost start() throws Throwable {
     super.start();
-
-    /**
-     * Xenon currently uses a garbage collection algorithm for its Lucene index searchers which
-     * results in index searchers being closed while still in use by paginated queries. As a
-     * temporary workaround until the issue is fixed on the framework side (v0.7.6), raise the
-     * threshold at which index searcher garbage collection is triggered to limit the impact of
-     * this issue.
-     */
-    LuceneDocumentIndexService.setSearcherCountThreshold(INDEX_SEARCHER_COUNT_THRESHOLD);
 
     this.getClient().setConnectionLimitPerHost(DEFAULT_CONNECTION_LIMIT_PER_HOST);
     startDefaultCoreServicesSynchronously();

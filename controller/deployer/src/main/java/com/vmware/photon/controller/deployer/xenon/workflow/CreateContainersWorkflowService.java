@@ -18,6 +18,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -43,10 +44,8 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
-
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -381,7 +380,7 @@ public class CreateContainersWorkflowService extends StatefulService {
         .build();
 
     sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .createPost(this, ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(queryTask)
         .setCompletion(
             (o, e) -> {
@@ -443,7 +442,7 @@ public class CreateContainersWorkflowService extends StatefulService {
         .build();
 
     sendRequest(Operation.
-        createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        createPost(this, ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(queryTask)
         .setCompletion(
             (o, e) -> {

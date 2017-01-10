@@ -38,7 +38,6 @@ import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.common.UtilsHelper;
 import com.vmware.xenon.common.http.netty.NettyHttpServiceClient;
-import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
 import org.slf4j.Logger;
@@ -192,14 +191,6 @@ public class PhotonControllerXenonHost
     @Override
     public ServiceHost start() throws Throwable {
         super.start();
-        /**
-         * Xenon currently uses a garbage collection algorithm for its Lucene index searchers which
-         * results in index searchers being closed while still in use by paginated queries. As a
-         * temporary workaround until the issue is fixed on the framework side (v0.7.6), raise the
-         * threshold at which index searcher garbage collection is triggered to limit the impact of
-         * this issue.
-         */
-        LuceneDocumentIndexService.setSearcherCountThreshold(INDEX_SEARCHER_COUNT_THRESHOLD);
 
         /**
          * Add customized Kryo serialization for both object and document serializers.

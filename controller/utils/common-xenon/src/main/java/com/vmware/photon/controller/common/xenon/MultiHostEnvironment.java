@@ -97,7 +97,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
       // wait for hosts to reach AVAILABLE state
       ServiceHostUtils.waitForNodeGroupConvergence(
           hosts,
-          ServiceUriPaths.DEFAULT_NODE_GROUP);
+          ServiceUriPaths.XENON.DEFAULT_NODE_GROUP);
 
       /**
        * waitForHostReady() waits for all factories to be available. We need to do it again
@@ -394,7 +394,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
     OperationLatch syncOp = new OperationLatch(op);
     op.setReferer(UriUtils.buildUri(host, "test-host"))
         .setExpiration(Utils.getNowMicrosUtc() + host.getOperationTimeoutMicros());
-    host.forwardRequest(ServiceUriPaths.DEFAULT_NODE_SELECTOR, serviceSelfLink, op);
+    host.forwardRequest(ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR, serviceSelfLink, op);
 
     return syncOp.awaitOperationCompletion();
   }

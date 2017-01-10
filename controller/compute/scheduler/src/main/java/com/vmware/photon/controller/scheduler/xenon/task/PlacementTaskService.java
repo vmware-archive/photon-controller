@@ -621,7 +621,7 @@ public class PlacementTaskService extends StatefulService {
       termsBuilder.put("imageId", imageId);
 
       CloudStoreHelper cloudStoreHelper = ((PhotonControllerXenonHost) getHost()).getCloudStoreHelper();
-      URI queryUri = cloudStoreHelper.selectLocalCloudStoreIfAvailable(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS);
+      URI queryUri = cloudStoreHelper.selectLocalCloudStoreIfAvailable(ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS);
       QueryTask.QuerySpecification spec =
           QueryTaskUtils.buildQuerySpec(ImageToImageDatastoreMappingService.State.class, termsBuilder.build());
       spec.options.add(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
