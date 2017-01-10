@@ -17,11 +17,11 @@ if [ -d ovftool ]; then
   export PATH=$(pwd)/ovftool:$PATH
 fi
 
-cd ../../controller/dhcp-agent
-../gradlew disttar
-cd ../../appliances/dhcp-ova
+cd ../../controller/network/dhcp-agent
+../../gradlew disttar
+cd ../../../appliances/dhcp-ova
 
-DHCP_AGENT_TAR_PATH=(../../controller/dhcp-agent/build/distributions/dhcp-agent-*.tar)
+DHCP_AGENT_TAR_PATH=(../../controller/network/dhcp-agent/build/distributions/dhcp-agent-*.tar)
 
 SSHD_ENABLE_ROOT_LOGIN=${SSHD_ENABLE_ROOT_LOGIN:-"false"}
 PHOTON_OVA_URL=${PHOTON_OVA_URL:="../photon-ova/build/photon-ova-virtualbox.ova"}
