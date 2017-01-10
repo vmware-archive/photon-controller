@@ -5,9 +5,9 @@ mainClassName = 'com.vmware.photon.controller.clustermanager.testtool.Main'
 dependencies {
     compile project(':api:client')
     compile project(':cloud-store')
-    compile project(':common')
-    compile project(':common-xenon')
-    compile project(':common-logging')
+    compile project(':utils:common')
+    compile project(':utils:common-xenon')
+    compile project(':utils:common-logging')
     compile project(':cluster-manager:service-documents')
 
     // Reference maven repository files.

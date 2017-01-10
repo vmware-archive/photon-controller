@@ -11,9 +11,9 @@ import java.nio.file.Files
 mainClassName = 'com.vmware.photon.controller.housekeeper.Main'
 
 dependencies {
-  compile project(':common')
-  compile project(':common-xenon')
-  compile project(':common-logging')
+  compile project(':utils:common')
+  compile project(':utils:common-xenon')
+  compile project(':utils:common-logging')
   compile project(':cloud-store')
   compile project(':network:dhcp-agent')
   compile project(':network:nsx-client')
@@ -31,7 +31,7 @@ dependencies {
       '../../thrift/tracing.thrift',
       '../../thrift/status.thrift')
 
-  testCompile project(':common-tests')
+  testCompile project(':utils:common-tests')
 
   testCompile("org.apache.curator:curator-test:${versions.curator}") {
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'

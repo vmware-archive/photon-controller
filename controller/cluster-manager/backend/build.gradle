@@ -3,11 +3,11 @@ apply plugin: 'java'
 dependencies {
     compile project(':api:client')
     compile project(':cloud-store')
-    compile project(':common')
-    compile project(':common-xenon')
-    compile project(':common-logging')
+    compile project(':utils:common')
+    compile project(':utils:common-xenon')
+    compile project(':utils:common-logging')
     compile project(':nfc-client')
-    compile project(':common-auth')
+    compile project(':utils:common-auth')
     compile project(':cluster-manager:service-documents')
 
     compile 'commons-net:commons-net:2.0'
@@ -27,7 +27,7 @@ dependencies {
 	    exclude group: 'org.mockito', module: 'mockito-all'
 	  }
     testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
-    testCompile(project(path: ':common', configuration: 'tests'))
+    testCompile(project(path: ':utils:common', configuration: 'tests'))
     testCompile(project(path: ':cloud-store', configuration: 'tests'))
 }
 
