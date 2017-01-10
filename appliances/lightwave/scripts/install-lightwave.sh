@@ -18,11 +18,9 @@ ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key
 
 sed -i 's/#Storage=auto/Storage=persistent/' /etc/systemd/journald.conf
 tdnf install -y procps-ng
-tdnf install -y openjre-1.8.0.92
-tdnf install -y openjdk-1.8.0.92
-tdnf install -y commons-daemon-1.0.15-6.ph1.x86_64
-tdnf install -y apache-tomcat-8.0.35
-tdnf install -y vmware-lightwave-server-6.6.0
+tdnf install -y openjre-1.8.0.102
+tdnf install -y openjdk-1.8.0.102
+tdnf install -y vmware-lightwave-server-6.6.3
 
 # open iptables ports
 # EXPOSE 22 53/udp 53 88/udp 88 389 443 636 2012 2014 2020
