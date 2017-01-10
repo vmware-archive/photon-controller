@@ -16,6 +16,7 @@ package com.vmware.photon.controller.dhcpagent.xenon;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfig;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfigTest;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
@@ -23,16 +24,13 @@ import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.dhcpagent.xenon.service.StatusService;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.inject.Injector;
-
 import org.apache.commons.io.FileUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -162,9 +160,9 @@ public class DHCPAgentXenonHostTest {
         // service failed to start.
       }
 
-      assertThat(host.checkServiceAvailable(ServiceUriPaths.DEFAULT_NODE_GROUP), is(true));
+      assertThat(host.checkServiceAvailable(ServiceUriPaths.XENON.DEFAULT_NODE_GROUP), is(true));
       assertThat(host.checkServiceAvailable(LuceneDocumentIndexService.SELF_LINK), is(true));
-      assertThat(host.checkServiceAvailable(ServiceUriPaths.CORE_QUERY_TASKS), is(true));
+      assertThat(host.checkServiceAvailable(ServiceUriPaths.XENON.CORE_QUERY_TASKS), is(true));
 
       for (String selfLink : serviceSelfLinks) {
         assertThat(
@@ -184,7 +182,7 @@ public class DHCPAgentXenonHostTest {
   public class IsReadyTest {
 
     private DnsmasqDriver dnsmasqDriver;
-    
+
     @BeforeMethod
     private void setUp() throws Throwable {
       dnsmasqDriver = mock(DnsmasqDriver.class);

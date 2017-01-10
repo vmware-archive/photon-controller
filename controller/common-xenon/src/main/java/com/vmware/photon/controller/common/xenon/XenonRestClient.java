@@ -285,8 +285,8 @@ public class XenonRestClient implements XenonClient {
     // (which is the node selector's forwarder that will pick all nodes), and there is a query term to
     // tell it where to forward the query to on each node (for us it's /core/local-query-tasks)
     URI serviceUri = UriUtils.buildBroadcastRequestUri(
-        getServiceUri(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-        ServiceUriPaths.DEFAULT_NODE_SELECTOR);
+        getServiceUri(ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS),
+        ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR);
 
     query.setDirect(true);
 
@@ -332,7 +332,7 @@ public class XenonRestClient implements XenonClient {
   public Operation query(QueryTask queryTask)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
 
-    URI queryFactoryUri = getServiceUri(ServiceUriPaths.CORE_QUERY_TASKS);
+    URI queryFactoryUri = getServiceUri(ServiceUriPaths.XENON.CORE_QUERY_TASKS);
 
     Operation queryOperation = Operation
         .createPost(queryFactoryUri)

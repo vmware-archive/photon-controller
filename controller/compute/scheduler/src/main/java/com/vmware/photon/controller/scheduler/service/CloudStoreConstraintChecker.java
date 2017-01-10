@@ -346,7 +346,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
             .build());
     QueryTask queryTask = queryTaskBuilder.build();
 
-    Operation queryOperation = this.cloudStoreHelper.createPost(ServiceUriPaths.CORE_QUERY_TASKS)
+    Operation queryOperation = this.cloudStoreHelper.createPost(ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(queryTask)
         .setContextId(LoggingUtils.getRequestId())
         .setCompletion((response, ex) -> {
@@ -557,7 +557,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
 
     QueryTask queryTask = queryTaskBuilder.build();
 
-    Operation queryOperation = this.cloudStoreHelper.createPost(ServiceUriPaths.CORE_QUERY_TASKS)
+    Operation queryOperation = this.cloudStoreHelper.createPost(ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(queryTask)
         .setContextId(LoggingUtils.getRequestId())
         .setCompletion((response, ex) -> {

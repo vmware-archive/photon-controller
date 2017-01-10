@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -68,7 +69,6 @@ import com.vmware.xenon.services.common.NodeState;
 import com.vmware.xenon.services.common.NodeState.NodeStatus;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.Query;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -76,7 +76,6 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
 import org.apache.commons.io.FileUtils;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -567,8 +566,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       for (Pair<String, Integer> address : e.getValue()) {
         Operation op = Operation
             .createGet(
-                UriUtils.buildUri(protocol, address.getFirst(), address.getSecond(), ServiceUriPaths
-                    .DEFAULT_NODE_GROUP, null));
+                UriUtils.buildUri(protocol, address.getFirst(), address.getSecond(),
+                    ServiceUriPaths.XENON.DEFAULT_NODE_GROUP, null));
         ops.add(op);
       }
     }
@@ -594,8 +593,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       for (Pair<String, Integer> address : entry.getValue()) {
         quorumUpdates.add(
           Operation.createPatch(
-              UriUtils.buildUri(protocol, address.getFirst(), address.getSecond(), ServiceUriPaths
-                  .DEFAULT_NODE_GROUP, null))
+              UriUtils.buildUri(protocol, address.getFirst(), address.getSecond(),
+                  ServiceUriPaths.XENON.DEFAULT_NODE_GROUP, null))
             .setBody(patch)
         );
       }
@@ -630,7 +629,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         .build();
     return Operation
       .createPost(UriUtils.buildBroadcastRequestUri(
-          UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS), ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+          UriUtils.buildUri(getHost(), ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS),
+          ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR))
 
       .setBody(QueryTask.Builder
           .createDirectTask()
@@ -705,7 +705,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         .build();
 
     sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .createPost(this, ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(queryTask)
         .setCompletion(
             (o, e) -> {
@@ -826,7 +826,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         .build();
 
     sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .createPost(this, ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(queryTask)
         .setCompletion(
             (o, e) -> {
@@ -912,7 +912,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         .build();
 
     sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .createPost(this, ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(queryTask)
         .setCompletion(
             (o, e) -> {
@@ -949,7 +949,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         .build();
 
     sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .createPost(this, ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(queryTask)
         .setCompletion(
             (o, e) -> {
@@ -997,7 +997,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         .build();
 
     sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .createPost(this, ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(queryTask)
         .setCompletion(
             (o, e) -> {

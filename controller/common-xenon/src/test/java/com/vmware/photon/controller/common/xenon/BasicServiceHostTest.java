@@ -165,10 +165,10 @@ public class BasicServiceHostTest {
       assertThat(host.isStarted(), is(true));
 
       assertThat(
-          host.checkServiceAvailable(com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_NODE_GROUP),
+          host.checkServiceAvailable(ServiceUriPaths.XENON.DEFAULT_NODE_GROUP),
           is(true));
       assertThat(host.checkServiceAvailable(LuceneDocumentIndexService.SELF_LINK), is(true));
-      assertThat(host.checkServiceAvailable(ServiceUriPaths.CORE_QUERY_TASKS), is(true));
+      assertThat(host.checkServiceAvailable(ServiceUriPaths.XENON.CORE_QUERY_TASKS), is(true));
     }
 
     @Test
@@ -179,10 +179,10 @@ public class BasicServiceHostTest {
       assertThat(host.isStarted(), is(true));
 
       assertThat(
-          host.checkServiceAvailable(com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_NODE_GROUP),
+          host.checkServiceAvailable(ServiceUriPaths.XENON.DEFAULT_NODE_GROUP),
           is(true));
       assertThat(host.checkServiceAvailable(LuceneDocumentIndexService.SELF_LINK), is(true));
-      assertThat(host.checkServiceAvailable(ServiceUriPaths.CORE_QUERY_TASKS), is(true));
+      assertThat(host.checkServiceAvailable(ServiceUriPaths.XENON.CORE_QUERY_TASKS), is(true));
     }
 
     @Test

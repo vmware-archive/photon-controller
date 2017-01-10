@@ -93,7 +93,7 @@ public class DefaultDeploymentTest {
 
     ServiceHostUtils.waitForNodeGroupConvergence(
        testEnvironment.getHosts(),
-        ServiceUriPaths.DEFAULT_NODE_GROUP);
+        ServiceUriPaths.XENON.DEFAULT_NODE_GROUP);
 
     String selfLink = DeploymentServiceFactory.SELF_LINK + "/" + DeployerDefaults.DEFAULT_DEPLOYMENT_ID;
 

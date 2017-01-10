@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
@@ -29,7 +30,6 @@ import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -209,9 +209,9 @@ public class HousekeeperServiceGroupTest {
         // service failed to start.
       }
 
-      assertThat(host.checkServiceAvailable(ServiceUriPaths.DEFAULT_NODE_GROUP), is(true));
+      assertThat(host.checkServiceAvailable(ServiceUriPaths.XENON.DEFAULT_NODE_GROUP), is(true));
       assertThat(host.checkServiceAvailable(LuceneDocumentIndexService.SELF_LINK), is(true));
-      assertThat(host.checkServiceAvailable(ServiceUriPaths.CORE_QUERY_TASKS), is(true));
+      assertThat(host.checkServiceAvailable(ServiceUriPaths.XENON.CORE_QUERY_TASKS), is(true));
 
       for (String selfLink : serviceSelfLinks) {
         assertThat(
@@ -343,7 +343,7 @@ public class HousekeeperServiceGroupTest {
 
       ServiceHostUtils.waitForNodeGroupConvergence(
           new PhotonControllerXenonHost[]{host, host2},
-          ServiceUriPaths.DEFAULT_NODE_GROUP);
+          ServiceUriPaths.XENON.DEFAULT_NODE_GROUP);
     }
   }
 

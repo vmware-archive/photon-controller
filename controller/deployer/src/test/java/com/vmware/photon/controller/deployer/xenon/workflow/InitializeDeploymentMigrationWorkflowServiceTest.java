@@ -557,7 +557,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
           .getServers(eq(quorum), eq("cloudstore"));
 
       ServiceHost sourceHost = sourceCloudStore.getHosts()[0];
-      startState.sourceNodeGroupReference = UriUtils.buildUri(sourceHost, ServiceUriPaths.DEFAULT_NODE_GROUP);
+      startState.sourceNodeGroupReference = UriUtils.buildUri(sourceHost, ServiceUriPaths.XENON.DEFAULT_NODE_GROUP);
       startState.sourceURIs = null;
 
       TestHelper.createHostService(sourceCloudStore, Collections.singleton(UsageTag.MGMT.name()));

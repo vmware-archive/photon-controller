@@ -817,7 +817,7 @@ public class ImageHostToHostCopyService extends StatefulService {
         datastoreId);
 
     return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
-        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .createBroadcastPost(ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR)
         .setBody(QueryTask.create(querySpecification).setDirect(true));
   }
 

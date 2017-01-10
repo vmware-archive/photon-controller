@@ -17,12 +17,12 @@ import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRest
 import com.vmware.photon.controller.api.frontend.resources.routes.SystemPropertiesRoutes;
 import com.vmware.photon.controller.api.model.SystemProperties;
 import com.vmware.photon.controller.api.model.SystemUpdateSpec;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.services.common.NodeGroupService;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 import static com.vmware.photon.controller.api.frontend.Responses.generateCustomResponse;
 
 import com.google.inject.Inject;
@@ -106,7 +106,7 @@ public class SystemPropertiesResource {
     patch.membershipQuorum = quorumSize;
     patch.isGroupUpdate = true;
     try {
-      this.xenonClient.patch(ServiceUriPaths.DEFAULT_NODE_GROUP, patch);
+      this.xenonClient.patch(ServiceUriPaths.XENON.DEFAULT_NODE_GROUP, patch);
     } catch (Exception e) {
       throw new RuntimeException(e);
     } catch (BadRequestException e) {

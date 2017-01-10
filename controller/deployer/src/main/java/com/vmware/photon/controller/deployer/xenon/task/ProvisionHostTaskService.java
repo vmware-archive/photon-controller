@@ -1111,7 +1111,7 @@ public class ProvisionHostTaskService extends StatefulService {
         .build();
 
     sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .createPost(this, ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(queryTask)
         .setCompletion(
             (o, e) -> {
@@ -1262,8 +1262,8 @@ public class ProvisionHostTaskService extends StatefulService {
 
     sendRequest(Operation
         .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+            UriUtils.buildUri(getHost(), ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
         .setCompletion(
             (o, e) -> {

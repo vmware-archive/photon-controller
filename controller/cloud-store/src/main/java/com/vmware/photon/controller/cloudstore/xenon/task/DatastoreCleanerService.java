@@ -183,7 +183,7 @@ public class DatastoreCleanerService extends StatefulService {
 
     Operation queryPost = Operation
         .createPost(UriUtils.buildUri(getHost(),
-            com.vmware.photon.controller.common.xenon.ServiceUriPaths.CORE_QUERY_TASKS))
+            com.vmware.photon.controller.common.xenon.ServiceUriPaths.XENON.CORE_QUERY_TASKS))
         .setBody(queryTask)
         .setCompletion(handler);
 

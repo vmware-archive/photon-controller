@@ -267,7 +267,7 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
         .build();
 
     sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .createPost(this, ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(queryTask)
         .setCompletion(
             (o, e) -> {
@@ -301,7 +301,7 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
         .build();
 
     sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .createPost(this, ServiceUriPaths.XENON.CORE_QUERY_TASKS)
         .setBody(queryTask)
         .setCompletion(
             (o, e) -> {

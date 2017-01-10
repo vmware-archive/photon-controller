@@ -187,7 +187,7 @@ public class DatastoreDeleteService extends StatefulService {
 
     Operation queryPost = Operation
         .createPost(UriUtils.buildUri(getHost(),
-            com.vmware.photon.controller.common.xenon.ServiceUriPaths.CORE_QUERY_TASKS))
+            com.vmware.photon.controller.common.xenon.ServiceUriPaths.XENON.CORE_QUERY_TASKS))
         .setBody(buildHostQuery(current))
         .setCompletion(handler);
 
@@ -291,7 +291,7 @@ public class DatastoreDeleteService extends StatefulService {
 
     Operation queryPost = Operation
         .createPost(UriUtils.buildUri(getHost(),
-            com.vmware.photon.controller.common.xenon.ServiceUriPaths.CORE_QUERY_TASKS))
+            com.vmware.photon.controller.common.xenon.ServiceUriPaths.XENON.CORE_QUERY_TASKS))
         .setBody(buildImageToImageDatastoreQuery(current))
         .setCompletion(handler);
 

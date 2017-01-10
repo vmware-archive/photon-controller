@@ -16,6 +16,7 @@ package com.vmware.photon.controller.cloudstore.xenon.task;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
@@ -31,7 +32,6 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import java.util.EnumSet;
 import java.util.LinkedList;
@@ -151,7 +151,7 @@ public class DhcpSubnetDeleteService extends StatefulService {
     try {
       if (!isFinalStage(current) && current.nextPageLink == null) {
         Operation queryDhcpSubnetsPagination = Operation
-            .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
+            .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS))
             .setBody(buildDhcpSubnetQuery(current));
         queryDhcpSubnetsPagination
             .setCompletion(((op, failure) -> {
