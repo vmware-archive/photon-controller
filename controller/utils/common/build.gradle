@@ -33,17 +33,17 @@ dependencies {
   compile "org.hibernate:hibernate-validator:${versions.hibernate_validator}"
   compile 'org.glassfish.web:el-impl:2.2'
 
-  thrift files('../../thrift/agent.thrift',
-      '../../thrift/aggregator.thrift',
-      '../../thrift/flavors.thrift',
-      '../../thrift/host.thrift',
-      '../../thrift/resource.thrift',
-      '../../thrift/roles.thrift',
-      '../../thrift/scheduler.thrift',
-      '../../thrift/server_address.thrift',
-      '../../thrift/status.thrift',
-      '../../thrift/stats_plugin.thrift',
-      '../../thrift/tracing.thrift')
+  thrift files('../../../thrift/agent.thrift',
+      '../../../thrift/aggregator.thrift',
+      '../../../thrift/flavors.thrift',
+      '../../../thrift/host.thrift',
+      '../../../thrift/resource.thrift',
+      '../../../thrift/roles.thrift',
+      '../../../thrift/scheduler.thrift',
+      '../../../thrift/server_address.thrift',
+      '../../../thrift/status.thrift',
+      '../../../thrift/stats_plugin.thrift',
+      '../../../thrift/tracing.thrift')
 
   testCompile("org.apache.curator:curator-test:${versions.curator}") {
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'
