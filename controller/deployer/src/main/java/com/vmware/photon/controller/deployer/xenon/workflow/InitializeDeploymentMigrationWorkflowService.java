@@ -281,7 +281,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     return Operation
         .createPost(UriUtils.buildBroadcastRequestUri(
             UriUtils.buildUri(
-                getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS), ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+                getHost(), ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS), ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR))
         .setBody(QueryTask.create(querySpecification).setDirect(true));
   }
 
@@ -397,7 +397,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
     sendRequest(HostUtils
         .getCloudStoreHelper(this)
-        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .createBroadcastPost(ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR)
         .setBody(QueryTask.create(buildHostQuerySpecification()).setDirect(true))
         .setCompletion(
             (o, e) -> {
@@ -589,8 +589,8 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
         .build();
     return Operation
         .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+            UriUtils.buildUri(getHost(), ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask);
   }
 

@@ -18,13 +18,13 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.provider.SystemConfigProvider;
 import com.vmware.photon.controller.common.xenon.OperationLatch;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +93,8 @@ public class SystemConfig implements SystemConfigProvider {
       querySpecification.query = kindClause;
 
       Operation broadcastOp = xenonHost.getCloudStoreHelper()
-          .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+          .createBroadcastPost(ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS,
+              ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR)
           .setBody(QueryTask.create(querySpecification).setDirect(true));
       OperationLatch operationLatch = new OperationLatch(broadcastOp);
       xenonHost.sendRequest(broadcastOp);

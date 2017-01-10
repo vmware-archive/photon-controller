@@ -21,6 +21,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -50,7 +51,6 @@ import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -404,7 +404,8 @@ public class DeprovisionHostWorkflowService extends StatefulService {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
 
       HostUtils.getCloudStoreHelper(this)
-          .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+          .createBroadcastPost(ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS,
+              ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR)
           .setBody(queryTask)
           .setCompletion((op, ex) -> {
             if (null != ex) {
@@ -612,8 +613,8 @@ public class DeprovisionHostWorkflowService extends StatefulService {
 
       sendRequest(Operation
           .createPost(UriUtils.buildBroadcastRequestUri(
-              UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-              ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+              UriUtils.buildUri(getHost(), ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS),
+              ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR))
           .setBody(containerQueryTask.setDirect(true))
           .setCompletion(
               (completedOp, failure) -> {

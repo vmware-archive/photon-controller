@@ -244,7 +244,7 @@ public class StatusFeClientTest {
 
     com.vmware.xenon.common.Operation serviceOp = mock(com.vmware.xenon.common.Operation.class);
     when(serviceOp.getBody(Matchers.any())).thenReturn(nodeGroupState);
-    when(xenonClient.get(ServiceUriPaths.DEFAULT_NODE_GROUP)).thenReturn(serviceOp);
+    when(xenonClient.get(ServiceUriPaths.XENON.DEFAULT_NODE_GROUP)).thenReturn(serviceOp);
   }
 
   private void mockClientPools() {

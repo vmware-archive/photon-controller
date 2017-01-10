@@ -21,6 +21,7 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
@@ -35,7 +36,6 @@ import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -44,7 +44,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -308,9 +307,9 @@ public class DeployerServiceGroupTest {
         //      identify the service which failed to start.
       }
 
-      assertThat(host.checkServiceAvailable(ServiceUriPaths.DEFAULT_NODE_GROUP), is(true));
+      assertThat(host.checkServiceAvailable(ServiceUriPaths.XENON.DEFAULT_NODE_GROUP), is(true));
       assertThat(host.checkServiceAvailable(LuceneDocumentIndexService.SELF_LINK), is(true));
-      assertThat(host.checkServiceAvailable(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS), is(true));
+      assertThat(host.checkServiceAvailable(ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS), is(true));
 
       for (String serviceLink : serviceSelfLinks) {
         assertThat(
@@ -521,7 +520,7 @@ public class DeployerServiceGroupTest {
 
       ServiceHostUtils.waitForNodeGroupConvergence(
           new PhotonControllerXenonHost[]{host, host2},
-          ServiceUriPaths.DEFAULT_NODE_GROUP);
+          ServiceUriPaths.XENON.DEFAULT_NODE_GROUP);
     }
   }
 }

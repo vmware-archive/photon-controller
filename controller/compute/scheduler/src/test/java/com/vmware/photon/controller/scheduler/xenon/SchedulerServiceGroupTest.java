@@ -19,13 +19,13 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.scheduler.SchedulerConfig;
 import com.vmware.photon.controller.scheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.scheduler.service.ConstraintChecker;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
-import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import org.apache.commons.io.FileUtils;
 import org.mockito.Mock;
@@ -214,9 +214,9 @@ public class SchedulerServiceGroupTest {
         //      identify the service which failed to start.
       }
 
-      assertThat(host.checkServiceAvailable(ServiceUriPaths.DEFAULT_NODE_GROUP), is(true));
+      assertThat(host.checkServiceAvailable(ServiceUriPaths.XENON.DEFAULT_NODE_GROUP), is(true));
       assertThat(host.checkServiceAvailable(LuceneDocumentIndexService.SELF_LINK), is(true));
-      assertThat(host.checkServiceAvailable(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS), is(true));
+      assertThat(host.checkServiceAvailable(ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS), is(true));
     }
   }
 
@@ -345,7 +345,7 @@ public class SchedulerServiceGroupTest {
 
       ServiceHostUtils.waitForNodeGroupConvergence(
           new PhotonControllerXenonHost[]{host, host2},
-          ServiceUriPaths.DEFAULT_NODE_GROUP);
+          ServiceUriPaths.XENON.DEFAULT_NODE_GROUP);
     }
   }
 }

@@ -236,7 +236,7 @@ public class TombstoneCleanerService extends StatefulService {
     };
 
     Operation queryPost = Operation
-        .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_QUERY_TASKS))
+        .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.XENON.CORE_QUERY_TASKS))
         .setBody(buildTombstoneQuery(current))
         .setCompletion(handler);
 
@@ -291,8 +291,8 @@ public class TombstoneCleanerService extends StatefulService {
     };
 
     URI queryUri = UriUtils.buildBroadcastRequestUri(
-        UriUtils.buildUri(getHost(), com.vmware.xenon.services.common.ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-        ServiceUriPaths.DEFAULT_NODE_SELECTOR);
+        UriUtils.buildUri(getHost(), ServiceUriPaths.XENON.CORE_LOCAL_QUERY_TASKS),
+        ServiceUriPaths.XENON.DEFAULT_NODE_SELECTOR);
 
     Collection<Operation> posts = new LinkedList<>();
     for (TombstoneService.State tombstone : tombstoneList) {
