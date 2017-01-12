@@ -6,7 +6,7 @@
   "isReplicated": false,
   "isPrivileged": true,
   "useHostNetwork": true,
-  "containerImage": "vmware/lightwave-sts:1.0.3",
+  "containerImage": "vmware/lightwave-sts:1.0.2",
   "containerName": "lightwave",
   "portBindings": {
     "443":443
