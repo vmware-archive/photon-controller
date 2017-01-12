@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 VMware, Inc. All Rights Reserved.
+ * Copyright 2017 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -28,16 +28,16 @@ import com.vmware.photon.controller.common.xenon.validation.NotEmpty;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 
-import java.util.List;
+import java.util.Map;
 
 /**
  * Defines the document state associated with a single
- * {@link com.vmware.photon.controller.api.backend.workflows.ConfigureDhcpWorkflowService}.
+ * {@link com.vmware.photon.controller.api.backend.workflows.ConfigureNsxWorkflowService}.
  */
-public class ConfigureDhcpWorkflowDocument extends ServiceDocument {
+public class ConfigureNsxWorkflowDocument extends ServiceDocument {
 
   /**
-   * Customized task state. Defines the substages.
+   * Customized task state. Defines the sub-stages.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
 
@@ -51,9 +51,10 @@ public class ConfigureDhcpWorkflowDocument extends ServiceDocument {
      * Definition of substages.
      */
     public enum SubStage {
+      CHECK_NSX_CONFIGURED,
       CREATE_DHCP_RELAY_PROFILE,
       CREATE_DHCP_RELAY_SERVICE,
-      UPDATE_DEPLOYMENT
+      SET_NSX_CONFIGURED
     }
   }
 
@@ -104,11 +105,12 @@ public class ConfigureDhcpWorkflowDocument extends ServiceDocument {
   public String nsxPassword;
 
   /**
-   * The IP addresses of the DHCP server.
+   * The IP addresses of the DHCP server. The key of the map is the private IP of the DHCP server,
+   * and the value of the map is the public IP of the DHCP server.
    */
   @NotEmpty
   @Immutable
-  public List<String> dhcpServerAddresses;
+  public Map<String, String> dhcpServerAddresses;
 
   ///
   /// Task Output

@@ -22,7 +22,7 @@ import com.vmware.photon.controller.api.backend.tasks.DeleteLogicalRouterTaskSer
 import com.vmware.photon.controller.api.backend.tasks.DeleteLogicalSwitchTaskService;
 import com.vmware.photon.controller.api.backend.tasks.DisconnectVmFromSwitchTaskService;
 import com.vmware.photon.controller.api.backend.workflows.AssignFloatingIpToVmWorkflowService;
-import com.vmware.photon.controller.api.backend.workflows.ConfigureDhcpWorkflowService;
+import com.vmware.photon.controller.api.backend.workflows.ConfigureNsxWorkflowService;
 import com.vmware.photon.controller.api.backend.workflows.CreateVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.api.backend.workflows.DeleteVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.api.backend.workflows.RemoveFloatingIpFromVmWorkflowService;
@@ -57,7 +57,7 @@ public class ApiBackendFactory {
       // workflows
       .put(CreateVirtualNetworkWorkflowService.class, CreateVirtualNetworkWorkflowService::createFactory)
       .put(DeleteVirtualNetworkWorkflowService.class, DeleteVirtualNetworkWorkflowService::createFactory)
-      .put(ConfigureDhcpWorkflowService.class, ConfigureDhcpWorkflowService::createFactory)
+      .put(ConfigureNsxWorkflowService.class, ConfigureNsxWorkflowService::createFactory)
       .put(AssignFloatingIpToVmWorkflowService.class, AssignFloatingIpToVmWorkflowService::createFactory)
       .put(RemoveFloatingIpFromVmWorkflowService.class, RemoveFloatingIpFromVmWorkflowService::createFactory)
       .build();
