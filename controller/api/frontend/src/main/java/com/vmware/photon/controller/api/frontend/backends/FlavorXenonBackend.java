@@ -204,7 +204,7 @@ public class FlavorXenonBackend implements FlavorBackend {
       // The ephemeral disk (normally a boot disk) capacity must not be specified: it's determined from
       // the VM image
       throw new InvalidFlavorSpecification(String.format("Ephemeral flavor '%s' incorrectly specifies %s", flavorName,
-          QuotaLineItem.PERSISTENT_DISK_CAPACITY));
+          QuotaLineItem.EPHEMERAL_DISK_CAPACITY));
     }
   }
 
