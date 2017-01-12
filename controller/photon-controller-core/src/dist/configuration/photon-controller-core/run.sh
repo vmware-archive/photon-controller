@@ -80,37 +80,6 @@ function print_warning_if_value_mssing ()
   fi
 }
 
-function setup_swagger()
-{
-  local config_path=$1
-  local install_path=$2
-
-  local API_BITS=$install_path
-  local API_BIN="$API_BITS/bin"
-  local API_LIB="$API_BITS/lib"
-  local API_SWAGGER_JS_FILE="swagger-config.js"
-  local API_SWAGGER_JS="$config_path/$API_SWAGGER_JS_FILE"
-
-  if [ ! -f $API_SWAGGER_JS ]
-  then
-    printf "window.swaggerConfig = {\n  enableAuth: true,\n  swaggerLoginUrl: '%s',\n  swaggerLogoutUrl: '%s',\n};\n" \
-           $SWAGGER_LOGIN_URL \
-           $SWAGGER_LOGOUT_URL \
-           > $API_SWAGGER_JS
-
-    #
-    # Add parameters-modified swagger-config.js to the jar
-    #
-    mkdir -p $config_path/assets
-    cp $API_SWAGGER_JS $config_path/assets
-
-    $JAVA_HOME/bin/jar uf \
-                       ${API_LIB}/swagger-ui*.jar \
-                       -C $config_path \
-                       assets/$API_SWAGGER_JS_FILE
-  fi
-}
-
 function check_lightwave()
 {
   domain_name=`/opt/vmware/bin/domainjoin info | \
@@ -296,8 +265,6 @@ if [ -z "$(grep $myhostname /etc/hosts)" ]
 then
   echo "$container_ip     $myhostname" >> /etc/hosts
 fi
-
-setup_swagger $CONFIG_PATH $INSTALL_PATH
 
 check_lightwave
 
