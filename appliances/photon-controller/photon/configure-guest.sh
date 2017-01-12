@@ -282,7 +282,7 @@ function parse_ovf_env()
   # vm config
   ip0=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ip0']/../@*[local-name()='value'])")
   netmask0=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='netmask0']/../@*[local-name()='value'])")
-  gateway=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='gateway']/../@*[local-name()='value'])")
+  gateway=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='gateway0']/../@*[local-name()='value'])")
   dns=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='DNS']/../@*[local-name()='value'])")
   ntp_servers=$(xmllint $CONFIG_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ntp_servers']/../@*[local-name()='value'])")
 
