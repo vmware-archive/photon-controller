@@ -277,6 +277,12 @@ public class DeploymentService extends StatefulService {
     public Boolean sdnEnabled;
 
     /**
+     * This value represents whether NSX has been configured or not.
+     */
+    @DefaultBoolean(value = false)
+    public Boolean nsxConfigured;
+
+    /**
      * This value represents the IP address of the network manager.
      */
     public String networkManagerAddress;
