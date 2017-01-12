@@ -32,7 +32,7 @@ LOG_DIR=$DEST_VIB_LAYOUT/payloads/agent/var/log
 if [ "$(uname)" == "Darwin" ]; then
         # On OSX default BSD version of sed and readlink do not behave same as GNU versions.
         # brew install coreutils gnu-sed
-        SED=gsed
+        SED=sed
         READLINK=greadlink
 else
         SED=sed

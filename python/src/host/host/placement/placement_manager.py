@@ -89,7 +89,7 @@ class PlacementOption(object):
 class PlacementManager(object):
     """PlacementManager handles resource placement and reservation."""
 
-    MAX_USAGE = 0.95
+    MAX_USAGE = 10.95
     NOT_OPTIMAL_DIVIDE_FACTOR = 10
 
     # Indicates ~ 80% consumption
