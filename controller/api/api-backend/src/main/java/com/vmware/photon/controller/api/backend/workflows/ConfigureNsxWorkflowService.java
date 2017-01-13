@@ -16,6 +16,10 @@ package com.vmware.photon.controller.api.backend.workflows;
 import com.vmware.photon.controller.api.backend.servicedocuments.ConfigureNsxWorkflowDocument;
 import com.vmware.photon.controller.api.backend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
+import com.vmware.photon.controller.common.Constants;
+import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
@@ -171,6 +175,12 @@ public class ConfigureNsxWorkflowService extends BaseWorkflowService<ConfigureNs
         case CHECK_NSX_CONFIGURED:
           checkNsxConfigured(state);
           break;
+        case CREATE_SUBNET_ALLOCATOR:
+          createSubnetAllocator(state);
+          break;
+        case CREATE_FLOATING_IP_ALLOCATOR:
+          createFloatingIpAllocator(state);
+          break;
         case CREATE_DHCP_RELAY_PROFILE:
           createDhcpRelayProfile(state);
           break;
@@ -190,6 +200,12 @@ public class ConfigureNsxWorkflowService extends BaseWorkflowService<ConfigureNs
    * Checks if NSX has already been configured. If so, move the workflow to FINISHED state.
    */
   private void checkNsxConfigured(ConfigureNsxWorkflowDocument state) throws Throwable {
+    if (!state.taskServiceEntity.sdnEnabled) {
+      ServiceUtils.logInfo(this, "SDN is not enabled for this deployment");
+      finish(state);
+      return;
+    }
+
     if (state.taskServiceEntity.nsxConfigured) {
       ServiceUtils.logInfo(this, "NSX has already been configured for this deployment");
       finish(state);
@@ -198,7 +214,7 @@ public class ConfigureNsxWorkflowService extends BaseWorkflowService<ConfigureNs
 
     ConfigureNsxWorkflowDocument patchState = buildPatch(
         TaskState.TaskStage.STARTED,
-        ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE);
+        ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_SUBNET_ALLOCATOR);
     patchState.taskServiceEntity = state.taskServiceEntity;
     patchState.taskServiceEntity.networkManagerAddress = state.nsxAddress;
     patchState.taskServiceEntity.networkManagerUsername = state.nsxUsername;
@@ -208,10 +224,116 @@ public class ConfigureNsxWorkflowService extends BaseWorkflowService<ConfigureNs
   }
 
   /**
+   * Creates a global subnet allocator that manages subnet IP range allocations.
+   */
+  private void createSubnetAllocator(ConfigureNsxWorkflowDocument state) throws Throwable {
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createGet(SubnetAllocatorService.SINGLETON_LINK)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            if (op.getStatusCode() != Operation.STATUS_CODE_NOT_FOUND) {
+              fail(state, ex);
+              return;
+            }
+
+            SubnetAllocatorService.State subnetAllocatorServiceState = new SubnetAllocatorService.State();
+            subnetAllocatorServiceState.rootCidr = state.nonRoutableIpRootCidr;
+            subnetAllocatorServiceState.dhcpAgentEndpoint = String.format(
+                "http://%s:%d",
+                // Selecting first index in Dhcp server list since expecting only one entry in this iteration
+                state.dhcpServerAddresses.values().iterator().next(),
+                Constants.DHCP_AGENT_PORT);
+            subnetAllocatorServiceState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
+
+            ServiceHostUtils.getCloudStoreHelper(getHost())
+                .createPost(SubnetAllocatorService.FACTORY_LINK)
+                .setBody(subnetAllocatorServiceState)
+                .setCompletion((iop, iex) -> {
+                  if (iex != null) {
+                    fail(state, iex);
+                    return;
+                  }
+
+                  try {
+                    ConfigureNsxWorkflowDocument patchState = buildPatch(
+                        TaskState.TaskStage.STARTED,
+                        ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_FLOATING_IP_ALLOCATOR);
+                    patchState.taskServiceEntity = state.taskServiceEntity;
+                    patchState.taskServiceEntity.ipRange = state.nonRoutableIpRootCidr;
+                    progress(state, patchState);
+                  } catch (Throwable t) {
+                    fail(state, t);
+                  }
+                })
+                .sendWith(this);
+            return;
+          }
+
+          ServiceUtils.logInfo(this, "Global subnet allocator has already been created");
+          progress(state, ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_FLOATING_IP_ALLOCATOR);
+        })
+        .sendWith(this);
+  }
+
+  /**
+   * Creates a global floating IP allocator that manages floating IP allocations.
+   */
+  private void createFloatingIpAllocator(ConfigureNsxWorkflowDocument state) throws Throwable {
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createGet(DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            if (op.getStatusCode() != Operation.STATUS_CODE_NOT_FOUND) {
+              fail(state, ex);
+              return;
+            }
+
+            DhcpSubnetService.State dhcpSubnetServiceState = new DhcpSubnetService.State();
+            dhcpSubnetServiceState.subnetId = getDeploymentId(state);
+            dhcpSubnetServiceState.lowIp = IpHelper.ipStringToLong(state.floatingIpRootRange.getStart());
+            dhcpSubnetServiceState.highIp = IpHelper.ipStringToLong(state.floatingIpRootRange.getEnd());
+            dhcpSubnetServiceState.dhcpAgentEndpoint = String.format(
+                "http://%s:%d",
+                state.dhcpServerAddresses.values().iterator().next(),
+                Constants.DHCP_AGENT_PORT);
+            dhcpSubnetServiceState.isFloatingIpSubnet = true;
+            dhcpSubnetServiceState.documentSelfLink = DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK;
+
+            ServiceHostUtils.getCloudStoreHelper(getHost())
+                .createPost(DhcpSubnetService.FACTORY_LINK)
+                .setBody(dhcpSubnetServiceState)
+                .setCompletion((iop, iex) -> {
+                  if (iex != null) {
+                    fail(state, iex);
+                    return;
+                  }
+
+                  try {
+                    ConfigureNsxWorkflowDocument patchState = buildPatch(
+                        TaskState.TaskStage.STARTED,
+                        ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE);
+                    patchState.taskServiceEntity = state.taskServiceEntity;
+                    patchState.taskServiceEntity.floatingIpRange = state.floatingIpRootRange;
+                    progress(state, patchState);
+                  } catch (Throwable t) {
+                    fail(state, t);
+                  }
+                })
+                .sendWith(this);
+            return;
+          }
+
+          ServiceUtils.logInfo(this, "Global floating IP allocator has already been created");
+          progress(state, ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE);
+        })
+        .sendWith(this);
+  }
+
+  /**
    * Creates a DHCP relay profile in NSX, using the given DHCP server information.
    */
   private void createDhcpRelayProfile(ConfigureNsxWorkflowDocument state) throws Throwable {
-    if (state.taskServiceEntity.dhcpRelayServiceId != null) {
+    if (state.taskServiceEntity.dhcpRelayProfileId != null) {
       ServiceUtils.logInfo(this, "DHCP Relay Profile has already been created");
       progress(state, ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_SERVICE);
       return;
@@ -298,10 +420,6 @@ public class ConfigureNsxWorkflowService extends BaseWorkflowService<ConfigureNs
         null);
     patchState.taskServiceEntity = state.taskServiceEntity;
     patchState.taskServiceEntity.nsxConfigured = true;
-    patchState.taskServiceEntity.networkManagerAddress = state.nsxAddress;
-    patchState.taskServiceEntity.networkManagerUsername = state.nsxUsername;
-    patchState.taskServiceEntity.networkManagerPassword = state.nsxPassword;
-    patchState.taskServiceEntity.dhcpServers = new ArrayList<>(state.dhcpServerAddresses.values());
 
     finish(state, patchState);
   }
@@ -381,6 +499,8 @@ public class ConfigureNsxWorkflowService extends BaseWorkflowService<ConfigureNs
     deploymentPatchState.dhcpRelayProfileId = state.taskServiceEntity.dhcpRelayProfileId;
     deploymentPatchState.dhcpRelayServiceId = state.taskServiceEntity.dhcpRelayServiceId;
     deploymentPatchState.dhcpServers = state.taskServiceEntity.dhcpServers;
+    deploymentPatchState.ipRange = state.taskServiceEntity.ipRange;
+    deploymentPatchState.floatingIpRange = state.taskServiceEntity.floatingIpRange;
 
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createPatch(state.taskServiceEntity.documentSelfLink)

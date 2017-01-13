@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.backend.annotations.TaskServiceEntityFie
 import com.vmware.photon.controller.api.backend.annotations.TaskServiceStateField;
 import com.vmware.photon.controller.api.backend.annotations.TaskStateField;
 import com.vmware.photon.controller.api.backend.annotations.TaskStateSubStageField;
+import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
@@ -52,6 +53,8 @@ public class ConfigureNsxWorkflowDocument extends ServiceDocument {
      */
     public enum SubStage {
       CHECK_NSX_CONFIGURED,
+      CREATE_SUBNET_ALLOCATOR,
+      CREATE_FLOATING_IP_ALLOCATOR,
       CREATE_DHCP_RELAY_PROFILE,
       CREATE_DHCP_RELAY_SERVICE,
       SET_NSX_CONFIGURED
@@ -111,6 +114,20 @@ public class ConfigureNsxWorkflowDocument extends ServiceDocument {
   @NotEmpty
   @Immutable
   public Map<String, String> dhcpServerAddresses;
+
+  /**
+   * The root CIDR of non-routable IPs.
+   */
+  @NotBlank
+  @Immutable
+  public String nonRoutableIpRootCidr;
+
+  /**
+   * The root range of floating IPs.
+   */
+  @NotBlank
+  @Immutable
+  public IpRange floatingIpRootRange;
 
   ///
   /// Task Output

@@ -18,8 +18,13 @@ import com.vmware.photon.controller.api.backend.helpers.TestEnvironment;
 import com.vmware.photon.controller.api.backend.helpers.TestHelper;
 import com.vmware.photon.controller.api.backend.servicedocuments.ConfigureNsxWorkflowDocument;
 import com.vmware.photon.controller.api.backend.utils.TaskStateHelper;
+import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
+import com.vmware.photon.controller.common.Constants;
+import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -61,6 +66,9 @@ public class ConfigureNsxWorkflowServiceTest {
   private static final String DHCP_PUBLIC_IP = "10.35.7.33";
   private static final String DHCP_RELAY_PROFILE_ID = "dhcpRelayProfileId";
   private static final String DHCP_RELAY_SERVICE_ID = "dhcpRelayServiceId";
+  private static final String NON_ROUTABLE_IP_ROOT_CIDR = "192.168.2.0/16";
+  private static final String FLOATING_IP_ROOT_RANGE_START = "22.3.5.1";
+  private static final String FLOATING_IP_ROOT_RANGE_END = "22.3.5.100";
 
   @Test(enabled = false)
   private void dummy() {
@@ -86,6 +94,10 @@ public class ConfigureNsxWorkflowServiceTest {
     startState.nsxPassword = NETWORK_MANAGER_PASSWORD;
     startState.dhcpServerAddresses = new HashMap<>();
     startState.dhcpServerAddresses.put(DHCP_PRIVATE_IP, DHCP_PUBLIC_IP);
+    startState.nonRoutableIpRootCidr = NON_ROUTABLE_IP_ROOT_CIDR;
+    startState.floatingIpRootRange = new IpRange();
+    startState.floatingIpRootRange.setStart(FLOATING_IP_ROOT_RANGE_START);
+    startState.floatingIpRootRange.setEnd(FLOATING_IP_ROOT_RANGE_END);
 
     return startState;
   }
@@ -105,19 +117,55 @@ public class ConfigureNsxWorkflowServiceTest {
     return patchState;
   }
 
-  /**
-   * Creates a DeploymentService.State object in cloud-store.
-   */
-  private DeploymentService.State createDeploymentDocumentInCloudStore(TestEnvironment testEnvironment)
-      throws Throwable {
+  private DeploymentService.State createDeploymentStartState() throws Throwable {
     DeploymentService.State startState = ReflectionUtils.buildValidStartState(DeploymentService.State.class);
     startState.sdnEnabled = true;
     startState.nsxConfigured = false;
+    return startState;
+  }
 
-    Operation result = testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
+  private DeploymentService.State createDeployment(TestEnvironment testEnvironment)
+      throws Throwable {
+    return createDeployment(testEnvironment, createDeploymentStartState());
+  }
+
+  private DeploymentService.State createDeployment(
+      TestEnvironment testEnvironment,
+      DeploymentService.State deploymentState) throws Throwable {
+    Operation result = testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, deploymentState);
     assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
     return result.getBody(DeploymentService.State.class);
+  }
+
+  private SubnetAllocatorService.State createGlobalSubnetAllocator(
+      TestEnvironment testEnvironment) throws Throwable {
+    SubnetAllocatorService.State startState = ReflectionUtils.buildValidStartState(SubnetAllocatorService.State.class);
+    startState.rootCidr = NON_ROUTABLE_IP_ROOT_CIDR;
+    startState.dhcpAgentEndpoint = String.format(
+        "http://%s:%d",
+        DHCP_PUBLIC_IP,
+        Constants.DHCP_AGENT_PORT);
+    startState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
+
+    Operation result = testEnvironment.sendPostAndWait(SubnetAllocatorService.FACTORY_LINK, startState);
+    assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+
+    return result.getBody(SubnetAllocatorService.State.class);
+  }
+
+  private DhcpSubnetService.State createGlobalFloatingIpAllocator(
+      TestEnvironment testEnvironment) throws Throwable {
+    DhcpSubnetService.State startState = ReflectionUtils.buildValidStartState(DhcpSubnetService.State.class);
+    startState.isFloatingIpSubnet = true;
+    startState.lowIp = IpHelper.ipStringToLong(FLOATING_IP_ROOT_RANGE_START);
+    startState.highIp = IpHelper.ipStringToLong(FLOATING_IP_ROOT_RANGE_END);
+    startState.documentSelfLink = DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK;
+
+    Operation result = testEnvironment.sendPostAndWait(DhcpSubnetService.FACTORY_LINK, startState);
+    assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+
+    return result.getBody(DhcpSubnetService.State.class);
   }
 
   /**
@@ -154,7 +202,7 @@ public class ConfigureNsxWorkflowServiceTest {
           .cloudStoreHelper(new CloudStoreHelper())
           .build();
 
-      createDeploymentDocumentInCloudStore(testEnvironment);
+      createDeployment(testEnvironment);
       startState = buildStartState(
           TaskState.TaskStage.CREATED,
           null,
@@ -236,7 +284,7 @@ public class ConfigureNsxWorkflowServiceTest {
           .cloudStoreHelper(new CloudStoreHelper())
           .build();
 
-      deploymentState = createDeploymentDocumentInCloudStore(testEnvironment);
+      deploymentState = createDeployment(testEnvironment);
       startState = buildStartState(
           TaskState.TaskStage.CREATED,
           null,
@@ -316,7 +364,7 @@ public class ConfigureNsxWorkflowServiceTest {
           .cloudStoreHelper(new CloudStoreHelper())
           .build();
 
-      createDeploymentDocumentInCloudStore(testEnvironment);
+      createDeployment(testEnvironment);
       startState = buildStartState(
           TaskState.TaskStage.CREATED,
           null,
@@ -490,7 +538,7 @@ public class ConfigureNsxWorkflowServiceTest {
           .nsxClientFactory(nsxClientFactory)
           .build();
 
-      createDeploymentDocumentInCloudStore(testEnvironment);
+      createDeployment(testEnvironment);
 
       ConfigureNsxWorkflowDocument finalState = testEnvironment.callServiceAndWaitForState(
           ConfigureNsxWorkflowService.FACTORY_LINK,
@@ -510,6 +558,115 @@ public class ConfigureNsxWorkflowServiceTest {
       assertThat(deploymentState.dhcpServers.contains(DHCP_PUBLIC_IP), is(true));
       assertThat(deploymentState.dhcpRelayProfileId, is(DHCP_RELAY_PROFILE_ID));
       assertThat(deploymentState.dhcpRelayServiceId, is(DHCP_RELAY_SERVICE_ID));
+      assertThat(deploymentState.ipRange, is(NON_ROUTABLE_IP_ROOT_CIDR));
+      assertThat(deploymentState.floatingIpRange.getStart(), is(FLOATING_IP_ROOT_RANGE_START));
+      assertThat(deploymentState.floatingIpRange.getEnd(), is(FLOATING_IP_ROOT_RANGE_END));
+
+      // Verifies that global subnet allocator has been created.
+      SubnetAllocatorService.State globalSubnetAllocatorState = testEnvironment.getServiceState(
+          SubnetAllocatorService.SINGLETON_LINK,
+          SubnetAllocatorService.State.class);
+      assertThat(globalSubnetAllocatorState.rootCidr, is(NON_ROUTABLE_IP_ROOT_CIDR));
+
+      // Verifies that global floating IP allocator has been created.
+      DhcpSubnetService.State globalFloatingIpAllocatorState = testEnvironment.getServiceState(
+          DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK,
+          DhcpSubnetService.State.class);
+      assertThat(globalFloatingIpAllocatorState.isFloatingIpSubnet, is(true));
+      assertThat(globalFloatingIpAllocatorState.lowIp, is(IpHelper.ipStringToLong(FLOATING_IP_ROOT_RANGE_START)));
+      assertThat(globalFloatingIpAllocatorState.highIp, is(IpHelper.ipStringToLong(FLOATING_IP_ROOT_RANGE_END)));
+    }
+
+    @Test(dataProvider = "hostCount")
+    public void succeedsToSkipCreatingGlobalSubnetAllocator(int hostCount) throws Throwable {
+      nsxClientMock = new NsxClientMock.Builder()
+          .createDhcpRelayProfile(true, DHCP_RELAY_PROFILE_ID)
+          .createDhcpRelayService(true, DHCP_RELAY_SERVICE_ID)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
+
+      createDeployment(testEnvironment);
+      createGlobalSubnetAllocator(testEnvironment);
+
+      ConfigureNsxWorkflowDocument finalState = testEnvironment.callServiceAndWaitForState(
+          ConfigureNsxWorkflowService.FACTORY_LINK,
+          startState,
+          ConfigureNsxWorkflowDocument.class,
+          (state) -> TaskState.TaskStage.FINISHED == state.taskState.stage);
+
+      // Verifies that deployment entity has been updated.
+      DeploymentService.State deploymentState = testEnvironment.getServiceState(
+          finalState.taskServiceEntity.documentSelfLink,
+          DeploymentService.State.class);
+      assertThat(deploymentState.nsxConfigured, is(true));
+    }
+
+    @Test(dataProvider = "hostCount")
+    public void succeedsToSkipCreatingGlobalFloatingIpAllocator(int hostCount) throws Throwable {
+      nsxClientMock = new NsxClientMock.Builder()
+          .createDhcpRelayProfile(true, DHCP_RELAY_PROFILE_ID)
+          .createDhcpRelayService(true, DHCP_RELAY_SERVICE_ID)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
+
+      createDeployment(testEnvironment);
+      createGlobalFloatingIpAllocator(testEnvironment);
+
+      ConfigureNsxWorkflowDocument finalState = testEnvironment.callServiceAndWaitForState(
+          ConfigureNsxWorkflowService.FACTORY_LINK,
+          startState,
+          ConfigureNsxWorkflowDocument.class,
+          (state) -> TaskState.TaskStage.FINISHED == state.taskState.stage);
+
+      // Verifies that deployment entity has been updated.
+      DeploymentService.State deploymentState = testEnvironment.getServiceState(
+          finalState.taskServiceEntity.documentSelfLink,
+          DeploymentService.State.class);
+      assertThat(deploymentState.nsxConfigured, is(true));
+    }
+
+    @Test(dataProvider = "hostCount")
+    public void succeedsToSkipCreatingDhcpRelayProfile(int hostCount) throws Throwable {
+      nsxClientMock = new NsxClientMock.Builder()
+          .createDhcpRelayProfile(true, DHCP_RELAY_PROFILE_ID)
+          .createDhcpRelayService(true, DHCP_RELAY_SERVICE_ID)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
+
+      DeploymentService.State deploymentStartState = createDeploymentStartState();
+      deploymentStartState.dhcpRelayProfileId = "existingDhcpRelayProfileId";
+      createDeployment(testEnvironment, deploymentStartState);
+
+      ConfigureNsxWorkflowDocument finalState = testEnvironment.callServiceAndWaitForState(
+          ConfigureNsxWorkflowService.FACTORY_LINK,
+          startState,
+          ConfigureNsxWorkflowDocument.class,
+          (state) -> TaskState.TaskStage.FINISHED == state.taskState.stage);
+
+      // Verifies that the DHCP relay profile ID has not been overwritten in deployment entity.
+      DeploymentService.State deploymentState = testEnvironment.getServiceState(
+          finalState.taskServiceEntity.documentSelfLink,
+          DeploymentService.State.class);
+      assertThat(deploymentState.nsxConfigured, is(true));
+      assertThat(deploymentState.dhcpRelayProfileId, is("existingDhcpRelayProfileId"));
     }
 
     @Test(dataProvider = "hostCount")
@@ -526,7 +683,7 @@ public class ConfigureNsxWorkflowServiceTest {
           .nsxClientFactory(nsxClientFactory)
           .build();
 
-      createDeploymentDocumentInCloudStore(testEnvironment);
+      createDeployment(testEnvironment);
 
       ConfigureNsxWorkflowDocument finalState = testEnvironment.callServiceAndWaitForState(
           ConfigureNsxWorkflowService.FACTORY_LINK,
@@ -539,6 +696,38 @@ public class ConfigureNsxWorkflowServiceTest {
           finalState.taskServiceEntity.documentSelfLink,
           DeploymentService.State.class);
       assertThat(deploymentState.dhcpRelayProfileId, is(nullValue()));
+    }
+
+    @Test(dataProvider = "hostCount")
+    public void succeedsToSkipCreatingDhcpRelayService(int hostCount) throws Throwable {
+      nsxClientMock = new NsxClientMock.Builder()
+          .createDhcpRelayProfile(true, DHCP_RELAY_PROFILE_ID)
+          .createDhcpRelayService(true, DHCP_RELAY_SERVICE_ID)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
+
+      DeploymentService.State deploymentStartState = createDeploymentStartState();
+      deploymentStartState.dhcpRelayServiceId = "existingDhcpRelayServiceId";
+      createDeployment(testEnvironment, deploymentStartState);
+
+      ConfigureNsxWorkflowDocument finalState = testEnvironment.callServiceAndWaitForState(
+          ConfigureNsxWorkflowService.FACTORY_LINK,
+          startState,
+          ConfigureNsxWorkflowDocument.class,
+          (state) -> TaskState.TaskStage.FINISHED == state.taskState.stage);
+
+      // Verifies that the DHCP relay service ID has not been overwritten in deployment entity.
+      DeploymentService.State deploymentState = testEnvironment.getServiceState(
+          finalState.taskServiceEntity.documentSelfLink,
+          DeploymentService.State.class);
+      assertThat(deploymentState.nsxConfigured, is(true));
+      assertThat(deploymentState.dhcpRelayServiceId, is("existingDhcpRelayServiceId"));
     }
 
     @Test(dataProvider = "hostCount")
@@ -555,7 +744,7 @@ public class ConfigureNsxWorkflowServiceTest {
           .nsxClientFactory(nsxClientFactory)
           .build();
 
-      createDeploymentDocumentInCloudStore(testEnvironment);
+      createDeployment(testEnvironment);
 
       ConfigureNsxWorkflowDocument finalState = testEnvironment.callServiceAndWaitForState(
           ConfigureNsxWorkflowService.FACTORY_LINK,
