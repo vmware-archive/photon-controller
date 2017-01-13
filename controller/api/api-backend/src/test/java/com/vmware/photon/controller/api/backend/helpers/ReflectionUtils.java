@@ -51,7 +51,9 @@ public class ReflectionUtils {
     if (declaredField.getType() == Boolean.class) {
       return Boolean.FALSE;
     } else if (declaredField.getType() == Integer.class) {
-      return new Integer(0);
+      return 0;
+    } else if (declaredField.getType() == Long.class) {
+      return 0L;
     } else if (declaredField.getType() == List.class) {
       return new ArrayList<>();
     } else if (declaredField.getType() == Map.class) {
