@@ -1,5 +1,4 @@
 apply plugin: 'application'
-apply plugin: 'thrift'
 apply plugin: 'com.bmuschko.docker-remote-api'
 
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile
@@ -17,14 +16,6 @@ dependencies {
 
   compile "com.google.guava:guava:${versions.guava}"
   compile 'net.sourceforge.argparse4j:argparse4j:0.4.0'
-
-  thrift files('../../thrift/host.thrift',
-               '../../thrift/roles.thrift',
-               '../../thrift/resource.thrift',
-               '../../thrift/scheduler.thrift',
-               '../../thrift/flavors.thrift',
-               '../../thrift/tracing.thrift',
-               '../../thrift/status.thrift')
 
   testCompile(project(path: ':cloud-store', configuration: 'tests'))
   testCompile "org.apache.commons:commons-math3:${versions.commons_math3}"

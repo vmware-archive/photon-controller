@@ -1,6 +1,4 @@
 apply plugin: 'application'
-apply plugin: 'thrift'
-
 
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
@@ -28,10 +26,6 @@ dependencies {
   compile 'org.eclipse.jetty:jetty-util:8.1.10.v20130312'
   compile 'commons-net:commons-net:2.0'
   compile 'com.github.spullara.mustache.java:compiler:0.9.0'
-
-  thrift files(
-      '../../thrift/tracing.thrift',
-      '../../thrift/status.thrift')
 
   testCompile("org.apache.curator:curator-test:${versions.curator}") {
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'
