@@ -266,14 +266,18 @@ print_warning_if_value_mssing "${memoryMb}"                "memoryMb"           
 PHOTON_CONTROLLER_CORE_BIN="${PHOTON_CONTROLLER_CORE_INSTALL_DIRECTORY}/bin"
 SCRIPT_LOG_DIRECTORY="${LOG_DIRECTORY}/script_logs"
 
-# Use the JKS keystore which has our certificate as the default java keystore
-security_opts="-Djavax.net.ssl.trustStore=$KEYSTORE_JKS_PATH"
+# Override java security property to use VMware Security Provider instead of the default Sun provider
+security_opts="-Djava.security.properties=/etc/vmware/java/vmware-override-java.security"
 
 # jvm heap size will be set to by default is 1024m
 jvm_mem=$(($memoryMb/2))
 
 export JAVA_HOME="/usr/java/default"
 export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC ${security_opts} $JAVA_DEBUG"
+
+# Copy the VMware certificate store jar into jre extensions. This is needed for java to recognize VMware security
+# provider as one of the available JCE providers so we can use it to make VKS work.
+cp $INSTALL_PATH/lib/vmware-endpoint-certificate-store-*.jar $JAVA_HOME/jre/lib/ext/
 
 # Add java home and other required binaries to path.
 # We need this here even though we are doing this during container build

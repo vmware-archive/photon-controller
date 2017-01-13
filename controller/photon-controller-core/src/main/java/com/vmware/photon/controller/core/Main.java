@@ -55,10 +55,12 @@ import com.vmware.photon.controller.scheduler.SchedulingConfig;
 import com.vmware.photon.controller.scheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.scheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.scheduler.xenon.SchedulerServiceGroup;
+import com.vmware.provider.VecsLoadStoreParameter;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceClient;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.common.http.netty.NettyHttpListener;
 import com.vmware.xenon.common.http.netty.NettyHttpServiceClient;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -309,7 +311,6 @@ public class Main {
           Executors.newScheduledThreadPool(Utils.DEFAULT_IO_THREAD_COUNT),
           photonControllerXenonHost);
 
-
       /*
       To make sure that Xenon uses only TLSv1.2 and disallows SSLv3, TLSv1,
       TLSv1.1 the Docker file for the photon-controller-core container is edited.
@@ -318,19 +319,26 @@ public class Main {
       jdk.tls.disabledAlgorithms
       */
 
+      // Use VKS and setup the appropriate key store and trust store for Xenon client and listener
       SSLContext clientContext = SSLContext.getInstance(ServiceClient.TLS_PROTOCOL_NAME);
-      TrustManagerFactory trustManagerFactory = TrustManagerFactory
-          .getInstance(TrustManagerFactory.getDefaultAlgorithm());
-      trustManagerFactory.init((KeyStore) null);
+      KeyStore trustStore = KeyStore.getInstance("VKS");
+      trustStore.load(new VecsLoadStoreParameter("TRUSTED_ROOTS"));
+      TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory
+          .getDefaultAlgorithm());
+      trustManagerFactory.init(trustStore);
       KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-      KeyStore keyStore = KeyStore.getInstance("JKS");
-      try (FileInputStream fis = new FileInputStream(deployerContext.getKeyStorePath())) {
-        keyStore.load(fis, deployerContext.getKeyStorePassword().toCharArray());
-      }
-      keyManagerFactory.init(keyStore, deployerContext.getKeyStorePassword().toCharArray());
+      KeyStore keyStore = KeyStore.getInstance("VKS");
+      keyStore.load(new VecsLoadStoreParameter("MACHINE_SSL_CERT"));
+      keyManagerFactory.init(keyStore, null);
       clientContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
       serviceClient.setSSLContext(clientContext);
       photonControllerXenonHost.setClient(serviceClient);
+      NettyHttpListener httpsListener = new NettyHttpListener(photonControllerXenonHost);
+      httpsListener.setSSLContext(io.netty.handler.ssl.SslContextBuilder.forServer(keyManagerFactory)
+          .trustManager(trustManagerFactory)
+          .build());
+      photonControllerXenonHost.setSecureListener(httpsListener);
+      logger.info("SSL configured for Xenon: {}", photonControllerXenonHost.getSecureListener().isSSLConfigured());
     }
 
     logger.info("Starting PhotonController Xenon Host");
