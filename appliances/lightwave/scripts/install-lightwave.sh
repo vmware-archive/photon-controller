@@ -19,7 +19,7 @@ ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key
 sed -i 's/#Storage=auto/Storage=persistent/' /etc/systemd/journald.conf
 tdnf install -y procps-ng
 tdnf install -y openjre-1.8.0.102
-tdnf install -y openjdk-1.8.0.102
+tdnf install -y apache-tomcat-8.0.37
 tdnf install -y vmware-lightwave-server-6.6.3
 
 # open iptables ports
