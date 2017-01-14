@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: photon-conf
+spec:
+  containers:
+  - name: photon-kube-conf
+    image: vmware/photon-kube-conf:latest
+    volumeMounts:
+    - mountPath: /etc/photon
+      name: photon-conf-volume
+  volumes:
+  - name: photon-conf-volume
+    hostPath:
+      # directory location on host
+      path: /etc/photon
