@@ -151,6 +151,22 @@ To enable authentication in Photon Controller services, a Lightwave STS must be 
 * `PHOTON_SWAGGER_LOGIN_URL` - registered login URL for the client at the Lightwave server
 * `PHOTON_SWAGGER_LOGOUT_URL` - registered logout URL for the client at the Lightwave server
 
+### Configure NSX
+To configure NSX follow https://github.com/vmware/photon-controller/wiki/Setting-Up-NSX. The script configure_nsx.sh
+automates the process described in the above wiki. The following environment variables must be set before running ./configure_nsx.sh:
+
+* `NETWORK_MANAGER_ADDRESS` - address of the NSX manager
+* `NETWORK_MANAGER_USERNAME` - username of the NSX manager
+* `NETWORK_MANAGER_PASSWORD` - password of the NSX manager
+* `NETWORK_EDGE_IP_POOL_CIDR` - CIDR of the EDGE IP pool
+* `NETWORK_EDGE_IP_POOL_START` - start IP of the EDGE IP pool
+* `NETWORK_EDGE_IP_POOL_END` - end IP of the EDGE IP pool
+* `NETWORK_T0_SUBNET_IP_ADDRESS` - subnet address of T0 router
+* `NETWORK_T0_SUBNET_LENGTH` - subnet length of T0 router
+* `NETWORK_T0_GATEWAY` - subnet gateway of T0 router
+* `NETWORK_DHCP_SUBNET_IP_ADDRESS` - subnet address of DHCP router
+* `NETWORK_DHCP_SUBNET_LENGTH` - subnet length of DHCP router
+
 ### Using devbox with NSX for virtual network
 To enable virtual network in Photon Controller, some NSX parameters are needed to provision each host added to the devbox. The parameters are set in the deployment document in cloud-store. To enable virtual network define the following environment variables before running ./seed_deployment.sh:
 
