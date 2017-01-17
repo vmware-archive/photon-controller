@@ -230,47 +230,47 @@ public class ConfigureNsxWorkflowService extends BaseWorkflowService<ConfigureNs
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createGet(SubnetAllocatorService.SINGLETON_LINK)
         .setCompletion((op, ex) -> {
-          if (ex != null) {
-            if (op.getStatusCode() != Operation.STATUS_CODE_NOT_FOUND) {
-              fail(state, ex);
-              return;
-            }
-
-            SubnetAllocatorService.State subnetAllocatorServiceState = new SubnetAllocatorService.State();
-            subnetAllocatorServiceState.rootCidr = state.privateIpRootCidr;
-            subnetAllocatorServiceState.dhcpAgentEndpoint = String.format(
-                "http://%s:%d",
-                // Selecting first index in Dhcp server list since expecting only one entry in this iteration
-                state.dhcpServerAddresses.values().iterator().next(),
-                Constants.DHCP_AGENT_PORT);
-            subnetAllocatorServiceState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
-
-            ServiceHostUtils.getCloudStoreHelper(getHost())
-                .createPost(SubnetAllocatorService.FACTORY_LINK)
-                .setBody(subnetAllocatorServiceState)
-                .setCompletion((iop, iex) -> {
-                  if (iex != null) {
-                    fail(state, iex);
-                    return;
-                  }
-
-                  try {
-                    ConfigureNsxWorkflowDocument patchState = buildPatch(
-                        TaskState.TaskStage.STARTED,
-                        ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_FLOATING_IP_ALLOCATOR);
-                    patchState.taskServiceEntity = state.taskServiceEntity;
-                    patchState.taskServiceEntity.ipRange = state.privateIpRootCidr;
-                    progress(state, patchState);
-                  } catch (Throwable t) {
-                    fail(state, t);
-                  }
-                })
-                .sendWith(this);
+          if (ex == null) {
+            ServiceUtils.logInfo(this, "Global subnet allocator has already been created");
+            progress(state, ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_FLOATING_IP_ALLOCATOR);
             return;
           }
 
-          ServiceUtils.logInfo(this, "Global subnet allocator has already been created");
-          progress(state, ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_FLOATING_IP_ALLOCATOR);
+          if (op.getStatusCode() != Operation.STATUS_CODE_NOT_FOUND) {
+            fail(state, ex);
+            return;
+          }
+
+          SubnetAllocatorService.State subnetAllocatorServiceState = new SubnetAllocatorService.State();
+          subnetAllocatorServiceState.rootCidr = state.privateIpRootCidr;
+          subnetAllocatorServiceState.dhcpAgentEndpoint = String.format(
+              "http://%s:%d",
+              // Selecting first index in Dhcp server list since expecting only one entry in this iteration
+              state.dhcpServerAddresses.values().iterator().next(),
+              Constants.DHCP_AGENT_PORT);
+          subnetAllocatorServiceState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
+
+          ServiceHostUtils.getCloudStoreHelper(getHost())
+              .createPost(SubnetAllocatorService.FACTORY_LINK)
+              .setBody(subnetAllocatorServiceState)
+              .setCompletion((iop, iex) -> {
+                if (iex != null) {
+                  fail(state, iex);
+                  return;
+                }
+
+                try {
+                  ConfigureNsxWorkflowDocument patchState = buildPatch(
+                      TaskState.TaskStage.STARTED,
+                      ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_FLOATING_IP_ALLOCATOR);
+                  patchState.taskServiceEntity = state.taskServiceEntity;
+                  patchState.taskServiceEntity.ipRange = state.privateIpRootCidr;
+                  progress(state, patchState);
+                } catch (Throwable t) {
+                  fail(state, t);
+                }
+              })
+              .sendWith(this);
         })
         .sendWith(this);
   }
@@ -282,49 +282,49 @@ public class ConfigureNsxWorkflowService extends BaseWorkflowService<ConfigureNs
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createGet(DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK)
         .setCompletion((op, ex) -> {
-          if (ex != null) {
-            if (op.getStatusCode() != Operation.STATUS_CODE_NOT_FOUND) {
-              fail(state, ex);
-              return;
-            }
-
-            DhcpSubnetService.State dhcpSubnetServiceState = new DhcpSubnetService.State();
-            dhcpSubnetServiceState.subnetId = getDeploymentId(state);
-            dhcpSubnetServiceState.lowIp = IpHelper.ipStringToLong(state.floatingIpRootRange.getStart());
-            dhcpSubnetServiceState.highIp = IpHelper.ipStringToLong(state.floatingIpRootRange.getEnd());
-            dhcpSubnetServiceState.dhcpAgentEndpoint = String.format(
-                "http://%s:%d",
-                state.dhcpServerAddresses.values().iterator().next(),
-                Constants.DHCP_AGENT_PORT);
-            dhcpSubnetServiceState.isFloatingIpSubnet = true;
-            dhcpSubnetServiceState.documentSelfLink = DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK;
-
-            ServiceHostUtils.getCloudStoreHelper(getHost())
-                .createPost(DhcpSubnetService.FACTORY_LINK)
-                .setBody(dhcpSubnetServiceState)
-                .setCompletion((iop, iex) -> {
-                  if (iex != null) {
-                    fail(state, iex);
-                    return;
-                  }
-
-                  try {
-                    ConfigureNsxWorkflowDocument patchState = buildPatch(
-                        TaskState.TaskStage.STARTED,
-                        ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE);
-                    patchState.taskServiceEntity = state.taskServiceEntity;
-                    patchState.taskServiceEntity.floatingIpRange = state.floatingIpRootRange;
-                    progress(state, patchState);
-                  } catch (Throwable t) {
-                    fail(state, t);
-                  }
-                })
-                .sendWith(this);
+          if (ex == null) {
+            ServiceUtils.logInfo(this, "Global floating IP allocator has already been created");
+            progress(state, ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE);
             return;
           }
 
-          ServiceUtils.logInfo(this, "Global floating IP allocator has already been created");
-          progress(state, ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE);
+          if (op.getStatusCode() != Operation.STATUS_CODE_NOT_FOUND) {
+            fail(state, ex);
+            return;
+          }
+
+          DhcpSubnetService.State dhcpSubnetServiceState = new DhcpSubnetService.State();
+          dhcpSubnetServiceState.subnetId = getDeploymentId(state);
+          dhcpSubnetServiceState.lowIp = IpHelper.ipStringToLong(state.floatingIpRootRange.getStart());
+          dhcpSubnetServiceState.highIp = IpHelper.ipStringToLong(state.floatingIpRootRange.getEnd());
+          dhcpSubnetServiceState.dhcpAgentEndpoint = String.format(
+              "http://%s:%d",
+              state.dhcpServerAddresses.values().iterator().next(),
+              Constants.DHCP_AGENT_PORT);
+          dhcpSubnetServiceState.isFloatingIpSubnet = true;
+          dhcpSubnetServiceState.documentSelfLink = DhcpSubnetService.FLOATING_IP_SUBNET_SINGLETON_LINK;
+
+          ServiceHostUtils.getCloudStoreHelper(getHost())
+              .createPost(DhcpSubnetService.FACTORY_LINK)
+              .setBody(dhcpSubnetServiceState)
+              .setCompletion((iop, iex) -> {
+                if (iex != null) {
+                  fail(state, iex);
+                  return;
+                }
+
+                try {
+                  ConfigureNsxWorkflowDocument patchState = buildPatch(
+                      TaskState.TaskStage.STARTED,
+                      ConfigureNsxWorkflowDocument.TaskState.SubStage.CREATE_DHCP_RELAY_PROFILE);
+                  patchState.taskServiceEntity = state.taskServiceEntity;
+                  patchState.taskServiceEntity.floatingIpRange = state.floatingIpRootRange;
+                  progress(state, patchState);
+                } catch (Throwable t) {
+                  fail(state, t);
+                }
+              })
+              .sendWith(this);
         })
         .sendWith(this);
   }
