@@ -1,0 +1,13 @@
+{
+  "nsxAddress": "17.8.155.36",
+  "nsxUsername": "foo",
+  "nsxPassword": "bar",
+  "dhcpServerAddresses": {
+    "192.168.1.1": "10.56.48.9"
+  },
+  "privateIpRootCidr": "192.168.0.0/16",
+  "floatingIpRootRange": {
+    "start": "86.153.20.100",
+    "end": "86.153.20.200"
+  }
+}
