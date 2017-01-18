@@ -354,7 +354,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
   }
 
   @Override
-  public TaskEntity initializeNsx(NsxConfigurationSpec spec) throws ExternalException {
+  public TaskEntity configureNsx(NsxConfigurationSpec spec) throws ExternalException {
     ConfigureNsxWorkflowDocument startState = new ConfigureNsxWorkflowDocument();
     startState.nsxAddress = spec.getNsxAddress();
     startState.nsxUsername = spec.getNsxUsername();
