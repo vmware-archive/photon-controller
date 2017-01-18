@@ -96,7 +96,6 @@ module EsxCloud
     def self.deployments_routes(id = SecureRandom.uuid)
       [
         EsxCloud::ApiRoute.new(:get, "/deployments", 200, 200, 403, 403, 403),
-        EsxCloud::ApiRoute.new(:post, "/deployments", 400, 400, 403, 403, 403),
         EsxCloud::ApiRoute.new(:get, "/deployments/#{id}", 404, 200, 403, 403, 403),
         EsxCloud::ApiRoute.new(:get, "/deployments/#{id}/hosts", 404, 200, 403, 403, 403),
         EsxCloud::ApiRoute.new(:post, "/deployments/#{id}/pause_system", 404, 201, 403, 403, 403),
@@ -105,7 +104,6 @@ module EsxCloud
         EsxCloud::ApiRoute.new(:post, "/deployments/#{id}/set_security_groups", 400, 400, 403, 403, 403),
         EsxCloud::ApiRoute.new(:get, "/deployments/#{id}/vms", 404, 200, 403, 403, 403),
         EsxCloud::ApiRoute.new(:post, "/deployments/#{id}/hosts", 400, 400, 403, 403, 403),
-        EsxCloud::ApiRoute.new(:delete, "/deployments/#{SecureRandom.uuid}", 404, 404, 403, 403, 403),
       ]
     end
 

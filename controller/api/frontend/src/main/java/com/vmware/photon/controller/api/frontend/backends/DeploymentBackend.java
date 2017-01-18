@@ -21,8 +21,6 @@ import com.vmware.photon.controller.api.model.ClusterConfiguration;
 import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.Deployment;
-import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
-import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
@@ -34,14 +32,6 @@ import java.util.List;
  * Deployment backend.
  */
 public interface DeploymentBackend {
-
-  TaskEntity prepareCreateDeployment(DeploymentCreateSpec spec) throws ExternalException;
-
-  TaskEntity prepareDeploy(String deploymentId, DeploymentDeployOperation config) throws ExternalException;
-
-  TaskEntity prepareDeleteDeployment(String id) throws ExternalException;
-
-  TaskEntity prepareDestroy(String deploymentId) throws ExternalException;
 
   TaskEntity updateSecurityGroups(String id, List<String> securityGroups) throws ExternalException;
 
