@@ -398,20 +398,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
       for (int i = 0; i < mixedCount; i++) {
         TestHelper.createHostService(testEnvironment, ImmutableSet.of(UsageTag.CLOUD.name(), UsageTag.MGMT.name()));
       }
-
-      CreateManagementPlaneLayoutWorkflowService.State workflowStartState =
-          new CreateManagementPlaneLayoutWorkflowService.State();
-      workflowStartState.hostQuerySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
-      workflowStartState.deploymentServiceLink = deploymentServiceLink;
-
-      CreateManagementPlaneLayoutWorkflowService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateManagementPlaneLayoutWorkflowFactoryService.SELF_LINK,
-              workflowStartState,
-              CreateManagementPlaneLayoutWorkflowService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      TestHelper.assertTaskStateFinished(finalState.taskState);
     }
 
     @AfterMethod

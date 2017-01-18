@@ -42,44 +42,21 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactor
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.AllocateClusterManagerResourcesTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.AllocateDhcpVmResourcesTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.AllocateHostResourceTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.AllocateTenantResourcesTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.BuildRuntimeConfigurationTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.ChangeHostModeTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.ChildTaskAggregatorFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTriggerTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.CreateContainerSpecLayoutTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.CreateContainerSpecTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.CreateContainerTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.CreateDhcpVmTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.CreateVmSpecLayoutTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.CreateVmSpecTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.DeleteVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.MigrationStatusUpdateTriggerFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.RegisterAuthClientTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.SetDatastoreTagsTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.UpgradeAgentTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.UploadImageTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.ValidateHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.upgrade.ReflectionTransformationService;
 import com.vmware.photon.controller.deployer.xenon.workflow.AddCloudHostWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.xenon.workflow.AddManagementHostWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.xenon.workflow.BatchCreateManagementWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.xenon.workflow.BuildContainersConfigurationWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.xenon.workflow.BulkProvisionHostsWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.xenon.workflow.CreateContainersWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.xenon.workflow.CreateManagementPlaneLayoutWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.xenon.workflow.DeploymentWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.xenon.workflow.DeprovisionHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.xenon.workflow.FinalizeDeploymentMigrationWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.xenon.workflow.InitializeDeploymentMigrationWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.xenon.workflow.RemoveDeploymentWorkflowFactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.UriUtils;
@@ -141,44 +118,21 @@ public class DeployerServiceGroup
       VmFactoryService.class,
 
       // Task Services
-      AllocateDhcpVmResourcesTaskFactoryService.class,
-      AllocateClusterManagerResourcesTaskFactoryService.class,
-      AllocateTenantResourcesTaskFactoryService.class,
-      AllocateHostResourceTaskFactoryService.class,
-      BuildRuntimeConfigurationTaskFactoryService.class,
       ChangeHostModeTaskFactoryService.class,
       ChildTaskAggregatorFactoryService.class,
       CopyStateTaskFactoryService.class,
       CopyStateTriggerTaskFactoryService.class,
-      CreateContainerSpecLayoutTaskFactoryService.class,
-      CreateContainerSpecTaskFactoryService.class,
-      CreateContainerTaskFactoryService.class,
-      CreateManagementVmTaskFactoryService.class,
-      CreateDhcpVmTaskFactoryService.class,
-      CreateVmSpecLayoutTaskFactoryService.class,
-      CreateVmSpecTaskFactoryService.class,
-      DeleteVmTaskFactoryService.class,
       MigrationStatusUpdateTriggerFactoryService.class,
       ProvisionHostTaskFactoryService.class,
-      RegisterAuthClientTaskFactoryService.class,
-      SetDatastoreTagsTaskFactoryService.class,
       UpgradeAgentTaskFactoryService.class,
-      UploadImageTaskFactoryService.class,
       ValidateHostTaskFactoryService.class,
 
       // Workflow services
       AddCloudHostWorkflowFactoryService.class,
-      AddManagementHostWorkflowFactoryService.class,
-      BatchCreateManagementWorkflowFactoryService.class,
-      BuildContainersConfigurationWorkflowFactoryService.class,
       BulkProvisionHostsWorkflowFactoryService.class,
-      CreateContainersWorkflowFactoryService.class,
-      CreateManagementPlaneLayoutWorkflowFactoryService.class,
-      DeploymentWorkflowFactoryService.class,
       DeprovisionHostWorkflowFactoryService.class,
       FinalizeDeploymentMigrationWorkflowFactoryService.class,
       InitializeDeploymentMigrationWorkflowFactoryService.class,
-      RemoveDeploymentWorkflowFactoryService.class,
 
       // Transformation
       HostTransformationService.class,

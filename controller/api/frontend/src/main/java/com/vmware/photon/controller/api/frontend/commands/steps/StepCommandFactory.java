@@ -183,8 +183,6 @@ public class StepCommandFactory {
         return new HostExitMaintenanceModeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
       case SET_AVAILABILITYZONE:
         return new HostSetAvailabilityZoneStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
-      case SCHEDULE_DEPLOYMENT:
-        return new DeploymentCreateStepCmd(taskCommand, stepBackend, stepEntity, deploymentBackend);
       case SCHEDULE_INITIALIZE_MIGRATE_DEPLOYMENT:
         return new DeploymentInitializeMigrationStepCmd(taskCommand, stepBackend, stepEntity, deploymentBackend);
       case PERFORM_INITIALIZE_MIGRATE_DEPLOYMENT:
@@ -197,23 +195,6 @@ public class StepCommandFactory {
         return new DeploymentFinalizeMigrationStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new DeploymentFinalizeMigrationStatusStepCmd.DeploymentFinalizeMigrationStatusStepPoller(taskCommand,
                 taskBackend, deploymentBackend));
-      case PROVISION_CONTROL_PLANE_HOSTS:
-      case PROVISION_CONTROL_PLANE_VMS:
-      case PROVISION_CLOUD_HOSTS:
-      case PROVISION_CLUSTER_MANAGER:
-      case CREATE_SUBNET_ALLOCATOR:
-      case CREATE_DHCP_SUBNET:
-      case CONFIGURE_DHCP_RELAY_PROFILE:
-      case CONFIGURE_DHCP_RELAY_SERVICE:
-      case MIGRATE_DEPLOYMENT_DATA:
-        return new DeploymentStatusStepCmd(taskCommand, stepBackend, stepEntity,
-            new DeploymentStatusStepCmd.DeploymentStatusStepPoller(taskCommand, taskBackend, deploymentBackend));
-      case SCHEDULE_DELETE_DEPLOYMENT:
-        return new DeploymentDeleteStepCmd(taskCommand, stepBackend, stepEntity, deploymentBackend);
-      case PERFORM_DELETE_DEPLOYMENT:
-      case DEPROVISION_HOSTS:
-        return new DeploymentDeleteStatusStepCmd(taskCommand, stepBackend, stepEntity,
-            new DeploymentDeleteStatusStepCmd.DeploymentDeleteStepPoller(taskCommand, taskBackend, deploymentBackend));
       case PUSH_DEPLOYMENT_SECURITY_GROUPS:
         return new DeploymentPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend);
       case CREATE_KUBERNETES_CLUSTER_INITIATE:

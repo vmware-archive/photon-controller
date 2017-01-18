@@ -20,10 +20,11 @@ import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRest
 import com.vmware.photon.controller.api.frontend.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.api.frontend.entities.DeploymentEntity;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
-import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
-import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.DeploymentState;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
 
 import com.google.inject.Inject;
 import org.mockito.Mock;
@@ -61,17 +62,21 @@ public class SystemPauseStepCmdTest extends PowerMockTestCase {
 
   private DeploymentEntity initialDeploymentEntity;
 
+  private DeploymentService.State deploymentState;
 
   @BeforeMethod
-  public void setUp() throws Exception {
+  public void setUp() throws Throwable {
     step = new StepEntity();
     step.setId("step-1");
 
-    DeploymentCreateSpec deploymentCreateSpec = new DeploymentCreateSpec();
-    deploymentCreateSpec.setImageDatastores(Collections.singleton("imageDatastore"));
+    deploymentState = new DeploymentService.State();
+    deploymentState.imageDataStoreNames = Collections.singleton("imageDatastore");
+    deploymentState.imageDataStoreUsedForVMs = true;
+    deploymentState.documentSelfLink = DeployerDefaults.DEFAULT_DEPLOYMENT_ID;
+    deploymentState.state = DeploymentState.READY;
 
-    TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-    initialDeploymentEntity = deploymentBackend.findById(task.getEntityId());
+    apiFeXenonRestClient.post(DeploymentServiceFactory.SELF_LINK, deploymentState);
+    initialDeploymentEntity = deploymentBackend.findById(deploymentState.documentSelfLink);
     step.createOrUpdateTransientResource(SystemResumeStepCmd.DEPLOYMENT_ID_RESOURCE_KEY,
         initialDeploymentEntity.getId());
     when(taskCommand.getApiFeXenonRestClient()).thenReturn(apiFeXenonRestClient);
@@ -82,7 +87,9 @@ public class SystemPauseStepCmdTest extends PowerMockTestCase {
   public void cleanUp() throws Throwable {
     // We need to change the state so that it can be deleted
     deploymentBackend.updateState(initialDeploymentEntity, DeploymentState.NOT_DEPLOYED);
-    deploymentBackend.prepareDeleteDeployment(initialDeploymentEntity.getId());
+    deploymentState.documentExpirationTimeMicros = 1;
+    apiFeXenonRestClient.delete(DeploymentServiceFactory.SELF_LINK + '/' + deploymentState.documentSelfLink,
+            deploymentState);
   }
 
   @Test

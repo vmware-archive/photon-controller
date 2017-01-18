@@ -28,8 +28,7 @@ public enum DeploymentState {
   PAUSED,
   BACKGROUND_PAUSED,
   ERROR,
-  NOT_DEPLOYED,
-  DELETED;
+  NOT_DEPLOYED;
 
   /**
    * The operation prerequisite states.
@@ -37,12 +36,6 @@ public enum DeploymentState {
    */
   public static final Map<Operation, Set<DeploymentState>> OPERATION_PREREQ_STATE =
       ImmutableMap.<Operation, Set<DeploymentState>>builder()
-          .put(Operation.DELETE_DEPLOYMENT,
-              Sets.immutableEnumSet(CREATING, NOT_DEPLOYED, DELETED))
-          .put(Operation.PERFORM_DEPLOYMENT,
-              Sets.immutableEnumSet(NOT_DEPLOYED))
-          .put(Operation.PERFORM_DELETE_DEPLOYMENT,
-              Sets.immutableEnumSet(NOT_DEPLOYED, READY, ERROR))
           .put(Operation.PAUSE_SYSTEM,
               Sets.immutableEnumSet(READY, PAUSED, BACKGROUND_PAUSED))
           .put(Operation.PAUSE_BACKGROUND_TASKS,
