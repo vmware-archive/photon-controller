@@ -13,8 +13,11 @@
 
 package com.vmware.photon.controller.api.frontend.backends;
 
+import com.vmware.photon.controller.api.backend.servicedocuments.ConfigureNsxWorkflowDocument;
+import com.vmware.photon.controller.api.backend.workflows.ConfigureNsxWorkflowService;
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient;
+import com.vmware.photon.controller.api.frontend.backends.utils.TaskUtils;
 import com.vmware.photon.controller.api.frontend.commands.steps.DeploymentCreateStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.DeploymentInitializeMigrationStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.SystemPauseBackgroundTasksStepCmd;
@@ -47,6 +50,7 @@ import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.model.MigrationStatus;
 import com.vmware.photon.controller.api.model.NetworkConfiguration;
+import com.vmware.photon.controller.api.model.NsxConfigurationSpec;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.StatsInfo;
@@ -408,6 +412,24 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     }
 
     return clusterConfigurations;
+  }
+
+  @Override
+  public TaskEntity initializeNsx(NsxConfigurationSpec spec) throws ExternalException {
+    ConfigureNsxWorkflowDocument startState = new ConfigureNsxWorkflowDocument();
+    startState.nsxAddress = spec.getNsxAddress();
+    startState.nsxUsername = spec.getNsxUsername();
+    startState.nsxPassword = spec.getNsxPassword();
+    startState.dhcpServerAddresses = spec.getDhcpServerAddresses();
+    startState.privateIpRootCidr = spec.getPrivateIpRootCidr();
+    startState.floatingIpRootRange = spec.getFloatingIpRootRange();
+
+    ConfigureNsxWorkflowDocument finalState = xenonClient.post(
+        ConfigureNsxWorkflowService.FACTORY_LINK,
+        startState)
+        .getBody(ConfigureNsxWorkflowDocument.class);
+
+    return TaskUtils.convertBackEndToMiddleEnd(finalState.taskServiceState);
   }
 
   @Override

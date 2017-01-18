@@ -38,6 +38,7 @@ import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.NetworkConfiguration;
+import com.vmware.photon.controller.api.model.NsxConfigurationSpec;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.StatsInfo;
 import com.vmware.photon.controller.api.model.StatsStoreType;
@@ -82,7 +83,9 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
@@ -1217,6 +1220,59 @@ public class DeploymentXenonBackendTest {
       assertThat(taskEntity.getSteps().size(), is(2));
       assertThat(taskEntity.getSteps().get(0).getOperation(), is(Operation.SCHEDULE_FINALIZE_MIGRATE_DEPLOYMENT));
       assertThat(taskEntity.getSteps().get(1).getOperation(), is(Operation.PERFORM_FINALIZE_MIGRATE_DEPLOYMENT));
+    }
+  }
+
+  /**
+   * Tests for the initializeNsx method.
+   */
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
+  public static class InitializeNsxTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+
+    @Inject
+    private DeploymentBackend deploymentBackend;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
+      commonDataSetup();
+
+      deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testInitializeNsxSuccess() throws Throwable {
+      NsxConfigurationSpec spec = new NsxConfigurationSpec();
+      spec.setNsxAddress("17.8.155.36");
+      spec.setNsxUsername("foo");
+      spec.setNsxPassword("bar");
+      Map<String, String> dhcpServerAddresses = new HashMap<>();
+      dhcpServerAddresses.put("192.168.1.1", "10.56.48.9");
+      spec.setDhcpServerAddresses(dhcpServerAddresses);
+      spec.setPrivateIpRootCidr("192.168.0.0/16");
+      IpRange floatingIpRange = new IpRange();
+      floatingIpRange.setStart("86.153.20.100");
+      floatingIpRange.setEnd("86.153.20.200");
+      spec.setFloatingIpRootRange(floatingIpRange);
+
+      TaskEntity taskEntity = deploymentBackend.initializeNsx(spec);
+      assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
     }
   }
 

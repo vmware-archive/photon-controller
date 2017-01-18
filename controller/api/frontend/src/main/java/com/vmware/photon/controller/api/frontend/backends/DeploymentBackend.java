@@ -26,6 +26,7 @@ import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
+import com.vmware.photon.controller.api.model.NsxConfigurationSpec;
 
 import java.util.List;
 
@@ -71,6 +72,8 @@ public interface DeploymentBackend {
   TaskEntity deleteClusterConfiguration(ClusterType clusterType) throws ExternalException;
 
   List<ClusterConfiguration> getClusterConfigurations() throws ExternalException;
+
+  TaskEntity initializeNsx(NsxConfigurationSpec spec) throws ExternalException;
 
   DeploymentEntity findById(String id) throws DeploymentNotFoundException;
 
