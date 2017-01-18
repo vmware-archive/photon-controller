@@ -69,6 +69,11 @@ public class ConfigureNsxWorkflowServiceTest {
   private static final String PRIVATE_IP_ROOT_CIDR = "192.168.2.0/16";
   private static final String FLOATING_IP_ROOT_RANGE_START = "22.3.5.1";
   private static final String FLOATING_IP_ROOT_RANGE_END = "22.3.5.100";
+  private static final String T0_ROUTER_ID = "t0RouterId";
+  private static final String EDGE_CLUSTER_ID = "edgeClusterId";
+  private static final String OVERLAY_TRANSPORT_ZONE_ID = "overlayTransportZoneId";
+  private static final String TUNNEL_IP_POOL_ID = "tunnelIpPoolId";
+  private static final String HOST_UPLINK_PNIC = "hostUplinkPnic";
 
   @Test(enabled = false)
   private void dummy() {
@@ -98,6 +103,11 @@ public class ConfigureNsxWorkflowServiceTest {
     startState.floatingIpRootRange = new IpRange();
     startState.floatingIpRootRange.setStart(FLOATING_IP_ROOT_RANGE_START);
     startState.floatingIpRootRange.setEnd(FLOATING_IP_ROOT_RANGE_END);
+    startState.t0RouterId = T0_ROUTER_ID;
+    startState.edgeClusterId = EDGE_CLUSTER_ID;
+    startState.overlayTransportZoneId = OVERLAY_TRANSPORT_ZONE_ID;
+    startState.tunnelIpPoolId = TUNNEL_IP_POOL_ID;
+    startState.hostUplinkPnic = HOST_UPLINK_PNIC;
 
     return startState;
   }
@@ -525,7 +535,7 @@ public class ConfigureNsxWorkflowServiceTest {
     }
 
     @Test(dataProvider = "hostCount")
-    public void succeedsToConfigureDhcp(int hostCount) throws Throwable {
+    public void succeedsToConfigureNsx(int hostCount) throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
           .createDhcpRelayProfile(true, DHCP_RELAY_PROFILE_ID)
           .createDhcpRelayService(true, DHCP_RELAY_SERVICE_ID)
@@ -561,6 +571,11 @@ public class ConfigureNsxWorkflowServiceTest {
       assertThat(deploymentState.ipRange, is(PRIVATE_IP_ROOT_CIDR));
       assertThat(deploymentState.floatingIpRange.getStart(), is(FLOATING_IP_ROOT_RANGE_START));
       assertThat(deploymentState.floatingIpRange.getEnd(), is(FLOATING_IP_ROOT_RANGE_END));
+      assertThat(deploymentState.networkTopRouterId, is(T0_ROUTER_ID));
+      assertThat(deploymentState.edgeClusterId, is(EDGE_CLUSTER_ID));
+      assertThat(deploymentState.networkZoneId, is(OVERLAY_TRANSPORT_ZONE_ID));
+      assertThat(deploymentState.networkEdgeIpPoolId, is(TUNNEL_IP_POOL_ID));
+      assertThat(deploymentState.networkHostUplinkPnic, is(HOST_UPLINK_PNIC));
 
       // Verifies that global subnet allocator has been created.
       SubnetAllocatorService.State globalSubnetAllocatorState = testEnvironment.getServiceState(

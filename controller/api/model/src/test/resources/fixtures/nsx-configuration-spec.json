@@ -9,5 +9,10 @@
   "floatingIpRootRange": {
     "start": "86.153.20.100",
     "end": "86.153.20.200"
-  }
+  },
+  "t0RouterId": "t0RouterId",
+  "edgeClusterId": "edgeClusterId",
+  "overlayTransportZoneId": "overlayTransportZoneId",
+  "tunnelIpPoolId": "tunnelIpPoolId",
+  "hostUplinkPnic": "hostUplinkPnic"
 }
