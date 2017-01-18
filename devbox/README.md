@@ -151,6 +151,30 @@ To enable authentication in Photon Controller services, a Lightwave STS must be 
 * `PHOTON_SWAGGER_LOGIN_URL` - registered login URL for the client at the Lightwave server
 * `PHOTON_SWAGGER_LOGOUT_URL` - registered logout URL for the client at the Lightwave server
 
+### Configure NSX
+To configure NSX manually follow https://github.com/vmware/photon-controller/wiki/Setting-Up-NSX.
+The script configure_nsx.sh automates the process described in the above wiki. The following environment variables must be set before running ./configure_nsx.sh:
+
+* `NETWORK_MANAGER_ADDRESS` - IP address of the NSX manager
+* `NETWORK_MANAGER_USERNAME` - Username of the NSX manager
+* `NETWORK_MANAGER_PASSWORD` - Password of the NSX manager
+
+The IP address pool provides internal IP addresses for NSX tunnel endpoints (i.e., ESXi hosts and Edge node). You will need to choose an internal IP address range that does not conflict with the IP addresses on the physical network.
+* `NETWORK_TUNNEL_IP_POOL_CIDR` - CIDR of the Tunnel IP pool
+* `NETWORK_TUNNEL_IP_POOL_ALLOCATION_START` - Start IP of an allocation range in the IP pool
+* `NETWORK_TUNNEL_IP_POOL_ALLOCATION_END` - End IP of an allocation range in the IP pool
+
+The following should be the subnet IP address of the T0 router port which is connected to VLAN switch. This needs to be an IP address which is accessible
+from physical network.
+* `NETWORK_T0_SUBNET_IP_ADDRESS` - subnet address of T0 router
+* `NETWORK_T0_SUBNET_PREFIX_LENGTH` - subnet length of T0 router
+* `NETWORK_T0_GATEWAY` - subnet gateway of T0 router
+
+The following should be the subnet IP address of the T1(DHCP) router port which is connected to DHCP switch. The address should depend on the
+DHCP server IP address.
+* `NETWORK_DHCP_SUBNET_IP_ADDRESS` - subnet address of DHCP router
+* `NETWORK_DHCP_SUBNET_PREFIX_LENGTH` - subnet length of DHCP router
+
 ### Using devbox with NSX for virtual network
 To enable virtual network in Photon Controller, some NSX parameters are needed to provision each host added to the devbox. The parameters are set in the deployment document in cloud-store. To enable virtual network define the following environment variables before running ./seed_deployment.sh:
 
