@@ -36,6 +36,7 @@ import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentSize;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
+import com.vmware.photon.controller.api.model.NsxConfigurationSpec;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
@@ -317,6 +318,35 @@ public class DeploymentFeClientTest {
       Task resp = feClient.configureCluster(deploymentId, new ClusterConfigurationSpec());
       assertThat(resp, is(task));
 
+    }
+  }
+
+  /**
+   * Tests the configure NSX method.
+   */
+  public class ConfigureNsxTest {
+    String deploymentId;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      setUpCommon();
+    }
+
+    @Test
+    public void testSuccess() throws Throwable {
+      deploymentId = "deployment-id";
+      doReturn(null).when(deploymentBackend).findById(deploymentId);
+
+      TaskEntity taskEntity = new TaskEntity();
+      doReturn(taskEntity).when(deploymentBackend).configureNsx(any(NsxConfigurationSpec.class));
+      Task task = new Task();
+      doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);
+
+      TaskCommand command = mock(TaskCommand.class);
+      doReturn(command).when(commandFactory).create(taskEntity);
+
+      Task resp = feClient.configureNsx(deploymentId, new NsxConfigurationSpec());
+      assertThat(resp, is(task));
     }
   }
 
