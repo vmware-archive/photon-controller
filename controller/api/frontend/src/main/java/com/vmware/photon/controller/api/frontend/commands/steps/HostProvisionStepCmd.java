@@ -21,14 +21,11 @@ import com.vmware.photon.controller.api.frontend.entities.StepEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.HostNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.TaskNotFoundException;
-import com.vmware.photon.controller.api.frontend.lib.UsageTagHelper;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.HostState;
-import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.deployer.xenon.workflow.AddCloudHostWorkflowService;
-import com.vmware.photon.controller.deployer.xenon.workflow.AddManagementHostWorkflowService;
 
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
@@ -60,21 +57,13 @@ public class HostProvisionStepCmd extends StepCommand {
 
     logger.info("Calling deployer to provision host {}", hostEntity);
 
-    List<UsageTag> usageTagList = UsageTagHelper.deserialize(hostEntity.getUsageTags());
     String taskLink;
-    if (usageTagList.size() == 1 && usageTagList.get(0).name().equals(UsageTag.CLOUD.name()))  {
-      AddCloudHostWorkflowService.State serviceDocument = taskCommand.getDeployerXenonClient().provisionCloudHost
-          (HostServiceFactory.SELF_LINK + "/" + hostEntity.getId());
-      taskLink = serviceDocument.documentSelfLink;
-      logger.info("Provision cloud host initiated: host={}, link={}",
-          hostEntity, taskLink);
-    } else {
-      AddManagementHostWorkflowService.State serviceDocument = taskCommand.getDeployerXenonClient()
-          .provisionManagementHost(HostServiceFactory.SELF_LINK + "/" + hostEntity.getId());
-      taskLink = serviceDocument.documentSelfLink;
-      logger.info("Provision management host initiated: host={}, link={}",
-          hostEntity, taskLink);
-    }
+    AddCloudHostWorkflowService.State serviceDocument = taskCommand.getDeployerXenonClient().provisionCloudHost
+        (HostServiceFactory.SELF_LINK + "/" + hostEntity.getId());
+    taskLink = serviceDocument.documentSelfLink;
+    logger.info("Provision cloud host initiated: host={}, link={}",
+        hostEntity, taskLink);
+
 
     // pass remoteTaskId to XenonTaskStatusStepCmd
     for (StepEntity nextStep : taskCommand.getTask().getSteps()) {

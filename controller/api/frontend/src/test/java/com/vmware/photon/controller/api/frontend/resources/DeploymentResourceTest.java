@@ -23,7 +23,6 @@ import com.vmware.photon.controller.api.model.ApiError;
 import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.Deployment;
-import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentSize;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
@@ -102,30 +101,6 @@ public class DeploymentResourceTest extends ResourceTest {
     assertThat(deploymentRetrieved.getSelfLink().endsWith(deploymentRoutePath), is(true));
   }
 
-  @Test(dataProvider = "validDesiredState")
-  public void testPerformDeployment(String key, String value) throws Exception {
-    Task task = new Task();
-    task.setId(taskId);
-    when(feClient.perform(eq(deploymentId), any(DeploymentDeployOperation.class))).thenReturn(task);
-
-    String uri = UriBuilder
-        .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
-            DeploymentResourceRoutes.PERFORM_DEPLOYMENT_ACTION)
-        .build(deploymentId)
-        .toString();
-
-    Response response = client()
-        .target(uri)
-        .request()
-        .post(Entity.entity(buildConfig(key, value), MediaType.APPLICATION_JSON_TYPE));
-
-    assertThat(response.getStatus(), is(201));
-    Task responseTask = response.readEntity(Task.class);
-    assertThat(responseTask, Matchers.is(task));
-    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
-    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
-  }
-
   @DataProvider(name = "validDesiredState")
   private Object[][] getValideDesireState() {
     return new Object[][]{
@@ -135,26 +110,6 @@ public class DeploymentResourceTest extends ResourceTest {
         {"desiredState", "BACKGROUND_PAUSED"},
         {"desiredState", "READY"},
     };
-  }
-
-  @Test(dataProvider = "invalidDesiredState")
-  public void testPerformDeploymentInvalidDesiredState(String key, String value) throws Exception {
-    Task task = new Task();
-    task.setId(taskId);
-    when(feClient.perform(eq(deploymentId), any(DeploymentDeployOperation.class))).thenReturn(task);
-
-    String uri = UriBuilder
-        .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
-            DeploymentResourceRoutes.PERFORM_DEPLOYMENT_ACTION)
-        .build(deploymentId)
-        .toString();
-
-    Response response = client()
-        .target(uri)
-        .request()
-        .post(Entity.entity(buildConfig(key, value), MediaType.APPLICATION_JSON_TYPE));
-    assertThat(response.getStatus(), is(400));
-
   }
 
   @DataProvider(name = "invalidDesiredState")
@@ -222,38 +177,6 @@ public class DeploymentResourceTest extends ResourceTest {
     assertThat(responseTask, Matchers.is(task));
     assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
     assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
-  }
-
-  @Test
-  public void testSuccessfulDeleteDeployment() throws Exception {
-    Task task = new Task();
-    task.setId(taskId);
-    when(feClient.delete(deploymentId)).thenReturn(task);
-
-    Response response = client()
-        .target(deploymentRoutePath)
-        .request()
-        .delete();
-
-    assertThat(response.getStatus(), Matchers.is(201));
-    Task responseTask = response.readEntity(Task.class);
-    assertThat(responseTask, Matchers.is(task));
-    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), Matchers.is(true));
-    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), Matchers.is(true));
-  }
-
-  @Test
-  public void testDeleteDeploymentByInvalidId() throws Exception {
-    when(feClient.delete(deploymentId)).thenThrow(new DeploymentNotFoundException(deploymentId));
-
-    Response response = client()
-        .target(deploymentRoutePath)
-        .request()
-        .delete();
-
-    ApiError errors = response.readEntity(ApiError.class);
-    assertThat(errors.getCode(), equalTo("DeploymentNotFound"));
-    assertThat(errors.getMessage(), containsString("Deployment #" + deploymentId + " not found"));
   }
 
   @Test
