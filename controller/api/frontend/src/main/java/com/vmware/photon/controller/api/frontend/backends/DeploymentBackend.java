@@ -73,7 +73,7 @@ public interface DeploymentBackend {
 
   List<ClusterConfiguration> getClusterConfigurations() throws ExternalException;
 
-  TaskEntity initializeNsx(NsxConfigurationSpec spec) throws ExternalException;
+  TaskEntity configureNsx(NsxConfigurationSpec spec) throws ExternalException;
 
   DeploymentEntity findById(String id) throws DeploymentNotFoundException;
 

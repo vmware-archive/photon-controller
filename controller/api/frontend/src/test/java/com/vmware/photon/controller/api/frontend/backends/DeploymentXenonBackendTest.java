@@ -1224,10 +1224,10 @@ public class DeploymentXenonBackendTest {
   }
 
   /**
-   * Tests for the initializeNsx method.
+   * Tests for the configureNsx method.
    */
   @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
-  public static class InitializeNsxTest {
+  public static class ConfigureNsxTest {
 
     @Inject
     private BasicServiceHost basicServiceHost;
@@ -1276,7 +1276,7 @@ public class DeploymentXenonBackendTest {
       spec.setTunnelIpPoolId("tunnelIpPoolId");
       spec.setHostUplinkPnic("hostUplinkPnic");
 
-      TaskEntity taskEntity = deploymentBackend.initializeNsx(spec);
+      TaskEntity taskEntity = deploymentBackend.configureNsx(spec);
       assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
     }
   }
