@@ -48,6 +48,11 @@ public class NsxConfigurationSpecTest {
     floatingIpRange.setStart("86.153.20.100");
     floatingIpRange.setEnd("86.153.20.200");
     spec.setFloatingIpRootRange(floatingIpRange);
+    spec.setT0RouterId("t0RouterId");
+    spec.setEdgeClusterId("edgeClusterId");
+    spec.setOverlayTransportZoneId("overlayTransportZoneId");
+    spec.setTunnelIpPoolId("tunnelIpPoolId");
+    spec.setHostUplinkPnic("hostUplinkPnic");
 
     return spec;
   }
@@ -87,7 +92,12 @@ public class NsxConfigurationSpecTest {
           "nsxPassword=bar, " +
           "dhcpServerAddresses={192.168.1.1=10.56.48.9}, " +
           "privateIpRootCidr=192.168.0.0/16, " +
-          "floatingIpRootRange=IpRange{start=86.153.20.100, end=86.153.20.200}}";
+          "floatingIpRootRange=IpRange{start=86.153.20.100, end=86.153.20.200}, " +
+          "t0RouterId=t0RouterId, " +
+          "edgeClusterId=edgeClusterId, " +
+          "overlayTransportZoneId=overlayTransportZoneId, " +
+          "tunnelIpPoolId=tunnelIpPoolId, " +
+          "hostUplinkPnic=hostUplinkPnic}";
 
       assertThat(spec.toString(), is(expectedString));
     }

@@ -60,6 +60,31 @@ public class NsxConfigurationSpec {
   @NotNull
   private IpRange floatingIpRootRange;
 
+  @JsonProperty
+  @ApiModelProperty(value = "The ID of the T0-Router")
+  @NotNull
+  private String t0RouterId;
+
+  @JsonProperty
+  @ApiModelProperty(value = "The ID of the Edge cluster")
+  @NotNull
+  private String edgeClusterId;
+
+  @JsonProperty
+  @ApiModelProperty(value = "The ID of the OVERLAY transport zone")
+  @NotNull
+  private String overlayTransportZoneId;
+
+  @JsonProperty
+  @ApiModelProperty(value = "The ID of the tunnel IP pool")
+  @NotNull
+  private String tunnelIpPoolId;
+
+  @JsonProperty
+  @ApiModelProperty(value = "The name of the host uplink pnic")
+  @NotNull
+  private String hostUplinkPnic;
+
   public String getNsxAddress() {
     return nsxAddress;
   }
@@ -108,6 +133,46 @@ public class NsxConfigurationSpec {
     this.floatingIpRootRange = floatingIpRootRange;
   }
 
+  public String getT0RouterId() {
+    return t0RouterId;
+  }
+
+  public void setT0RouterId(String t0RouterId) {
+    this.t0RouterId = t0RouterId;
+  }
+
+  public String getEdgeClusterId() {
+    return edgeClusterId;
+  }
+
+  public void setEdgeClusterId(String edgeClusterId) {
+    this.edgeClusterId = edgeClusterId;
+  }
+
+  public String getOverlayTransportZoneId() {
+    return overlayTransportZoneId;
+  }
+
+  public void setOverlayTransportZoneId(String overlayTransportZoneId) {
+    this.overlayTransportZoneId = overlayTransportZoneId;
+  }
+
+  public String getTunnelIpPoolId() {
+    return tunnelIpPoolId;
+  }
+
+  public void setTunnelIpPoolId(String tunnelIpPoolId) {
+    this.tunnelIpPoolId = tunnelIpPoolId;
+  }
+
+  public String getHostUplinkPnic() {
+    return hostUplinkPnic;
+  }
+
+  public void setHostUplinkPnic(String hostUplinkPnic) {
+    this.hostUplinkPnic = hostUplinkPnic;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -125,7 +190,12 @@ public class NsxConfigurationSpec {
         && Objects.equals(nsxPassword, other.nsxPassword)
         && Objects.deepEquals(dhcpServerAddresses, other.dhcpServerAddresses)
         && Objects.equals(privateIpRootCidr, other.privateIpRootCidr)
-        && Objects.equals(floatingIpRootRange, other.floatingIpRootRange);
+        && Objects.equals(floatingIpRootRange, other.floatingIpRootRange)
+        && Objects.equals(t0RouterId, other.t0RouterId)
+        && Objects.equals(edgeClusterId, other.edgeClusterId)
+        && Objects.equals(overlayTransportZoneId, other.overlayTransportZoneId)
+        && Objects.equals(tunnelIpPoolId, other.tunnelIpPoolId)
+        && Objects.equals(hostUplinkPnic, other.hostUplinkPnic);
   }
 
   @Override
@@ -136,7 +206,12 @@ public class NsxConfigurationSpec {
         nsxPassword,
         dhcpServerAddresses,
         privateIpRootCidr,
-        floatingIpRootRange);
+        floatingIpRootRange,
+        t0RouterId,
+        edgeClusterId,
+        overlayTransportZoneId,
+        tunnelIpPoolId,
+        hostUplinkPnic);
   }
 
   @Override
@@ -148,6 +223,11 @@ public class NsxConfigurationSpec {
         .add("dhcpServerAddresses", dhcpServerAddresses.toString())
         .add("privateIpRootCidr", privateIpRootCidr)
         .add("floatingIpRootRange", floatingIpRootRange)
+        .add("t0RouterId", t0RouterId)
+        .add("edgeClusterId", edgeClusterId)
+        .add("overlayTransportZoneId", overlayTransportZoneId)
+        .add("tunnelIpPoolId", tunnelIpPoolId)
+        .add("hostUplinkPnic", hostUplinkPnic)
         .toString();
   }
 }

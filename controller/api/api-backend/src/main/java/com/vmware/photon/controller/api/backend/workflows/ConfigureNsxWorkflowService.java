@@ -220,6 +220,11 @@ public class ConfigureNsxWorkflowService extends BaseWorkflowService<ConfigureNs
     patchState.taskServiceEntity.networkManagerUsername = state.nsxUsername;
     patchState.taskServiceEntity.networkManagerPassword = state.nsxPassword;
     patchState.taskServiceEntity.dhcpServers = new ArrayList<>(state.dhcpServerAddresses.values());
+    patchState.taskServiceEntity.networkTopRouterId = state.t0RouterId;
+    patchState.taskServiceEntity.edgeClusterId = state.edgeClusterId;
+    patchState.taskServiceEntity.networkZoneId = state.overlayTransportZoneId;
+    patchState.taskServiceEntity.networkEdgeIpPoolId = state.tunnelIpPoolId;
+    patchState.taskServiceEntity.networkHostUplinkPnic = state.hostUplinkPnic;
     progress(state, patchState);
   }
 
@@ -502,6 +507,11 @@ public class ConfigureNsxWorkflowService extends BaseWorkflowService<ConfigureNs
     deploymentPatchState.dhcpServers = state.taskServiceEntity.dhcpServers;
     deploymentPatchState.ipRange = state.taskServiceEntity.ipRange;
     deploymentPatchState.floatingIpRange = state.taskServiceEntity.floatingIpRange;
+    deploymentPatchState.networkTopRouterId = state.taskServiceEntity.networkTopRouterId;
+    deploymentPatchState.edgeClusterId = state.taskServiceEntity.edgeClusterId;
+    deploymentPatchState.networkZoneId = state.taskServiceEntity.networkZoneId;
+    deploymentPatchState.networkEdgeIpPoolId = state.taskServiceEntity.networkEdgeIpPoolId;
+    deploymentPatchState.networkHostUplinkPnic = state.taskServiceEntity.networkHostUplinkPnic;
 
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createPatch(state.taskServiceEntity.documentSelfLink)

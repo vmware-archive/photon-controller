@@ -1270,6 +1270,11 @@ public class DeploymentXenonBackendTest {
       floatingIpRange.setStart("86.153.20.100");
       floatingIpRange.setEnd("86.153.20.200");
       spec.setFloatingIpRootRange(floatingIpRange);
+      spec.setT0RouterId("t0RouterId");
+      spec.setEdgeClusterId("edgeClusterId");
+      spec.setOverlayTransportZoneId("overlayTransportZoneId");
+      spec.setTunnelIpPoolId("tunnelIpPoolId");
+      spec.setHostUplinkPnic("hostUplinkPnic");
 
       TaskEntity taskEntity = deploymentBackend.initializeNsx(spec);
       assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
