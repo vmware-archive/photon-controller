@@ -234,10 +234,6 @@ public class DeployerContext {
   @NotNull
   private final Boolean isInstaller;
 
-  private final String keyStorePath;
-
-  private final String keyStorePassword;
-
   /**
    * Create default deployment flag.
    */
@@ -267,8 +263,6 @@ public class DeployerContext {
     sharedSecret = UUID.randomUUID().toString();
     configDirectory = null;
     enableAuth = false;
-    keyStorePath = null;
-    keyStorePassword = null;
     isInstaller = false;
     defaultDeploymentEnabled = false;
   }
@@ -367,14 +361,6 @@ public class DeployerContext {
 
   public boolean isAuthEnabled() {
     return enableAuth;
-  }
-
-  public String getKeyStorePath() {
-    return keyStorePath;
-  }
-
-  public String getKeyStorePassword() {
-    return keyStorePassword;
   }
 
   public Collection<DeploymentMigrationInformation> getDeploymentMigrationInformation() {

@@ -49,10 +49,6 @@ deployer:
     memoryMb: {{{memoryMb}}}
     installDirectory: "/usr/lib/esxcloud/photon-controller-core"
     logDirectory: {{{LOG_DIRECTORY}}}
-{{#ENABLE_AUTH}}
-    keyStorePath: /etc/vmware/photon/keystore.jks
-    keyStorePassword: "changeme"
-{{/ENABLE_AUTH}}
 
 photon_controller_logging:
   file:

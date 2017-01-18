@@ -51,8 +51,6 @@ deployer:
     logDirectory: {{{LOG_DIRECTORY}}}
     javaDebug: {{{JAVA_DEBUG}}}
 {{#ENABLE_AUTH}}
-    keyStorePath: /etc/vmware/photon/keystore.jks
-    keyStorePassword: "changeme"
     lightwavePassword: {{{LIGHTWAVE_PASSWORD}}}
     lightwaveDomain: {{{LIGHTWAVE_DOMAIN}}}
     lightwaveHostname: {{{LIGHTWAVE_HOSTNAME}}}
