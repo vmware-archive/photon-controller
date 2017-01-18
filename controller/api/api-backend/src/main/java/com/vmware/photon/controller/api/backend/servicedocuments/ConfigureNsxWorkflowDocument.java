@@ -129,6 +129,41 @@ public class ConfigureNsxWorkflowDocument extends ServiceDocument {
   @Immutable
   public IpRange floatingIpRootRange;
 
+  /**
+   * The ID of the T0-Router.
+   */
+  @NotBlank
+  @Immutable
+  public String t0RouterId;
+
+  /**
+   * The ID of the Edge cluster.
+   */
+  @NotBlank
+  @Immutable
+  public String edgeClusterId;
+
+  /**
+   * The ID of the OVERLAY transport zone.
+   */
+  @NotBlank
+  @Immutable
+  public String overlayTransportZoneId;
+
+  /**
+   * The ID of the tunnel IP pool.
+   */
+  @NotBlank
+  @Immutable
+  public String tunnelIpPoolId;
+
+  /**
+   * The name of the uplink pnic on the ESXi host.
+   */
+  @NotBlank
+  @Immutable
+  public String hostUplinkPnic;
+
   ///
   /// Task Output
   ///

@@ -421,6 +421,11 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     startState.dhcpServerAddresses = spec.getDhcpServerAddresses();
     startState.privateIpRootCidr = spec.getPrivateIpRootCidr();
     startState.floatingIpRootRange = spec.getFloatingIpRootRange();
+    startState.t0RouterId = spec.getT0RouterId();
+    startState.edgeClusterId = spec.getEdgeClusterId();
+    startState.overlayTransportZoneId = spec.getOverlayTransportZoneId();
+    startState.tunnelIpPoolId = spec.getTunnelIpPoolId();
+    startState.hostUplinkPnic = spec.getHostUplinkPnic();
 
     ConfigureNsxWorkflowDocument finalState = xenonClient.post(
         ConfigureNsxWorkflowService.FACTORY_LINK,
