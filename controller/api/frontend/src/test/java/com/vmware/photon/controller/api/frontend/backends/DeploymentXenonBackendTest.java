@@ -21,18 +21,14 @@ import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.entities.TombstoneEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ClusterTypeAlreadyConfiguredException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ClusterTypeNotConfiguredException;
-import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentAlreadyExistException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidAuthConfigException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidImageDatastoreSetException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidOperationStateException;
-import com.vmware.photon.controller.api.frontend.exceptions.external.NoManagementHostException;
 import com.vmware.photon.controller.api.model.AuthInfo;
 import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.Deployment;
-import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
-import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
@@ -43,9 +39,6 @@ import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.StatsInfo;
 import com.vmware.photon.controller.api.model.StatsStoreType;
 import com.vmware.photon.controller.api.model.TenantCreateSpec;
-import com.vmware.photon.controller.api.model.builders.AuthConfigurationSpecBuilder;
-import com.vmware.photon.controller.api.model.builders.NetworkConfigurationCreateSpecBuilder;
-import com.vmware.photon.controller.api.model.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
@@ -54,12 +47,11 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFac
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.ListUtils;
 import org.junit.AfterClass;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -73,11 +65,9 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -96,7 +86,7 @@ public class DeploymentXenonBackendTest {
 
   private static ApiFeXenonRestClient xenonClient;
   private static BasicServiceHost host;
-  private static DeploymentCreateSpec deploymentCreateSpec;
+  private static DeploymentService.State deploymentState;
 
   private static void commonHostAndClientSetup(
       BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
@@ -136,260 +126,49 @@ public class DeploymentXenonBackendTest {
       host = null;
     }
   }
+  private static void createDeployment() throws Throwable {
+    xenonClient.post(DeploymentServiceFactory.SELF_LINK, deploymentState);
+  }
+
+  private static void deleteDeployment() throws Throwable {
+    deploymentState.documentExpirationTimeMicros = 1;
+    xenonClient.delete(DeploymentServiceFactory.SELF_LINK + '/' + deploymentState.documentSelfLink,
+            deploymentState);
+  }
 
   private static void commonDataSetup() throws Throwable {
-
-    deploymentCreateSpec = new DeploymentCreateSpec();
-    deploymentCreateSpec.setImageDatastores(Collections.singleton("imageDatastore"));
-    deploymentCreateSpec.setNtpEndpoint("ntp");
-    deploymentCreateSpec.setSyslogEndpoint("syslog");
-    deploymentCreateSpec.setStats(new StatsInfoBuilder()
-        .enabled(true)
-        .storeEndpoint("10.146.64.111")
-        .storePort(2004)
-        .storeType(StatsStoreType.GRAPHITE)
-        .build());
-    deploymentCreateSpec.setUseImageDatastoreForVms(true);
-    deploymentCreateSpec.setAuth(new AuthConfigurationSpecBuilder()
-        .enabled(true)
-        .tenant("t")
-        .password("p")
-        .securityGroups(Arrays.asList(new String[]{"securityGroup1", "securityGroup2"}))
-        .build());
-
-    IpRange externalIpRange = new IpRange();
-    externalIpRange.setStart("192.168.0.1");
-    externalIpRange.setEnd("192.168.0.254");
-    deploymentCreateSpec.setNetworkConfiguration(new NetworkConfigurationCreateSpecBuilder()
-        .sdnEnabled(true)
-        .networkManagerAddress("1.2.3.4")
-        .networkManagerUsername("networkManagerUsername")
-        .networkManagerPassword("networkManagerPassword")
-        .networkZoneId("networkZoneId")
-        .networkTopRouterId("networkTopRouterId")
-        .networkEdgeIpPoolId("networkEdgeIpPoolId")
-        .networkHostUplinkPnic("networkHostUplinkPnic")
-        .ipRange("10.0.0.1/24")
-        .externalIpRange(externalIpRange)
-        .build());
+    IpRange floatingIpRange = new IpRange();
+    floatingIpRange.setStart("192.168.0.1");
+    floatingIpRange.setEnd("192.168.0.254");
+    deploymentState = new DeploymentService.State();
+    deploymentState.imageDataStoreNames = Collections.singleton("imageDatastore");
+    deploymentState.imageDataStoreUsedForVMs = true;
+    deploymentState.ntpEndpoint = "ntp";
+    deploymentState.oAuthEnabled = true;
+    deploymentState.oAuthTenantName = "t";
+    deploymentState.oAuthPassword = "p";
+    deploymentState.oAuthSecurityGroups = Arrays.asList(new String[]{"securityGroup1", "securityGroup2"});
+    deploymentState.sdnEnabled = true;
+    deploymentState.networkManagerAddress = "1.2.3.4";
+    deploymentState.networkManagerUsername = "networkManagerUsername";
+    deploymentState.networkManagerPassword = "networkManagerPassword";
+    deploymentState.networkTopRouterId = "networkTopRouterId";
+    deploymentState.networkZoneId = "networkZoneId";
+    deploymentState.networkEdgeIpPoolId = "networkEdgeIpPoolId";
+    deploymentState.networkHostUplinkPnic = "networkHostUplinkPnic";
+    deploymentState.ipRange = "10.0.0.1/24";
+    deploymentState.floatingIpRange = floatingIpRange;
+    deploymentState.syslogEndpoint = "syslog";
+    deploymentState.statsEnabled = true;
+    deploymentState.statsStoreEndpoint = "10.146.64.111";
+    deploymentState.statsStorePort = 2004;
+    deploymentState.statsStoreType = StatsStoreType.GRAPHITE;
+    deploymentState.state = DeploymentState.NOT_DEPLOYED;
+    deploymentState.documentSelfLink = DeployerDefaults.DEFAULT_DEPLOYMENT_ID;
   }
 
   @Test(enabled = false)
   private void dummy() {
-  }
-
-  /**
-   * Tests for the create deployment.
-   */
-  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
-  public static class PrepareCreateTest {
-
-    @Inject
-    private BasicServiceHost basicServiceHost;
-
-    @Inject
-    private ApiFeXenonRestClient apiFeXenonRestClient;
-
-    @Inject
-    private DeploymentBackend deploymentBackend;
-
-    @Inject
-    private EntityLockBackend entityLockBackend;
-
-    @BeforeMethod
-    public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
-      commonDataSetup();
-    }
-
-    @AfterMethod
-    public void tearDown() throws Throwable {
-      commonHostDocumentsCleanup();
-    }
-
-    @AfterClass
-    public static void afterClassCleanup() throws Throwable {
-      commonHostAndClientTeardown();
-    }
-
-    @Test
-    public void testPrepareCreateSuccess() throws Throwable {
-      TaskEntity taskEntity = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      assertThat(taskEntity, is(notNullValue()));
-      assertThat(taskEntity.getId(), is(notNullValue()));
-
-      // verify the task is created correctly
-      assertThat(taskEntity.getState(), is(TaskEntity.State.COMPLETED));
-      assertThat(taskEntity.getEntityId(), is(notNullValue()));
-      assertThat(taskEntity.getEntityKind(), is(Deployment.KIND));
-
-      // verify that task steps are created successfully
-      assertThat(taskEntity.getSteps().size(), is(0));
-
-      // verify that entity is locked
-      Boolean lockExists = entityLockBackend.lockExistsForEntityId(taskEntity.getEntityId());
-      assertThat(lockExists, is(false));
-
-      // verify the deployment entity is created successfully
-      DeploymentEntity deployment = deploymentBackend.findById(taskEntity.getEntityId());
-      assertThat(deployment, notNullValue());
-      assertThat(deployment.getState(), is(DeploymentState.NOT_DEPLOYED));
-      assertTrue(deployment.getImageDatastores().contains("imageDatastore"));
-      assertThat(deployment.getNtpEndpoint(), is("ntp"));
-      assertThat(deployment.getOperationId(), nullValue());
-      assertThat(deployment.getSyslogEndpoint(), is("syslog"));
-      assertThat(deployment.getStatsEnabled(), is(true));
-      assertThat(deployment.getStatsStoreEndpoint(), is("10.146.64.111"));
-      assertThat(deployment.getStatsStorePort(), is(2004));
-      assertThat(deployment.getStatsStoreType(), is(StatsStoreType.GRAPHITE));
-      assertThat(deployment.getUseImageDatastoreForVms(), is(true));
-      assertThat(deployment.getAuthEnabled(), is(true));
-      assertThat(deployment.getOauthEndpoint(), nullValue());
-      assertThat(deployment.getOauthLoadBalancerEndpoint(), nullValue());
-      assertThat(deployment.getOauthPort(), nullValue());
-      assertThat(deployment.getOauthTenant(), is("t"));
-      assertThat(deployment.getOauthUsername(), is(DeploymentXenonBackend.AUTH_ADMIN_USER_NAME));
-      assertThat(deployment.getOauthPassword(), is("p"));
-      assertThat(deployment.getNetworkManagerAddress(), is("1.2.3.4"));
-      assertThat(deployment.getNetworkManagerUsername(), is("networkManagerUsername"));
-      assertThat(deployment.getNetworkManagerPassword(), is("networkManagerPassword"));
-      assertThat(deployment.getNetworkZoneId(), is("networkZoneId"));
-      assertThat(deployment.getNetworkTopRouterId(), is("networkTopRouterId"));
-      assertThat(deployment.getNetworkEdgeIpPoolId(), is("networkEdgeIpPoolId"));
-      assertThat(deployment.getNetworkHostUplinkPnic(), is("networkHostUplinkPnic"));
-      assertThat(deployment.getEdgeClusterId(), nullValue());
-      assertThat(deployment.getIpRange(), is("10.0.0.1/24"));
-      assertThat(ListUtils.isEqualList(deployment.getOauthSecurityGroups(),
-          Arrays.asList(new String[]{"securityGroup1", "securityGroup2"})), is(true));
-
-      IpRange externalIpRange = deploymentCreateSpec.getNetworkConfiguration().getExternalIpRange();
-      assertThat(deployment.getFloatingIpRange(), is(externalIpRange));
-    }
-
-    @Test
-    public void testDeploymentAlreadyExistException() throws Throwable {
-      TaskEntity taskEntity = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      Assert.assertNotNull(taskEntity);
-      Assert.assertNotNull(taskEntity.getId());
-
-      try {
-        deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-        fail("should have failed creating second deployment.");
-      } catch (DeploymentAlreadyExistException e) {
-      }
-    }
-  }
-
-  /**
-   * Tests for the prepareDeploy method.
-   */
-  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
-  public static class PrepareDeployTest {
-
-    @Inject
-    private BasicServiceHost basicServiceHost;
-
-    @Inject
-    private ApiFeXenonRestClient apiFeXenonRestClient;
-
-    @Inject
-    private DeploymentXenonBackend deploymentBackend;
-
-    private DeploymentXenonBackend deploymentBackendSpy;
-
-    private DeploymentEntity entity;
-
-    private DeploymentDeployOperation config;
-
-    @BeforeMethod
-    public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
-      commonDataSetup();
-      config = new DeploymentDeployOperation();
-
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      entity = deploymentBackend.findById(task.getEntityId());
-      deploymentBackendSpy = spy(deploymentBackend);
-    }
-
-    @AfterMethod
-    public void tearDown() throws Throwable {
-      commonHostDocumentsCleanup();
-    }
-
-    @AfterClass
-    public static void afterClassCleanup() throws Throwable {
-      commonHostAndClientTeardown();
-    }
-
-    @Test(dataProvider = "DeploySuccess")
-    public void testPrepareDeploySuccess(DeploymentState state) throws Throwable {
-      deploymentBackend.updateState(entity, state);
-      doReturn(false).when(deploymentBackendSpy).isNoManagementHost(Optional.absent());
-
-      TaskEntity taskEntity = deploymentBackendSpy.prepareDeploy(entity.getId(), config);
-
-      assertThat(taskEntity, is(notNullValue()));
-      assertThat(taskEntity.getId(), is(notNullValue()));
-      assertThat(taskEntity.getToBeLockedEntities().size(), is(1));
-      assertThat(taskEntity.getToBeLockedEntities().get(0).getId(), is(taskEntity.getEntityId()));
-      assertThat(taskEntity.getToBeLockedEntities().get(0).getKind(), is(taskEntity.getEntityKind()));
-
-      // verify the task is created correctly
-      assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
-      assertThat(taskEntity.getEntityId(), is(notNullValue()));
-      assertThat(taskEntity.getEntityKind(), is(Deployment.KIND));
-
-      // verify that task steps are created successfully
-      assertThat(taskEntity.getSteps().size(), is(10));
-      Assert.assertEquals(taskEntity.getSteps().get(0).getOperation(), Operation.SCHEDULE_DEPLOYMENT);
-      Assert.assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.PROVISION_CONTROL_PLANE_HOSTS);
-      Assert.assertEquals(taskEntity.getSteps().get(2).getOperation(), Operation.PROVISION_CONTROL_PLANE_VMS);
-      Assert.assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.PROVISION_CLOUD_HOSTS);
-      Assert.assertEquals(taskEntity.getSteps().get(4).getOperation(), Operation.PROVISION_CLUSTER_MANAGER);
-      Assert.assertEquals(taskEntity.getSteps().get(5).getOperation(), Operation.CREATE_SUBNET_ALLOCATOR);
-      Assert.assertEquals(taskEntity.getSteps().get(6).getOperation(), Operation.CREATE_DHCP_SUBNET);
-      Assert.assertEquals(taskEntity.getSteps().get(7).getOperation(), Operation.CONFIGURE_DHCP_RELAY_PROFILE);
-      Assert.assertEquals(taskEntity.getSteps().get(8).getOperation(), Operation.CONFIGURE_DHCP_RELAY_SERVICE);
-      Assert.assertEquals(taskEntity.getSteps().get(9).getOperation(), Operation.MIGRATE_DEPLOYMENT_DATA);
-    }
-
-    @Test
-    public void testFailedDeployOnManagementHostNotCreated() throws Throwable {
-      doReturn(true).when(deploymentBackendSpy).isNoManagementHost(Optional.absent());
-
-      try {
-        deploymentBackendSpy.prepareDeploy(entity.getId(), config);
-        fail("should have failed with NoManagementHostException.");
-      } catch (NoManagementHostException ex) {
-
-      }
-    }
-
-    @DataProvider(name = "DeploySuccess")
-    public Object[][] getPrepareDeploySuccessParams() {
-      return new Object[][]{
-          {DeploymentState.NOT_DEPLOYED}
-      };
-    }
-
-    @Test(dataProvider = "DeployFailure",
-        expectedExceptions = InvalidOperationStateException.class,
-        expectedExceptionsMessageRegExp = "Invalid operation PERFORM_DEPLOYMENT for deployment.*")
-    public void testPrepareDeployFailure(DeploymentState state) throws Throwable {
-      deploymentBackend.updateState(entity, state);
-      deploymentBackend.prepareDeploy(entity.getId(), config);
-    }
-
-    @DataProvider(name = "DeployFailure")
-    public Object[][] getPrepareDeployFailuresParams() {
-      return new Object[][]{
-          {DeploymentState.CREATING},
-          {DeploymentState.READY},
-          {DeploymentState.ERROR},
-          {DeploymentState.DELETED}
-      };
-    }
   }
 
   /**
@@ -417,12 +196,13 @@ public class DeploymentXenonBackendTest {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      initialDeploymentEntity = deploymentBackend.findById(task.getEntityId());
+      createDeployment();
+      initialDeploymentEntity = deploymentBackend.findById(deploymentState.documentSelfLink);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
+      deleteDeployment();
       commonHostDocumentsCleanup();
     }
 
@@ -506,22 +286,22 @@ public class DeploymentXenonBackendTest {
 
     @Test(expectedExceptions = InvalidAuthConfigException.class,
         expectedExceptionsMessageRegExp = ".*Auth is not enabled, and security groups cannot be set.*")
-    public void testUpdateSecurityGroupsDisallowed() throws Exception {
+    public void testUpdateSecurityGroupsDisallowed() throws Throwable {
 
-      xenonClient.delete(DeploymentServiceFactory.SELF_LINK + "/" + initialDeploymentEntity.getId(),
-          new DeploymentService.State());
+      DeploymentService.State deploymentState1 = new DeploymentService.State();
+      deploymentState1.imageDataStoreNames = Collections.singleton("imageDatastore");
+      deploymentState1.imageDataStoreUsedForVMs = true;
+      deploymentState1.documentSelfLink = "default1";
+      deploymentState1.state = DeploymentState.READY;
+      deploymentState1.oAuthEnabled = false;
+      deploymentState1.oAuthSecurityGroups = Arrays.asList(new String[]{"securityGroup1", "securityGroup2"});
 
-      deploymentCreateSpec.setAuth(new AuthConfigurationSpecBuilder()
-          .enabled(false)
-          .tenant("t")
-          .password("p")
-          .securityGroups(Arrays.asList(new String[]{"securityGroup1", "securityGroup2"}))
-          .build());
-
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      DeploymentEntity deploymentEntity = deploymentBackend.findById(task.getEntityId());
+      apiFeXenonRestClient.post(DeploymentServiceFactory.SELF_LINK, deploymentState1);
+      DeploymentEntity deploymentEntity = deploymentBackend.findById(deploymentState1.documentSelfLink);
       List<String> updatedSecurityGroups = Arrays.asList(new String[]{"updatedAdminGroup1", "updatedAdminGroup2"});
       deploymentBackend.updateSecurityGroups(deploymentEntity.getId(), updatedSecurityGroups);
+      apiFeXenonRestClient.delete(DeploymentServiceFactory.SELF_LINK + "/" + deploymentState1.documentSelfLink,
+              deploymentState1);
     }
 
     @Test(expectedExceptions = DeploymentNotFoundException.class,
@@ -554,12 +334,13 @@ public class DeploymentXenonBackendTest {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      initialDeploymentEntity = deploymentBackend.findById(task.getEntityId());
+      createDeployment();
+      initialDeploymentEntity = deploymentBackend.findById(deploymentState.documentSelfLink);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
+      deleteDeployment();
       commonHostDocumentsCleanup();
     }
 
@@ -645,12 +426,13 @@ public class DeploymentXenonBackendTest {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      initialDeploymentEntity = deploymentBackend.findById(task.getEntityId());
+      createDeployment();
+      initialDeploymentEntity = deploymentBackend.findById(deploymentState.documentSelfLink);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
+      deleteDeployment();
       commonHostDocumentsCleanup();
     }
 
@@ -712,13 +494,14 @@ public class DeploymentXenonBackendTest {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      entity = deploymentBackend.findById(task.getEntityId());
+      createDeployment();
+      entity = deploymentBackend.findById(deploymentState.documentSelfLink);
       systemConfig = mock(SystemConfig.class);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
+      deleteDeployment();
       commonHostDocumentsCleanup();
     }
 
@@ -783,10 +566,8 @@ public class DeploymentXenonBackendTest {
     @DataProvider(name = "NotReadyState")
     private Object[][] getNotReadyStateData() {
       return new Object[][]{
-          {DeploymentState.CREATING},
           {DeploymentState.NOT_DEPLOYED},
           {DeploymentState.ERROR},
-          {DeploymentState.DELETED},
           {DeploymentState.BACKGROUND_PAUSED},
           {DeploymentState.PAUSED}
       };
@@ -831,12 +612,13 @@ public class DeploymentXenonBackendTest {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      entity = deploymentBackend.findById(task.getEntityId());
+      createDeployment();
+      entity = deploymentBackend.findById(deploymentState.documentSelfLink);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
+      deleteDeployment();
       commonHostDocumentsCleanup();
     }
 
@@ -879,12 +661,13 @@ public class DeploymentXenonBackendTest {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      entity = deploymentBackend.findById(task.getEntityId());
+      createDeployment();
+      entity = deploymentBackend.findById(deploymentState.documentSelfLink);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
+      deleteDeployment();
       commonHostDocumentsCleanup();
     }
 
@@ -909,176 +692,6 @@ public class DeploymentXenonBackendTest {
     }
   }
 
-  /**
-   * Tests for the prepareDelete method.
-   */
-  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
-  public static class PrepareDeleteTest {
-
-    @Inject
-    private BasicServiceHost basicServiceHost;
-
-    @Inject
-    private ApiFeXenonRestClient apiFeXenonRestClient;
-
-    @Inject
-    private DeploymentBackend deploymentBackend;
-
-    private DeploymentEntity entity;
-
-    @BeforeMethod
-    public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
-      commonDataSetup();
-
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      entity = deploymentBackend.findById(task.getEntityId());
-    }
-
-    @AfterMethod
-    public void tearDown() throws Throwable {
-      commonHostDocumentsCleanup();
-    }
-
-    @AfterClass
-    public static void afterClassCleanup() throws Throwable {
-      commonHostAndClientTeardown();
-    }
-
-    @Test(dataProvider = "DeleteSuccess")
-    public void testDeleteSuccess(DeploymentState state) throws Throwable {
-      deploymentBackend.updateState(entity, state);
-      TaskEntity taskEntity = deploymentBackend.prepareDeleteDeployment(entity.getId());
-      assertThat(taskEntity, is(notNullValue()));
-      assertThat(taskEntity.getId(), is(notNullValue()));
-
-      // verify the task is created correctly
-      assertThat(taskEntity.getState(), is(TaskEntity.State.COMPLETED));
-      assertThat(taskEntity.getOperation(), is(Operation.DELETE_DEPLOYMENT));
-      assertThat(taskEntity.getEntityId(), is(notNullValue()));
-      assertThat(taskEntity.getEntityKind(), is(Deployment.KIND));
-
-      // verify that task steps are created successfully
-      assertThat(taskEntity.getSteps().size(), is(0));
-
-      try {
-        deploymentBackend.findById(taskEntity.getEntityId());
-        Assert.fail("Deployment findById should have failed for deleted deployment");
-      } catch (DeploymentNotFoundException e) {
-        assertThat(e.getId(), is(taskEntity.getEntityId()));
-      }
-    }
-
-    @DataProvider(name = "DeleteSuccess")
-    public Object[][] getDeleteSuccessParams() {
-      return new Object[][]{
-          {DeploymentState.CREATING},
-          {DeploymentState.NOT_DEPLOYED},
-          {DeploymentState.DELETED}
-      };
-    }
-
-    @Test(dataProvider = "DeleteFailure",
-        expectedExceptions = InvalidOperationStateException.class,
-        expectedExceptionsMessageRegExp = "Invalid operation DELETE_DEPLOYMENT for deployment.*")
-    public void testDeleteFailure(DeploymentState state) throws Throwable {
-      deploymentBackend.updateState(entity, state);
-      deploymentBackend.prepareDeleteDeployment(entity.getId());
-    }
-
-    @DataProvider(name = "DeleteFailure")
-    public Object[][] getDeleteFailuresParams() {
-      return new Object[][]{
-          {DeploymentState.READY},
-          {DeploymentState.ERROR}
-      };
-    }
-  }
-
-  /**
-   * Tests for the prepareDestroy method.
-   */
-  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
-  public static class PrepareDestroyTest {
-
-    @Inject
-    private BasicServiceHost basicServiceHost;
-
-    @Inject
-    private ApiFeXenonRestClient apiFeXenonRestClient;
-
-    @Inject
-    private DeploymentBackend deploymentBackend;
-
-    private DeploymentEntity entity;
-
-    @BeforeMethod
-    public void setUp() throws Throwable {
-      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
-      commonDataSetup();
-
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      entity = deploymentBackend.findById(task.getEntityId());
-    }
-
-    @AfterMethod
-    public void tearDown() throws Throwable {
-      commonHostDocumentsCleanup();
-    }
-
-    @AfterClass
-    public static void afterClassCleanup() throws Throwable {
-      commonHostAndClientTeardown();
-    }
-
-    @Test(dataProvider = "DestroySuccess")
-    public void testDestroySuccess(DeploymentState state) throws Throwable {
-      deploymentBackend.updateState(entity, state);
-      TaskEntity taskEntity = deploymentBackend.prepareDestroy(entity.getId());
-      assertThat(taskEntity, is(notNullValue()));
-      assertThat(taskEntity.getId(), is(notNullValue()));
-      assertThat(taskEntity.getToBeLockedEntities().size(), is(1));
-      assertThat(taskEntity.getToBeLockedEntities().get(0).getId(), is(taskEntity.getEntityId()));
-      assertThat(taskEntity.getToBeLockedEntities().get(0).getKind(), is(taskEntity.getEntityKind()));
-
-      // verify the task is created correctly
-      assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
-      assertThat(taskEntity.getOperation(), is(Operation.DESTROY_DEPLOYMENT));
-      assertThat(taskEntity.getEntityId(), is(notNullValue()));
-      assertThat(taskEntity.getEntityKind(), is(Deployment.KIND));
-
-      // verify that task steps are created successfully
-      assertThat(taskEntity.getSteps().size(), is(3));
-      assertThat(taskEntity.getSteps().get(0).getOperation(), is(Operation.SCHEDULE_DELETE_DEPLOYMENT));
-      assertThat(taskEntity.getSteps().get(1).getOperation(), is(Operation.PERFORM_DELETE_DEPLOYMENT));
-      assertThat(taskEntity.getSteps().get(2).getOperation(), is(Operation.DEPROVISION_HOSTS));
-    }
-
-    @DataProvider(name = "DestroySuccess")
-    public Object[][] getDestroySuccessParams() {
-      return new Object[][]{
-          {DeploymentState.NOT_DEPLOYED},
-          {DeploymentState.READY},
-          {DeploymentState.ERROR}
-      };
-    }
-
-    @Test(dataProvider = "DestroyFailure",
-        expectedExceptions = InvalidOperationStateException.class,
-        expectedExceptionsMessageRegExp = "Invalid operation PERFORM_DELETE_DEPLOYMENT for deployment.*")
-    public void testDestroyFailure(DeploymentState state) throws Throwable {
-      deploymentBackend.updateState(entity, state);
-      deploymentBackend.prepareDestroy(entity.getId());
-    }
-
-    @DataProvider(name = "DestroyFailure")
-    public Object[][] getDestroyFailuresParams() {
-      return new Object[][]{
-          {DeploymentState.CREATING},
-          {DeploymentState.DELETED}
-      };
-    }
-  }
 
   /**
    * Tests for the depoymentmigration methods.
@@ -1104,8 +717,8 @@ public class DeploymentXenonBackendTest {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      entity = deploymentBackend.findById(task.getEntityId());
+      createDeployment();
+      entity = deploymentBackend.findById(deploymentState.documentSelfLink);
       createAnotherDeployment();
     }
 
@@ -1126,36 +739,36 @@ public class DeploymentXenonBackendTest {
 
       DeploymentService.State deployment2 = new DeploymentService.State();
       deployment2.state = DeploymentState.NOT_DEPLOYED;
-      deployment2.imageDataStoreNames = deploymentCreateSpec.getImageDatastores();
-      deployment2.ntpEndpoint = deploymentCreateSpec.getNtpEndpoint();
-      deployment2.syslogEndpoint = deploymentCreateSpec.getSyslogEndpoint();
-      StatsInfo stats = deploymentCreateSpec.getStats();
-      if (stats != null) {
-        deployment2.statsEnabled = stats.getEnabled();
-        deployment2.statsStoreEndpoint = stats.getStoreEndpoint();
-        deployment2.statsStorePort = stats.getStorePort();
-        deployment2.statsStoreType = stats.getStoreType();
-      }
-      deployment2.imageDataStoreUsedForVMs = deploymentCreateSpec.isUseImageDatastoreForVms();
-      deployment2.oAuthEnabled = deploymentCreateSpec.getAuth().getEnabled();
-      deployment2.oAuthTenantName = deploymentCreateSpec.getAuth().getTenant();
-      deployment2.oAuthPassword = deploymentCreateSpec.getAuth().getPassword();
-      deployment2.oAuthSecurityGroups = new ArrayList<>(deploymentCreateSpec.getAuth().getSecurityGroups());
-      deployment2.networkManagerAddress = deploymentCreateSpec.getNetworkConfiguration().getNetworkManagerAddress();
-      deployment2.networkManagerUsername = deploymentCreateSpec.getNetworkConfiguration().getNetworkManagerUsername();
-      deployment2.networkManagerPassword = deploymentCreateSpec.getNetworkConfiguration().getNetworkManagerPassword();
-      deployment2.networkZoneId = deploymentCreateSpec.getNetworkConfiguration().getNetworkZoneId();
-      deployment2.networkTopRouterId = deploymentCreateSpec.getNetworkConfiguration().getNetworkTopRouterId();
-      deployment2.networkEdgeIpPoolId = deploymentCreateSpec.getNetworkConfiguration().getNetworkEdgeIpPoolId();
-      deployment2.networkHostUplinkPnic = deploymentCreateSpec.getNetworkConfiguration().getNetworkHostUplinkPnic();
-      deployment2.ipRange = deploymentCreateSpec.getNetworkConfiguration().getIpRange();
-      deployment2.floatingIpRange = deploymentCreateSpec.getNetworkConfiguration().getExternalIpRange();
+      deployment2.imageDataStoreNames = deploymentState.imageDataStoreNames;
+      deployment2.ntpEndpoint = deploymentState.ntpEndpoint;
+      deployment2.syslogEndpoint = deploymentState.syslogEndpoint;
+
+      deployment2.statsEnabled = deploymentState.statsEnabled;
+      deployment2.statsStoreEndpoint = deploymentState.statsStoreEndpoint;
+      deployment2.statsStorePort = deploymentState.statsStorePort;
+      deployment2.statsStoreType = deploymentState.statsStoreType;
+
+      deployment2.imageDataStoreUsedForVMs = deploymentState.imageDataStoreUsedForVMs;
+      deployment2.oAuthEnabled = deploymentState.oAuthEnabled;
+      deployment2.oAuthTenantName = deploymentState.oAuthPassword;
+      deployment2.oAuthPassword = deploymentState.oAuthPassword;
+      deployment2.oAuthSecurityGroups = deploymentState.oAuthSecurityGroups;
+      deployment2.networkManagerAddress = deploymentState.networkManagerAddress;
+      deployment2.networkManagerUsername = deploymentState.networkManagerUsername;
+      deployment2.networkManagerPassword = deploymentState.networkManagerPassword;
+      deployment2.networkZoneId = deploymentState.networkZoneId;
+      deployment2.networkTopRouterId = deploymentState.networkTopRouterId;
+      deployment2.networkEdgeIpPoolId = deploymentState.networkEdgeIpPoolId;
+      deployment2.networkHostUplinkPnic = deploymentState.networkHostUplinkPnic;
+      deployment2.ipRange = deploymentState.ipRange;
+      deployment2.floatingIpRange = deploymentState.floatingIpRange;
 
       xenonClient2.post(DeploymentServiceFactory.SELF_LINK, deployment2);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
+      deleteDeployment();
       commonHostDocumentsCleanup();
 
       if (host2 != null) {
@@ -1243,11 +856,12 @@ public class DeploymentXenonBackendTest {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
 
-      deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
+      createDeployment();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
+      deleteDeployment();
       commonHostDocumentsCleanup();
     }
 
@@ -1389,14 +1003,15 @@ public class DeploymentXenonBackendTest {
     public void beforeMethodSetup() throws Throwable {
       commonDataSetup();
 
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      DeploymentEntity deploymentEntity = deploymentBackend.findById(task.getEntityId());
+      createDeployment();
+      DeploymentEntity deploymentEntity = deploymentBackend.findById(deploymentState.documentSelfLink);
       deploymentId = deploymentEntity.getId();
       initialImageDatastores = deploymentEntity.getImageDatastores();
     }
 
     @AfterMethod
     public void afterMethodCleanup() throws Throwable {
+      deleteDeployment();
       commonHostDocumentsCleanup();
     }
 
@@ -1460,13 +1075,14 @@ public class DeploymentXenonBackendTest {
     public void beforeMethodSetup() throws Throwable {
       commonDataSetup();
 
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      DeploymentEntity deploymentEntity = deploymentBackend.findById(task.getEntityId());
+      createDeployment();
+      DeploymentEntity deploymentEntity = deploymentBackend.findById(deploymentState.documentSelfLink);
       deploymentId = deploymentEntity.getId();
     }
 
     @AfterMethod
     public void afterMethodCleanup() throws Throwable {
+      deleteDeployment();
       commonHostDocumentsCleanup();
     }
 

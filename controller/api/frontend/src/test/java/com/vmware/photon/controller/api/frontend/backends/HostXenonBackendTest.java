@@ -29,7 +29,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidOper
 import com.vmware.photon.controller.api.model.AgentState;
 import com.vmware.photon.controller.api.model.AvailabilityZoneCreateSpec;
 import com.vmware.photon.controller.api.model.AvailabilityZoneState;
-import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.HostCreateSpec;
 import com.vmware.photon.controller.api.model.HostDatastore;
@@ -38,13 +38,14 @@ import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.UsageTag;
-import com.vmware.photon.controller.api.model.builders.AuthConfigurationSpecBuilder;
-import com.vmware.photon.controller.api.model.builders.StatsInfoBuilder;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SchedulingConstantGenerator;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -125,24 +126,31 @@ public class HostXenonBackendTest {
     }
   }
 
-  private static DeploymentCreateSpec getDeploymentCreateSpec() {
-    DeploymentCreateSpec deploymentCreateSpec = new DeploymentCreateSpec();
-    deploymentCreateSpec.setImageDatastores(Collections.singleton("imageDatastore"));
-    deploymentCreateSpec.setNtpEndpoint("ntp");
-    deploymentCreateSpec.setSyslogEndpoint("syslog");
-    deploymentCreateSpec.setStats(new StatsInfoBuilder()
-        .enabled(true)
-        .storeEndpoint("10.146.64.111")
-        .storePort(2004).enabled(true)
-        .build());
-    deploymentCreateSpec.setUseImageDatastoreForVms(true);
-    deploymentCreateSpec.setAuth(new AuthConfigurationSpecBuilder()
-        .enabled(true)
-        .tenant("t")
-        .password("p")
-        .securityGroups(Arrays.asList(new String[]{"securityGroup1", "securityGroup2"}))
-        .build());
-    return deploymentCreateSpec;
+  private static void deleteDeployment(DeploymentService.State deploymentState) throws Throwable {
+    deploymentState.documentExpirationTimeMicros = 1;
+    xenonClient.delete(DeploymentServiceFactory.SELF_LINK + '/' + deploymentState.documentSelfLink,
+            deploymentState);
+  }
+
+  private static DeploymentService.State getDeploymentState() {
+    DeploymentService.State deploymentState = new DeploymentService.State();
+    deploymentState.imageDataStoreNames = Collections.singleton("imageDatastore");
+    deploymentState.ntpEndpoint = "ntp";
+    deploymentState.imageDataStoreUsedForVMs = true;
+    deploymentState.syslogEndpoint = "syslog";
+
+    deploymentState.statsEnabled = true;
+    deploymentState.statsStoreEndpoint = "10.146.64.111";
+    deploymentState.statsStorePort = 2004;
+
+    deploymentState.oAuthEnabled = true;
+    deploymentState.oAuthTenantName = "t";
+    deploymentState.oAuthPassword = "p";
+    deploymentState.oAuthSecurityGroups = Arrays.asList(new String[]{"securityGroup1", "securityGroup2"});
+    deploymentState.documentSelfLink = DeployerDefaults.DEFAULT_DEPLOYMENT_ID;
+    deploymentState.state = DeploymentState.NOT_DEPLOYED;
+
+    return deploymentState;
   }
 
   private static AvailabilityZoneCreateSpec getAvailabilityZoneCreateSpec() {
@@ -174,6 +182,7 @@ public class HostXenonBackendTest {
 
     private HostCreateSpec hostCreateSpec;
     private String deploymentId;
+    private DeploymentService.State deploymentState;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -189,13 +198,14 @@ public class HostXenonBackendTest {
       usageTags.add(UsageTag.CLOUD);
       hostCreateSpec.setUsageTags(usageTags);
 
-      DeploymentCreateSpec deploymentCreateSpec = getDeploymentCreateSpec();
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      deploymentId = task.getEntityId();
+      deploymentState = getDeploymentState();
+      apiFeXenonRestClient.post(DeploymentServiceFactory.SELF_LINK, deploymentState);
+      deploymentId = deploymentState.documentSelfLink;
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
+      deleteDeployment(deploymentState);
       commonHostDocumentsCleanup();
     }
 
@@ -310,14 +320,15 @@ public class HostXenonBackendTest {
 
     private String hostId;
     private String deploymentId;
+    private DeploymentService.State deploymentState;
 
     @BeforeMethod
     public void setUp() throws Throwable {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
-      DeploymentCreateSpec deploymentCreateSpec = getDeploymentCreateSpec();
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      deploymentId = task.getEntityId();
+      deploymentState = getDeploymentState();
+      apiFeXenonRestClient.post(DeploymentServiceFactory.SELF_LINK, deploymentState);
+      deploymentId = deploymentState.documentSelfLink;
 
       // create 1st host
       hostCreateSpec = new HostCreateSpec();
@@ -354,6 +365,7 @@ public class HostXenonBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
+      deleteDeployment(deploymentState);
       commonHostDocumentsCleanup();
     }
 
@@ -488,6 +500,7 @@ public class HostXenonBackendTest {
 
     private String hostId;
     private String deploymentId;
+    private DeploymentService.State deploymentState;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -504,9 +517,9 @@ public class HostXenonBackendTest {
       usageTags.add(UsageTag.CLOUD);
       hostCreateSpec.setUsageTags(usageTags);
 
-      DeploymentCreateSpec deploymentCreateSpec = getDeploymentCreateSpec();
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      deploymentId = task.getEntityId();
+      deploymentState = getDeploymentState();
+      apiFeXenonRestClient.post(DeploymentServiceFactory.SELF_LINK, deploymentState);
+      deploymentId = deploymentState.documentSelfLink;
 
       TaskEntity taskEntity = hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
 
@@ -515,6 +528,7 @@ public class HostXenonBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
+      deleteDeployment(deploymentState);
       commonHostDocumentsCleanup();
     }
 
@@ -610,6 +624,7 @@ public class HostXenonBackendTest {
 
     private String hostId;
     private String deploymentId;
+    private DeploymentService.State deploymentState;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -626,9 +641,9 @@ public class HostXenonBackendTest {
       usageTags.add(UsageTag.CLOUD);
       hostCreateSpec.setUsageTags(usageTags);
 
-      DeploymentCreateSpec deploymentCreateSpec = getDeploymentCreateSpec();
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      deploymentId = task.getEntityId();
+      deploymentState = getDeploymentState();
+      apiFeXenonRestClient.post(DeploymentServiceFactory.SELF_LINK, deploymentState);
+      deploymentId = deploymentState.documentSelfLink;
 
       TaskEntity taskEntity = hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
 
@@ -637,6 +652,7 @@ public class HostXenonBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
+      deleteDeployment(deploymentState);
       commonHostDocumentsCleanup();
     }
 
@@ -732,6 +748,7 @@ public class HostXenonBackendTest {
     private String hostId;
     private String deploymentId;
     private String availabilityZoneId;
+    private DeploymentService.State deploymentState;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -748,9 +765,9 @@ public class HostXenonBackendTest {
       usageTags.add(UsageTag.CLOUD);
       hostCreateSpec.setUsageTags(usageTags);
 
-      DeploymentCreateSpec deploymentCreateSpec = getDeploymentCreateSpec();
-      TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-      deploymentId = task.getEntityId();
+      deploymentState = getDeploymentState();
+      apiFeXenonRestClient.post(DeploymentServiceFactory.SELF_LINK, deploymentState);
+      deploymentId = deploymentState.documentSelfLink;
 
       TaskEntity taskEntity = hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
       hostId = taskEntity.getEntityId();
@@ -766,6 +783,7 @@ public class HostXenonBackendTest {
 
     @AfterMethod
     public void tearDown() throws Throwable {
+      deleteDeployment(deploymentState);
       commonHostDocumentsCleanup();
     }
 

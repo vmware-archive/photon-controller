@@ -29,15 +29,12 @@ import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpiredException;
-import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
 import com.vmware.photon.controller.api.model.Auth;
 import com.vmware.photon.controller.api.model.AuthInfo;
 import com.vmware.photon.controller.api.model.ClusterConfiguration;
 import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.Deployment;
-import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
-import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentSize;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.Host;
@@ -61,7 +58,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 /**
- * Frontend client for Deployment used by {@link DeploymentsResource}.
+ * Frontend client for Deployment.
  */
 @Singleton
 public class DeploymentFeClient {
@@ -105,24 +102,6 @@ public class DeploymentFeClient {
     this.authConfig = authConfig;
     this.commandFactory = commandFactory;
     this.executor = executor;
-  }
-
-  public Task create(DeploymentCreateSpec deploymentCreateSpec) throws
-      InternalException, ExternalException {
-    TaskEntity taskEntity = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
-    Task task = taskBackend.getApiRepresentation(taskEntity);
-
-    return task;
-  }
-
-  public Task perform(String deploymentId, DeploymentDeployOperation config)
-      throws InternalException, ExternalException {
-    TaskEntity taskEntity = deploymentBackend.prepareDeploy(deploymentId, config);
-    Task task = taskBackend.getApiRepresentation(taskEntity);
-
-    TaskCommand command = commandFactory.create(taskEntity);
-    executor.submit(command);
-    return task;
   }
 
   public Task pauseSystem(String deploymentId) throws ExternalException {
@@ -201,12 +180,6 @@ public class DeploymentFeClient {
     return deploymentBackend.getAll();
   }
 
-  public Task delete(String id) throws ExternalException {
-    TaskEntity taskEntity = deploymentBackend.prepareDeleteDeployment(id);
-    Task task = taskBackend.getApiRepresentation(taskEntity);
-    return task;
-  }
-
   public Task initializeDeploymentMigration(InitializeMigrationOperation initializeMigrationOperation,
                                             String destinationDeploymentId) throws ExternalException {
     TaskEntity taskEntity = deploymentBackend.prepareInitializeMigrateDeployment(initializeMigrationOperation,
@@ -222,15 +195,6 @@ public class DeploymentFeClient {
                                           String destinationDeploymentId) throws ExternalException {
     TaskEntity taskEntity = deploymentBackend.prepareFinalizeMigrateDeployment(finalizeMigrationOperation,
         destinationDeploymentId);
-    Task task = taskBackend.getApiRepresentation(taskEntity);
-
-    TaskCommand command = commandFactory.create(taskEntity);
-    executor.submit(command);
-    return task;
-  }
-
-  public Task destroy(String id) throws ExternalException {
-    TaskEntity taskEntity = deploymentBackend.prepareDestroy(id);
     Task task = taskBackend.getApiRepresentation(taskEntity);
 
     TaskCommand command = commandFactory.create(taskEntity);
