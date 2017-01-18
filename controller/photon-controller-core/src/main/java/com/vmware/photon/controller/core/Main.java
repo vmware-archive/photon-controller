@@ -68,7 +68,6 @@ import com.google.common.util.concurrent.MoreExecutors;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.commons.io.FileUtils;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
@@ -86,7 +85,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.nio.file.Paths;
@@ -105,6 +103,9 @@ public class Main {
 
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
   public static final String CLUSTER_SCRIPTS_DIRECTORY = "clusters";
+  public static final String VMWARE_KEYSTORE_INSTANCE = "VKS";
+  public static final String KEY_STORE = "MACHINE_SSL_CERT";
+  public static final String TRUST_STORE = "TRUSTED_ROOTS";
 
   public static void main(String[] args) throws Throwable {
     LoggingFactory.bootstrap();
@@ -128,14 +129,13 @@ public class Main {
     SSLContext sslContext;
     if (deployerConfig.getDeployerContext().isAuthEnabled()) {
       sslContext = SSLContext.getInstance(KeyStoreUtils.THRIFT_PROTOCOL);
-      TrustManagerFactory tmf = null;
+      TrustManagerFactory trustManagerFactory = null;
 
-      tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-      KeyStore keyStore = KeyStore.getInstance("JKS");
-      InputStream in = FileUtils.openInputStream(new File(deployerConfig.getDeployerContext().getKeyStorePath()));
-      keyStore.load(in, deployerConfig.getDeployerContext().getKeyStorePassword().toCharArray());
-      tmf.init(keyStore);
-      sslContext.init(null, tmf.getTrustManagers(), null);
+      trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      KeyStore trustStore = KeyStore.getInstance(VMWARE_KEYSTORE_INSTANCE);
+      trustStore.load(new VecsLoadStoreParameter(TRUST_STORE));
+      trustManagerFactory.init(trustStore);
+      sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
     } else {
       KeyStoreUtils.generateKeys("/thrift/");
       sslContext = KeyStoreUtils.acceptAllCerts(KeyStoreUtils.THRIFT_PROTOCOL);
@@ -321,14 +321,14 @@ public class Main {
 
       // Use VKS and setup the appropriate key store and trust store for Xenon client and listener
       SSLContext clientContext = SSLContext.getInstance(ServiceClient.TLS_PROTOCOL_NAME);
-      KeyStore trustStore = KeyStore.getInstance("VKS");
-      trustStore.load(new VecsLoadStoreParameter("TRUSTED_ROOTS"));
+      KeyStore trustStore = KeyStore.getInstance(VMWARE_KEYSTORE_INSTANCE);
+      trustStore.load(new VecsLoadStoreParameter(TRUST_STORE));
       TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory
           .getDefaultAlgorithm());
       trustManagerFactory.init(trustStore);
       KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-      KeyStore keyStore = KeyStore.getInstance("VKS");
-      keyStore.load(new VecsLoadStoreParameter("MACHINE_SSL_CERT"));
+      KeyStore keyStore = KeyStore.getInstance(VMWARE_KEYSTORE_INSTANCE);
+      keyStore.load(new VecsLoadStoreParameter(KEY_STORE));
       keyManagerFactory.init(keyStore, null);
       clientContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
       serviceClient.setSSLContext(clientContext);
