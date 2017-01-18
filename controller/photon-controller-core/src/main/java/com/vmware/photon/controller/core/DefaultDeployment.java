@@ -13,13 +13,11 @@
 
 package com.vmware.photon.controller.core;
 
-import com.google.common.net.InetAddresses;
 import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.StatsStoreType;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
-import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
@@ -31,17 +29,11 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFutureTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.concurrent.Callable;
 
 /**
  * PhotonControllerCore entry point.
@@ -128,7 +120,6 @@ public class DefaultDeployment {
                                       final String lbIpAddress) throws Throwable {
 
 
-
     DeployerServiceGroup deployerServiceGroup =
         (DeployerServiceGroup) ((PhotonControllerXenonHost) host).getDeployer();
     AuthHelperFactory authHelperFactory = deployerServiceGroup.getAuthHelperFactory();
@@ -140,6 +131,6 @@ public class DefaultDeployment {
         authConfig.getAuthServerPort(),
         authConfig.getAuthUserName(),
         authConfig.getAuthDomain());
-    createDefaultDeployment(deployerConfig,authConfig,host);
+    createDefaultDeployment(deployerConfig, authConfig, host);
   }
 }
