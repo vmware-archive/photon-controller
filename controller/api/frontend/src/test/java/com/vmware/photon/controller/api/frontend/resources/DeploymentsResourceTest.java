@@ -17,13 +17,9 @@ import com.vmware.photon.controller.api.frontend.clients.DeploymentFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.resources.deployment.DeploymentsResource;
 import com.vmware.photon.controller.api.frontend.resources.routes.DeploymentResourceRoutes;
-import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRoutes;
-import com.vmware.photon.controller.api.model.ApiError;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
-import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.ResourceList;
-import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.builders.AuthConfigurationSpecBuilder;
 import com.vmware.photon.controller.api.model.builders.AuthInfoBuilder;
 import com.vmware.photon.controller.api.model.builders.NetworkConfigurationCreateSpecBuilder;
@@ -32,20 +28,14 @@ import com.vmware.photon.controller.api.model.builders.StatsInfoBuilder;
 import org.mockito.Mock;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
 
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -61,9 +51,6 @@ public class DeploymentsResourceTest extends ResourceTest {
 
   private String taskId = "task1";
 
-  private String taskRoutePath =
-      UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build(taskId).toString();
-
   @Override
   protected void setUpResources() throws Exception {
     spec = new DeploymentCreateSpec();
@@ -75,207 +62,6 @@ public class DeploymentsResourceTest extends ResourceTest {
     spec.setStats(new StatsInfoBuilder().build());
 
     addResource(new DeploymentsResource(deploymentFeClient));
-  }
-
-  @Test
-  public void testSuccessfulDeploymentWithAllDisabled() throws Exception {
-    Task task = new Task();
-    task.setId(taskId);
-    when(deploymentFeClient.create(spec)).thenReturn(task);
-
-    Response response = createDeployment(spec);
-
-    assertThat(response.getStatus(), is(201));
-    Task responseTask = response.readEntity(Task.class);
-    assertThat(responseTask, is(task));
-    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
-    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
-  }
-
-  @Test
-  public void testInvalidDeploymentWithAllDisabled() throws Exception {
-    spec.setAuth(new AuthConfigurationSpecBuilder().enabled(false).securityGroups(new ArrayList<String>()).build());
-
-    Task task = new Task();
-    task.setId(taskId);
-    when(deploymentFeClient.create(spec)).thenReturn(task);
-
-    Response response = createDeployment(spec);
-
-    assertThat(response.getStatus(), is(400));
-
-    ApiError apiError = response.readEntity(ApiError.class);
-    assertThat(apiError.getCode(), is("InvalidAuthConfig"));
-    assertThat(apiError.getMessage(), containsString("securityGroups must be null"));
-  }
-
-  @Test
-  public void testSuccessfulWithAuthEnabled() throws Exception {
-    spec.setAuth(new AuthConfigurationSpecBuilder()
-        .enabled(true)
-        .tenant("t")
-        .password("p")
-        .securityGroups(Arrays.asList(new String[]{"t\\adminGroup1"}))
-        .lightwaveEndpoint("192.0.2.20")
-        .lightwavePort(443)
-        .build());
-
-    Task task = new Task();
-    task.setId(taskId);
-    when(deploymentFeClient.create(spec)).thenReturn(task);
-
-    Response response = createDeployment(spec);
-
-    assertThat(response.getStatus(), is(201));
-    Task responseTask = response.readEntity(Task.class);
-    assertThat(responseTask, is(task));
-    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
-    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
-  }
-
-  @Test
-  public void testInvalidWithAuthEnabled() throws Exception {
-    spec.setAuth(new AuthConfigurationSpecBuilder()
-        .enabled(true)
-        .tenant("t")
-        .password("p")
-        .securityGroups(new ArrayList<String>())
-        .lightwaveEndpoint("192.0.2.20")
-        .lightwavePort(443)
-        .build());
-
-    Task task = new Task();
-    task.setId(taskId);
-    when(deploymentFeClient.create(spec)).thenReturn(task);
-
-    Response response = createDeployment(spec);
-
-    assertThat(response.getStatus(), is(400));
-
-    ApiError apiError = response.readEntity(ApiError.class);
-    assertThat(apiError.getCode(), is("InvalidAuthConfig"));
-    assertThat(apiError.getMessage(),
-        containsString("securityGroups size must be between 1 and 2147483647"));
-  }
-
-  @Test
-  public void testInvalidSecurityGroupFormat() throws Exception {
-    spec.setAuth(new AuthConfigurationSpecBuilder()
-        .enabled(true)
-        .tenant("t")
-        .password("p")
-        .securityGroups(Arrays.asList(new String[]{"adminGroup1"}))
-        .lightwaveEndpoint("192.0.2.20")
-        .lightwavePort(443)
-        .build());
-
-    Task task = new Task();
-    task.setId(taskId);
-    when(deploymentFeClient.create(spec)).thenReturn(task);
-
-    Response response = createDeployment(spec);
-
-    assertThat(response.getStatus(), is(400));
-
-    ApiError apiError = response.readEntity(ApiError.class);
-    assertThat(apiError.getCode(), is("InvalidSecurityGroupFormat"));
-    assertThat(apiError.getMessage(),
-        containsString("The security group format should match domain\\group"));
-  }
-
-  @Test
-  public void testSuccessfulWithStatsEnabled() throws Exception {
-    spec.setStats(new StatsInfoBuilder()
-        .enabled(true)
-        .storeEndpoint("10.1.1.1")
-        .storePort(8080)
-        .build());
-
-    Task task = new Task();
-    task.setId(taskId);
-    when(deploymentFeClient.create(spec)).thenReturn(task);
-
-    Response response = createDeployment(spec);
-
-    assertThat(response.getStatus(), is(201));
-    Task responseTask = response.readEntity(Task.class);
-    assertThat(responseTask, is(task));
-    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
-    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
-  }
-
-  @Test
-  public void testInvalidWithStatsEnabled() throws Exception {
-    spec.setStats(new StatsInfoBuilder().enabled(true).storeEndpoint(null).build());
-
-    Task task = new Task();
-    task.setId(taskId);
-    when(deploymentFeClient.create(spec)).thenReturn(task);
-
-    Response response = createDeployment(spec);
-
-    assertThat(response.getStatus(), is(400));
-
-    ApiError apiError = response.readEntity(ApiError.class);
-    assertThat(apiError.getCode(), is("InvalidStatsConfig"));
-    assertThat(apiError.getMessage(), containsString("storeEndpoint may not be null"));
-    assertThat(apiError.getMessage(), containsString("storePort may not be null"));
-  }
-
-  @Test
-  public void testSuccessfulWithNetworkConfigEnabled() throws Exception {
-    IpRange externalIpRange = new IpRange();
-    externalIpRange.setStart("192.168.0.1");
-    externalIpRange.setEnd("192.168.0.254");
-
-    spec.setNetworkConfiguration(new NetworkConfigurationCreateSpecBuilder()
-        .sdnEnabled(true)
-        .networkManagerAddress("10.1.1.1")
-        .networkManagerUsername("u")
-        .networkManagerPassword("p")
-        .networkTopRouterId("rid")
-        .networkEdgeIpPoolId("networkEdgeIpPoolId")
-        .networkHostUplinkPnic("networkHostUplinkPnic")
-        .networkZoneId("zid")
-        .ipRange("192.168.1.1/24")
-        .externalIpRange(externalIpRange)
-        .dhcpServers(Arrays.asList("192.10.0.1", "192.20.0.1"))
-        .build());
-
-    Task task = new Task();
-    task.setId(taskId);
-    when(deploymentFeClient.create(spec)).thenReturn(task);
-
-    Response response = createDeployment(spec);
-
-    assertThat(response.getStatus(), is(201));
-    Task responseTask = response.readEntity(Task.class);
-    assertThat(responseTask, is(task));
-    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
-    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
-  }
-
-  @Test
-  public void testInvalidWithNetworkConfigEnabled() throws Exception {
-    spec.setNetworkConfiguration(new NetworkConfigurationCreateSpecBuilder()
-        .sdnEnabled(true)
-        .build());
-
-    Task task = new Task();
-    task.setId(taskId);
-    when(deploymentFeClient.create(spec)).thenReturn(task);
-
-    Response response = createDeployment(spec);
-
-    assertThat(response.getStatus(), is(400));
-
-    ApiError apiError = response.readEntity(ApiError.class);
-    assertThat(apiError.getCode(), is("InvalidNetworkConfig"));
-    assertThat(apiError.getMessage(), containsString("networkManagerUsername may not be null"));
-    assertThat(apiError.getMessage(), containsString("networkTopRouterId may not be null"));
-    assertThat(apiError.getMessage(), containsString("networkManagerAddress is invalid IP or Domain address"));
-    assertThat(apiError.getMessage(), containsString("networkManagerPassword may not be null"));
-    assertThat(apiError.getMessage(), containsString("networkZoneId may not be null"));
   }
 
   @Test
@@ -330,10 +116,4 @@ public class DeploymentsResourceTest extends ResourceTest {
     assertThat(retrievedDeployment.getSelfLink().contains(DeploymentResourceRoutes.API), is(true));
   }
 
-  private Response createDeployment(DeploymentCreateSpec spec) {
-    return client()
-        .target(DeploymentResourceRoutes.API)
-        .request()
-        .post(Entity.entity(spec, MediaType.APPLICATION_JSON_TYPE));
-  }
 }

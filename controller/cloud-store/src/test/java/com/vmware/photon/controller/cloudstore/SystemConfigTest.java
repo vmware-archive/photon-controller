@@ -100,9 +100,7 @@ public class SystemConfigTest {
   @DataProvider(name = "PauseBackground")
   public Object[][] getPausedBackground() {
     return new Object[][] {
-        {DeploymentState.CREATING},
         {DeploymentState.NOT_DEPLOYED},
-        {DeploymentState.DELETED},
         {DeploymentState.ERROR},
         {DeploymentState.BACKGROUND_PAUSED}
     };
