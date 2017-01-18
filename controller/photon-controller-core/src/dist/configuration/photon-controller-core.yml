@@ -84,11 +84,9 @@ apife:
     bindHost: "0.0.0.0"
 {{/ENABLE_AUTH}}
 {{#ENABLE_AUTH}}
-    type: https
+    type: vks
     port: 9000
     bindHost: "0.0.0.0"
-    keyStorePath: /etc/vmware/photon/keystore.jks
-    keyStorePassword: "changeme"
     validateCerts: false
     supportedProtocols: [TLSv1.2]
     excludedProtocols: [TLSv1, SSLv2Hello, SSLv3, TLSv1.1]
