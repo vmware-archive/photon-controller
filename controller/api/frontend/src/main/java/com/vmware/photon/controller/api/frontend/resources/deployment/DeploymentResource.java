@@ -42,7 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -84,45 +83,6 @@ public class DeploymentResource {
         DeploymentResourceRoutes.DEPLOYMENT_PATH);
   }
 
-  @DELETE
-  @ApiOperation(value = "Delete Deployment", response = Task.class)
-  @ApiResponses(value = {
-      @ApiResponse(code = 201, message = "Deployment is being deleted, progress communicated via the task")
-  })
-  public Response delete(@Context Request request,
-                         @PathParam("id") String id)
-      throws ExternalException {
-    Response response = generateCustomResponse(
-        Response.Status.CREATED,
-        client.delete(id),
-        (ContainerRequest) request,
-        TaskResourceRoutes.TASK_PATH);
-    return response;
-  }
-
-  @POST
-  @Path(DeploymentResourceRoutes.PERFORM_DEPLOYMENT_ACTION)
-  @ApiOperation(value = "Perform deployment for give given deployment entity", response = Task.class)
-  @ApiResponses(value = {
-      @ApiResponse(code = 201, message = "Task created, system pause process can be fetched via the task")
-  })
-  public Response performDeployment(@Context Request request,
-                                    @PathParam("id") String id,
-                                    @Validated DeploymentDeployOperation config)
-      throws InternalException, ExternalException {
-    if (config == null) {
-        config = new DeploymentDeployOperation();
-    } else {
-        validateDeploymentDeployOperation(config);
-    }
-    return generateCustomResponse(
-        Response.Status.CREATED,
-        client.perform(id, config),
-        (ContainerRequest) request,
-        TaskResourceRoutes.TASK_PATH);
-  }
-
-
   @POST
   @Path(DeploymentResourceRoutes.INITIALIZE_MIGRATION_ACTION)
   @ApiOperation(value = "Migrate another deployment to this deployment", response = Task.class)
@@ -153,21 +113,6 @@ public class DeploymentResource {
     return generateCustomResponse(
         Response.Status.CREATED,
         client.finalizeDeploymentMigration(finalizeMigrationOperation, destinationDeploymentId),
-        (ContainerRequest) request,
-        TaskResourceRoutes.TASK_PATH);
-  }
-
-  @POST
-  @Path(DeploymentResourceRoutes.DEPLOYMENT_DESTROY_ACTION)
-  @ApiOperation(value = "Destroy deployment for given deployment entity", response = Task.class)
-  @ApiResponses(value = {
-      @ApiResponse(code = 201, message = "Deployment is being destroyed, progress communicated via the task")
-  })
-  public Response destroy(@Context Request request, @PathParam("id") String id)
-      throws InternalException, ExternalException {
-    return generateCustomResponse(
-        Response.Status.CREATED,
-        client.destroy(id),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

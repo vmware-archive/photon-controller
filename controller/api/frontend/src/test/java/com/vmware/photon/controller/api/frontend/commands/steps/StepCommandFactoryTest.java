@@ -139,22 +139,10 @@ public class StepCommandFactoryTest {
         {Operation.SET_AVAILABILITYZONE, HostSetAvailabilityZoneStepCmd.class},
 
         // Deployment
-        {Operation.SCHEDULE_DEPLOYMENT, DeploymentCreateStepCmd.class},
         {Operation.SCHEDULE_INITIALIZE_MIGRATE_DEPLOYMENT, DeploymentInitializeMigrationStepCmd.class},
         {Operation.PERFORM_INITIALIZE_MIGRATE_DEPLOYMENT, DeploymentInitializeMigrationStatusStepCmd.class},
         {Operation.SCHEDULE_FINALIZE_MIGRATE_DEPLOYMENT, DeploymentFinalizeMigrationStepCmd.class},
         {Operation.PERFORM_FINALIZE_MIGRATE_DEPLOYMENT, DeploymentFinalizeMigrationStatusStepCmd.class},
-        {Operation.PROVISION_CONTROL_PLANE_HOSTS, DeploymentStatusStepCmd.class},
-        {Operation.PROVISION_CONTROL_PLANE_VMS, DeploymentStatusStepCmd.class},
-        {Operation.PROVISION_CLOUD_HOSTS, DeploymentStatusStepCmd.class},
-        {Operation.PROVISION_CLUSTER_MANAGER, DeploymentStatusStepCmd.class},
-        {Operation.CREATE_SUBNET_ALLOCATOR, DeploymentStatusStepCmd.class},
-        {Operation.CREATE_DHCP_SUBNET, DeploymentStatusStepCmd.class},
-        {Operation.CONFIGURE_DHCP_RELAY_PROFILE, DeploymentStatusStepCmd.class},
-        {Operation.CONFIGURE_DHCP_RELAY_SERVICE, DeploymentStatusStepCmd.class},
-        {Operation.MIGRATE_DEPLOYMENT_DATA, DeploymentStatusStepCmd.class},
-        {Operation.SCHEDULE_DELETE_DEPLOYMENT, DeploymentDeleteStepCmd.class},
-        {Operation.PERFORM_DELETE_DEPLOYMENT, DeploymentDeleteStatusStepCmd.class},
         {Operation.PUSH_DEPLOYMENT_SECURITY_GROUPS, DeploymentPushSecurityGroupsStepCmd.class},
 
         // Cluster

@@ -15,7 +15,6 @@ package com.vmware.photon.controller.api.frontend.backends;
 
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient;
-import com.vmware.photon.controller.api.frontend.commands.steps.DeploymentCreateStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.DeploymentInitializeMigrationStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.SystemPauseBackgroundTasksStepCmd;
 import com.vmware.photon.controller.api.frontend.commands.steps.SystemPauseStepCmd;
@@ -28,29 +27,22 @@ import com.vmware.photon.controller.api.frontend.entities.TenantEntity;
 import com.vmware.photon.controller.api.frontend.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ClusterTypeAlreadyConfiguredException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ClusterTypeNotConfiguredException;
-import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentAlreadyExistException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidAuthConfigException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidImageDatastoreSetException;
-import com.vmware.photon.controller.api.frontend.exceptions.external.NoManagementHostException;
 import com.vmware.photon.controller.api.model.AuthInfo;
 import com.vmware.photon.controller.api.model.ClusterConfiguration;
 import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.Deployment;
-import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
-import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
-import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.model.MigrationStatus;
 import com.vmware.photon.controller.api.model.NetworkConfiguration;
 import com.vmware.photon.controller.api.model.Operation;
-import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.StatsInfo;
-import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
@@ -58,8 +50,6 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFac
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -77,8 +67,6 @@ import java.util.Set;
  */
 @Singleton
 public class DeploymentXenonBackend implements DeploymentBackend {
-
-  protected static final String AUTH_ADMIN_USER_NAME = "administrator";
 
   private static final Logger logger = LoggerFactory.getLogger(DeploymentXenonBackend.class);
 
@@ -112,32 +100,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
   }
 
   @Override
-  public TaskEntity prepareCreateDeployment(DeploymentCreateSpec spec) throws ExternalException {
-    if (!getAll().isEmpty()) {
-      throw new DeploymentAlreadyExistException();
-    }
-
-    DeploymentEntity deploymentEntity = createEntity(spec);
-    logger.info("created deployment {}", deploymentEntity);
-
-    TaskEntity taskEntity = taskBackend.createCompletedTask(deploymentEntity, Operation.CREATE_DEPLOYMENT);
-
-    return taskEntity;
-  }
-
-  @Override
-  public TaskEntity prepareDeleteDeployment(String id) throws ExternalException {
-    DeploymentEntity deploymentEntity = findById(id);
-    EntityStateValidator.validateOperationState(deploymentEntity, deploymentEntity.getState(),
-        Operation.DELETE_DEPLOYMENT, DeploymentState.OPERATION_PREREQ_STATE);
-
-    logger.info("Delete deployment {}", deploymentEntity);
-    tombstone(deploymentEntity);
-    TaskEntity taskEntity = this.taskBackend.createCompletedTask(deploymentEntity, Operation.DELETE_DEPLOYMENT);
-    return taskEntity;
-  }
-
-  @Override
   public TaskEntity prepareInitializeMigrateDeployment(InitializeMigrationOperation initializeMigrationOperation,
                                                        String destinationDeploymentId) throws ExternalException {
     DeploymentEntity deploymentEntity = findById(destinationDeploymentId);
@@ -162,27 +124,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     TaskEntity taskEntity = createFinalizeMigrateDeploymentTask(
         finalizeMigrationOperation.getSourceNodeGroupReference(), deploymentEntity);
     taskEntity.getToBeLockedEntities().add(deploymentEntity);
-    return taskEntity;
-  }
-
-  @Override
-  public TaskEntity prepareDeploy(String deploymentId, DeploymentDeployOperation config) throws ExternalException {
-    DeploymentEntity deploymentEntity = findById(deploymentId);
-    EntityStateValidator.validateOperationState(deploymentEntity, deploymentEntity.getState(),
-        Operation.PERFORM_DEPLOYMENT, DeploymentState.OPERATION_PREREQ_STATE);
-
-    TaskEntity taskEntity = createDeployTask(deploymentEntity, config);
-    return taskEntity;
-  }
-
-  @Override
-  public TaskEntity prepareDestroy(String deploymentId) throws ExternalException {
-    DeploymentEntity deploymentEntity = findById(deploymentId);
-    EntityStateValidator.validateOperationState(deploymentEntity, deploymentEntity.getState(),
-        Operation.PERFORM_DELETE_DEPLOYMENT, DeploymentState.OPERATION_PREREQ_STATE);
-
-    logger.info("Destroy deployment {}", deploymentEntity);
-    TaskEntity taskEntity = destroyTask(deploymentEntity);
     return taskEntity;
   }
 
@@ -481,66 +422,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     return deploymentList;
   }
 
-  private DeploymentEntity createEntity(DeploymentCreateSpec spec) {
-
-    DeploymentService.State deployment = new DeploymentService.State();
-
-    deployment.state = DeploymentState.NOT_DEPLOYED;
-    deployment.imageDataStoreNames = spec.getImageDatastores();
-    deployment.imageDataStoreUsedForVMs = spec.isUseImageDatastoreForVms();
-    deployment.syslogEndpoint = spec.getSyslogEndpoint();
-
-    StatsInfo stats = spec.getStats();
-    deployment.statsEnabled = false;
-    if (stats != null) {
-      deployment.statsEnabled = stats.getEnabled();
-      deployment.statsStoreEndpoint = stats.getStoreEndpoint();
-      deployment.statsStorePort = stats.getStorePort();
-      deployment.statsStoreType = stats.getStoreType();
-    }
-
-    deployment.ntpEndpoint = spec.getNtpEndpoint();
-    if (spec.getAuth() != null) {
-      deployment.oAuthEnabled = spec.getAuth().getEnabled();
-
-      if (spec.getAuth().getEnabled()) {
-        deployment.oAuthTenantName = spec.getAuth().getTenant();
-        deployment.oAuthUserName = AUTH_ADMIN_USER_NAME;
-        deployment.oAuthPassword = spec.getAuth().getPassword();
-
-        if (spec.getAuth().getSecurityGroups() != null
-            && spec.getAuth().getSecurityGroups().size() > 0) {
-          deployment.oAuthSecurityGroups = new ArrayList<>(spec.getAuth().getSecurityGroups());
-        }
-        if (spec.getAuth().getEndpoint() != null) {
-          deployment.oAuthServerAddress = spec.getAuth().getEndpoint();
-          deployment.oAuthServerPort = spec.getAuth().getPort();
-        }
-      }
-    }
-
-    if (spec.getNetworkConfiguration() != null
-        && (deployment.sdnEnabled = spec.getNetworkConfiguration().getSdnEnabled())) {
-      deployment.networkManagerAddress = spec.getNetworkConfiguration().getNetworkManagerAddress();
-      deployment.networkManagerUsername = spec.getNetworkConfiguration().getNetworkManagerUsername();
-      deployment.networkManagerPassword = spec.getNetworkConfiguration().getNetworkManagerPassword();
-      deployment.networkZoneId = spec.getNetworkConfiguration().getNetworkZoneId();
-      deployment.networkTopRouterId = spec.getNetworkConfiguration().getNetworkTopRouterId();
-      deployment.networkEdgeIpPoolId = spec.getNetworkConfiguration().getNetworkEdgeIpPoolId();
-      deployment.networkHostUplinkPnic = spec.getNetworkConfiguration().getNetworkHostUplinkPnic();
-      deployment.ipRange = spec.getNetworkConfiguration().getIpRange();
-      deployment.dhcpServers = spec.getNetworkConfiguration().getDhcpServers();
-      deployment.floatingIpRange = spec.getNetworkConfiguration().getExternalIpRange();
-    }
-    deployment.loadBalancerEnabled = spec.getLoadBalancerEnabled();
-
-    com.vmware.xenon.common.Operation operation =
-        xenonClient.post(DeploymentServiceFactory.SELF_LINK, deployment);
-
-    deployment = operation.getBody(DeploymentService.State.class);
-
-    return toEntity(deployment);
-  }
 
   private DeploymentEntity toEntity(DeploymentService.State deployment) {
     DeploymentEntity entity = new DeploymentEntity();
@@ -588,46 +469,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     return entity;
   }
 
-  private long toLong(Long number, long defaultValue) {
-    if (number == null) {
-      return defaultValue;
-    }
-    return number;
-  }
-
-  private TaskEntity createDeployTask(DeploymentEntity deploymentEntity, DeploymentDeployOperation config) throws
-      ExternalException {
-    validateDeploy();
-    TaskEntity taskEntity = this.taskBackend.createQueuedTask(deploymentEntity, Operation.PERFORM_DEPLOYMENT);
-
-    // create the steps
-    StepEntity step = this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.SCHEDULE_DEPLOYMENT);
-    step.createOrUpdateTransientResource(DeploymentCreateStepCmd.DEPLOYMENT_DESIRED_STATE_RESOURCE_KEY,
-        config.getDesiredState().name());
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.PROVISION_CONTROL_PLANE_HOSTS);
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.PROVISION_CONTROL_PLANE_VMS);
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.PROVISION_CLOUD_HOSTS);
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.PROVISION_CLUSTER_MANAGER);
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.CREATE_SUBNET_ALLOCATOR);
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.CREATE_DHCP_SUBNET);
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.CONFIGURE_DHCP_RELAY_PROFILE);
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.CONFIGURE_DHCP_RELAY_SERVICE);
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.MIGRATE_DEPLOYMENT_DATA);
-
-    taskEntity.getToBeLockedEntities().add(deploymentEntity);
-    return taskEntity;
-  }
-
   private TaskEntity createInitializeMigrateDeploymentTask(String sourceNodeGroupReference,
                                                            DeploymentEntity deploymentEntity) throws ExternalException {
     TaskEntity taskEntity = this.taskBackend.createQueuedTask(deploymentEntity,
@@ -658,20 +499,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     return taskEntity;
   }
 
-  private TaskEntity destroyTask(DeploymentEntity deploymentEntity) throws ExternalException {
-    TaskEntity taskEntity = this.taskBackend.createQueuedTask(deploymentEntity, Operation.DESTROY_DEPLOYMENT);
-
-    // create the steps
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.SCHEDULE_DELETE_DEPLOYMENT);
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.PERFORM_DELETE_DEPLOYMENT);
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.DEPROVISION_HOSTS);
-    taskEntity.getToBeLockedEntities().add(deploymentEntity);
-    return taskEntity;
-  }
-
   private ClusterConfiguration findClusterConfigurationByType(ClusterType clusterType) throws ExternalException {
     try {
       com.vmware.xenon.common.Operation operation =
@@ -690,21 +517,5 @@ public class DeploymentXenonBackend implements DeploymentBackend {
 
   private String getClusterConfigurationLink(ClusterType clusterType) {
     return ClusterConfigurationServiceFactory.SELF_LINK + "/" + clusterType.toString().toLowerCase();
-  }
-
-  private void validateDeploy() throws ExternalException {
-    if (isNoManagementHost(Optional.absent())) {
-      throw new NoManagementHostException("No management hosts are found for deployment");
-    }
-  }
-
-  @VisibleForTesting
-  public boolean isNoManagementHost(Optional<Integer> optional) {
-    ResourceList<Host> hostList = null;
-    hostList = this.hostBackend.filterByUsage(UsageTag.MGMT, optional);
-    if (hostList == null || 0 == hostList.getItems().size()) {
-      return true;
-    }
-    return false;
   }
 }
