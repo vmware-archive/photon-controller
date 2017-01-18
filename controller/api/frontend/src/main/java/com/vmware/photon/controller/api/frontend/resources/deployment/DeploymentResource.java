@@ -26,6 +26,7 @@ import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentSize;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
+import com.vmware.photon.controller.api.model.NsxConfigurationSpec;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
 import static com.vmware.photon.controller.api.frontend.Responses.generateCustomResponse;
@@ -252,6 +253,23 @@ public class DeploymentResource {
     return generateCustomResponse(
         Response.Status.CREATED,
         client.deleteClusterConfiguration(id, spec.getType()),
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
+  }
+
+  @POST
+  @Path(DeploymentResourceRoutes.INITIALIZE_NSX_ACTION)
+  @ApiOperation(value = "Initialize NSX associated with the Deployment", response = Task.class)
+  @ApiResponses(value = {
+      @ApiResponse(code = 201, message = "Task created, NSX initialization process can be fetched " +
+          "via the task")
+  })
+  public Response initializeNsx(@Context Request request,
+                                @PathParam("id") String id,
+                                NsxConfigurationSpec spec) throws ExternalException {
+    return generateCustomResponse(
+        Response.Status.CREATED,
+        client.initializeNsx(id, spec),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

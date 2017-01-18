@@ -27,6 +27,7 @@ import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentSize;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
+import com.vmware.photon.controller.api.model.NsxConfigurationSpec;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.builders.AuthInfoBuilder;
@@ -383,6 +384,31 @@ public class DeploymentResourceTest extends ResourceTest {
         .request()
         .post(Entity.entity(new ClusterConfigurationSpec(), MediaType.APPLICATION_JSON_TYPE));
     assertThat(response.getStatus(), is(404));
+  }
+
+  @Test
+  public void testInitializeNsx() throws Exception {
+    Task task = new Task();
+    task.setId(taskId);
+    doReturn(task).when(feClient).initializeNsx(eq(deploymentId), any(NsxConfigurationSpec.class));
+
+    String uri = UriBuilder
+        .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.INITIALIZE_NSX_ACTION)
+        .build(deploymentId)
+        .toString();
+
+    NsxConfigurationSpec spec = new NsxConfigurationSpec();
+    spec.setPrivateIpRootCidr("192.168.1.1/24");
+    Response response = client()
+        .target(uri)
+        .request()
+        .post(Entity.entity(spec, MediaType.APPLICATION_JSON_TYPE));
+    assertThat(response.getStatus(), is(201));
+
+    Task responseTask = response.readEntity(Task.class);
+    assertThat(responseTask, is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
   }
 
   @Test
