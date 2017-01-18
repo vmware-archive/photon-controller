@@ -319,7 +319,13 @@ public class Main {
       jdk.tls.disabledAlgorithms
       */
 
-      // Use VKS and setup the appropriate key store and trust store for Xenon client and listener
+      /**
+       * Each Xenon service host runs a client and a listener. We secure Xenon services by doing mutual
+       * authentication over SSL. This is done by configuring the SSL context for the Xenon ServiceClient and
+       * NettyHttpListener. We use VMware Key Store (VKS) as out certificate store. The following code loads the VKS
+       * certificate store which stores the machine's certificate and all the trusted entities as KeyStore and
+       * TrustStore separately into the SSL context.
+       */
       SSLContext clientContext = SSLContext.getInstance(ServiceClient.TLS_PROTOCOL_NAME);
       KeyStore trustStore = KeyStore.getInstance("VKS");
       trustStore.load(new VecsLoadStoreParameter("TRUSTED_ROOTS"));
