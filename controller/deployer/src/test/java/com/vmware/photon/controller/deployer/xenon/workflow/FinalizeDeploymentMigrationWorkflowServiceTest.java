@@ -65,7 +65,6 @@ import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
-import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.resource.gen.DatastoreType;
 import com.vmware.xenon.common.Operation;
@@ -788,8 +787,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(
-          deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
 
       // Create a host on source
       TestHelper.createHostService(sourceCloudStore, Collections.singleton(UsageTag.CLOUD.name()));

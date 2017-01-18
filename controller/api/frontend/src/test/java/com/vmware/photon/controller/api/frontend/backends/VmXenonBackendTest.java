@@ -40,7 +40,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.NotImplemen
 import com.vmware.photon.controller.api.frontend.exceptions.external.ProjectNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
-import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.DiskState;
 import com.vmware.photon.controller.api.model.DiskType;
 import com.vmware.photon.controller.api.model.HostCreateSpec;
@@ -84,6 +84,7 @@ import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
 import com.vmware.photon.controller.resource.gen.ImageReplication;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.UriUtils;
@@ -417,22 +418,29 @@ public class VmXenonBackendTest {
       createdVm = result.getBody(VmService.State.class);
       vmId = ServiceUtils.getIDFromDocumentSelfLink(createdVm.documentSelfLink);
 
-      DeploymentCreateSpec deploymentCreateSpec = new DeploymentCreateSpec();
-      deploymentCreateSpec.setImageDatastores(Collections.singleton(UUID.randomUUID().toString()));
-      TaskEntity deploymentTask = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
+      DeploymentService.State deploymentState = new DeploymentService.State();
+      deploymentState.imageDataStoreNames = Collections.singleton("imageDatastore");
+      deploymentState.imageDataStoreUsedForVMs = true;
+      deploymentState.documentSelfLink = DeployerDefaults.DEFAULT_DEPLOYMENT_ID;
+      deploymentState.state = DeploymentState.READY;
+
+      apiFeXenonRestClient.post(DeploymentServiceFactory.SELF_LINK, deploymentState);
 
       HostCreateSpec hostCreateSpec = new HostCreateSpec();
       hostCreateSpec.setAddress(vm.host);
       hostCreateSpec.setUsageTags(ImmutableList.of(UsageTag.CLOUD));
       hostCreateSpec.setUsername(UUID.randomUUID().toString());
       hostCreateSpec.setPassword(UUID.randomUUID().toString());
-      TaskEntity hostTask = hostBackend.prepareHostCreate(hostCreateSpec, deploymentTask.getEntityId());
+      TaskEntity hostTask = hostBackend.prepareHostCreate(hostCreateSpec, deploymentState.documentSelfLink);
       hostId = hostTask.getEntityId();
+      deploymentState.documentExpirationTimeMicros = 1;
+      apiFeXenonRestClient.delete(DeploymentServiceFactory.SELF_LINK + '/' + deploymentState.documentSelfLink,
+              deploymentState);
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
-      commonHostDocumentsCleanup();
+        commonHostDocumentsCleanup();
     }
 
     @AfterClass

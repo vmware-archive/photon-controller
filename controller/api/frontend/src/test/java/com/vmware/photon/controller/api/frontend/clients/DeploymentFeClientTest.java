@@ -33,8 +33,6 @@ import com.vmware.photon.controller.api.model.Auth;
 import com.vmware.photon.controller.api.model.AuthInfo;
 import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.Deployment;
-import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
-import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentSize;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
@@ -55,12 +53,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -111,57 +107,6 @@ public class DeploymentFeClientTest {
   }
 
   /**
-   * Tests the create method.
-   */
-  public class CreateTest {
-    @BeforeMethod
-    public void setUp() {
-      setUpCommon();
-    }
-
-    @Test
-    public void testTaskIsCreateAndSubmitted() throws Throwable {
-      DeploymentCreateSpec spec = new DeploymentCreateSpec();
-      TaskEntity taskEntity = new TaskEntity();
-      doReturn(taskEntity).when(deploymentBackend).prepareCreateDeployment(spec);
-
-      Task task = new Task();
-      doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);
-
-      Task resp = feClient.create(spec);
-      assertThat(resp, is(task));
-    }
-  }
-
-  /**
-   * Tests the perform method.
-   */
-  public class PerformDeploymentTest {
-    @BeforeMethod
-    public void setUp() {
-      setUpCommon();
-    }
-
-    @Test
-    public void testTaskIsCreated() throws Throwable {
-      String deploymentId = "deployment-id";
-      TaskEntity taskEntity = new TaskEntity();
-      doReturn(taskEntity).when(deploymentBackend).prepareDeploy(eq(deploymentId),
-          any(DeploymentDeployOperation.class));
-
-      Task task = new Task();
-      doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);
-
-      TaskCommand command = mock(TaskCommand.class);
-      doReturn(command).when(commandFactory).create(taskEntity);
-
-      Task resp = feClient.perform("deployment-id", new DeploymentDeployOperation());
-      assertThat(resp, is(task));
-      verify(executorService).submit(command);
-    }
-  }
-
-  /**
    * Tests the pauseBackgroundTasks method.
    */
   public class PauseBackgroundTasksTest {
@@ -183,49 +128,6 @@ public class DeploymentFeClientTest {
       doReturn(command).when(commandFactory).create(taskEntity);
 
       Task resp = feClient.pauseBackgroundTasks("deployment-id");
-      assertThat(resp, is(task));
-      verify(executorService).submit(command);
-    }
-  }
-
-  /**
-   * Tests the delete and destroy methods.
-   */
-  public class DeleteTest {
-    @BeforeMethod
-    public void setUp() {
-      setUpCommon();
-    }
-
-    @Test
-    public void testDelete() throws Throwable {
-      TaskEntity taskEntity = new TaskEntity();
-      doReturn(taskEntity).when(deploymentBackend).prepareDeleteDeployment(any(String.class));
-
-      Task task = new Task();
-      doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);
-
-      TaskCommand command = mock(TaskCommand.class);
-      doReturn(command).when(commandFactory).create(taskEntity);
-
-      Task resp = feClient.delete("dummy-deployment-id");
-      assertThat(resp, is(task));
-      //delete creates a completed task so no more execution is required.
-      verifyNoMoreInteractions(executorService);
-    }
-
-    @Test
-    public void testDestroy() throws Throwable {
-      TaskEntity taskEntity = new TaskEntity();
-      doReturn(taskEntity).when(deploymentBackend).prepareDestroy(any(String.class));
-
-      Task task = new Task();
-      doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);
-
-      TaskCommand command = mock(TaskCommand.class);
-      doReturn(command).when(commandFactory).create(taskEntity);
-
-      Task resp = feClient.destroy("dummy-deployment-id");
       assertThat(resp, is(task));
       verify(executorService).submit(command);
     }
