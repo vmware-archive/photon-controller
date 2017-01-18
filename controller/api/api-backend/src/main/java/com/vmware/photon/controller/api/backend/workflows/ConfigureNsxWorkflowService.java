@@ -452,6 +452,7 @@ public class ConfigureNsxWorkflowService extends BaseWorkflowService<ConfigureNs
           if (documentLinks.size() != 1) {
             fail(state, new IllegalStateException(
                 String.format("Found %d deployment service(s).", documentLinks.size())));
+            return;
           }
 
           getDeployment(state, operation, documentLinks.iterator().next());
