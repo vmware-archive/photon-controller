@@ -23,7 +23,6 @@ import com.vmware.photon.controller.api.frontend.entities.TenantEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.TenantNotFoundException;
 import com.vmware.photon.controller.api.frontend.utils.SecurityGroupUtils;
-import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.ProjectCreateSpec;
 import com.vmware.photon.controller.api.model.QuotaLineItem;
@@ -34,13 +33,15 @@ import com.vmware.photon.controller.api.model.ResourceTicketReservation;
 import com.vmware.photon.controller.api.model.SecurityGroup;
 import com.vmware.photon.controller.api.model.Tenant;
 import com.vmware.photon.controller.api.model.TenantCreateSpec;
-import com.vmware.photon.controller.api.model.builders.AuthConfigurationSpecBuilder;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantServiceFactory;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -135,7 +136,7 @@ public class TenantXenonBackendTest {
 
     private TenantCreateSpec spec;
 
-    private DeploymentCreateSpec deploymentSpec;
+    private static DeploymentService.State deploymentState;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -144,12 +145,11 @@ public class TenantXenonBackendTest {
       spec = new TenantCreateSpec();
       spec.setName("t1");
 
-      deploymentSpec = new DeploymentCreateSpec();
-      deploymentSpec.setAuth(new AuthConfigurationSpecBuilder()
-          .enabled(true)
-          .securityGroups(Arrays.asList(new String[]{"securityGroup1", "securityGroup2"}))
-          .build());
-      deploymentSpec.setImageDatastores(Collections.singleton("dummy-image-data-store-name"));
+      deploymentState = new DeploymentService.State();
+      deploymentState.imageDataStoreNames = Collections.singleton("dummy-image-data-store-name");
+      deploymentState.oAuthEnabled = true;
+      deploymentState.oAuthSecurityGroups = Arrays.asList(new String[]{"securityGroup1", "securityGroup2"});
+      deploymentState.documentSelfLink = DeployerDefaults.DEFAULT_DEPLOYMENT_ID;
       spec.setSecurityGroups(Arrays.asList(new String[]{"adminGrp1", "securityGroup2"}));
     }
 
@@ -165,7 +165,9 @@ public class TenantXenonBackendTest {
 
     @Test
     public void testCreateTenant() throws Exception {
-      String deploymentId = deploymentBackend.prepareCreateDeployment(deploymentSpec).getEntityId();
+
+      apiFeXenonRestClient.post(DeploymentServiceFactory.SELF_LINK, deploymentState);
+      String deploymentId = deploymentState.documentSelfLink;
       DeploymentEntity deployment = deploymentBackend.findById(deploymentId);
 
       TaskEntity taskEntity = tenantBackend.createTenant(spec);
@@ -208,8 +210,9 @@ public class TenantXenonBackendTest {
 
     @Test
     public void testCreateTenantNoDeploymentSGs() throws Exception {
-      deploymentSpec.getAuth().setSecurityGroups(new ArrayList<>());
-      deploymentBackend.prepareCreateDeployment(deploymentSpec).getEntityId();
+
+      deploymentState.oAuthSecurityGroups = new ArrayList<>();
+      apiFeXenonRestClient.post(DeploymentServiceFactory.SELF_LINK, deploymentState);
 
       TaskEntity taskEntity = tenantBackend.createTenant(spec);
       assertThat(taskEntity.getId(), notNullValue());
