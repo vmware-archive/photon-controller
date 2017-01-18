@@ -42,6 +42,7 @@ import com.vmware.photon.controller.api.model.DeploymentSize;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
+import com.vmware.photon.controller.api.model.NsxConfigurationSpec;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
@@ -277,6 +278,12 @@ public class DeploymentFeClient {
   public Task deleteClusterConfiguration(String id, ClusterType clusterType) throws ExternalException {
     deploymentBackend.findById(id);
     TaskEntity taskEntity = deploymentBackend.deleteClusterConfiguration(clusterType);
+    return taskBackend.getApiRepresentation(taskEntity);
+  }
+
+  public Task initializeNsx(String id, NsxConfigurationSpec spec) throws ExternalException {
+    deploymentBackend.findById(id);
+    TaskEntity taskEntity = deploymentBackend.initializeNsx(spec);
     return taskBackend.getApiRepresentation(taskEntity);
   }
 
