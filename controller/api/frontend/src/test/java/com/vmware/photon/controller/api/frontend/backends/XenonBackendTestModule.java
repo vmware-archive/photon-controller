@@ -90,6 +90,8 @@ public class XenonBackendTestModule extends AbstractModule {
         .checkLogicalSwitchPortExistence(true)
         .checkLogicalRouterExistence(true)
         .checkLogicalSwitchExistence(true)
+        .createDhcpRelayProfile(true, "dhcpRelayProfile")
+        .createDhcpRelayService(true, "dhcpRelayService")
         .build();
     NsxClientFactory nsxClientFactory = mock(NsxClientFactory.class);
     doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));

@@ -46,7 +46,7 @@ public class NsxConfigurationSpec {
   private String nsxPassword;
 
   @JsonProperty
-  @ApiModelProperty(value = "The mapping between the priavet IP and public IP of the DHCP servers")
+  @ApiModelProperty(value = "The mapping between the private IP and public IP of the DHCP servers")
   @NotNull
   private Map<String, String> dhcpServerAddresses;
 
