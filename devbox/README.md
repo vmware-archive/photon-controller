@@ -151,6 +151,41 @@ To enable authentication in Photon Controller services, a Lightwave STS must be 
 * `PHOTON_SWAGGER_LOGIN_URL` - registered login URL for the client at the Lightwave server
 * `PHOTON_SWAGGER_LOGOUT_URL` - registered logout URL for the client at the Lightwave server
 
+### Prepare NSX
+Before using NSX, you will need to download, install and provision NSX manager, controller and edge. You can use the script 'prepare_nsx.sh' to perform these tasks. You have to set the following environment variables. It installs all the NSX components in same host and it assumes that all the IPs are in the same network.
+
+* `NSX_MANAGER_OVA_URL` - OVA URL for NSX manager.
+Ex: "http://build-squid.eng.vmware.com/build/mts/release/bora-4191036/publish/nsx-manager/exports/ova/nsx-manager-1.0.1.0.0.4191070.ova"
+* `NSX_CONTROLLER_OVA_URL` - OVA URL for NSX controller.
+Ex: "http://build-squid.eng.vmware.com/build/mts/release/bora-4191036/publish/nsx-controller/exports/ova/nsx-controller-1.0.1.0.0.4191069.ova"
+* `NSX_EDGE_OVA_URL` - OVA URL for NSX edge.
+Ex: "http://build-squid.eng.vmware.com/build/mts/release/bora-4191036/publish/nsx-edgenode/exports/ova/nsx-edge-1.0.1.0.0.4191071.ova"
+* `NSX_HOST_COMMON_IP` - IP address of the ESXi host where you are trying to install the NSX VMs.
+* `NSX_HOST_COMMON_USERNAME` - Username of the ESXi host.
+* `NSX_HOST_COMMON_PASSWORD` - Password for the user.
+* `NSX_HOST_COMMON_DATASTORE` - Datastore in the ESXi host that will be used by all components of NSX.
+* `NSX_HOST_COMMON_NETWORK0`  - This network will be used by all 3 components of NSX.
+Ex: "nsx-management"
+* `NSX_HOST_COMMON_NETWORK1` - Edge requires 4 networks. This will be the 2nd network for Edge.
+Ex: "nsx-overlay"
+* `NSX_HOST_COMMON_NETWORK2` - This will be the 3rd network for Edge.
+Ex: "nsx-vlan"
+* `NSX_HOST_COMMON_NETWORK3` - This will be the 4th network for Edge.
+Ex: "nsx-management-ha"
+* `NSX_MANAGER_IP` - Public IP of NSX manager.
+* `NSX_CONTROLLER_IP` - Public IP of NSX controller.
+* `NSX_EDGE_IP` - Public IP of NSX edge.
+* `NSX_COMMON_PASSWORD` - Common password for all the components of NSX. Username will be "admin".
+* `NSX_COMMON_DOMAIN` - Common name server for all components of NSX.
+Ex: "nsx.ec.eng.vmware.com"
+* `NSX_COMMON_NETMASK` - Net mask for all components.
+Ex: "255.255.254.0"
+* `NSX_COMMON_GATEWAY` - Gateway IP for all components.
+* `NSX_COMMON_DNS` - DNS server IP.
+* `NSX_COMMON_NTP` - NTP server IP.
+* `NSX_OVERWRITE` - This can be either 'true' or 'false'. If it's 'true', script will overwrite existing NSX components. If it's false, script will fail if there's an existing NSX component.
+
+
 ### Configure NSX
 To configure NSX manually follow https://github.com/vmware/photon-controller/wiki/Setting-Up-NSX.
 The script configure_nsx.sh automates the process described in the above wiki. The following environment variables must be set before running ./configure_nsx.sh:

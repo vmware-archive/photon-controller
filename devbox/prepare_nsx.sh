@@ -89,7 +89,7 @@ function install_nsx_manager() {
   enforce_parameter "$password" "NSX manager password"
 
   cmd="ovftool --name=\"$name\" --X:injectOvfEnv --X:logFile=ovftool.log --X:logLevel=verbose \
---allowExtraConfig --datastore=\"$host_datastore\" --network=\"$host_network\" \
+--allowExtraConfig$overwrite --datastore=\"$host_datastore\" --network=\"$host_network\" \
 --acceptAllEulas --noSSLVerify --diskMode=thin --powerOn --prop:\"nsx_ip_0=$ip\" \
 --prop:\"nsx_netmask_0=$netmask\" --prop:\"nsx_gateway_0=$gateway\" \
 --prop:\"nsx_dns1_0=$dns\" --prop:\"nsx_domain_0=$domain\" \
@@ -137,7 +137,7 @@ function install_nsx_controller {
   enforce_parameter "$password" "NSX controller password"
 
   cmd="ovftool --name=\"$name\" --X:injectOvfEnv --X:logFile=ovftool.log --X:logLevel=verbose \
---allowExtraConfig --datastore=\"$host_datastore\" --network=\"$host_network\" \
+--allowExtraConfig$overwrite --datastore=\"$host_datastore\" --network=\"$host_network\" \
 --acceptAllEulas --noSSLVerify --diskMode=thin --powerOn --prop:\"nsx_ip_0=$ip\" \
 --prop:\"nsx_netmask_0=$netmask\" --prop:\"nsx_gateway_0=$gateway\" \
 --prop:\"nsx_dns1_0=$dns\" --prop:\"nsx_domain_0=$domain\" \
@@ -191,7 +191,7 @@ function install_nsx_edge {
   enforce_parameter "$password" "NSX edge password"
 
   cmd="ovftool --name=\"$name\" --X:injectOvfEnv --X:logFile=ovftool.log --X:logLevel=verbose \
---allowExtraConfig --datastore=\"$host_datastore\" --net:\"Network 0=$host_network0\" \
+--allowExtraConfig$overwrite --datastore=\"$host_datastore\" --net:\"Network 0=$host_network0\" \
 --net:\"Network 1=$host_network1\" --net:\"Network 2=$host_network2\" \
 --net:\"Network 3=$host_network3\" --acceptAllEulas --noSSLVerify --diskMode=thin --powerOn \
 --prop:\"nsx_ip_0=$ip\" --prop:\"nsx_netmask_0=$netmask\" --prop:\"nsx_gateway_0=$gateway\" \
@@ -230,6 +230,10 @@ function provision_nsx() {
 check_tool "wget"
 check_tool "ovftool"
 check_tool "sshpass"
+
+if [ "$NSX_OVERWRITE" == "true" ]; then
+  overwrite=" --overwrite"
+fi
 
 echo "Stage 1: installing NSX"
 download_nsx_ovas
