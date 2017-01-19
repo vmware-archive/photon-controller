@@ -257,58 +257,6 @@ public class PhotonControllerXenonHost
       this.inInstaller = inInstaller;
     }
 
-  /**
-   * This method is overridden to change the client used by Xenon to send requests. This is done to solve the issue
-   * of a Xenon service running in auth disabled mode (http), to be able to talk to a Xenon service running in auth
-   * enabled mode (https with two way SSL). Such an issue occurs only in the installer OVA based deployment scenario.
-   *
-   * @param op
-   */
-    @Override
-    public void sendRequest(Operation op) {
-      // If the inInstaller flag is not set, then use the default client
-      // If the inInstaller flag is set, but the protocol is http then also use the default client
-      if (!inInstaller || !op.getUri().getScheme().equals("https")) {
-        super.sendRequest(op);
-        return;
-      }
-
-      try {
-        // Create a new SSL enabled service client
-        if (this.serviceClient == null) {
-          this.serviceClient = NettyHttpServiceClient.create(
-              this.getClass().getCanonicalName(),
-              Executors.newFixedThreadPool(Utils.DEFAULT_THREAD_COUNT),
-              Executors.newScheduledThreadPool(Utils.DEFAULT_IO_THREAD_COUNT));
-
-          KeyStore trustStore = KeyStore.getInstance("JKS");
-          try (FileInputStream fis = new FileInputStream(KEYSTORE_FILE)) {
-            trustStore.load(fis, KEYSTORE_PASSWORD.toCharArray());
-          }
-
-          SSLContext clientContext = SSLContext.getInstance(ServiceClient.TLS_PROTOCOL_NAME);
-          TrustManagerFactory trustManagerFactory = TrustManagerFactory
-              .getInstance(TrustManagerFactory.getDefaultAlgorithm());
-          trustManagerFactory.init(trustStore);
-
-          KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-          KeyStore keyStore = KeyStore.getInstance("JKS");
-          try (FileInputStream fis = new FileInputStream(KEYSTORE_FILE)) {
-            keyStore.load(fis, KEYSTORE_PASSWORD.toCharArray());
-          }
-          keyManagerFactory.init(keyStore, KEYSTORE_PASSWORD.toCharArray());
-          clientContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
-
-          serviceClient.setSSLContext(clientContext);
-          serviceClient.start();
-        }
-
-        this.serviceClient.send(op);
-      } catch (Exception exception) {
-        logger.warn("Exception during sendRequest: " + exception.getMessage());
-      }
-    }
-
     public void registerCloudStore(XenonServiceGroup cloudStore) {
         this.cloudStore = cloudStore;
         addXenonServiceGroup(cloudStore);
