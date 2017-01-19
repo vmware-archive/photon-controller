@@ -6,6 +6,37 @@ NSX_MANAGER_OVA_FILE=$NSX_DOWNLOADS_DIR/nsx-manager.ova
 NSX_CONTROLLER_OVA_FILE=$NSX_DOWNLOADS_DIR/nsx-controller.ova
 NSX_EDGE_OVA_FILE=$NSX_DOWNLOADS_DIR/nsx-edge.ova
 
+NSX_MANAGER_NAME=${NSX_MANAGER_NAME:=nsx-manager}
+NSX_CONTROLLER_NAME=${NSX_CONTROLLER_NAME:=nsx-controller}
+NSX_EDGE_NAME=${NSX_EDGE_NAME:=nsx-edge}
+
+function print_help()
+{
+  echo "Usage: $0.sh [OPTIONS]
+
+Script to install NSX.
+
+Options:
+
+  -s              Experimental feature to reduce memory requirement of NSX OVAs
+  -h              Print usage
+"
+}
+
+while getopts "h?s" opt; do
+    case "$opt" in
+    h|\?)
+        print_help
+        exit 0
+        ;;
+    s)  SMALL_MEMORY_OVA=1
+    esac
+done
+
+shift $((OPTIND-1))
+[ "$1" = "--" ] && shift
+
+
 function check_tool() {
   cmd=${1}
   which "${cmd}" > /dev/null || {
@@ -44,6 +75,37 @@ function download_nsx_ovas() {
   download_file "$NSX_EDGE_OVA_URL" "$NSX_EDGE_OVA_FILE"
 }
 
+function reduce_ova_memory_all() {
+  reduce_ova_memory $NSX_MANAGER_OVA_FILE
+  reduce_ova_memory $NSX_CONTROLLER_OVA_FILE
+}
+
+# To reduce memory requirements of the OVA
+# 1. Un-tar the OVA
+# 2. Replace 16GB to 4GB in extracted OVF file for memory
+# 3. Pack all files back into the OVA
+function reduce_ova_memory() {
+  echo "Reducing memory requirements for the OVA (experiemental)"
+  OVA_FILE=$1
+  rm -rf tmp
+  mkdir tmp
+  tar -xf $OVA_FILE -C tmp
+  cp ${OVA_FILE} ${OVA_FILE}.backup
+
+  # TODO: Following statment is the cause of belittlement for this scripts.  It is
+  # wild sed statment, which can cause every instance of 16384 to be replaced with
+  # 4096, and can kill some innocent installation attempts.  Hopefully there would
+  # not be many things in OVF file with that number, but if there are then we are
+  # breaking something we don't know. But we know; no risk, no gain!  Fix this as
+  # soon as you have nothing else to do. Perhaps replace with awk which you don't
+  # know, or rewrite this script in python or perl.
+  sed -i -e 's/16384/4096/g' tmp/*.ovf
+
+  rm -rf tmp/*.ovf-e
+  (cd tmp; tar -cf $OVA_FILE *.ovf *.mf *.vmdk *.cert)
+  rm -rf tmp
+}
+
 function enforce_parameter() {
   local value=${1}
   local param_desc=${2}
@@ -52,6 +114,23 @@ function enforce_parameter() {
     echo "$param_desc must be specified."
     exit 1
   fi
+}
+
+function delete_old_vms() {
+  echo "Deleting old NSX VMs"
+  rm -rf tmp.sh
+  cat << EOF > tmp.sh
+    vmid=\$(vim-cmd vmsvc/getallvms | grep \$1 | cut -d ' ' -f1)
+    vim-cmd vmsvc/power.off \$vmid || true
+    vim-cmd vmsvc/unregister \$vmid || true
+EOF
+  chmod +x tmp.sh
+  eval sshpass -p $NSX_HOST_COMMON_PASSWORD scp ./tmp.sh $NSX_HOST_COMMON_USERNAME@$NSX_HOST_COMMON_IP:/tmp/ || true
+  eval sshpass -p $NSX_HOST_COMMON_PASSWORD ssh $NSX_HOST_COMMON_USERNAME@$NSX_HOST_COMMON_IP -o StrictHostKeyChecking=no "/tmp/tmp.sh $NSX_MANAGER_NAME"
+  eval sshpass -p $NSX_HOST_COMMON_PASSWORD ssh $NSX_HOST_COMMON_USERNAME@$NSX_HOST_COMMON_IP -o StrictHostKeyChecking=no "/tmp/tmp.sh $NSX_CONTROLLER_NAME"
+  eval sshpass -p $NSX_HOST_COMMON_PASSWORD ssh $NSX_HOST_COMMON_USERNAME@$NSX_HOST_COMMON_IP -o StrictHostKeyChecking=no "/tmp/tmp.sh $NSX_EDGE_NAME"
+  eval sshpass -p $NSX_HOST_COMMON_PASSWORD ssh $NSX_HOST_COMMON_USERNAME@$NSX_HOST_COMMON_IP -o StrictHostKeyChecking=no "rm -rf /tmp/tmp.sh"
+  rm -rf tmp.sh
 }
 
 function install_nsx_manager() {
@@ -65,7 +144,7 @@ function install_nsx_manager() {
   local host_network=${NSX_MANAGER_HOST_NETWORK:=$NSX_HOST_COMMON_NETWORK0}
 
   # Some network settings are also commonly shared among NSX components.
-  local name=${NSX_MANAGER_NAME:=nsx-manager}
+  local name=${NSX_MANAGER_NAME}
   local ip=$NSX_MANAGER_IP
   local domain=${NSX_MANAGER_DOMAIN:=$NSX_COMMON_DOMAIN}
   local netmask=${NSX_MANAGER_NETMASK:=$NSX_COMMON_NETMASK}
@@ -113,7 +192,7 @@ function install_nsx_controller {
   local host_network=${NSX_CONTROLLER_HOST_NETWORK:=$NSX_HOST_COMMON_NETWORK0}
 
   # Some network settings are also commonly shared among NSX components.
-  local name=${NSX_CONTROLLER_NAME:=nsx-controller}
+  local name=${NSX_CONTROLLER_NAME}
   local ip=$NSX_CONTROLLER_IP
   local domain=${NSX_CONTROLLER_DOMAIN:=$NSX_COMMON_DOMAIN}
   local netmask=${NSX_CONTROLLER_NETMASK:=$NSX_COMMON_NETMASK}
@@ -164,7 +243,7 @@ function install_nsx_edge {
   local host_network3=${NSX_EDGE_HOST_NETWORK3:=$NSX_HOST_COMMON_NETWORK3}
 
   # Some network settings are also commonly shared among NSX components.
-  local name=${NSX_EDGE_NAME:=nsx-edge}
+  local name=${NSX_EDGE_NAME}
   local ip=$NSX_EDGE_IP
   local domain=${NSX_EDGE_DOMAIN:=$NSX_COMMON_DOMAIN}
   local netmask=${NSX_EDGE_NETMASK:=$NSX_COMMON_NETMASK}
@@ -194,6 +273,7 @@ function install_nsx_edge {
 --allowExtraConfig --datastore=\"$host_datastore\" --net:\"Network 0=$host_network0\" \
 --net:\"Network 1=$host_network1\" --net:\"Network 2=$host_network2\" \
 --net:\"Network 3=$host_network3\" --acceptAllEulas --noSSLVerify --diskMode=thin --powerOn \
+--deploymentOption=small \
 --prop:\"nsx_ip_0=$ip\" --prop:\"nsx_netmask_0=$netmask\" --prop:\"nsx_gateway_0=$gateway\" \
 --prop:\"nsx_dns1_0=$dns\" --prop:\"nsx_domain_0=$domain\" \
 --prop:\"nsx_ntp_0=$ntp\" --prop:nsx_isSSHEnabled=True --prop:nsx_allowSSHRootLogin=True \
@@ -215,6 +295,10 @@ function provision_nsx() {
   local edge_ip=$NSX_EDGE_IP
   local edge_password=${NSX_EDGE_PASSWORD:=$NSX_COMMON_PASSWORD}
 
+  sed -i -e "/^$manager_ip/ d" ~/.ssh/known_hosts || true
+  sed -i -e "/^$controller_ip/ d" ~/.ssh/known_hosts || true
+  sed -i -e "/^$edge_ip/ d" ~/.ssh/known_hosts || true
+
   echo "Get NSX manager thumbprint"
   local manager_thumbprint=`eval sshpass -p $manager_password ssh -o StrictHostKeyChecking=no root@$manager_ip "/opt/vmware/nsx-cli/bin/scripts/nsxcli -c \"get certificate api thumbprint\""`
 
@@ -232,7 +316,13 @@ check_tool "ovftool"
 check_tool "sshpass"
 
 echo "Stage 1: installing NSX"
+delete_old_vms
 download_nsx_ovas
+
+if [ "$SMALL_MEMORY_OVA" == "1" ]; then
+  reduce_ova_memory_all
+fi
+
 install_nsx_manager
 install_nsx_controller
 install_nsx_edge
