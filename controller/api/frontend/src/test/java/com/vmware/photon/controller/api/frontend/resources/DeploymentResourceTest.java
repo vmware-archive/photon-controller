@@ -20,14 +20,14 @@ import com.vmware.photon.controller.api.frontend.resources.deployment.Deployment
 import com.vmware.photon.controller.api.frontend.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.api.model.ApiError;
-import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
-import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentSize;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.ServiceConfigurationSpec;
+import com.vmware.photon.controller.api.model.ServiceType;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.builders.AuthInfoBuilder;
 import com.vmware.photon.controller.api.model.builders.StatsInfoBuilder;
@@ -323,18 +323,18 @@ public class DeploymentResourceTest extends ResourceTest {
   }
 
   @Test
-  public void testConfigCluster() throws Exception {
+  public void testConfigService() throws Exception {
     Task task = new Task();
     task.setId(taskId);
-    doReturn(task).when(feClient).configureCluster(eq(deploymentId), any(ClusterConfigurationSpec.class));
+    doReturn(task).when(feClient).configureService(eq(deploymentId), any(ServiceConfigurationSpec.class));
 
     String uri = UriBuilder
-        .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.ENABLE_CLUSTER_TYPE_ACTION)
+        .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.ENABLE_SERVICE_TYPE_ACTION)
         .build(deploymentId)
         .toString();
 
-    ClusterConfigurationSpec configSpec = new ClusterConfigurationSpec();
-    configSpec.setType(ClusterType.KUBERNETES);
+    ServiceConfigurationSpec configSpec = new ServiceConfigurationSpec();
+    configSpec.setType(ServiceType.KUBERNETES);
     configSpec.setImageId("imageId");
     Response response = client()
         .target(uri)
@@ -349,19 +349,19 @@ public class DeploymentResourceTest extends ResourceTest {
   }
 
   @Test
-  public void testDeleteClusterConfiguration() throws Exception {
+  public void testDeleteServiceConfiguration() throws Exception {
     Task task = new Task();
     task.setId(taskId);
-    doReturn(task).when(feClient).deleteClusterConfiguration(eq(deploymentId), any(ClusterType.class));
+    doReturn(task).when(feClient).deleteServiceConfiguration(eq(deploymentId), any(ServiceType.class));
 
     String uri = UriBuilder
         .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
-            DeploymentResourceRoutes.DISABLE_CLUSTER_TYPE_ACTION)
+            DeploymentResourceRoutes.DISABLE_SERVICE_TYPE_ACTION)
         .build(deploymentId)
         .toString();
 
-    ClusterConfigurationSpec spec = new ClusterConfigurationSpec();
-    spec.setType(ClusterType.KUBERNETES);
+    ServiceConfigurationSpec spec = new ServiceConfigurationSpec();
+    spec.setType(ServiceType.KUBERNETES);
 
     Response response = client()
         .target(uri)
@@ -371,17 +371,17 @@ public class DeploymentResourceTest extends ResourceTest {
   }
 
   @Test
-  public void testDeleteClusterConfigurationWithNullClusterType() throws Exception {
+  public void testDeleteServiceConfigurationWithNullServiceType() throws Exception {
     String uri = UriBuilder
         .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
-            DeploymentResourceRoutes.DISABLE_CLUSTER_TYPE_ACTION)
+            DeploymentResourceRoutes.DISABLE_SERVICE_TYPE_ACTION)
         .build(deploymentId)
         .toString();
 
     Response response = client()
         .target(uri)
         .request()
-        .post(Entity.entity(new ClusterConfigurationSpec(), MediaType.APPLICATION_JSON_TYPE));
+        .post(Entity.entity(new ServiceConfigurationSpec(), MediaType.APPLICATION_JSON_TYPE));
     assertThat(response.getStatus(), is(404));
   }
 
@@ -442,7 +442,7 @@ public class DeploymentResourceTest extends ResourceTest {
     deploymentSize.setNumberDatastores(5);
     deploymentSize.setNumberProjects(11);
     deploymentSize.setNumberVMs(24);
-    deploymentSize.setNumberClusters(6);
+    deploymentSize.setNumberServices(6);
 
     String uri = UriBuilder.fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
         DeploymentResourceRoutes.DEPLOYMENT_SIZE_PATH)
@@ -463,7 +463,7 @@ public class DeploymentResourceTest extends ResourceTest {
     assertThat(deploymentSizeRetrieved.getNumberDatastores(), is(deploymentSize.getNumberDatastores()));
     assertThat(deploymentSizeRetrieved.getNumberProjects(), is(deploymentSize.getNumberProjects()));
     assertThat(deploymentSizeRetrieved.getNumberVMs(), is(deploymentSize.getNumberVMs()));
-    assertThat(deploymentSizeRetrieved.getNumberClusters(), is(deploymentSize.getNumberClusters()));
+    assertThat(deploymentSizeRetrieved.getNumberServices(), is(deploymentSize.getNumberServices()));
   }
 
   @Test

@@ -594,7 +594,7 @@ public class CopyStateTaskServiceTest {
       return QueryTaskUtils.getBroadcastQueryDocumentLinks(cluster.sendBroadcastQueryAndWait(queryTask));
     }
 
-    private List<ContainerTemplateService.State> createDocuments(TestEnvironment cluster, int documentCount)
+    private List<ContainerTemplateService.State> createDocuments(TestEnvironment service, int documentCount)
         throws Throwable {
       List<ContainerTemplateService.State> result = new ArrayList<>();
       for (; documentCount > 0; --documentCount) {
@@ -604,7 +604,7 @@ public class CopyStateTaskServiceTest {
         containerTemplateState.cpuCount = 1;
         containerTemplateState.memoryMb = 1024L;
         containerTemplateState.diskGb = 1;
-        ContainerTemplateService.State cts = TestHelper.createContainerTemplateService(cluster, containerTemplateState);
+        ContainerTemplateService.State cts = TestHelper.createContainerTemplateService(service, containerTemplateState);
         result.add(cts);
       }
       return result;

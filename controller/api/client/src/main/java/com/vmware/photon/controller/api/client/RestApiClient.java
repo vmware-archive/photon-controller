@@ -15,8 +15,6 @@ package com.vmware.photon.controller.api.client;
 
 import com.vmware.photon.controller.api.client.resource.AuthApi;
 import com.vmware.photon.controller.api.client.resource.AuthRestApi;
-import com.vmware.photon.controller.api.client.resource.ClusterApi;
-import com.vmware.photon.controller.api.client.resource.ClusterRestApi;
 import com.vmware.photon.controller.api.client.resource.DeploymentApi;
 import com.vmware.photon.controller.api.client.resource.DeploymentRestApi;
 import com.vmware.photon.controller.api.client.resource.DisksApi;
@@ -29,6 +27,8 @@ import com.vmware.photon.controller.api.client.resource.ProjectApi;
 import com.vmware.photon.controller.api.client.resource.ProjectRestApi;
 import com.vmware.photon.controller.api.client.resource.ResourceTicketApi;
 import com.vmware.photon.controller.api.client.resource.ResourceTicketRestApi;
+import com.vmware.photon.controller.api.client.resource.ServiceApi;
+import com.vmware.photon.controller.api.client.resource.ServiceRestApi;
 import com.vmware.photon.controller.api.client.resource.SystemStatusApi;
 import com.vmware.photon.controller.api.client.resource.SystemStatusRestApi;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
@@ -58,7 +58,7 @@ public class RestApiClient implements ApiClient {
   private final ImagesApi imagesApi;
   private final VmApi vmApi;
   private final SystemStatusApi systemStatusApi;
-  private final ClusterApi clusterApi;
+  private final ServiceApi serviceApi;
   private final AuthApi authApi;
   private final DeploymentApi deploymentApi;
 
@@ -86,7 +86,7 @@ public class RestApiClient implements ApiClient {
     this.imagesApi = new ImagesRestApi(this.restClient);
     this.vmApi = new VmRestApi(this.restClient);
     this.systemStatusApi = new SystemStatusRestApi(this.restClient);
-    this.clusterApi = new ClusterRestApi(this.restClient);
+    this.serviceApi = new ServiceRestApi(this.restClient);
     this.authApi = new AuthRestApi(this.restClient);
     this.deploymentApi = new DeploymentRestApi(this.restClient);
   }
@@ -137,8 +137,8 @@ public class RestApiClient implements ApiClient {
   }
 
   @Override
-  public ClusterApi getClusterApi() {
-    return clusterApi;
+  public ServiceApi getServiceApi() {
+    return serviceApi;
   }
 
   @Override

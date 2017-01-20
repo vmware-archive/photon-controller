@@ -94,8 +94,8 @@ public class Deployment extends Base {
   private MigrationStatus migrationStatus;
 
   @JsonProperty
-  @ApiModelProperty(value = "List of cluster configurations associated with the deployment")
-  private List<ClusterConfiguration> clusterConfigurations;
+  @ApiModelProperty(value = "List of service configurations associated with the deployment")
+  private List<ServiceConfiguration> serviceConfigurations;
 
   public String getSyslogEndpoint() {
     return syslogEndpoint;
@@ -185,12 +185,12 @@ public class Deployment extends Base {
     this.migrationStatus = migrationStatus;
   }
 
-  public List<ClusterConfiguration> getClusterConfigurations() {
-    return this.clusterConfigurations;
+  public List<ServiceConfiguration> getServiceConfigurations() {
+    return this.serviceConfigurations;
   }
 
-  public void setClusterConfigurations(List<ClusterConfiguration> clusterConfigurations) {
-    this.clusterConfigurations = clusterConfigurations;
+  public void setServiceConfigurations(List<ServiceConfiguration> serviceConfigurations) {
+    this.serviceConfigurations = serviceConfigurations;
   }
 
   @Override
@@ -216,7 +216,7 @@ public class Deployment extends Base {
         && Objects.equals(this.isLoadBalancerEnabled(), other.isLoadBalancerEnabled())
         && Objects.equals(this.getLoadBalancerAddress(), other.getLoadBalancerAddress())
         && Objects.equals(this.getMigrationStatus(), other.getMigrationStatus())
-        && Objects.equals(this.getClusterConfigurations(), other.getClusterConfigurations());
+        && Objects.equals(this.getServiceConfigurations(), other.getServiceConfigurations());
   }
 
   @Override
@@ -232,7 +232,7 @@ public class Deployment extends Base {
         this.getNetworkConfiguration(),
         this.isLoadBalancerEnabled(),
         this.getLoadBalancerAddress(),
-        this.getClusterConfigurations());
+        this.getServiceConfigurations());
   }
 
   @Override
@@ -248,6 +248,6 @@ public class Deployment extends Base {
         .add("loadBalancerEnabled", loadBalancerEnabled)
         .add("loadBalancerAddress", loadBalancerAddress)
         .add("migrationProgress", migrationStatus)
-        .add("clusterConfigurations", getClusterConfigurations());
+        .add("serviceConfigurations", getServiceConfigurations());
   }
 }

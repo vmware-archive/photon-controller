@@ -19,17 +19,15 @@ import com.vmware.photon.controller.api.frontend.entities.DeploymentEntity;
 import com.vmware.photon.controller.api.frontend.entities.StepEntity;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.entities.TombstoneEntity;
-import com.vmware.photon.controller.api.frontend.exceptions.external.ClusterTypeAlreadyConfiguredException;
-import com.vmware.photon.controller.api.frontend.exceptions.external.ClusterTypeNotConfiguredException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentAlreadyExistException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidAuthConfigException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidImageDatastoreSetException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidOperationStateException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NoManagementHostException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ServiceTypeAlreadyConfiguredException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ServiceTypeNotConfiguredException;
 import com.vmware.photon.controller.api.model.AuthInfo;
-import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
-import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
@@ -40,6 +38,8 @@ import com.vmware.photon.controller.api.model.IpRange;
 import com.vmware.photon.controller.api.model.NetworkConfiguration;
 import com.vmware.photon.controller.api.model.NsxConfigurationSpec;
 import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.ServiceConfigurationSpec;
+import com.vmware.photon.controller.api.model.ServiceType;
 import com.vmware.photon.controller.api.model.StatsInfo;
 import com.vmware.photon.controller.api.model.StatsStoreType;
 import com.vmware.photon.controller.api.model.TenantCreateSpec;
@@ -47,10 +47,10 @@ import com.vmware.photon.controller.api.model.builders.AuthConfigurationSpecBuil
 import com.vmware.photon.controller.api.model.builders.NetworkConfigurationCreateSpecBuilder;
 import com.vmware.photon.controller.api.model.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.cloudstore.SystemConfig;
-import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationService;
-import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ServiceConfigurationState;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ServiceConfigurationStateFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
@@ -346,7 +346,7 @@ public class DeploymentXenonBackendTest {
       Assert.assertEquals(taskEntity.getSteps().get(1).getOperation(), Operation.PROVISION_CONTROL_PLANE_HOSTS);
       Assert.assertEquals(taskEntity.getSteps().get(2).getOperation(), Operation.PROVISION_CONTROL_PLANE_VMS);
       Assert.assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.PROVISION_CLOUD_HOSTS);
-      Assert.assertEquals(taskEntity.getSteps().get(4).getOperation(), Operation.PROVISION_CLUSTER_MANAGER);
+      Assert.assertEquals(taskEntity.getSteps().get(4).getOperation(), Operation.PROVISION_SERVICES_MANAGER);
       Assert.assertEquals(taskEntity.getSteps().get(5).getOperation(), Operation.CREATE_SUBNET_ALLOCATOR);
       Assert.assertEquals(taskEntity.getSteps().get(6).getOperation(), Operation.CREATE_DHCP_SUBNET);
       Assert.assertEquals(taskEntity.getSteps().get(7).getOperation(), Operation.CONFIGURE_DHCP_RELAY_PROFILE);
@@ -1282,10 +1282,10 @@ public class DeploymentXenonBackendTest {
   }
 
   /**
-   * Tests for the configureCluster method.
+   * Tests for the configureService method.
    */
   @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
-  public static class ConfigureClusterTest {
+  public static class ConfigureServiceTest {
 
     @Inject
     private BasicServiceHost basicServiceHost;
@@ -1312,59 +1312,59 @@ public class DeploymentXenonBackendTest {
     }
 
     @Test
-    public void testConfigureClusterSuccess() throws Throwable {
-      ClusterConfigurationSpec configurationSpec = new ClusterConfigurationSpec();
-      configurationSpec.setType(ClusterType.KUBERNETES);
+    public void testConfigureServiceSuccess() throws Throwable {
+      ServiceConfigurationSpec configurationSpec = new ServiceConfigurationSpec();
+      configurationSpec.setType(ServiceType.KUBERNETES);
       configurationSpec.setImageId("imageId");
-      TaskEntity taskEntity = deploymentBackend.configureCluster(configurationSpec);
+      TaskEntity taskEntity = deploymentBackend.configureService(configurationSpec);
       assertThat(taskEntity.getState(), is(TaskEntity.State.COMPLETED));
     }
 
     @Test
-    public void testConfigureClusterSuccessWithMultipleClusterTypes() throws Throwable {
-      for (ClusterType clusterType : ClusterType.values()) {
-        ClusterConfigurationSpec configurationSpec = new ClusterConfigurationSpec();
-        configurationSpec.setType(clusterType);
-        configurationSpec.setImageId("imageId" + clusterType.toString());
+    public void testConfigureServiceSuccessWithMultipleServiceTypes() throws Throwable {
+      for (ServiceType serviceType : ServiceType.values()) {
+        ServiceConfigurationSpec configurationSpec = new ServiceConfigurationSpec();
+        configurationSpec.setType(serviceType);
+        configurationSpec.setImageId("imageId" + serviceType.toString());
 
-        TaskEntity taskEntity = deploymentBackend.configureCluster(configurationSpec);
+        TaskEntity taskEntity = deploymentBackend.configureService(configurationSpec);
         assertThat(taskEntity.getState(), is(TaskEntity.State.COMPLETED));
       }
     }
 
     @Test
-    public void testClusterConfigurationAlreadyExistException() throws Throwable {
-      ClusterConfigurationSpec configurationSpec = new ClusterConfigurationSpec();
-      configurationSpec.setType(ClusterType.KUBERNETES);
+    public void testServiceConfigurationAlreadyExistException() throws Throwable {
+      ServiceConfigurationSpec configurationSpec = new ServiceConfigurationSpec();
+      configurationSpec.setType(ServiceType.KUBERNETES);
       configurationSpec.setImageId("imageId");
-      deploymentBackend.configureCluster(configurationSpec);
+      deploymentBackend.configureService(configurationSpec);
 
       try {
-        deploymentBackend.configureCluster(configurationSpec);
-        fail("should have failed creating second cluster configuration for " + configurationSpec.getType().toString());
-      } catch (ClusterTypeAlreadyConfiguredException e) {
+        deploymentBackend.configureService(configurationSpec);
+        fail("should have failed creating second service configuration for " + configurationSpec.getType().toString());
+      } catch (ServiceTypeAlreadyConfiguredException e) {
       }
     }
 
     @Test
-    public void testDeleteClusterConfigurationSuccess() throws Throwable {
-      ClusterConfigurationService.State state = new ClusterConfigurationService.State();
-      state.clusterType = ClusterType.KUBERNETES;
+    public void testDeleteServiceConfigurationSuccess() throws Throwable {
+      ServiceConfigurationState.State state = new ServiceConfigurationState.State();
+      state.serviceType = ServiceType.KUBERNETES;
       state.imageId = "imageId";
-      state.documentSelfLink = ClusterType.KUBERNETES.toString().toLowerCase();
+      state.documentSelfLink = ServiceType.KUBERNETES.toString().toLowerCase();
 
-      xenonClient.post(true, ClusterConfigurationServiceFactory.SELF_LINK, state);
+      xenonClient.post(true, ServiceConfigurationStateFactory.SELF_LINK, state);
 
-      TaskEntity taskEntity = deploymentBackend.deleteClusterConfiguration(ClusterType.KUBERNETES);
+      TaskEntity taskEntity = deploymentBackend.deleteServiceConfiguration(ServiceType.KUBERNETES);
       assertThat(taskEntity.getState(), is(TaskEntity.State.COMPLETED));
     }
 
     @Test
-    public void testDeleteClusterConfigurationNotConfiguredException() throws Throwable {
+    public void testDeleteServiceConfigurationNotConfiguredException() throws Throwable {
       try {
-        deploymentBackend.deleteClusterConfiguration(ClusterType.KUBERNETES);
-        fail("should have failed deleting cluster that is not configured");
-      } catch (ClusterTypeNotConfiguredException e) {
+        deploymentBackend.deleteServiceConfiguration(ServiceType.KUBERNETES);
+        fail("should have failed deleting service that is not configured");
+      } catch (ServiceTypeNotConfiguredException e) {
       }
     }
   }
