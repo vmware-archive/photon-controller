@@ -15,6 +15,17 @@
 # process described in https://github.com/vmware/photon-controller/wiki/Setting-Up-NSX
 
 # This function checkes whether tool is installed or not
+
+# Default values
+NETWORK_MANAGER_USERNAME="admin"
+NETWORK_MANAGER_PASSWORD=$NSX_COMMON_PASSWORD
+NETWORK_TUNNEL_IP_POOL_CIDR=${NETWORK_TUNNEL_IP_POOL_CIDR:="192.168.150.0/24"}
+NETWORK_TUNNEL_IP_POOL_ALLOCATION_START=${NETWORK_TUNNEL_IP_POOL_ALLOCATION_START:="192.168.150.200"}
+NETWORK_TUNNEL_IP_POOL_ALLOCATION_END=${NETWORK_TUNNEL_IP_POOL_ALLOCATION_END:="192.168.150.250"}
+NETWORK_DHCP_SUBNET_IP_ADDRESS="192.168.1.253"
+NETWORK_DHCP_SUBNET_PREFIX_LENGTH="24"
+NETWORK_HOST_UPLINK_PNIC=${NETWORK_HOST_UPLINK_PNIC:="vmnic1"}
+
 function check_tool() {
   cmd=${1}
   which "${cmd}" > /dev/null || {
@@ -38,9 +49,9 @@ function get_rest_response() {
   local payload=${2}
 
   if [[ ! -n "$payload" ]]; then
-    curl -sS -k -u $NETWORK_MANAGER_USERNAME:$NETWORK_MANAGER_PASSWORD https://$NETWORK_MANAGER_ADDRESS/$api
+    curl -sS -k -u $NETWORK_MANAGER_USERNAME:$NETWORK_MANAGER_PASSWORD https://$NSX_MANAGER_IP/$api
   else
-    curl -sS -H "Content-Type: application/json" -k -u $NETWORK_MANAGER_USERNAME:$NETWORK_MANAGER_PASSWORD -X POST -d "$payload" https://$NETWORK_MANAGER_ADDRESS/$api
+    curl -sS -H "Content-Type: application/json" -k -u $NETWORK_MANAGER_USERNAME:$NETWORK_MANAGER_PASSWORD -X POST -d "$payload" https://$NSX_MANAGER_IP/$api
   fi
 
 }
@@ -346,20 +357,15 @@ function edit_router_advertisement() {
     \"_revision\": 0 \
   }"
 
-  curl -sS -H "Content-Type: application/json" -k -u $NETWORK_MANAGER_USERNAME:$NETWORK_MANAGER_PASSWORD -X PUT -d "$edit_router_advertisement_json" https://$NETWORK_MANAGER_ADDRESS/api/v1/logical-routers/${1}/routing/advertisement
+  curl -sS -H "Content-Type: application/json" -k -u $NETWORK_MANAGER_USERNAME:$NETWORK_MANAGER_PASSWORD -X PUT -d "$edit_router_advertisement_json" https://$NSX_MANAGER_IP/api/v1/logical-routers/${1}/routing/advertisement
 }
 
 check_tool "jq"
-check_environment_variable "$NETWORK_MANAGER_ADDRESS" "NETWORK_MANAGER_ADDRESS"
-check_environment_variable "$NETWORK_MANAGER_USERNAME" "NETWORK_MANAGER_USERNAME"
-check_environment_variable "$NETWORK_TUNNEL_IP_POOL_CIDR" "NETWORK_TUNNEL_IP_POOL_CIDR"
-check_environment_variable "$NETWORK_TUNNEL_IP_POOL_ALLOCATION_START" "NETWORK_TUNNEL_IP_POOL_ALLOCATION_START"
-check_environment_variable "$NETWORK_TUNNEL_IP_POOL_ALLOCATION_START" "NETWORK_TUNNEL_IP_POOL_ALLOCATION_START"
+check_environment_variable "$NSX_MANAGER_IP" "NSX_MANAGER_IP"
+check_environment_variable "$NSX_COMMON_PASSWORD" "NSX_COMMON_PASSWORD"
 check_environment_variable "$NETWORK_T0_SUBNET_IP_ADDRESS" "NETWORK_T0_SUBNET_IP_ADDRESS"
 check_environment_variable "$NETWORK_T0_SUBNET_PREFIX_LENGTH" "NETWORK_T0_SUBNET_PREFIX_LENGTH"
 check_environment_variable "$NETWORK_T0_GATEWAY" "NETWORK_T0_GATEWAY"
-check_environment_variable "$NETWORK_DHCP_SUBNET_IP_ADDRESS" "NETWORK_DHCP_SUBNET_IP_ADDRESS"
-check_environment_variable "$NETWORK_DHCP_SUBNET_PREFIX_LENGTH" "NETWORK_DHCP_SUBNET_PREFIX_LENGTH"
 
 echo "Configuring NSX..."
 
@@ -478,9 +484,10 @@ echo "================"
 echo "---"
 echo "deployment:"
 echo "  sdn_enabled:" $ENABLE_NSX
-echo "  network_manager_address:" $NETWORK_MANAGER_ADDRESS
+echo "  network_manager_address:" $NSX_MANAGER_IP
 echo "  network_manager_username:" $NETWORK_MANAGER_USERNAME
 echo "  network_manager_password:" $NETWORK_MANAGER_PASSWORD
 echo "  network_top_router_id:" $t0_router_id
 echo "  network_zone_id:" $vlan_transport_id
 echo "  network_edge_ip_pool_id:" $ip_pool_id
+echo "  network_host_uplink_pnic:" $NETWORK_HOST_UPLINK_PNIC
