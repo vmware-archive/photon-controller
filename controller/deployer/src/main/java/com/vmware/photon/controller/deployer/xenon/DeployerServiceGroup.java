@@ -14,8 +14,6 @@
 package com.vmware.photon.controller.deployer.xenon;
 
 import com.vmware.photon.controller.cloudstore.xenon.upgrade.HostTransformationService;
-import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
-import com.vmware.photon.controller.clustermanager.ClusterManagerFactoryProvider;
 import com.vmware.photon.controller.common.provider.ListeningExecutorServiceProvider;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonServiceGroup;
@@ -44,9 +42,9 @@ import com.vmware.photon.controller.deployer.xenon.entity.ContainerFactoryServic
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.AllocateClusterManagerResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateDhcpVmResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateHostResourceTaskFactoryService;
+import com.vmware.photon.controller.deployer.xenon.task.AllocateServicesManagerResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateTenantResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.BuildRuntimeConfigurationTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.ChangeHostModeTaskFactoryService;
@@ -85,6 +83,8 @@ import com.vmware.photon.controller.deployer.xenon.workflow.DeprovisionHostWorkf
 import com.vmware.photon.controller.deployer.xenon.workflow.FinalizeDeploymentMigrationWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.xenon.workflow.InitializeDeploymentMigrationWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.xenon.workflow.RemoveDeploymentWorkflowFactoryService;
+import com.vmware.photon.controller.servicesmanager.ServicesManagerFactory;
+import com.vmware.photon.controller.servicesmanager.ServicesManagerFactoryProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
@@ -117,7 +117,7 @@ public class DeployerServiceGroup
     ServiceConfiguratorFactoryProvider,
     ZookeeperClientFactoryProvider,
     HostManagementVmAddressValidatorFactoryProvider,
-    ClusterManagerFactoryProvider {
+    ServicesManagerFactoryProvider {
 
   public static final String COPY_STATE_SCHEDULER_SERVICE = TaskSchedulerServiceFactory.SELF_LINK + "/copy-state";
 
@@ -158,7 +158,7 @@ public class DeployerServiceGroup
 
       // Task Services
       AllocateDhcpVmResourcesTaskFactoryService.class,
-      AllocateClusterManagerResourcesTaskFactoryService.class,
+      AllocateServicesManagerResourcesTaskFactoryService.class,
       AllocateTenantResourcesTaskFactoryService.class,
       AllocateHostResourceTaskFactoryService.class,
       BuildRuntimeConfigurationTaskFactoryService.class,
@@ -216,7 +216,7 @@ public class DeployerServiceGroup
   private final ServiceConfiguratorFactory serviceConfiguratorFactory;
   private  ZookeeperClientFactory zookeeperServerSetBuilderFactory;
   private final HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory;
-  private final ClusterManagerFactory clusterManagerFactory;
+  private final ServicesManagerFactory servicesManagerFactory;
 
   private PhotonControllerXenonHost photonControllerXenonHost;
 
@@ -231,7 +231,7 @@ public class DeployerServiceGroup
       ServiceConfiguratorFactory serviceConfiguratorFactory,
       ZookeeperClientFactory zookeeperServerSetBuilderFactory,
       HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory,
-      ClusterManagerFactory clusterManagerFactory) {
+      ServicesManagerFactory servicesManagerFactory) {
 
     this.deployerContext = deployerContext;
     this.apiClientFactory = apiClientFactory;
@@ -243,7 +243,7 @@ public class DeployerServiceGroup
     this.serviceConfiguratorFactory = serviceConfiguratorFactory;
     this.zookeeperServerSetBuilderFactory = zookeeperServerSetBuilderFactory;
     this.hostManagementVmAddressValidatorFactory = hostManagementVmAddressValidatorFactory;
-    this.clusterManagerFactory = clusterManagerFactory;
+    this.servicesManagerFactory = servicesManagerFactory;
   }
 
   @Override
@@ -347,8 +347,8 @@ public class DeployerServiceGroup
   }
 
   @Override
-  public ClusterManagerFactory getClusterManagerFactory() {
-    return clusterManagerFactory;
+  public ServicesManagerFactory getServicesManagerFactory() {
+    return servicesManagerFactory;
   }
 
   @Override
@@ -401,7 +401,7 @@ public class DeployerServiceGroup
 
   public Class<? extends Service>[] getFactoryServices() {
     return ObjectArrays.concat(
-        FACTORY_SERVICES, ClusterManagerFactory.FACTORY_SERVICES,
+        FACTORY_SERVICES, ServicesManagerFactory.FACTORY_SERVICES,
         Class.class);
   }
 

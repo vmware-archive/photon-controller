@@ -174,7 +174,7 @@ public class DeploymentTest {
               "ipRange=10.0.0.1/24, floatingIpRange=IpRange{start=192.168.0.2, end=192.168.0.254}, " +
               "edgeClusterId=edgeClusterId, dhcpServers=192.10.0.1,192.20.0.1}, " +
               "loadBalancerEnabled=true, loadBalancerAddress=0.0.0.4, migrationProgress=null, " +
-              "clusterConfigurations=null}";
+              "serviceConfigurations=null}";
       HashSet<String> imageDatastores = new HashSet<String>();
       imageDatastores.add("image-datastore1");
       imageDatastores.add("image-datastore2");

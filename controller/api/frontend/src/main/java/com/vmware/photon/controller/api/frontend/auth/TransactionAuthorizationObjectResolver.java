@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.api.frontend.auth;
 
-import com.vmware.photon.controller.api.frontend.resources.routes.ClusterResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.DiskResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.FlavorsResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.ImageResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.InfoResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.ResourceTicketResourceRoutes;
+import com.vmware.photon.controller.api.frontend.resources.routes.ServiceResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.SystemPropertiesRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRoutes;
@@ -61,12 +61,12 @@ public class TransactionAuthorizationObjectResolver {
   public static final Map<String, Rule[]> EVALUATION_RULES = new HashMap<>();
 
   static {
-    // CLUSTER
+    // SERVICE
     EVALUATION_RULES.put(
-        ClusterResourceRoutes.API.substring(1),
+        ServiceResourceRoutes.API.substring(1),
         new Rule[]{
             new Rule(
-                TransactionAuthorizationObject.Kind.CLUSTER,
+                TransactionAuthorizationObject.Kind.SERVICE,
                 TransactionAuthorizationObject.Strategy.PARENT)
         });
 

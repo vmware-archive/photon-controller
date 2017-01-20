@@ -56,6 +56,9 @@ import com.vmware.photon.controller.api.frontend.resources.project.ProjectSecuri
 import com.vmware.photon.controller.api.frontend.resources.project.TenantProjectsResource;
 import com.vmware.photon.controller.api.frontend.resources.resourceticket.ResourceTicketResource;
 import com.vmware.photon.controller.api.frontend.resources.resourceticket.TenantResourceTicketsResource;
+import com.vmware.photon.controller.api.frontend.resources.service.ProjectServicesResource;
+import com.vmware.photon.controller.api.frontend.resources.service.ServiceResizeResource;
+import com.vmware.photon.controller.api.frontend.resources.service.ServiceResource;
 import com.vmware.photon.controller.api.frontend.resources.status.AvailableResource;
 import com.vmware.photon.controller.api.frontend.resources.status.StatusResource;
 import com.vmware.photon.controller.api.frontend.resources.system.SystemPropertiesResource;
@@ -78,6 +81,7 @@ import com.vmware.photon.controller.api.frontend.resources.vm.ClusterVmsResource
 import com.vmware.photon.controller.api.frontend.resources.vm.DeploymentVmsResource;
 import com.vmware.photon.controller.api.frontend.resources.vm.HostVmsResource;
 import com.vmware.photon.controller.api.frontend.resources.vm.ProjectVmsResource;
+import com.vmware.photon.controller.api.frontend.resources.vm.ServiceVmsResource;
 import com.vmware.photon.controller.api.frontend.resources.vm.VmDiskAttachResource;
 import com.vmware.photon.controller.api.frontend.resources.vm.VmDiskDetachResource;
 import com.vmware.photon.controller.api.frontend.resources.vm.VmImageCreateResource;
@@ -231,6 +235,9 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     resources.add(ClusterResource.class);
     resources.add(ClusterResizeResource.class);
     resources.add(ClusterVmsResource.class);
+    resources.add(ServiceResource.class);
+    resources.add(ServiceResizeResource.class);
+    resources.add(ServiceVmsResource.class);
     resources.add(SystemPropertiesResource.class);
     resources.add(DatastoreResource.class);
     resources.add(DatastoresResource.class);
@@ -252,6 +259,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     resources.add(ImageTasksResource.class);
     resources.add(InfoResource.class);
     resources.add(ProjectClustersResource.class);
+    resources.add(ProjectServicesResource.class);
     resources.add(ProjectDisksResource.class);
     resources.add(ProjectResource.class);
     resources.add(ProjectTasksResource.class);
