@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.core;
 
+import com.google.common.net.InetAddresses;
 import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.StatsStoreType;
@@ -36,7 +37,10 @@ import com.google.common.util.concurrent.ListenableFutureTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.concurrent.Callable;
 
 /**
@@ -54,7 +58,7 @@ public class DefaultDeployment {
     if (authConfig.getAuthSecurityGroups() != null) {
       startState.oAuthSecurityGroups = new ArrayList<>(authConfig.getAuthSecurityGroups());
     }
-    startState.imageDataStoreNames = deploymentContext.getImageDataStoreNames();
+
     startState.imageDataStoreUsedForVMs = deploymentContext.getImageDataStoreUsedForVMs();
     startState.dhcpRelayProfileId = deploymentContext.getDhcpRelayProfileId();
     startState.dhcpRelayServiceId = deploymentContext.getDhcpRelayServiceId();
@@ -84,6 +88,7 @@ public class DefaultDeployment {
     startState.statsEnabled = deploymentContext.getStatsEnabled();
     startState.statsStoreEndpoint = deploymentContext.getStatsStoreEndpoint();
     startState.statsStorePort = deploymentContext.getStatsStorePort();
+    startState.imageDataStoreNames = new HashSet<>();
     String statsStoreType = deploymentContext.getStatsStoreType();
     startState.statsStoreType = statsStoreType == null ? null : StatsStoreType.valueOf(statsStoreType);
     startState.loadBalancerEnabled = deploymentContext.getLoadBalancerEnabled();
@@ -99,7 +104,6 @@ public class DefaultDeployment {
                                       ServiceHost xenonHost) throws Throwable {
 
     xenonHost.registerForServiceAvailability((Operation operation, Throwable throwable) -> {
-
       DeploymentService.State startState = buildServiceStartState(deployerConfig, authConfig);
       // Deployment service supports Idempotent POST, with that option we make sure that
       // a POST call to create new deployment service with same Id would not fail and
@@ -111,7 +115,6 @@ public class DefaultDeployment {
           UriUtils.buildUri(xenonHost, DeploymentServiceFactory.SELF_LINK, null))
           .setReferer(xenonHost.getUri())
           .setBody(startState);
-
       xenonHost.sendRequest(op);
     }, DeploymentServiceFactory.SELF_LINK);
   }
@@ -137,64 +140,6 @@ public class DefaultDeployment {
         authConfig.getAuthServerPort(),
         authConfig.getAuthUserName(),
         authConfig.getAuthDomain());
-
-    //
-    // Lightwave requires login name to be in format "domain/user"
-    //
-    ListenableFutureTask futureTask = ListenableFutureTask.create(new Callable() {
-      @Override
-      public Object call() throws Exception {
-        return authHelper.getResourceLoginUri(
-            authConfig.getAuthDomain(),
-            authConfig.getAuthDomain() + "\\" + authConfig.getAuthUserName(),
-            authConfig.getAuthPassword(),
-            authConfig.getAuthServerAddress(),
-            authConfig.getAuthServerPort(),
-            String.format(DeployerDefaults.MGMT_UI_LOGIN_REDIRECT_URL_TEMPLATE, lbIpAddress),
-            String.format(DeployerDefaults.MGMT_UI_LOGOUT_REDIRECT_URL_TEMPLATE, lbIpAddress));
-      }
-    });
-
-    deployerServiceGroup.getListeningExecutorService().submit(futureTask);
-
-    FutureCallback<AuthClientHandler.ImplicitClient> futureCallback =
-        new FutureCallback<AuthClientHandler.ImplicitClient>() {
-          @Override
-          public void onSuccess(AuthClientHandler.ImplicitClient result) {
-            loginURI = result.loginURI;
-            logoutURI = result.logoutURI;
-            if (authConfig.getAuthLoadBalancerAddress() != null) {
-              loginURI = loginURI.replaceAll(
-                  authConfig.getAuthServerAddress(), authConfig.getAuthLoadBalancerAddress());
-              logoutURI = logoutURI.replaceAll(
-                  authConfig.getAuthServerAddress(), authConfig.getAuthLoadBalancerAddress());
-            }
-
-            try {
-              createDefaultDeployment(
-                  deployerConfig,
-                  authConfig,
-                  host);
-            } catch (Throwable throwable) {
-              throw new RuntimeException(throwable);
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            logger.error(t.getMessage());
-
-            try {
-              createDefaultDeployment(
-                  deployerConfig,
-                  authConfig,
-                  host);
-            } catch (Throwable throwable) {
-              throw new RuntimeException(throwable);
-            }
-          }
-        };
-
-    Futures.addCallback(futureTask, futureCallback);
+    createDefaultDeployment(deployerConfig,authConfig,host);
   }
 }

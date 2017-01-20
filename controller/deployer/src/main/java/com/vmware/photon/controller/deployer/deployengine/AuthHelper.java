@@ -47,6 +47,7 @@ public class AuthHelper {
       URISyntaxException {
 
     AuthOIDCClient oidcClient = new AuthOIDCClient(authServerAddress, authServerPort, tenant);
+
     return getResourceLoginUri(oidcClient, user, password, loginRedirectEndpoint, logoutRedirectEndpoint);
   }
 
