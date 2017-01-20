@@ -360,6 +360,24 @@ function edit_router_advertisement() {
   curl -sS -H "Content-Type: application/json" -k -u $NETWORK_MANAGER_USERNAME:$NETWORK_MANAGER_PASSWORD -X PUT -d "$edit_router_advertisement_json" https://$NSX_MANAGER_IP/api/v1/logical-routers/${1}/routing/advertisement
 }
 
+# This function enables install upgrade.
+function enable_install_upgrade() {
+  local response=$(curl -sS -k -u $NETWORK_MANAGER_USERNAME:$NETWORK_MANAGER_PASSWORD https://$NSX_MANAGER_IP/api/v1/node/services/install-upgrade)
+  local isEnabled=$(echo $response | jq .service_properties.enabled)
+
+  if [ "$isEnabled" == "false" ]; then
+    local enable_install_upgrade_json="{ \
+      \"service_name\": \"install-upgrade\", \
+      \"service_properties\": { \
+          \"enabled\": true \
+      } \
+    }"
+    curl -sS -H "Content-Type: application/json" -k -u $NETWORK_MANAGER_USERNAME:$NETWORK_MANAGER_PASSWORD -X PUT -d "$enable_install_upgrade_json" https://$NSX_MANAGER_IP/api/v1/node/services/install-upgrade
+  else
+    echo "Install upgrade already enabled"
+  fi
+}
+
 check_tool "jq"
 check_environment_variable "$NSX_MANAGER_IP" "NSX_MANAGER_IP"
 check_environment_variable "$NSX_COMMON_PASSWORD" "NSX_COMMON_PASSWORD"
@@ -475,6 +493,10 @@ dhcp_rourter_port_id=$(get_response_id "$response")
 echo "DHCP Configure: Configuring router advertisement configuration"
 response=$(edit_router_advertisement $dhcp_router_id)
 check_for_error "$response"
+
+# Enable install upgrade
+echo "Enabling Install Upgrade"
+enable_install_upgrade
 
 echo "NSX configuration completed successfully"
 echo
