@@ -62,7 +62,7 @@ public class DeploymentStatusStepCmd extends XenonTaskStatusStepCmd {
           // So reprovisioning all the host in step of PROVISION_CLOUD_HOSTS.
           .put(Operation.PROVISION_CLOUD_HOSTS,
               DeploymentWorkflowService.TaskState.SubStage.PROVISION_ALL_HOSTS.ordinal())
-          .put(Operation.PROVISION_CLUSTER_MANAGER,
+          .put(Operation.PROVISION_SERVICES_MANAGER,
               DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES.ordinal())
           .put(Operation.CREATE_SUBNET_ALLOCATOR,
               DeploymentWorkflowService.TaskState.SubStage.CREATE_SUBNET_ALLOCATOR.ordinal())

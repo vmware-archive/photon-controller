@@ -15,12 +15,12 @@ package com.vmware.photon.controller.api.frontend.clients.api;
 import com.vmware.photon.controller.api.client.resource.ProjectApi;
 import com.vmware.photon.controller.api.frontend.clients.VmFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.model.Cluster;
-import com.vmware.photon.controller.api.model.ClusterCreateSpec;
 import com.vmware.photon.controller.api.model.DiskCreateSpec;
 import com.vmware.photon.controller.api.model.PersistentDisk;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Service;
+import com.vmware.photon.controller.api.model.ServiceCreateSpec;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
@@ -140,23 +140,23 @@ public class ProjectLocalApi implements ProjectApi {
   }
 
   @Override
-  public Task createCluster(String projectId, ClusterCreateSpec clusterCreateSpec) throws IOException {
+  public Task createService(String projectId, ServiceCreateSpec serviceCreateSpec) throws IOException {
     return null;
   }
 
   @Override
-  public void createClusterAsync(String projectId, ClusterCreateSpec clusterCreateSpec,
+  public void createServiceAsync(String projectId, ServiceCreateSpec serviceCreateSpec,
                                  FutureCallback<Task> responseCallback) throws IOException {
 
   }
 
   @Override
-  public ResourceList<Cluster> getClustersInProject(String projectId) throws IOException {
+  public ResourceList<Service> getServicesInProject(String projectId) throws IOException {
     return null;
   }
 
   @Override
-  public void getClustersInProjectAsync(String projectId, FutureCallback<ResourceList<Cluster>> responseCallback)
+  public void getServicesInProjectAsync(String projectId, FutureCallback<ResourceList<Service>> responseCallback)
       throws IOException {
 
   }

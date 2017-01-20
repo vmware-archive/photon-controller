@@ -29,18 +29,15 @@ import com.vmware.photon.controller.api.frontend.entities.StepEntity;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.entities.TenantEntity;
 import com.vmware.photon.controller.api.frontend.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.frontend.exceptions.external.ClusterTypeAlreadyConfiguredException;
-import com.vmware.photon.controller.api.frontend.exceptions.external.ClusterTypeNotConfiguredException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentAlreadyExistException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidAuthConfigException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.InvalidImageDatastoreSetException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.NoManagementHostException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ServiceTypeAlreadyConfiguredException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ServiceTypeNotConfiguredException;
 import com.vmware.photon.controller.api.model.AuthInfo;
-import com.vmware.photon.controller.api.model.ClusterConfiguration;
-import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
-import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
@@ -53,12 +50,15 @@ import com.vmware.photon.controller.api.model.NetworkConfiguration;
 import com.vmware.photon.controller.api.model.NsxConfigurationSpec;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.ServiceConfiguration;
+import com.vmware.photon.controller.api.model.ServiceConfigurationSpec;
+import com.vmware.photon.controller.api.model.ServiceType;
 import com.vmware.photon.controller.api.model.StatsInfo;
 import com.vmware.photon.controller.api.model.UsageTag;
-import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationService;
-import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ServiceConfigurationState;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ServiceConfigurationStateFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 
@@ -376,42 +376,42 @@ public class DeploymentXenonBackend implements DeploymentBackend {
   }
 
   @Override
-  public TaskEntity configureCluster(ClusterConfigurationSpec spec) throws ExternalException {
-    if (findClusterConfigurationByType(spec.getType()) != null) {
-      throw new ClusterTypeAlreadyConfiguredException(spec.getType());
+  public TaskEntity configureService(ServiceConfigurationSpec spec) throws ExternalException {
+    if (findServiceConfigurationByType(spec.getType()) != null) {
+      throw new ServiceTypeAlreadyConfiguredException(spec.getType());
     }
 
-    ClusterConfigurationService.State state = new ClusterConfigurationService.State();
-    state.clusterType = spec.getType();
+    ServiceConfigurationState.State state = new ServiceConfigurationState.State();
+    state.serviceType = spec.getType();
     state.imageId = spec.getImageId();
     state.documentSelfLink = spec.getType().toString().toLowerCase();
 
-    xenonClient.post(true, ClusterConfigurationServiceFactory.SELF_LINK, state);
-    return taskBackend.createCompletedTask(null, Operation.CONFIGURE_CLUSTER);
+    xenonClient.post(true, ServiceConfigurationStateFactory.SELF_LINK, state);
+    return taskBackend.createCompletedTask(null, Operation.CONFIGURE_SERVICE);
   }
 
   @Override
-  public TaskEntity deleteClusterConfiguration(ClusterType clusterType) throws ExternalException {
-    if (findClusterConfigurationByType(clusterType) == null) {
-      throw new ClusterTypeNotConfiguredException(clusterType);
+  public TaskEntity deleteServiceConfiguration(ServiceType serviceType) throws ExternalException {
+    if (findServiceConfigurationByType(serviceType) == null) {
+      throw new ServiceTypeNotConfiguredException(serviceType);
     }
 
-    xenonClient.delete(getClusterConfigurationLink(clusterType), new ClusterConfigurationService.State());
-    return taskBackend.createCompletedTask(null, Operation.DELETE_CLUSTER_CONFIGURATION);
+    xenonClient.delete(getServiceConfigurationLink(serviceType), new ServiceConfigurationState.State());
+    return taskBackend.createCompletedTask(null, Operation.DELETE_SERVICE_CONFIGURATION);
   }
 
   @Override
-  public List<ClusterConfiguration> getClusterConfigurations() throws ExternalException {
-    List<ClusterConfiguration> clusterConfigurations = new ArrayList<>();
-    for (ClusterType clusterType : ClusterType.values()) {
-      ClusterConfiguration configuration = findClusterConfigurationByType(clusterType);
+  public List<ServiceConfiguration> getServiceConfigurations() throws ExternalException {
+    List<ServiceConfiguration> serviceConfigurations = new ArrayList<>();
+    for (ServiceType serviceType : ServiceType.values()) {
+      ServiceConfiguration configuration = findServiceConfigurationByType(serviceType);
 
       if (configuration != null) {
-        clusterConfigurations.add(configuration);
+        serviceConfigurations.add(configuration);
       }
     }
 
-    return clusterConfigurations;
+    return serviceConfigurations;
   }
 
   @Override
@@ -643,7 +643,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.PROVISION_CLOUD_HOSTS);
     this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.PROVISION_CLUSTER_MANAGER);
+        taskEntity, deploymentEntity, Operation.PROVISION_SERVICES_MANAGER);
     this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.CREATE_SUBNET_ALLOCATOR);
     this.taskBackend.getStepBackend().createQueuedStep(
@@ -703,14 +703,14 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     return taskEntity;
   }
 
-  private ClusterConfiguration findClusterConfigurationByType(ClusterType clusterType) throws ExternalException {
+  private ServiceConfiguration findServiceConfigurationByType(ServiceType serviceType) throws ExternalException {
     try {
       com.vmware.xenon.common.Operation operation =
-          xenonClient.get(getClusterConfigurationLink(clusterType));
-      ClusterConfigurationService.State state = operation.getBody(ClusterConfigurationService.State.class);
+          xenonClient.get(getServiceConfigurationLink(serviceType));
+      ServiceConfigurationState.State state = operation.getBody(ServiceConfigurationState.State.class);
 
-      ClusterConfiguration configuration = new ClusterConfiguration();
-      configuration.setType(state.clusterType);
+      ServiceConfiguration configuration = new ServiceConfiguration();
+      configuration.setType(state.serviceType);
       configuration.setImageId(state.imageId);
 
       return configuration;
@@ -719,8 +719,8 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     }
   }
 
-  private String getClusterConfigurationLink(ClusterType clusterType) {
-    return ClusterConfigurationServiceFactory.SELF_LINK + "/" + clusterType.toString().toLowerCase();
+  private String getServiceConfigurationLink(ServiceType serviceType) {
+    return ServiceConfigurationStateFactory.SELF_LINK + "/" + serviceType.toString().toLowerCase();
   }
 
   private void validateDeploy() throws ExternalException {

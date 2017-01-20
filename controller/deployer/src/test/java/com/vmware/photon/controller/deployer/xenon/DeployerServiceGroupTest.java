@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.deployer.xenon;
 
-import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
@@ -34,6 +33,7 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactor
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
+import com.vmware.photon.controller.servicesmanager.ServicesManagerFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 
@@ -85,7 +85,7 @@ public class DeployerServiceGroupTest {
   private ServiceConfiguratorFactory serviceConfiguratorFactory;
   private ZookeeperClientFactory zookeeperClientFactory;
   private HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory;
-  private ClusterManagerFactory clusterManagerFactory;
+  private ServicesManagerFactory servicesManagerFactory;
   private NsxClientFactory nsxClientFactory;
 
   private void waitForServicesStartup(PhotonControllerXenonHost host)
@@ -142,7 +142,7 @@ public class DeployerServiceGroupTest {
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
       zookeeperClientFactory = mock(ZookeeperClientFactory.class);
       hostManagementVmAddressValidatorFactory = mock(HostManagementVmAddressValidatorFactory.class);
-      clusterManagerFactory = mock(ClusterManagerFactory.class);
+      servicesManagerFactory = mock(ServicesManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
 
       storageDir = new File(deployerTestConfig.getXenonConfig().getStoragePath());
@@ -171,7 +171,7 @@ public class DeployerServiceGroupTest {
           serviceConfiguratorFactory,
           zookeeperClientFactory,
           hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory);
+          servicesManagerFactory);
 
       host.registerDeployer(deployerServiceGroup);
     }
@@ -216,7 +216,7 @@ public class DeployerServiceGroupTest {
           serviceConfiguratorFactory,
           zookeeperClientFactory,
           hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory);
+          servicesManagerFactory);
 
       host.registerDeployer(deployerServiceGroup);
 
@@ -255,7 +255,7 @@ public class DeployerServiceGroupTest {
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
       zookeeperClientFactory = mock(ZookeeperClientFactory.class);
       hostManagementVmAddressValidatorFactory = mock(HostManagementVmAddressValidatorFactory.class);
-      clusterManagerFactory = mock(ClusterManagerFactory.class);
+      servicesManagerFactory = mock(ServicesManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
 
       storageDir = new File(deployerTestConfig.getXenonConfig().getStoragePath());
@@ -283,7 +283,7 @@ public class DeployerServiceGroupTest {
           serviceConfiguratorFactory,
           zookeeperClientFactory,
           hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory);
+          servicesManagerFactory);
 
       host.registerDeployer(deployerServiceGroup);
     }
@@ -343,7 +343,7 @@ public class DeployerServiceGroupTest {
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
       zookeeperClientFactory = mock(ZookeeperClientFactory.class);
       hostManagementVmAddressValidatorFactory = mock(HostManagementVmAddressValidatorFactory.class);
-      clusterManagerFactory = mock(ClusterManagerFactory.class);
+      servicesManagerFactory = mock(ServicesManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
 
       storageDir = new File(deployerTestConfig.getXenonConfig().getStoragePath());
@@ -371,7 +371,7 @@ public class DeployerServiceGroupTest {
           serviceConfiguratorFactory,
           zookeeperClientFactory,
           hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory);
+          servicesManagerFactory);
 
       host.registerDeployer(deployerServiceGroup);
     }
@@ -424,7 +424,7 @@ public class DeployerServiceGroupTest {
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
       zookeeperClientFactory = mock(ZookeeperClientFactory.class);
       hostManagementVmAddressValidatorFactory = mock(HostManagementVmAddressValidatorFactory.class);
-      clusterManagerFactory = mock(ClusterManagerFactory.class);
+      servicesManagerFactory = mock(ServicesManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
 
       deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
@@ -460,7 +460,7 @@ public class DeployerServiceGroupTest {
           serviceConfiguratorFactory,
           zookeeperClientFactory,
           hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory);
+          servicesManagerFactory);
 
       host.registerDeployer(deployerServiceGroup);
 
@@ -492,7 +492,7 @@ public class DeployerServiceGroupTest {
           serviceConfiguratorFactory,
           zookeeperClientFactory,
           hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory);
+          servicesManagerFactory);
 
       host2.registerDeployer(deployerServiceGroup2);
 

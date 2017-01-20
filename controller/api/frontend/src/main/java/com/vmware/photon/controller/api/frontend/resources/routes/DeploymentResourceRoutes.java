@@ -40,6 +40,10 @@ public class DeploymentResourceRoutes {
 
   public static final String DISABLE_CLUSTER_TYPE_ACTION = "/disable_cluster_type";
 
+  public static final String ENABLE_SERVICE_TYPE_ACTION = "/enable_service_type";
+
+  public static final String DISABLE_SERVICE_TYPE_ACTION = "/disable_service_type";
+
   public static final String DEPLOYMENT_VMS_PATH = "/deployments/{id}/vms";
 
   public static final String DEPLOYMENT_HOSTS_PATH = "/deployments/{id}/hosts";

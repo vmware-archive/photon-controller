@@ -45,7 +45,7 @@ public class MultiplexedSecurityGroupFetcher implements SecurityGroupFetcher {
       @Tenant SecurityGroupFetcher tenantFetcher,
       @Project SecurityGroupFetcher projectFetcher,
       @ResourceTicket SecurityGroupFetcher resourceTicketFetcher,
-      @Cluster SecurityGroupFetcher clusterFetcher,
+      @Service SecurityGroupFetcher serviceFetcher,
       @Disk SecurityGroupFetcher diskFetcher,
       @Vm SecurityGroupFetcher vmFetcher,
       @Subnet SecurityGroupFetcher subnetFetcher) {
@@ -55,7 +55,7 @@ public class MultiplexedSecurityGroupFetcher implements SecurityGroupFetcher {
     this.fetcherMap.put(TransactionAuthorizationObject.Kind.TENANT, tenantFetcher);
     this.fetcherMap.put(TransactionAuthorizationObject.Kind.PROJECT, projectFetcher);
     this.fetcherMap.put(TransactionAuthorizationObject.Kind.RESOURCE_TICKET, resourceTicketFetcher);
-    this.fetcherMap.put(TransactionAuthorizationObject.Kind.CLUSTER, clusterFetcher);
+    this.fetcherMap.put(TransactionAuthorizationObject.Kind.SERVICE, serviceFetcher);
     this.fetcherMap.put(TransactionAuthorizationObject.Kind.DISK, diskFetcher);
     this.fetcherMap.put(TransactionAuthorizationObject.Kind.VM, vmFetcher);
     this.fetcherMap.put(TransactionAuthorizationObject.Kind.SUBNET, subnetFetcher);

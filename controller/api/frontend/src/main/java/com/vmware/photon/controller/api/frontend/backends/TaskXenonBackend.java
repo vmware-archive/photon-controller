@@ -113,7 +113,7 @@ public class TaskXenonBackend implements TaskBackend, StepBackend {
     String entityKind = null;
     String projectId = null;
 
-    //currently creation of kubernetes and mesos cluster, their resize and delete pass null entity
+    //currently creation of kubernetes and mesos service, their resize and delete pass null entity
     //putting this null check temporarily to allow the switch to Xenon backend to work
     if (entity != null) {
       entityId = entity.getId();
@@ -140,7 +140,7 @@ public class TaskXenonBackend implements TaskBackend, StepBackend {
     String entityKind = null;
     String projectId = null;
 
-    //currently creation of kubernetes and mesos cluster, their resize and delete pass null entity
+    //currently creation of kubernetes and mesos service, their resize and delete pass null entity
     //putting this null check temporarily to allow the switch to Xenon backend to work
     if (entity != null) {
       entityId = entity.getId();
@@ -158,7 +158,7 @@ public class TaskXenonBackend implements TaskBackend, StepBackend {
 
   @Override
   public TaskEntity createCompletedTask(String entityId, String entityKind, String projectId, Operation operation) {
-    //For cluster user only. pass in the task entity id and kind
+    //For service user only. pass in the task entity id and kind
     return createTaskHelper(entityId, entityKind, null, operation, TaskService.State.TaskState.COMPLETED, null);
   }
 
@@ -191,7 +191,7 @@ public class TaskXenonBackend implements TaskBackend, StepBackend {
     TaskService.State.TaskState taskState;
     List<TaskService.State.Step> taskSteps = null;
 
-    //currently creation of kubernetes and mesos cluster, their resize and delete pass null entity
+    //currently creation of kubernetes and mesos service, their resize and delete pass null entity
     //putting this null check temporarily to allow the switch to Xenon backend to work
     if (entity != null) {
       entityId = entity.getId();
