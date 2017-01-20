@@ -1,6 +1,0 @@
-{
-  "id": "id",
-  "kind": "clusterConfig",
-  "type": "KUBERNETES",
-  "imageId": "imageId"
-}

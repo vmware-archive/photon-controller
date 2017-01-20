@@ -14,11 +14,11 @@
 package com.vmware.photon.controller.api.frontend.clients;
 
 import com.vmware.photon.controller.api.frontend.BackendTaskExecutor;
-import com.vmware.photon.controller.api.frontend.backends.ClusterBackend;
 import com.vmware.photon.controller.api.frontend.backends.DatastoreBackend;
 import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
 import com.vmware.photon.controller.api.frontend.backends.HostBackend;
 import com.vmware.photon.controller.api.frontend.backends.ProjectBackend;
+import com.vmware.photon.controller.api.frontend.backends.ServiceBackend;
 import com.vmware.photon.controller.api.frontend.backends.TaskBackend;
 import com.vmware.photon.controller.api.frontend.backends.TenantBackend;
 import com.vmware.photon.controller.api.frontend.backends.VmBackend;
@@ -32,9 +32,6 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.PageExpired
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
 import com.vmware.photon.controller.api.model.Auth;
 import com.vmware.photon.controller.api.model.AuthInfo;
-import com.vmware.photon.controller.api.model.ClusterConfiguration;
-import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
-import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
@@ -45,6 +42,9 @@ import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.model.NsxConfigurationSpec;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.ServiceConfiguration;
+import com.vmware.photon.controller.api.model.ServiceConfigurationSpec;
+import com.vmware.photon.controller.api.model.ServiceType;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Tenant;
 import com.vmware.photon.controller.api.model.Vm;
@@ -75,7 +75,7 @@ public class DeploymentFeClient {
   private final TenantBackend tenantBackend;
   private final ProjectBackend projectBackend;
   private final DatastoreBackend datastoreBackend;
-  private final ClusterBackend clusterBackend;
+  private final ServiceBackend serviceBackend;
 
   private final AuthConfig authConfig;
 
@@ -91,7 +91,7 @@ public class DeploymentFeClient {
       TenantBackend tenantBackend,
       ProjectBackend projectBackend,
       DatastoreBackend datastoreBackend,
-      ClusterBackend clusterBackend,
+      ServiceBackend serviceBackend,
       AuthConfig authConfig,
       TaskCommandFactory commandFactory,
       @BackendTaskExecutor ExecutorService executor) {
@@ -102,7 +102,7 @@ public class DeploymentFeClient {
     this.tenantBackend = tenantBackend;
     this.projectBackend = projectBackend;
     this.datastoreBackend = datastoreBackend;
-    this.clusterBackend = clusterBackend;
+    this.serviceBackend = serviceBackend;
     this.authConfig = authConfig;
     this.commandFactory = commandFactory;
     this.executor = executor;
@@ -155,7 +155,7 @@ public class DeploymentFeClient {
 
   public Deployment get(String id) throws ExternalException {
     Deployment deployment = deploymentBackend.toApiRepresentation(id);
-    deployment.setClusterConfigurations(deploymentBackend.getClusterConfigurations());
+    deployment.setServiceConfigurations(deploymentBackend.getServiceConfigurations());
     return deployment;
   }
 
@@ -188,11 +188,11 @@ public class DeploymentFeClient {
   }
 
   public ResourceList<Deployment> listAllDeployments() throws ExternalException {
-    List<ClusterConfiguration> clusterConfigs = deploymentBackend.getClusterConfigurations();
+    List<ServiceConfiguration> serviceConfigs = deploymentBackend.getServiceConfigurations();
     List<Deployment> deployments = deploymentBackend.getAll();
     if (deployments != null) {
       for (Deployment deployment : deployments) {
-        deployment.setClusterConfigurations(clusterConfigs);
+        deployment.setServiceConfigurations(serviceConfigs);
       }
     }
     return new ResourceList<>(deployments);
@@ -269,15 +269,15 @@ public class DeploymentFeClient {
     return hostBackend.getHostsPage(pageLink);
   }
 
-  public Task configureCluster(String id, ClusterConfigurationSpec spec) throws ExternalException {
+  public Task configureService(String id, ServiceConfigurationSpec spec) throws ExternalException {
     deploymentBackend.findById(id);
-    TaskEntity taskEntity =  deploymentBackend.configureCluster(spec);
+    TaskEntity taskEntity =  deploymentBackend.configureService(spec);
     return taskBackend.getApiRepresentation(taskEntity);
   }
 
-  public Task deleteClusterConfiguration(String id, ClusterType clusterType) throws ExternalException {
+  public Task deleteServiceConfiguration(String id, ServiceType serviceType) throws ExternalException {
     deploymentBackend.findById(id);
-    TaskEntity taskEntity = deploymentBackend.deleteClusterConfiguration(clusterType);
+    TaskEntity taskEntity = deploymentBackend.deleteServiceConfiguration(serviceType);
     return taskBackend.getApiRepresentation(taskEntity);
   }
 
@@ -320,7 +320,7 @@ public class DeploymentFeClient {
     deploymentSize.setNumberDatastores(datastoreBackend.getNumberDatastores());
     deploymentSize.setNumberProjects(projectBackend.getNumberProjects());
     deploymentSize.setNumberVMs(vmBackend.getNumberVms());
-    deploymentSize.setNumberClusters(clusterBackend.getNumberClusters());
+    deploymentSize.setNumberServices(serviceBackend.getNumberServices());
 
     return deploymentSize;
 

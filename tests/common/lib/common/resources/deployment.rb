@@ -35,10 +35,10 @@ module EsxCloud
         fail UnexpectedFormat, "Invalid Deployment hash: #{hash}"
       end
 
-      if hash["clusterConfigurations"] == nil
+      if hash["serviceConfigurations"] == nil
         cluster_configurations = nil
       else
-        cluster_configurations = hash["clusterConfigurations"].map { |cc| ClusterConfiguration.create_from_hash(cc)}
+        cluster_configurations = hash["serviceConfigurations"].map { |cc| ClusterConfiguration.create_from_hash(cc)}
       end
 
       new(hash["id"], hash["state"], hash["imageDatastores"], AuthInfo.create_from_hash(hash["auth"]),
