@@ -173,7 +173,6 @@ public class TestHelper {
     startState.statsStoreType = StatsStoreType.GRAPHITE;
     startState.oAuthEnabled = authEnabled;
     startState.oAuthTenantName = "OAUTH_ENDPOINT";
-    startState.oAuthPassword = "OAUTH_PASSWORD";
     if (startState.oAuthEnabled) {
       startState.oAuthServerPort = 433;
     } else {

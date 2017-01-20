@@ -218,20 +218,6 @@ public class DeploymentService extends StatefulService {
     public String oAuthTenantName;
 
     /**
-     * LightWave user name.
-     */
-    @Immutable
-    @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-    public String oAuthUserName;
-
-    /**
-     * Password for the given LightWave user.
-     */
-    @Immutable
-    @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-    public String oAuthPassword;
-
-    /**
      * This value represents the OAuth server address.
      */
     public String oAuthServerAddress;

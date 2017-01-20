@@ -306,22 +306,6 @@ public class DeploymentServiceTest {
       }
     }
 
-    @Test(expectedExceptions = BadRequestException.class)
-    public void testIllegalPatch() throws Throwable {
-      final String lightwaveAdminUsername = "NonAdministrator";
-      final String lightwaveAdminPassword = "SomePassword22";
-      DeploymentService.State startState = buildServiceStartState();
-      Operation startOperation = testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
-      assertThat(startOperation.getStatusCode(), is(200));
-
-      DeploymentService.State patchState = new DeploymentService.State();
-      patchState.oAuthUserName = lightwaveAdminUsername;
-      patchState.oAuthPassword = lightwaveAdminPassword;
-
-      DeploymentService.State createState = startOperation.getBody(DeploymentService.State.class);
-      testEnvironment.sendPatchAndWait(createState.documentSelfLink, patchState);
-    }
-
     @Test
     public void testPatchWithDhcpConfiguration() throws Throwable {
       DeploymentService.State startState = buildServiceStartState();

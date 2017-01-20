@@ -63,8 +63,6 @@ public class DefaultDeployment {
     startState.ntpEndpoint = deploymentContext.getNtpEndpoint();
     startState.oAuthEnabled = authConfig.isAuthEnabled();
     startState.oAuthTenantName = authConfig.getAuthDomain();
-    startState.oAuthUserName = authConfig.getAuthUserName();
-    startState.oAuthPassword = authConfig.getAuthPassword();
     startState.oAuthServerAddress = authConfig.getAuthServerAddress();
     startState.oAuthLoadBalancerAddress = authConfig.getAuthLoadBalancerAddress();
     startState.oAuthServerPort = authConfig.getAuthServerPort();

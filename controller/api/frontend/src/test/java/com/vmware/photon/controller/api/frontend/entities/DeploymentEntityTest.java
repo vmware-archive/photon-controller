@@ -60,8 +60,6 @@ public class DeploymentEntityTest {
       entity.setOauthEndpoint("192.168.0.1");
       entity.setOauthPort(443);
       entity.setOauthTenant("tenant");
-      entity.setOauthUsername("username");
-      entity.setOauthPassword("password");
       entity.setOauthSecurityGroups(Arrays.asList(new String[]{"authGroup1, authGroup2"}));
       entity.setNetworkManagerAddress("1.2.3.4");
       entity.setNetworkManagerUsername("networkManagerUsername");
@@ -88,8 +86,6 @@ public class DeploymentEntityTest {
       assertThat(entity.getOauthEndpoint(), is("192.168.0.1"));
       assertThat(entity.getOauthPort(), is(443));
       assertThat(entity.getOauthTenant(), is("tenant"));
-      assertThat(entity.getOauthUsername(), is("username"));
-      assertThat(entity.getOauthPassword(), is("password"));
       assertThat(entity.getOauthSecurityGroups(), is(Arrays.asList(new String[]{"authGroup1, authGroup2"})));
       assertThat(entity.getNetworkManagerAddress(), is("1.2.3.4"));
       assertThat(entity.getNetworkManagerUsername(), is("networkManagerUsername"));
@@ -122,8 +118,6 @@ public class DeploymentEntityTest {
       entity.setOauthEndpoint("192.168.0.1");
       entity.setOauthPort(443);
       entity.setOauthTenant("t");
-      entity.setOauthUsername("u");
-      entity.setOauthPassword("p");
       entity.setOauthSecurityGroups(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}));
       entity.setNetworkManagerAddress("1.2.3.4");
       entity.setNetworkManagerUsername("networkManagerUsername");

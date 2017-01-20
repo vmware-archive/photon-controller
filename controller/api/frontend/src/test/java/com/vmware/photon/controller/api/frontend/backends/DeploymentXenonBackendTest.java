@@ -146,7 +146,6 @@ public class DeploymentXenonBackendTest {
     deploymentState.ntpEndpoint = "ntp";
     deploymentState.oAuthEnabled = true;
     deploymentState.oAuthTenantName = "t";
-    deploymentState.oAuthPassword = "p";
     deploymentState.oAuthSecurityGroups = Arrays.asList(new String[]{"securityGroup1", "securityGroup2"});
     deploymentState.sdnEnabled = true;
     deploymentState.networkManagerAddress = "1.2.3.4";
@@ -750,8 +749,7 @@ public class DeploymentXenonBackendTest {
 
       deployment2.imageDataStoreUsedForVMs = deploymentState.imageDataStoreUsedForVMs;
       deployment2.oAuthEnabled = deploymentState.oAuthEnabled;
-      deployment2.oAuthTenantName = deploymentState.oAuthPassword;
-      deployment2.oAuthPassword = deploymentState.oAuthPassword;
+      deployment2.oAuthTenantName = deploymentState.oAuthTenantName;
       deployment2.oAuthSecurityGroups = deploymentState.oAuthSecurityGroups;
       deployment2.networkManagerAddress = deploymentState.networkManagerAddress;
       deployment2.networkManagerUsername = deploymentState.networkManagerUsername;

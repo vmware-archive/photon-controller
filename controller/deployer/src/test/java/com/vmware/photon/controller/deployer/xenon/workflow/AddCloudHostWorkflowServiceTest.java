@@ -504,8 +504,6 @@ public class AddCloudHostWorkflowServiceTest {
       state.ntpEndpoint = "ntpEndpoint";
       state.oAuthEnabled = false;
       state.oAuthTenantName = "oAuthTenantName";
-      state.oAuthUserName = "oAuthUserName";
-      state.oAuthPassword = "oAuthPassword";
       state.oAuthServerAddress = "oAuthServerAddress";
       state.oAuthServerPort = 433;
       state.syslogEndpoint = "syslogEndpoint";

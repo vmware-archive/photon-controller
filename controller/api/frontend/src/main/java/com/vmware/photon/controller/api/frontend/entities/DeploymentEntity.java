@@ -59,10 +59,6 @@ public class DeploymentEntity extends BaseEntity {
 
   private String oauthTenant;
 
-  private String oauthUsername;
-
-  private String oauthPassword;
-
   private List<String> oauthSecurityGroups;
 
   private boolean sdnEnabled;
@@ -195,22 +191,6 @@ public class DeploymentEntity extends BaseEntity {
 
   public void setOauthTenant(String oauthTenant) {
     this.oauthTenant = oauthTenant;
-  }
-
-  public String getOauthUsername() {
-    return oauthUsername;
-  }
-
-  public void setOauthUsername(String oauthUsername) {
-    this.oauthUsername = oauthUsername;
-  }
-
-  public String getOauthPassword() {
-    return oauthPassword;
-  }
-
-  public void setOauthPassword(String oauthPassword) {
-    this.oauthPassword = oauthPassword;
   }
 
   public List<String> getOauthSecurityGroups() {
@@ -411,8 +391,6 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getOauthLoadBalancerEndpoint(), other.getOauthLoadBalancerEndpoint())
         && Objects.equals(this.getOauthPort(), other.getOauthPort())
         && Objects.equals(this.getOauthTenant(), other.getOauthTenant())
-        && Objects.equals(this.getOauthUsername(), other.getOauthUsername())
-        && Objects.equals(this.getOauthPassword(), other.getOauthPassword())
         && Objects.equals(this.getOauthUiLoginEndpoint(), other.getOauthUiLoginEndpoint())
         && Objects.equals(this.getOauthUiLogoutEndpoint(), other.getOauthUiLogoutEndpoint())
         && ListUtils.isEqualList(this.getOauthSecurityGroups(), other.getOauthSecurityGroups())

@@ -472,8 +472,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     entity.setOauthLoadBalancerEndpoint(deployment.oAuthLoadBalancerAddress);
     entity.setOauthPort(deployment.oAuthServerPort);
     entity.setOauthTenant(deployment.oAuthTenantName);
-    entity.setOauthUsername(deployment.oAuthUserName);
-    entity.setOauthPassword(deployment.oAuthPassword);
     entity.setOauthUiLoginEndpoint(deployment.oAuthMgmtUiLoginEndpoint);
     entity.setOauthUiLogoutEndpoint(deployment.oAuthMgmtUiLogoutEndpoint);
     entity.setOauthSecurityGroups(deployment.oAuthSecurityGroups);

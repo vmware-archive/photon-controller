@@ -145,7 +145,6 @@ public class HostXenonBackendTest {
 
     deploymentState.oAuthEnabled = true;
     deploymentState.oAuthTenantName = "t";
-    deploymentState.oAuthPassword = "p";
     deploymentState.oAuthSecurityGroups = Arrays.asList(new String[]{"securityGroup1", "securityGroup2"});
     deploymentState.documentSelfLink = DeployerDefaults.DEFAULT_DEPLOYMENT_ID;
     deploymentState.state = DeploymentState.NOT_DEPLOYED;
