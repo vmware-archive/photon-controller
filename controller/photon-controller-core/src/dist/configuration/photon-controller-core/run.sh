@@ -116,7 +116,7 @@ function check_lightwave()
   domain_name=`/opt/vmware/bin/domainjoin info | \
                       awk -F ":" '{print $2;}' | \
                       sed "s/^[[:space:]]*//"`
-  if [ -z "$domain_name"]
+  if [ -z "$domain_name" ]
   then
     echo "Error: The system is not joined to Lightwave"
     exit $ERROR_NOT_JOINED_TO_LIGHTWAVE
@@ -124,7 +124,7 @@ function check_lightwave()
 
   lightwave_dc=`/opt/vmware/bin/vmafd-cli get-dc-name --server-name localhost`
 
-  if [ -z "$lightwave_dc"]
+  if [ -z "$lightwave_dc" ]
   then
     echo "Error: Failed to get Lightwave Domain Controller"
     exit $ERROR_FAILED_TO_GET_LIGHTWAVE_DC
@@ -166,7 +166,6 @@ function setup_certificates()
 
     # Restrict permission on the key files
     chmod 0400 $MACHINE_SSL_PRIVATE_KEY
-    chmod 0444 $MACHINE_SSL_PUBLIC_KEY
   fi
 
   if [ ! -f $MACHINE_SSL_CERT ]

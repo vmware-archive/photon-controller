@@ -78,6 +78,10 @@
     },
     {
       "type": "shell",
+      "inline": "systemctl disable photon-controller.service"
+    },
+    {
+      "type": "shell",
       "inline": "systemctl enable configure-guest"
     },
     {
