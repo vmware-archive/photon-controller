@@ -14,9 +14,9 @@
 package com.vmware.photon.controller.api.frontend.auth.fetcher;
 
 import com.vmware.photon.controller.api.frontend.auth.TransactionAuthorizationObject;
-import com.vmware.photon.controller.api.frontend.clients.ClusterFeClient;
-import com.vmware.photon.controller.api.frontend.exceptions.external.ClusterNotFoundException;
-import com.vmware.photon.controller.api.model.Cluster;
+import com.vmware.photon.controller.api.frontend.clients.ServiceFeClient;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ServiceNotFoundException;
+import com.vmware.photon.controller.api.model.Service;
 
 import com.google.inject.Inject;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ public class ClusterSecurityGroupFetcher implements SecurityGroupFetcher {
   /**
    * Storage access object for cluster resources.
    */
-  ClusterFeClient clusterFeClient;
+  ServiceFeClient serviceFeClient;
 
   /**
    * Fetcher used to retrieve the security groups for the parent project.
@@ -47,9 +47,9 @@ public class ClusterSecurityGroupFetcher implements SecurityGroupFetcher {
   com.vmware.photon.controller.api.frontend.auth.fetcher.SecurityGroupFetcher projectFetcher;
 
   @Inject
-  public ClusterSecurityGroupFetcher(ClusterFeClient clusterFeClient,
+  public ClusterSecurityGroupFetcher(ServiceFeClient serviceFeClient,
                                      @Project SecurityGroupFetcher projectFetcher) {
-    this.clusterFeClient = clusterFeClient;
+    this.serviceFeClient = serviceFeClient;
     this.projectFetcher = projectFetcher;
   }
 
@@ -62,14 +62,14 @@ public class ClusterSecurityGroupFetcher implements SecurityGroupFetcher {
 
     Set<String> securityGroups = new HashSet<>();
     try {
-      Cluster cluster = clusterFeClient.get(authorizationObject.getId());
+      Service service = serviceFeClient.get(authorizationObject.getId());
       securityGroups = projectFetcher.fetchSecurityGroups(
           new TransactionAuthorizationObject(
               TransactionAuthorizationObject.Kind.PROJECT,
               TransactionAuthorizationObject.Strategy.SELF,
-              cluster.getProjectId()));
+              service.getProjectId()));
 
-    } catch (ClusterNotFoundException ex) {
+    } catch (ServiceNotFoundException ex) {
       logger.warn("invalid cluster id {}", authorizationObject.getId());
     } catch (Exception ex) {
       logger.warn("unexpected exception processing cluster {}", authorizationObject.getId());

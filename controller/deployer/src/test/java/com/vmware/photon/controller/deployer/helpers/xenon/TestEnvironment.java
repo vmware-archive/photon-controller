@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.deployer.helpers.xenon;
 
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
-import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
@@ -37,6 +36,8 @@ import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.workflow.BatchCreateManagementWorkflowService;
 import com.vmware.photon.controller.deployer.xenon.workflow.DeploymentWorkflowService;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
+import com.vmware.photon.controller.servicesmanager.ServicesManagerFactory;
+
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import org.slf4j.Logger;
@@ -86,7 +87,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       ZookeeperClientFactory zookeeperClientFactory,
       HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory,
       NsxClientFactory nsxClientFactory,
-      ClusterManagerFactory clusterManagerFactory,
+      ServicesManagerFactory servicesManagerFactory,
       int hostCount,
       Long operationTimeoutMicros,
       int hostNumber,
@@ -129,7 +130,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           serviceConfiguratorFactory,
           zookeeperClientFactory,
           hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory);
+          servicesManagerFactory);
 
       CloudStoreServiceGroup cloudStoreServiceGroup = new CloudStoreServiceGroup(false);
 
@@ -170,7 +171,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
     private ServerSet cloudServerSet;
     private ZookeeperClientFactory zookeeperServerSetBuilderFactory;
     private HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory;
-    private ClusterManagerFactory clusterManagerFactory;
+    private ServicesManagerFactory servicesManagerFactory;
     private NsxClientFactory nsxClientFactory;
     private Integer port;
 
@@ -250,8 +251,8 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       return this;
     }
 
-    public Builder clusterManagerFactory(ClusterManagerFactory clusterManagerFactory) {
-      this.clusterManagerFactory = clusterManagerFactory;
+    public Builder servicesManagerFactory(ServicesManagerFactory servicesManagerFactory) {
+      this.servicesManagerFactory = servicesManagerFactory;
       return this;
     }
 
@@ -302,7 +303,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           this.zookeeperServerSetBuilderFactory,
           this.hostManagementVmAddressValidatorFactory,
           this.nsxClientFactory,
-          this.clusterManagerFactory,
+          this.servicesManagerFactory,
           this.hostCount,
           this.operationTimeoutMicros,
           this.hostNumber,

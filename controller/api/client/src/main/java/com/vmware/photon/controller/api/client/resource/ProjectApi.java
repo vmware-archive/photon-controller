@@ -12,12 +12,12 @@
  */
 package com.vmware.photon.controller.api.client.resource;
 
-import com.vmware.photon.controller.api.model.Cluster;
-import com.vmware.photon.controller.api.model.ClusterCreateSpec;
 import com.vmware.photon.controller.api.model.DiskCreateSpec;
 import com.vmware.photon.controller.api.model.PersistentDisk;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Service;
+import com.vmware.photon.controller.api.model.ServiceCreateSpec;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
@@ -76,13 +76,13 @@ public interface ProjectApi {
       throws
       IOException;
 
-  Task createCluster(String projectId, ClusterCreateSpec clusterCreateSpec) throws IOException;
+  Task createService(String projectId, ServiceCreateSpec serviceCreateSpec) throws IOException;
 
-  void createClusterAsync(String projectId, ClusterCreateSpec clusterCreateSpec,
+  void createServiceAsync(String projectId, ServiceCreateSpec serviceCreateSpec,
                           FutureCallback<Task> responseCallback) throws IOException;
 
-  ResourceList<Cluster> getClustersInProject(String projectId) throws IOException;
+  ResourceList<Service> getServicesInProject(String projectId) throws IOException;
 
-  void getClustersInProjectAsync(String projectId, FutureCallback<ResourceList<Cluster>>
+  void getServicesInProjectAsync(String projectId, FutureCallback<ResourceList<Service>>
       responseCallback) throws IOException;
 }

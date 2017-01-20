@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.deployer.helpers.xenon;
 
-import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -36,6 +35,7 @@ import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.DeployerContextTest;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
+import com.vmware.photon.controller.servicesmanager.ServicesManagerFactory;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -121,7 +121,7 @@ public class TestHost extends PhotonControllerXenonHost {
     ZookeeperClientFactory zookeeperServerSetBuilderFactory = mock(ZookeeperClientFactory.class);
     HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory =
         mock(HostManagementVmAddressValidatorFactory.class);
-    ClusterManagerFactory clusterManagerFactory = mock(ClusterManagerFactory.class);
+    ServicesManagerFactory servicesManagerFactory = mock(ServicesManagerFactory.class);
 
     DeployerServiceGroup deployerServiceGroup = new DeployerServiceGroup(
         deployerContext,
@@ -134,7 +134,7 @@ public class TestHost extends PhotonControllerXenonHost {
         serviceConfiguratorFactory,
         zookeeperServerSetBuilderFactory,
         hostManagementVmAddressValidatorFactory,
-        clusterManagerFactory);
+        servicesManagerFactory);
 
     host.registerDeployer(deployerServiceGroup);
     host.start();

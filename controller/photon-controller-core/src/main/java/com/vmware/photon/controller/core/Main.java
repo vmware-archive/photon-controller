@@ -18,7 +18,6 @@ import com.vmware.photon.controller.api.frontend.clients.api.LocalApiClient;
 import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
-import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -55,6 +54,7 @@ import com.vmware.photon.controller.scheduler.SchedulingConfig;
 import com.vmware.photon.controller.scheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.scheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.scheduler.xenon.SchedulerServiceGroup;
+import com.vmware.photon.controller.servicesmanager.ServicesManagerFactory;
 import com.vmware.provider.VecsLoadStoreParameter;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceClient;
@@ -104,7 +104,7 @@ import java.util.concurrent.TimeUnit;
 public class Main {
 
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
-  public static final String CLUSTER_SCRIPTS_DIRECTORY = "clusters";
+  public static final String SERVICES_SCRIPTS_DIRECTORY = "services";
 
   public static void main(String[] args) throws Throwable {
     LoggingFactory.bootstrap();
@@ -439,15 +439,15 @@ public class Main {
     final HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory = new
         com.vmware.photon.controller.core.Main.HostManagementVmAddressValidatorFactoryImpl();
 
-    final ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(listeningExecutorService,
+    final ServicesManagerFactory servicesManagerFactory = new ServicesManagerFactory(listeningExecutorService,
         httpClient, cloudStoreServerSet,
-        Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), CLUSTER_SCRIPTS_DIRECTORY).toString());
+        Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), SERVICES_SCRIPTS_DIRECTORY).toString());
 
     return new DeployerServiceGroup(deployerConfig.getDeployerContext(),
         apiClientFactory, deployerConfig.getContainersConfig(), listeningExecutorService,
         httpFileServiceClientFactory, authHelperFactory, healthCheckHelperFactory,
         serviceConfiguratorFactory, zookeeperServerSetBuilderFactory, hostManagementVmAddressValidatorFactory,
-        clusterManagerFactory);
+        servicesManagerFactory);
   }
 
   /**

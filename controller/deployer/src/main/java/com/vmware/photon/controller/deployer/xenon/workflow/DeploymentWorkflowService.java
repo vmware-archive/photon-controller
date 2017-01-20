@@ -43,8 +43,8 @@ import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
-import com.vmware.photon.controller.deployer.xenon.task.AllocateClusterManagerResourcesTaskFactoryService;
-import com.vmware.photon.controller.deployer.xenon.task.AllocateClusterManagerResourcesTaskService;
+import com.vmware.photon.controller.deployer.xenon.task.AllocateServicesManagerResourcesTaskFactoryService;
+import com.vmware.photon.controller.deployer.xenon.task.AllocateServicesManagerResourcesTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
@@ -424,7 +424,7 @@ public class DeploymentWorkflowService extends StatefulService {
         processProvisionAllHosts(currentState);
         break;
       case ALLOCATE_CM_RESOURCES:
-        allocateClusterManagerResources(currentState);
+        allocateServicesManagerResources(currentState);
         break;
       case GET_EDGE_CLUSTER_ID:
         getEdgeClusterId(currentState);
@@ -572,8 +572,8 @@ public class DeploymentWorkflowService extends StatefulService {
         callback);
   }
 
-  private void allocateClusterManagerResources(final State currentState) {
-    ServiceUtils.logInfo(this, "Allocating ClusterManager resources");
+  private void allocateServicesManagerResources(final State currentState) {
+    ServiceUtils.logInfo(this, "Allocating ServicesManager resources");
     sendRequest(
         HostUtils.getCloudStoreHelper(this)
             .createGet(currentState.deploymentServiceLink)
@@ -586,7 +586,7 @@ public class DeploymentWorkflowService extends StatefulService {
 
                   DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
                   try {
-                    allocateClusterManagerResources(currentState, deploymentState);
+                    allocateServicesManagerResources(currentState, deploymentState);
                   } catch (Throwable t) {
                     failTask(t);
                   }
@@ -595,15 +595,15 @@ public class DeploymentWorkflowService extends StatefulService {
     );
   }
 
-  private void allocateClusterManagerResources(final State currentState,
-                                               DeploymentService.State deploymentState) throws Throwable {
+  private void allocateServicesManagerResources(final State currentState,
+                                                DeploymentService.State deploymentState) throws Throwable {
 
     final Service service = this;
 
-    FutureCallback<AllocateClusterManagerResourcesTaskService.State> callback =
-        new FutureCallback<AllocateClusterManagerResourcesTaskService.State>() {
+    FutureCallback<AllocateServicesManagerResourcesTaskService.State> callback =
+        new FutureCallback<AllocateServicesManagerResourcesTaskService.State>() {
           @Override
-          public void onSuccess(@Nullable AllocateClusterManagerResourcesTaskService.State result) {
+          public void onSuccess(@Nullable AllocateServicesManagerResourcesTaskService.State result) {
             switch (result.taskState.stage) {
               case FINISHED:
                 TaskUtils.sendSelfPatch(service, buildPatch(
@@ -628,18 +628,18 @@ public class DeploymentWorkflowService extends StatefulService {
           }
         };
 
-    AllocateClusterManagerResourcesTaskService.State startState =
-        new AllocateClusterManagerResourcesTaskService.State();
+    AllocateServicesManagerResourcesTaskService.State startState =
+        new AllocateServicesManagerResourcesTaskService.State();
     if (deploymentState.oAuthEnabled) {
       startState.apifeProtocol = "https";
     }
 
     TaskUtils.startTaskAsync(
         this,
-        AllocateClusterManagerResourcesTaskFactoryService.SELF_LINK,
+        AllocateServicesManagerResourcesTaskFactoryService.SELF_LINK,
         startState,
         (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        AllocateClusterManagerResourcesTaskService.State.class,
+        AllocateServicesManagerResourcesTaskService.State.class,
         currentState.taskPollDelay,
         callback);
   }

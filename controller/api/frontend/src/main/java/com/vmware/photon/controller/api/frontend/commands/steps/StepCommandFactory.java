@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.api.frontend.commands.steps;
 
 import com.vmware.photon.controller.api.frontend.backends.AttachedDiskBackend;
-import com.vmware.photon.controller.api.frontend.backends.ClusterBackend;
 import com.vmware.photon.controller.api.frontend.backends.DeploymentXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.DiskBackend;
 import com.vmware.photon.controller.api.frontend.backends.EntityLockBackend;
@@ -23,6 +22,7 @@ import com.vmware.photon.controller.api.frontend.backends.HostXenonBackend;
 import com.vmware.photon.controller.api.frontend.backends.ImageBackend;
 import com.vmware.photon.controller.api.frontend.backends.NetworkBackend;
 import com.vmware.photon.controller.api.frontend.backends.ProjectBackend;
+import com.vmware.photon.controller.api.frontend.backends.ServiceBackend;
 import com.vmware.photon.controller.api.frontend.backends.StepBackend;
 import com.vmware.photon.controller.api.frontend.backends.TaskBackend;
 import com.vmware.photon.controller.api.frontend.backends.TenantBackend;
@@ -59,7 +59,7 @@ public class StepCommandFactory {
   private final ImageStoreFactory imageStoreFactory;
   private final VsphereIsoStore isoStore;
   private final FlavorBackend flavorBackend;
-  private final ClusterBackend clusterBackend;
+  private final ServiceBackend serviceBackend;
   private final NetworkBackend networkBackend;
   private final TenantBackend tenantBackend;
   private final ProjectBackend projectBackend;
@@ -81,7 +81,7 @@ public class StepCommandFactory {
                             VsphereIsoStore isoStore,
                             NetworkBackend networkBackend,
                             FlavorBackend flavorBackend,
-                            ClusterBackend clusterBackend,
+                            ServiceBackend serviceBackend,
                             TenantBackend tenantBackend,
                             ProjectBackend projectBackend,
                             NetworkHelper networkHelper,
@@ -100,7 +100,7 @@ public class StepCommandFactory {
     this.isoStore = isoStore;
     this.networkBackend = networkBackend;
     this.flavorBackend = flavorBackend;
-    this.clusterBackend = clusterBackend;
+    this.serviceBackend = serviceBackend;
     this.tenantBackend = tenantBackend;
     this.projectBackend = projectBackend;
     this.networkHelper = networkHelper;
@@ -200,7 +200,7 @@ public class StepCommandFactory {
       case PROVISION_CONTROL_PLANE_HOSTS:
       case PROVISION_CONTROL_PLANE_VMS:
       case PROVISION_CLOUD_HOSTS:
-      case PROVISION_CLUSTER_MANAGER:
+      case PROVISION_SERVICES_MANAGER:
       case CREATE_SUBNET_ALLOCATOR:
       case CREATE_DHCP_SUBNET:
       case CONFIGURE_DHCP_RELAY_PROFILE:
@@ -216,48 +216,48 @@ public class StepCommandFactory {
             new DeploymentDeleteStatusStepCmd.DeploymentDeleteStepPoller(taskCommand, taskBackend, deploymentBackend));
       case PUSH_DEPLOYMENT_SECURITY_GROUPS:
         return new DeploymentPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend);
-      case CREATE_KUBERNETES_CLUSTER_INITIATE:
-        return new KubernetesClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
-      case CREATE_KUBERNETES_CLUSTER_SETUP_ETCD:
-      case CREATE_KUBERNETES_CLUSTER_SETUP_MASTER:
-      case CREATE_KUBERNETES_CLUSTER_UPDATE_EXTENDED_PROPERTIES:
-      case CREATE_KUBERNETES_CLUSTER_SETUP_WORKERS:
+      case CREATE_KUBERNETES_SERVICE_INITIATE:
+        return new KubernetesServiceCreateStepCmd(taskCommand, stepBackend, stepEntity, serviceBackend);
+      case CREATE_KUBERNETES_SERVICE_SETUP_ETCD:
+      case CREATE_KUBERNETES_SERVICE_SETUP_MASTER:
+      case CREATE_KUBERNETES_SERVICE_UPDATE_EXTENDED_PROPERTIES:
+      case CREATE_KUBERNETES_SERVICE_SETUP_WORKERS:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
-            new KubernetesClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
-      case CREATE_MESOS_CLUSTER_INITIATE:
-        return new MesosClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
-      case CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS:
-      case CREATE_MESOS_CLUSTER_SETUP_MASTERS:
-      case CREATE_MESOS_CLUSTER_SETUP_MARATHON:
-      case CREATE_MESOS_CLUSTER_SETUP_WORKERS:
+            new KubernetesServiceCreateTaskStatusPoller(taskCommand, serviceBackend, taskBackend));
+      case CREATE_MESOS_SERVICE_INITIATE:
+        return new MesosServiceCreateStepCmd(taskCommand, stepBackend, stepEntity, serviceBackend);
+      case CREATE_MESOS_SERVICE_SETUP_ZOOKEEPERS:
+      case CREATE_MESOS_SERVICE_SETUP_MASTERS:
+      case CREATE_MESOS_SERVICE_SETUP_MARATHON:
+      case CREATE_MESOS_SERVICE_SETUP_WORKERS:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
-            new MesosClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
-      case CREATE_SWARM_CLUSTER_INITIATE:
-        return new SwarmClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
-      case CREATE_SWARM_CLUSTER_SETUP_ETCD:
-      case CREATE_SWARM_CLUSTER_SETUP_MASTER:
-      case CREATE_SWARM_CLUSTER_SETUP_WORKERS:
+            new MesosServiceCreateTaskStatusPoller(taskCommand, serviceBackend, taskBackend));
+      case CREATE_SWARM_SERVICE_INITIATE:
+        return new SwarmServiceCreateStepCmd(taskCommand, stepBackend, stepEntity, serviceBackend);
+      case CREATE_SWARM_SERVICE_SETUP_ETCD:
+      case CREATE_SWARM_SERVICE_SETUP_MASTER:
+      case CREATE_SWARM_SERVICE_SETUP_WORKERS:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
-            new SwarmClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
-      case CREATE_HARBOR_CLUSTER_INITIATE:
-        return new HarborClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
-      case CREATE_HARBOR_CLUSTER_SETUP_HARBOR:
-      case CREATE_HARBOR_CLUSTER_UPDATE_EXTENDED_PROPERTIES:
+            new SwarmServiceCreateTaskStatusPoller(taskCommand, serviceBackend, taskBackend));
+      case CREATE_HARBOR_SERVICE_INITIATE:
+        return new HarborServiceCreateStepCmd(taskCommand, stepBackend, stepEntity, serviceBackend);
+      case CREATE_HARBOR_SERVICE_SETUP_HARBOR:
+      case CREATE_HARBOR_SERVICE_UPDATE_EXTENDED_PROPERTIES:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
-            new HarborClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
-      case RESIZE_CLUSTER_INITIATE:
-        return new ClusterResizeStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
-      case RESIZE_CLUSTER_INITIALIZE_CLUSTER:
-      case RESIZE_CLUSTER_RESIZE:
+            new HarborServiceCreateTaskStatusPoller(taskCommand, serviceBackend, taskBackend));
+      case RESIZE_SERVICE_INITIATE:
+        return new ServiceResizeStepCmd(taskCommand, stepBackend, stepEntity, serviceBackend);
+      case RESIZE_SERVICE_INITIALIZE_SERVICE:
+      case RESIZE_SERVICE_RESIZE:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
-            new ClusterResizeTaskStatusPoller(clusterBackend));
-      case DELETE_CLUSTER_INITIATE:
-        return new ClusterDeleteStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
-      case DELETE_CLUSTER_UPDATE_CLUSTER_DOCUMENT:
-      case DELETE_CLUSTER_DELETE_VMS:
-      case DELETE_CLUSTER_DOCUMENT:
+            new ServiceResizeTaskStatusPoller(serviceBackend));
+      case DELETE_SERVICE_INITIATE:
+        return new ServiceDeleteStepCmd(taskCommand, stepBackend, stepEntity, serviceBackend);
+      case DELETE_SERVICE_UPDATE_SERVICE_DOCUMENT:
+      case DELETE_SERVICE_DELETE_VMS:
+      case DELETE_SERVICE_DOCUMENT:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
-            new ClusterDeleteTaskStatusPoller(clusterBackend));
+            new ServiceDeleteTaskStatusPoller(serviceBackend));
       case SET_TENANT_SECURITY_GROUPS:
         return new TenantSetSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend);
       case PUSH_TENANT_SECURITY_GROUPS:

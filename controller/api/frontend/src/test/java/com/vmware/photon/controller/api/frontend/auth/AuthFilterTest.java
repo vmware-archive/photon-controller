@@ -21,8 +21,8 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalExc
 import com.vmware.photon.controller.api.frontend.helpers.JerseyPropertiesDelegate;
 import com.vmware.photon.controller.api.frontend.helpers.JerseySecurityContext;
 import com.vmware.photon.controller.api.frontend.resources.routes.AuthRoutes;
-import com.vmware.photon.controller.api.frontend.resources.routes.ClusterResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.HostResourceRoutes;
+import com.vmware.photon.controller.api.frontend.resources.routes.ServiceResourceRoutes;
 import com.vmware.photon.controller.api.model.ApiError;
 import com.vmware.photon.controller.common.auth.AuthTokenHandler;
 
@@ -151,13 +151,13 @@ public class AuthFilterTest {
     }
   }
 
-  @DataProvider(name = "ClusterApiData")
-  Object[][] getClusterApiData() {
+  @DataProvider(name = "ServiceApiData")
+  Object[][] getServiceApiData() {
     return new Object[][]{
-        {ClusterResourceRoutes.API},
-        {ClusterResourceRoutes.CLUSTER_VMS_PATH.replace("{id}", "id")},
-        {ClusterResourceRoutes.CLUSTERS_PATH.replace("{id}", "id")},
-        {ClusterResourceRoutes.PROJECT_CLUSTERS_PATH.replace("{id}", "id")}
+        {ServiceResourceRoutes.API},
+        {ServiceResourceRoutes.SERVICES_VMS_PATH.replace("{id}", "id")},
+        {ServiceResourceRoutes.SERVICES_PATH.replace("{id}", "id")},
+        {ServiceResourceRoutes.PROJECTS_SERVICES_PATH.replace("{id}", "id")}
     };
   }
 

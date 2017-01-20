@@ -114,7 +114,7 @@ public class TransactionAuthorizationObjectResolverTest {
               new TransactionAuthorizationObjectResolver.Rule(
                   Pattern.compile("delete"),
                   Pattern.compile("action"),
-                  TransactionAuthorizationObject.Kind.CLUSTER,
+                  TransactionAuthorizationObject.Kind.SERVICE,
                   TransactionAuthorizationObject.Strategy.PARENT),
               new TransactionAuthorizationObjectResolver.Rule(
                   Pattern.compile(".*"),
@@ -222,7 +222,7 @@ public class TransactionAuthorizationObjectResolverTest {
       doReturn("delete").when(request).getMethod();
 
       TransactionAuthorizationObject object = subject.evaluate(request);
-      assertThat(object.getKind(), is(TransactionAuthorizationObject.Kind.CLUSTER));
+      assertThat(object.getKind(), is(TransactionAuthorizationObject.Kind.SERVICE));
       assertThat(object.getId(), is("id"));
       assertThat(object.getStrategy(), is(TransactionAuthorizationObject.Strategy.PARENT));
     }

@@ -207,7 +207,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
     expect(cluster_current.master_vm_flavor).to eq flavor
     expect(cluster_current.other_vm_flavor).to eq flavor
     expect(cluster_current.image_id).to eq @kubernetes_image.id
-    expect(cluster_current.extended_properties["cluster_version"]).not_to be_empty
+    expect(cluster_current.extended_properties["service_version"]).not_to be_empty
     expect(cluster_current.extended_properties.length).to be > 12
   end
 
