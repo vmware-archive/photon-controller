@@ -15,8 +15,6 @@ package com.vmware.photon.controller.cloudstore.xenon;
 
 import com.vmware.photon.controller.cloudstore.xenon.entity.AttachedDiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.AvailabilityZoneServiceFactory;
-import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
-import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
@@ -31,6 +29,8 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactor
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SchedulingConstantGenerator;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ServiceConfigurationStateFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ServiceStateFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantServiceFactory;
@@ -100,8 +100,8 @@ public class CloudStoreServiceGroup
       DiskServiceFactory.class,
       AttachedDiskServiceFactory.class,
       TombstoneServiceFactory.class,
-      ClusterServiceFactory.class,
-      ClusterConfigurationServiceFactory.class,
+      ServiceStateFactory.class,
+      ServiceConfigurationStateFactory.class,
       AvailabilityZoneServiceFactory.class,
 
       // Tasks
@@ -221,8 +221,8 @@ public class CloudStoreServiceGroup
             && photonControllerXenonHost.checkServiceAvailable(DiskServiceFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(AttachedDiskServiceFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(TombstoneServiceFactory.SELF_LINK)
-            && photonControllerXenonHost.checkServiceAvailable(ClusterServiceFactory.SELF_LINK)
-            && photonControllerXenonHost.checkServiceAvailable(ClusterConfigurationServiceFactory.SELF_LINK)
+            && photonControllerXenonHost.checkServiceAvailable(ServiceStateFactory.SELF_LINK)
+            && photonControllerXenonHost.checkServiceAvailable(ServiceConfigurationStateFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(AvailabilityZoneServiceFactory.SELF_LINK)
 
             //tasks

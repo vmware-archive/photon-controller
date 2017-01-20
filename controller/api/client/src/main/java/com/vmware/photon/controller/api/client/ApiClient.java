@@ -13,13 +13,13 @@
 package com.vmware.photon.controller.api.client;
 
 import com.vmware.photon.controller.api.client.resource.AuthApi;
-import com.vmware.photon.controller.api.client.resource.ClusterApi;
 import com.vmware.photon.controller.api.client.resource.DeploymentApi;
 import com.vmware.photon.controller.api.client.resource.DisksApi;
 import com.vmware.photon.controller.api.client.resource.FlavorApi;
 import com.vmware.photon.controller.api.client.resource.ImagesApi;
 import com.vmware.photon.controller.api.client.resource.ProjectApi;
 import com.vmware.photon.controller.api.client.resource.ResourceTicketApi;
+import com.vmware.photon.controller.api.client.resource.ServiceApi;
 import com.vmware.photon.controller.api.client.resource.SystemStatusApi;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
 import com.vmware.photon.controller.api.client.resource.TenantsApi;
@@ -47,7 +47,7 @@ public interface ApiClient {
 
   SystemStatusApi getSystemStatusApi();
 
-  ClusterApi getClusterApi();
+  ServiceApi getServiceApi();
 
   AuthApi getAuthApi();
 

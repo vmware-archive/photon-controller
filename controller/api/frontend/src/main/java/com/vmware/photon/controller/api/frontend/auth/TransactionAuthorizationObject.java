@@ -62,6 +62,7 @@ public class TransactionAuthorizationObject {
   public enum Kind {
     NONE,
     CLUSTER,
+    SERVICE,
     DEPLOYMENT,
     DISK,
     PROJECT,

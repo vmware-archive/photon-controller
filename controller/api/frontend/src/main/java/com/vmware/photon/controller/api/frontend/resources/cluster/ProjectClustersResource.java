@@ -13,16 +13,16 @@
 
 package com.vmware.photon.controller.api.frontend.resources.cluster;
 
-import com.vmware.photon.controller.api.frontend.clients.ClusterFeClient;
+import com.vmware.photon.controller.api.frontend.clients.ServiceFeClient;
 import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.resources.routes.ClusterResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.api.frontend.utils.PaginationUtils;
-import com.vmware.photon.controller.api.model.Cluster;
-import com.vmware.photon.controller.api.model.ClusterCreateSpec;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Service;
+import com.vmware.photon.controller.api.model.ServiceCreateSpec;
 import com.vmware.photon.controller.api.model.Task;
 import static com.vmware.photon.controller.api.frontend.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.frontend.Responses.generateResourceListResponse;
@@ -58,12 +58,12 @@ import javax.ws.rs.core.UriBuilder;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ProjectClustersResource {
 
-  private final ClusterFeClient clusterFeClient;
+  private final ServiceFeClient serviceFeClient;
   private final PaginationConfig paginationConfig;
 
   @Inject
-  public ProjectClustersResource(ClusterFeClient clusterFeClient, PaginationConfig paginationConfig) {
-    this.clusterFeClient = clusterFeClient;
+  public ProjectClustersResource(ServiceFeClient serviceFeClient, PaginationConfig paginationConfig) {
+    this.serviceFeClient = serviceFeClient;
     this.paginationConfig = paginationConfig;
   }
 
@@ -74,17 +74,17 @@ public class ProjectClustersResource {
   })
   public Response create(@Context Request request,
                          @PathParam("id") String projectId,
-                         @Validated ClusterCreateSpec spec) throws ExternalException {
+                         @Validated ServiceCreateSpec spec) throws ExternalException {
     return generateCustomResponse(
         Response.Status.CREATED,
-        clusterFeClient.create(projectId, spec),
+        serviceFeClient.create(projectId, spec),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
 
   @GET
   @ApiOperation(value = "List all clusters in a project",
-      response = Cluster.class, responseContainer = ResourceList.CLASS_NAME)
+      response = Service.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {
       @ApiResponse(code = 200, message = "List of clusters in the project")
   })
@@ -93,12 +93,12 @@ public class ProjectClustersResource {
                        @QueryParam("pageSize") Optional<Integer> pageSize,
                        @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
 
-    ResourceList<Cluster> resourceList;
+    ResourceList<Service> resourceList;
     if (pageLink.isPresent()) {
-      resourceList = clusterFeClient.getClustersPage(pageLink.get());
+      resourceList = serviceFeClient.getServicesPage(pageLink.get());
     } else {
       Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
-      resourceList = clusterFeClient.find(projectId, adjustedPageSize);
+      resourceList = serviceFeClient.find(projectId, adjustedPageSize);
     }
 
     String apiRoute = UriBuilder.fromPath(ClusterResourceRoutes.PROJECT_CLUSTERS_PATH).build(projectId).toString();

@@ -17,7 +17,7 @@
     "/var/log": "/var/log",
     "/etc/esxcloud-deployer":"/etc/esxcloud-deployer",
     "/devbox_data/controller/photon-controller-core/src/main/resources/scripts":"/usr/lib/esxcloud/photon-controller-core/scripts",
-    "/devbox_data/controller/cluster-manager/backend/src/main/resources/scripts":"/usr/lib/esxcloud/photon-controller-core/scripts/clusters",
+    "/devbox_data/controller/services-manager/backend/src/main/resources/scripts":"/usr/lib/esxcloud/photon-controller-core/scripts/services",
     "/var/photon/images": "/var/photon/images",
     "/sys/fs/cgroup": "/sys/fs/cgroup",
     "/tmp/empty": "/etc/systemd/network"

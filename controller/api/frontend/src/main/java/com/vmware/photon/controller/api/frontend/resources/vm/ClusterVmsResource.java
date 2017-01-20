@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.api.frontend.resources.vm;
 
-import com.vmware.photon.controller.api.frontend.clients.ClusterFeClient;
+import com.vmware.photon.controller.api.frontend.clients.ServiceFeClient;
 import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.resources.routes.ClusterResourceRoutes;
@@ -52,12 +52,12 @@ import javax.ws.rs.core.UriBuilder;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ClusterVmsResource {
 
-  private final ClusterFeClient clusterFeClient;
+  private final ServiceFeClient serviceFeClient;
   private final PaginationConfig paginationConfig;
 
   @Inject
-  public ClusterVmsResource(ClusterFeClient clusterFeClient, PaginationConfig paginationConfig) {
-    this.clusterFeClient = clusterFeClient;
+  public ClusterVmsResource(ServiceFeClient serviceFeClient, PaginationConfig paginationConfig) {
+    this.serviceFeClient = serviceFeClient;
     this.paginationConfig = paginationConfig;
   }
 
@@ -71,10 +71,10 @@ public class ClusterVmsResource {
 
     ResourceList<Vm> resourceList;
     if (pageLink.isPresent()) {
-      resourceList = clusterFeClient.getVmsPage(pageLink.get());
+      resourceList = serviceFeClient.getVmsPage(pageLink.get());
     } else {
       Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
-      resourceList = clusterFeClient.findVms(clusterId, adjustedPageSize);
+      resourceList = serviceFeClient.findVms(clusterId, adjustedPageSize);
     }
 
     String apiRoute = UriBuilder.fromPath(ClusterResourceRoutes.CLUSTER_VMS_PATH).build(clusterId).toString();

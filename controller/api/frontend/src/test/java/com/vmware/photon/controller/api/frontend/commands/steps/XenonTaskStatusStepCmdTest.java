@@ -58,7 +58,7 @@ public class XenonTaskStatusStepCmdTest extends PowerMockTestCase {
       throws JsonProcessingException {
     stepBackend = mock(StepBackend.class);
     taskCommand = mock(TaskCommand.class);
-    xenonTaskStatusPoller = mock(KubernetesClusterCreateTaskStatusPoller.class);
+    xenonTaskStatusPoller = mock(KubernetesServiceCreateTaskStatusPoller.class);
 
     remoteTaskLink = "/mock-service/00000000-0000-0000-0000-000000000001";
 

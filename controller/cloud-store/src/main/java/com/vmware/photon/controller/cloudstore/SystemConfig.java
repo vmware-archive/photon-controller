@@ -134,7 +134,7 @@ public class SystemConfig implements SystemConfigProvider {
 
   @Override
   public boolean isBackgroundPaused()  {
-    if ( ((CloudStoreServiceGroup) xenonHost.getCloudStore()).isInstaller()) {
+    if (((CloudStoreServiceGroup) xenonHost.getCloudStore()).isInstaller()) {
       return true;
     }
 

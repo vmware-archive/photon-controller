@@ -58,6 +58,7 @@ public class MultiplexedSecurityGroupFetcherTest {
           mock(TenantSecurityGroupFetcher.class),
           mock(ProjectSecurityGroupFetcher.class),
           mock(ResourceTicketSecurityGroupFetcher.class),
+          mock(ServiceSecurityGroupFetcher.class),
           mock(ClusterSecurityGroupFetcher.class),
           mock(DiskSecurityGroupFetcher.class),
           mock(VmSecurityGroupFetcher.class),

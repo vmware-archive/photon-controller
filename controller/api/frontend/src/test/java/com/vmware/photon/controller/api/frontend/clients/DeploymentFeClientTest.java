@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.api.frontend.clients;
 
-import com.vmware.photon.controller.api.frontend.backends.ClusterBackend;
 import com.vmware.photon.controller.api.frontend.backends.DatastoreBackend;
 import com.vmware.photon.controller.api.frontend.backends.DeploymentBackend;
 import com.vmware.photon.controller.api.frontend.backends.HostBackend;
 import com.vmware.photon.controller.api.frontend.backends.ProjectBackend;
+import com.vmware.photon.controller.api.frontend.backends.ServiceBackend;
 import com.vmware.photon.controller.api.frontend.backends.TaskBackend;
 import com.vmware.photon.controller.api.frontend.backends.TaskCommandExecutorService;
 import com.vmware.photon.controller.api.frontend.backends.TenantBackend;
@@ -31,7 +31,6 @@ import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentN
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Auth;
 import com.vmware.photon.controller.api.model.AuthInfo;
-import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
@@ -41,6 +40,7 @@ import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.model.NsxConfigurationSpec;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.ServiceConfigurationSpec;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Tenant;
 import com.vmware.photon.controller.api.model.Vm;
@@ -80,7 +80,7 @@ public class DeploymentFeClientTest {
   private TenantBackend tenantBackend;
   private ProjectBackend projectBackend;
   private DatastoreBackend datastoreBackend;
-  private ClusterBackend clusterBackend;
+  private ServiceBackend serviceBackend;
   private AuthConfig authConfig;
   private TaskCommandFactory commandFactory;
   private ExecutorService executorService;
@@ -93,7 +93,7 @@ public class DeploymentFeClientTest {
     tenantBackend = mock(TenantBackend.class);
     projectBackend = mock(ProjectBackend.class);
     datastoreBackend = mock(DatastoreBackend.class);
-    clusterBackend = mock(ClusterBackend.class);
+    serviceBackend = mock(ServiceBackend.class);
     authConfig = new AuthConfig();
 
     commandFactory = mock(TaskCommandFactory.class);
@@ -101,7 +101,7 @@ public class DeploymentFeClientTest {
 
     feClient = new DeploymentFeClient(
         taskBackend, deploymentBackend, vmBackend, hostBackend, tenantBackend, projectBackend, datastoreBackend,
-        clusterBackend, authConfig, commandFactory, executorService);
+        serviceBackend, authConfig, commandFactory, executorService);
   }
 
   /**
@@ -390,9 +390,9 @@ public class DeploymentFeClientTest {
   }
 
   /**
-   * Tests the configure cluster method.
+   * Tests the configure service method.
    */
-  public class ConfigureClusterTest {
+  public class ConfigureServiceTest {
     String deploymentId;
 
     @BeforeMethod
@@ -406,14 +406,14 @@ public class DeploymentFeClientTest {
       doReturn(null).when(deploymentBackend).findById(deploymentId);
       TaskEntity taskEntity = new TaskEntity();
 
-      doReturn(taskEntity).when(deploymentBackend).configureCluster(any(ClusterConfigurationSpec.class));
+      doReturn(taskEntity).when(deploymentBackend).configureService(any(ServiceConfigurationSpec.class));
       Task task = new Task();
       doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);
 
       TaskCommand command = mock(TaskCommand.class);
       doReturn(command).when(commandFactory).create(taskEntity);
 
-      Task resp = feClient.configureCluster(deploymentId, new ClusterConfigurationSpec());
+      Task resp = feClient.configureService(deploymentId, new ServiceConfigurationSpec());
       assertThat(resp, is(task));
 
     }
@@ -516,14 +516,14 @@ public class DeploymentFeClientTest {
       deploymentSize.setNumberDatastores(5);
       deploymentSize.setNumberProjects(11);
       deploymentSize.setNumberVMs(24);
-      deploymentSize.setNumberClusters(6);
+      deploymentSize.setNumberServices(6);
 
       doReturn(deploymentSize.getNumberHosts()).when(hostBackend).getNumberHosts();
       doReturn(deploymentSize.getNumberTenants()).when(tenantBackend).getNumberTenants();
       doReturn(deploymentSize.getNumberDatastores()).when(datastoreBackend).getNumberDatastores();
       doReturn(deploymentSize.getNumberProjects()).when(projectBackend).getNumberProjects();
       doReturn(deploymentSize.getNumberVMs()).when(vmBackend).getNumberVms();
-      doReturn(deploymentSize.getNumberClusters()).when(clusterBackend).getNumberClusters();
+      doReturn(deploymentSize.getNumberServices()).when(serviceBackend).getNumberServices();
 
       DeploymentSize deploymentRetrievedSize = feClient.getDeploymentSize(deploymentId);
       assertThat(deploymentRetrievedSize.getNumberHosts(), is(deploymentSize.getNumberHosts()));
@@ -531,7 +531,7 @@ public class DeploymentFeClientTest {
       assertThat(deploymentRetrievedSize.getNumberDatastores(), is(deploymentSize.getNumberDatastores()));
       assertThat(deploymentRetrievedSize.getNumberProjects(), is(deploymentSize.getNumberProjects()));
       assertThat(deploymentRetrievedSize.getNumberVMs(), is(deploymentSize.getNumberVMs()));
-      assertThat(deploymentRetrievedSize.getNumberClusters(), is(deploymentSize.getNumberClusters()));
+      assertThat(deploymentRetrievedSize.getNumberServices(), is(deploymentSize.getNumberServices()));
     }
 
     @Test(expectedExceptions = DeploymentNotFoundException.class,

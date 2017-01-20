@@ -46,8 +46,8 @@ public class DeploymentSize {
   private int numberDatastores;
 
   @JsonProperty
-  @ApiModelProperty(value = "Number of clusters in the deployment")
-  private int numberClusters;
+  @ApiModelProperty(value = "Number of services in the deployment")
+  private int numberServices;
 
   public int getNumberHosts() {
     return this.numberHosts;
@@ -89,11 +89,11 @@ public class DeploymentSize {
     this.numberDatastores = numberDatastores;
   }
 
-  public int getNumberClusters() {
-    return this.numberClusters;
+  public int getNumberServices() {
+    return this.numberServices;
   }
 
-  public void setNumberClusters(int numberClusters) {
-    this.numberClusters = numberClusters;
+  public void setNumberServices(int numberServices) {
+    this.numberServices = numberServices;
   }
 }
