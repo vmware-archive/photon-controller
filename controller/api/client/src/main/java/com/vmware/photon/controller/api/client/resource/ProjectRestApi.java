@@ -14,12 +14,12 @@
 package com.vmware.photon.controller.api.client.resource;
 
 import com.vmware.photon.controller.api.client.RestClient;
-import com.vmware.photon.controller.api.model.Cluster;
-import com.vmware.photon.controller.api.model.ClusterCreateSpec;
 import com.vmware.photon.controller.api.model.DiskCreateSpec;
 import com.vmware.photon.controller.api.model.PersistentDisk;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Service;
+import com.vmware.photon.controller.api.model.ServiceCreateSpec;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
@@ -475,62 +475,62 @@ public class ProjectRestApi extends ApiBase implements ProjectApi {
   }
 
   /**
-   * Create a cluster in the specified project.
+   * Create a service in the specified project.
    *
    * @param projectId
-   * @param clusterCreateSpec
+   * @param serviceCreateSpec
    * @return
    * @throws IOException
    */
   @Override
-  public Task createCluster(String projectId, ClusterCreateSpec clusterCreateSpec) throws IOException {
-    String path = String.format("%s/%s/clusters", getBasePath(), projectId);
+  public Task createService(String projectId, ServiceCreateSpec serviceCreateSpec) throws IOException {
+    String path = String.format("%s/%s/services", getBasePath(), projectId);
 
     HttpResponse response = this.restClient.perform(
         RestClient.Method.POST,
         path,
-        serializeObjectAsJson(clusterCreateSpec));
+        serializeObjectAsJson(serviceCreateSpec));
 
     this.restClient.checkResponse(response, HttpStatus.SC_CREATED);
     return parseTaskFromHttpResponse(response);
   }
 
   /**
-   * Create a cluster in the specified project.
+   * Create a service in the specified project.
    *
    * @param projectId
-   * @param clusterCreateSpec
+   * @param serviceCreateSpec
    * @return
    * @throws IOException
    */
   @Override
-  public void createClusterAsync(final String projectId, final ClusterCreateSpec clusterCreateSpec,
+  public void createServiceAsync(final String projectId, final ServiceCreateSpec serviceCreateSpec,
                                  final FutureCallback<Task> responseCallback) throws IOException {
-    String path = String.format("%s/%s/clusters", getBasePath(), projectId);
+    String path = String.format("%s/%s/services", getBasePath(), projectId);
 
-    createObjectAsync(path, serializeObjectAsJson(clusterCreateSpec), responseCallback);
+    createObjectAsync(path, serializeObjectAsJson(serviceCreateSpec), responseCallback);
   }
 
   /**
-   * Get a list of clusters in the specified project.
+   * Get a list of services in the specified project.
    *
    * @param projectId
    * @return
    * @throws IOException
    */
   @Override
-  public ResourceList<Cluster> getClustersInProject(String projectId) throws IOException {
-    String path = String.format("%s/%s/clusters", getBasePath(), projectId);
+  public ResourceList<Service> getServicesInProject(String projectId) throws IOException {
+    String path = String.format("%s/%s/services", getBasePath(), projectId);
 
-    ResourceList<Cluster> clusterResourceList = new ResourceList<>();
-    ResourceList<Cluster> resourceList = getClusterResourceList(path);
-    clusterResourceList.setItems(resourceList.getItems());
+    ResourceList<Service> serviceResourceList = new ResourceList<>();
+    ResourceList<Service> resourceList = getServiceResourceList(path);
+    serviceResourceList.setItems(resourceList.getItems());
     while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
-      resourceList = getClusterResourceList(resourceList.getNextPageLink());
-      clusterResourceList.getItems().addAll(resourceList.getItems());
+      resourceList = getServiceResourceList(resourceList.getNextPageLink());
+      serviceResourceList.getItems().addAll(resourceList.getItems());
     }
 
-    return clusterResourceList;
+    return serviceResourceList;
   }
 
   /**
@@ -540,45 +540,45 @@ public class ProjectRestApi extends ApiBase implements ProjectApi {
    * @return
    * @throws IOException
    */
-  private ResourceList<Cluster> getClusterResourceList(String path) throws IOException {
+  private ResourceList<Service> getServiceResourceList(String path) throws IOException {
     HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
     this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
     return this.restClient.parseHttpResponse(
         httpResponse,
-        new TypeReference<ResourceList<Cluster>>() {
+        new TypeReference<ResourceList<Service>>() {
         }
     );
   }
 
   /**
-   * Get a list of clusters in the specified project.
+   * Get a list of services in the specified project.
    *
    * @param projectId
    * @param responseCallback
    * @throws IOException
    */
   @Override
-  public void getClustersInProjectAsync(final String projectId, final FutureCallback<ResourceList<Cluster>>
+  public void getServicesInProjectAsync(final String projectId, final FutureCallback<ResourceList<Service>>
       responseCallback) throws IOException {
-    String path = String.format("%s/%s/clusters", getBasePath(), projectId);
+    String path = String.format("%s/%s/services", getBasePath(), projectId);
 
-    ResourceList<Cluster> clusterResourceList = new ResourceList<>();
-    FutureCallback<ResourceList<Cluster>> callback = new FutureCallback<ResourceList<Cluster>>() {
+    ResourceList<Service> serviceResourceList = new ResourceList<>();
+    FutureCallback<ResourceList<Service>> callback = new FutureCallback<ResourceList<Service>>() {
       @Override
-      public void onSuccess(@Nullable ResourceList<Cluster> result) {
-        if (clusterResourceList.getItems() == null) {
-          clusterResourceList.setItems(result.getItems());
+      public void onSuccess(@Nullable ResourceList<Service> result) {
+        if (serviceResourceList.getItems() == null) {
+          serviceResourceList.setItems(result.getItems());
         } else {
-          clusterResourceList.getItems().addAll(result.getItems());
+          serviceResourceList.getItems().addAll(result.getItems());
         }
         if (result.getNextPageLink() != null && !result.getNextPageLink().isEmpty()) {
           try {
-            getObjectByPathAsync(result.getNextPageLink(), this, new TypeReference<ResourceList<Cluster>>() {});
+            getObjectByPathAsync(result.getNextPageLink(), this, new TypeReference<ResourceList<Service>>() {});
           } catch (IOException e) {
             e.printStackTrace();
           }
         } else {
-          responseCallback.onSuccess(clusterResourceList);
+          responseCallback.onSuccess(serviceResourceList);
         }
       }
 
@@ -588,6 +588,6 @@ public class ProjectRestApi extends ApiBase implements ProjectApi {
       }
     };
 
-    getObjectByPathAsync(path, callback, new TypeReference<ResourceList<Cluster>>() {});
+    getObjectByPathAsync(path, callback, new TypeReference<ResourceList<Service>>() {});
   }
 }

@@ -17,9 +17,6 @@ import com.vmware.photon.controller.api.frontend.entities.DeploymentEntity;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.model.ClusterConfiguration;
-import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
-import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
@@ -27,6 +24,9 @@ import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.model.NsxConfigurationSpec;
+import com.vmware.photon.controller.api.model.ServiceConfiguration;
+import com.vmware.photon.controller.api.model.ServiceConfigurationSpec;
+import com.vmware.photon.controller.api.model.ServiceType;
 
 import java.util.List;
 
@@ -67,11 +67,11 @@ public interface DeploymentBackend {
 
   List<Deployment> getAll();
 
-  TaskEntity configureCluster(ClusterConfigurationSpec spec) throws ExternalException;
+  TaskEntity configureService(ServiceConfigurationSpec spec) throws ExternalException;
 
-  TaskEntity deleteClusterConfiguration(ClusterType clusterType) throws ExternalException;
+  TaskEntity deleteServiceConfiguration(ServiceType serviceType) throws ExternalException;
 
-  List<ClusterConfiguration> getClusterConfigurations() throws ExternalException;
+  List<ServiceConfiguration> getServiceConfigurations() throws ExternalException;
 
   TaskEntity configureNsx(NsxConfigurationSpec spec) throws ExternalException;
 

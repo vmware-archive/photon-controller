@@ -197,7 +197,7 @@ public class SubnetsResourceTest extends ResourceTest {
   }
 
   @Test
-  public void testInvalidClustersPageLink() throws ExternalException {
+  public void testInvalidServicesPageLink() throws ExternalException {
     String pageLink = UUID.randomUUID().toString();
     doThrow(new PageExpiredException(pageLink)).when(networkFeClient).getPage(pageLink);
 

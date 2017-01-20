@@ -18,7 +18,7 @@ dependencies {
   compile(project(':swagger-ui'))
   compile(project(':swagger-jersey'))
   compile(project(':nfc-client'))
-  compile(project(':cluster-manager:service-documents'))
+  compile(project(':services-manager:service-documents'))
   compile(project(':deployer'))
   compile(project(':storage:housekeeper'))
   compile(project(':compute:scheduler'))

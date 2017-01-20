@@ -14,18 +14,18 @@ package com.vmware.photon.controller.api.frontend.clients.api;
 
 import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.api.client.resource.AuthApi;
-import com.vmware.photon.controller.api.client.resource.ClusterApi;
 import com.vmware.photon.controller.api.client.resource.DeploymentApi;
 import com.vmware.photon.controller.api.client.resource.DisksApi;
 import com.vmware.photon.controller.api.client.resource.FlavorApi;
 import com.vmware.photon.controller.api.client.resource.ImagesApi;
 import com.vmware.photon.controller.api.client.resource.ProjectApi;
 import com.vmware.photon.controller.api.client.resource.ResourceTicketApi;
+import com.vmware.photon.controller.api.client.resource.ServiceApi;
 import com.vmware.photon.controller.api.client.resource.SystemStatusApi;
 import com.vmware.photon.controller.api.client.resource.TasksApi;
 import com.vmware.photon.controller.api.client.resource.TenantsApi;
 import com.vmware.photon.controller.api.client.resource.VmApi;
-import com.vmware.photon.controller.api.frontend.clients.ClusterFeClient;
+import com.vmware.photon.controller.api.frontend.clients.ServiceFeClient;
 import com.vmware.photon.controller.api.frontend.clients.TaskFeClient;
 import com.vmware.photon.controller.api.frontend.clients.VmFeClient;
 import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
@@ -49,11 +49,11 @@ public class LocalApiClient implements ApiClient {
   private final ImagesApi imagesApi;
   private final VmApi vmApi;
   private final SystemStatusApi systemStatusApi;
-  private final ClusterApi clusterApi;
+  private final ServiceApi serviceApi;
   private final AuthApi authApi;
   private final DeploymentApi deploymentApi;
 
-  private final ClusterFeClient clusterFeClient;
+  private final ServiceFeClient serviceFeClient;
   private final PaginationConfig paginationConfig;
   private final TaskFeClient taskFeClient;
   private final VmFeClient vmFeClient;
@@ -62,9 +62,9 @@ public class LocalApiClient implements ApiClient {
   private final ExecutorService executorService;
 
   @Inject
-  public LocalApiClient(ClusterFeClient clusterFeClient, VmFeClient vmFeClient, TaskFeClient taskFeClient,
+  public LocalApiClient(ServiceFeClient serviceFeClient, VmFeClient vmFeClient, TaskFeClient taskFeClient,
                         PaginationConfig paginationConfig) {
-    this.clusterFeClient = clusterFeClient;
+    this.serviceFeClient = serviceFeClient;
     this.vmFeClient = vmFeClient;
     this.taskFeClient = taskFeClient;
     this.paginationConfig = paginationConfig;
@@ -79,7 +79,7 @@ public class LocalApiClient implements ApiClient {
     this.imagesApi = new ImagesLocalApi();
     this.vmApi = new VmLocalApi(vmFeClient, executorService);
     this.systemStatusApi = new SystemStatusLocalApi();
-    this.clusterApi = new ClusterLocalApi(clusterFeClient, paginationConfig, executorService);
+    this.serviceApi = new ServiceLocalApi(serviceFeClient, paginationConfig, executorService);
     this.authApi = new AuthLocalApi();
     this.deploymentApi = new DeploymentLocalApi();
   }
@@ -130,8 +130,8 @@ public class LocalApiClient implements ApiClient {
   }
 
   @Override
-  public ClusterApi getClusterApi() {
-    return clusterApi;
+  public ServiceApi getServiceApi() {
+    return serviceApi;
   }
 
   @Override
@@ -145,6 +145,6 @@ public class LocalApiClient implements ApiClient {
   }
 
   public String toString() {
-    return "LocalApiClient = ClusterFeClient " + clusterFeClient + " PaginationConfig " + paginationConfig;
+    return "LocalApiClient = ServiceFeClient " + serviceFeClient + " PaginationConfig " + paginationConfig;
   }
 }

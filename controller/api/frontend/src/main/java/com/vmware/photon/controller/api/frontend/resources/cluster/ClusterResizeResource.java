@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.api.frontend.resources.cluster;
 
-import com.vmware.photon.controller.api.frontend.clients.ClusterFeClient;
+import com.vmware.photon.controller.api.frontend.clients.ServiceFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.resources.routes.ClusterResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRoutes;
-import com.vmware.photon.controller.api.model.ClusterResizeOperation;
+import com.vmware.photon.controller.api.model.ServiceResizeOperation;
 import com.vmware.photon.controller.api.model.Task;
 import static com.vmware.photon.controller.api.frontend.Responses.generateCustomResponse;
 
@@ -48,11 +48,11 @@ import javax.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ClusterResizeResource {
 
-  private final ClusterFeClient clusterFeClient;
+  private final ServiceFeClient serviceFeClient;
 
   @Inject
-  public ClusterResizeResource(ClusterFeClient clusterFeClient) {
-    this.clusterFeClient = clusterFeClient;
+  public ClusterResizeResource(ServiceFeClient serviceFeClient) {
+    this.serviceFeClient = serviceFeClient;
   }
 
   @POST
@@ -62,10 +62,10 @@ public class ClusterResizeResource {
   })
   public Response create(@Context Request request,
                          @PathParam("id") String clusterId,
-                         @Validated ClusterResizeOperation operation) throws ExternalException {
+                         @Validated ServiceResizeOperation operation) throws ExternalException {
     return generateCustomResponse(
         Response.Status.CREATED,
-        clusterFeClient.resize(clusterId, operation),
+        serviceFeClient.resize(clusterId, operation),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

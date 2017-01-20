@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.api.client.resource;
 
-import com.vmware.photon.controller.api.model.Cluster;
-import com.vmware.photon.controller.api.model.ClusterCreateSpec;
 import com.vmware.photon.controller.api.model.DiskCreateSpec;
 import com.vmware.photon.controller.api.model.PersistentDisk;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Service;
+import com.vmware.photon.controller.api.model.ServiceCreateSpec;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
@@ -728,7 +728,7 @@ public class ProjectRestApiTest extends ApiTestBase {
   }
 
   @Test
-  public void testCreateCluster() throws IOException {
+  public void testCreateService() throws IOException {
     Task responseTask = new Task();
     responseTask.setId("12345");
     responseTask.setState("QUEUED");
@@ -741,12 +741,12 @@ public class ProjectRestApiTest extends ApiTestBase {
 
     ProjectApi projectApi = new ProjectRestApi(restClient);
 
-    Task task = projectApi.createCluster("foo", new ClusterCreateSpec());
+    Task task = projectApi.createService("foo", new ServiceCreateSpec());
     assertEquals(task, responseTask);
   }
 
   @Test
-  public void testCreateClusterAsync() throws IOException, InterruptedException {
+  public void testCreateServiceAsync() throws IOException, InterruptedException {
     final Task responseTask = new Task();
     responseTask.setId("12345");
     responseTask.setState("QUEUED");
@@ -761,7 +761,7 @@ public class ProjectRestApiTest extends ApiTestBase {
 
     final CountDownLatch latch = new CountDownLatch(1);
 
-    projectApi.createClusterAsync("foo", new ClusterCreateSpec(), new FutureCallback<Task>() {
+    projectApi.createServiceAsync("foo", new ServiceCreateSpec(), new FutureCallback<Task>() {
       @Override
       public void onSuccess(@Nullable Task result) {
         assertEquals(result, responseTask);
@@ -779,88 +779,88 @@ public class ProjectRestApiTest extends ApiTestBase {
   }
 
   @Test
-  public void testGetClusters() throws IOException {
-    Cluster cluster1 = new Cluster();
-    cluster1.setId("cluster1");
-    cluster1.setName("cluster1Name");
+  public void testGetServices() throws IOException {
+    Service service1 = new Service();
+    service1.setId("service1");
+    service1.setName("service1Name");
 
-    Cluster cluster2 = new Cluster();
-    cluster2.setId("cluster2");
-    cluster2.setName("cluster2Name");
+    Service service2 = new Service();
+    service2.setId("service2");
+    service2.setName("service2Name");
 
-    ResourceList<Cluster> clusterList =
-        new ResourceList<>(Arrays.asList(cluster1, cluster2));
+    ResourceList<Service> serviceList =
+        new ResourceList<>(Arrays.asList(service1, service2));
 
     ObjectMapper mapper = new ObjectMapper();
-    String serializedTask = mapper.writeValueAsString(clusterList);
+    String serializedTask = mapper.writeValueAsString(serviceList);
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
     ProjectApi projectApi = new ProjectRestApi(restClient);
 
-    ResourceList<Cluster> response = projectApi.getClustersInProject("foo");
-    assertEquals(response.getItems().size(), clusterList.getItems().size());
-    assertTrue(response.getItems().containsAll(clusterList.getItems()));
+    ResourceList<Service> response = projectApi.getServicesInProject("foo");
+    assertEquals(response.getItems().size(), serviceList.getItems().size());
+    assertTrue(response.getItems().containsAll(serviceList.getItems()));
   }
 
   @Test
-  public void testGetClustersForPagination() throws IOException {
-    Cluster cluster1 = new Cluster();
-    cluster1.setId("cluster1");
-    cluster1.setName("cluster1Name");
+  public void testGetServicesForPagination() throws IOException {
+    Service service1 = new Service();
+    service1.setId("service1");
+    service1.setName("service1Name");
 
-    Cluster cluster2 = new Cluster();
-    cluster2.setId("cluster2");
-    cluster2.setName("cluster2Name");
+    Service service2 = new Service();
+    service2.setId("service2");
+    service2.setName("service2Name");
 
-    Cluster cluster3 = new Cluster();
-    cluster3.setId("cluster3");
-    cluster3.setName("cluster3Name");
+    Service service3 = new Service();
+    service3.setId("service3");
+    service3.setName("service3Name");
 
     String nextPageLink = "nextPageLink";
 
-    ResourceList<Cluster> clusterList = new ResourceList<>(Arrays.asList(cluster1, cluster2), nextPageLink, null);
-    ResourceList<Cluster> clusterListNextPage = new ResourceList<>(Arrays.asList(cluster3));
+    ResourceList<Service> serviceList = new ResourceList<>(Arrays.asList(service1, service2), nextPageLink, null);
+    ResourceList<Service> serviceListNextPage = new ResourceList<>(Arrays.asList(service3));
 
     ObjectMapper mapper = new ObjectMapper();
-    String serializedTask = mapper.writeValueAsString(clusterList);
-    String serializedTaskNextPage = mapper.writeValueAsString(clusterListNextPage);
+    String serializedTask = mapper.writeValueAsString(serviceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(serviceListNextPage);
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
     ProjectApi projectApi = new ProjectRestApi(restClient);
 
-    ResourceList<Cluster> response = projectApi.getClustersInProject("foo");
-    assertEquals(response.getItems().size(), clusterList.getItems().size() + clusterListNextPage.getItems().size());
-    assertTrue(response.getItems().containsAll(clusterList.getItems()));
-    assertTrue(response.getItems().containsAll(clusterListNextPage.getItems()));
+    ResourceList<Service> response = projectApi.getServicesInProject("foo");
+    assertEquals(response.getItems().size(), serviceList.getItems().size() + serviceListNextPage.getItems().size());
+    assertTrue(response.getItems().containsAll(serviceList.getItems()));
+    assertTrue(response.getItems().containsAll(serviceListNextPage.getItems()));
   }
 
   @Test
-  public void testGetClustersAsync() throws IOException, InterruptedException {
-    Cluster cluster1 = new Cluster();
-    cluster1.setId("cluster1");
-    cluster1.setName("cluster1Name");
+  public void testGetServicesAsync() throws IOException, InterruptedException {
+    Service service1 = new Service();
+    service1.setId("service1");
+    service1.setName("service1Name");
 
-    Cluster cluster2 = new Cluster();
-    cluster2.setId("cluster2");
-    cluster2.setName("cluster2Name");
+    Service service2 = new Service();
+    service2.setId("service2");
+    service2.setName("service2Name");
 
-    final ResourceList<Cluster> clusterList =
-        new ResourceList<>(Arrays.asList(cluster1, cluster2));
+    final ResourceList<Service> serviceList =
+        new ResourceList<>(Arrays.asList(service1, service2));
 
     ObjectMapper mapper = new ObjectMapper();
-    String serializedTask = mapper.writeValueAsString(clusterList);
+    String serializedTask = mapper.writeValueAsString(serviceList);
 
     setupMocks(serializedTask, HttpStatus.SC_OK);
 
     ProjectApi projectApi = new ProjectRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
-    projectApi.getClustersInProjectAsync("foo", new FutureCallback<ResourceList<Cluster>>() {
+    projectApi.getServicesInProjectAsync("foo", new FutureCallback<ResourceList<Service>>() {
       @Override
-      public void onSuccess(@Nullable ResourceList<Cluster> result) {
-        assertEquals(result.getItems(), clusterList.getItems());
+      public void onSuccess(@Nullable ResourceList<Service> result) {
+        assertEquals(result.getItems(), serviceList.getItems());
         latch.countDown();
       }
 
@@ -875,39 +875,39 @@ public class ProjectRestApiTest extends ApiTestBase {
   }
 
   @Test
-  public void testGetClustersAsyncForPagination() throws IOException, InterruptedException {
-    Cluster cluster1 = new Cluster();
-    cluster1.setId("cluster1");
-    cluster1.setName("cluster1Name");
+  public void testGetServicesAsyncForPagination() throws IOException, InterruptedException {
+    Service service1 = new Service();
+    service1.setId("service1");
+    service1.setName("service1Name");
 
-    Cluster cluster2 = new Cluster();
-    cluster2.setId("cluster2");
-    cluster2.setName("cluster2Name");
+    Service service2 = new Service();
+    service2.setId("service2");
+    service2.setName("service2Name");
 
-    Cluster cluster3 = new Cluster();
-    cluster3.setId("cluster3");
-    cluster3.setName("cluster3Name");
+    Service service3 = new Service();
+    service3.setId("service3");
+    service3.setName("service3Name");
 
     String nextPageLink = "nextPageLink";
 
-    ResourceList<Cluster> clusterList = new ResourceList<>(Arrays.asList(cluster1, cluster2), nextPageLink, null);
-    ResourceList<Cluster> clusterListNextPage = new ResourceList<>(Arrays.asList(cluster3));
+    ResourceList<Service> serviceList = new ResourceList<>(Arrays.asList(service1, service2), nextPageLink, null);
+    ResourceList<Service> serviceListNextPage = new ResourceList<>(Arrays.asList(service3));
 
     ObjectMapper mapper = new ObjectMapper();
-    String serializedTask = mapper.writeValueAsString(clusterList);
-    String serializedTaskNextPage = mapper.writeValueAsString(clusterListNextPage);
+    String serializedTask = mapper.writeValueAsString(serviceList);
+    String serializedTaskNextPage = mapper.writeValueAsString(serviceListNextPage);
 
     setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
 
     ProjectApi projectApi = new ProjectRestApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
 
-    projectApi.getClustersInProjectAsync("foo", new FutureCallback<ResourceList<Cluster>>() {
+    projectApi.getServicesInProjectAsync("foo", new FutureCallback<ResourceList<Service>>() {
       @Override
-      public void onSuccess(@Nullable ResourceList<Cluster> result) {
-        assertEquals(result.getItems().size(), clusterList.getItems().size() + clusterListNextPage.getItems().size());
-        assertTrue(result.getItems().containsAll(clusterList.getItems()));
-        assertTrue(result.getItems().containsAll(clusterListNextPage.getItems()));
+      public void onSuccess(@Nullable ResourceList<Service> result) {
+        assertEquals(result.getItems().size(), serviceList.getItems().size() + serviceListNextPage.getItems().size());
+        assertTrue(result.getItems().containsAll(serviceList.getItems()));
+        assertTrue(result.getItems().containsAll(serviceListNextPage.getItems()));
         latch.countDown();
       }
 

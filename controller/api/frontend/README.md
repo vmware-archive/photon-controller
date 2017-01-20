@@ -3,7 +3,7 @@
 The api-frontend service is the component providing all the APIs for Photon Controller. Users can perform
 operations (such as creating vms, attaching disks, etc.), also get, list, and modify resources (including hosts,
 datastores, vms, disks, network, etc.) by calling Photon Controller APIs. In addition,
-other internal components including deployer, cluster-manager call api-frontend to manage resources and perform
+other internal components including deployer, service-manager call api-frontend to manage resources and perform
 operations. It provides APIs to authorize users/user groups. All the APIs are protected utilizing authentication
 service - LightWave.
 
