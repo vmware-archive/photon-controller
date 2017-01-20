@@ -151,29 +151,63 @@ To enable authentication in Photon Controller services, a Lightwave STS must be 
 * `PHOTON_SWAGGER_LOGIN_URL` - registered login URL for the client at the Lightwave server
 * `PHOTON_SWAGGER_LOGOUT_URL` - registered logout URL for the client at the Lightwave server
 
+### Prepare NSX
+Before using NSX, you will need to download, install and provision NSX manager, controller and edge.
+You can use the script 'prepare_nsx.sh' to do the same for you. To use the script, you have to set the
+following environment variables. It installs all the NSX components in same host and it assumes that
+all the NSX components' IPs belong to the same network.
+
+* `NSX_MANAGER_OVA_URL` - OVA URL for NSX manager.
+Ex: "http://build-squid.eng.vmware.com/build/mts/release/bora-4191036/publish/nsx-manager/exports/ova/nsx-manager-1.0.1.0.0.4191070.ova"
+* `NSX_CONTROLLER_OVA_URL` - OVA URL for NSX controller.
+Ex: "http://build-squid.eng.vmware.com/build/mts/release/bora-4191036/publish/nsx-controller/exports/ova/nsx-controller-1.0.1.0.0.4191069.ova"
+* `NSX_EDGE_OVA_URL` - OVA URL for NSX edge.
+Ex: "http://build-squid.eng.vmware.com/build/mts/release/bora-4191036/publish/nsx-edgenode/exports/ova/nsx-edge-1.0.1.0.0.4191071.ova"
+* `NSX_HOST_COMMON_IP` - IP address of the ESXi host where you are trying to install the NSX VMs.
+* `NSX_HOST_COMMON_USERNAME` - Username of the ESXi host.
+* `NSX_HOST_COMMON_PASSWORD` - Password for the user.
+* `NSX_HOST_COMMON_DATASTORE` - Datastore in the ESXi host that will be used by all components of NSX.
+* `NSX_HOST_COMMON_NETWORK0`  - This network will be used by all 3 components of NSX.
+Ex: "nsx-management"
+* `NSX_HOST_COMMON_NETWORK1` - Edge requires 3 additional networks. This will be the 2nd network for
+Edge. Ex: "nsx-overlay"
+* `NSX_HOST_COMMON_NETWORK2` - This will be the 3rd network for Edge.
+Ex: "nsx-vlan"
+* `NSX_HOST_COMMON_NETWORK3` - This will be the 4th network for Edge.
+Ex: "nsx-management-ha"
+* `NSX_MANAGER_IP` - Public IP of NSX manager.
+* `NSX_CONTROLLER_IP` - Public IP of NSX controller.
+* `NSX_EDGE_IP` - Public IP of NSX edge.
+* `NSX_COMMON_PASSWORD` - Common password for all the components of NSX. Username will be "admin".
+* `NSX_COMMON_DOMAIN` - Common name server for all components of NSX.
+Ex: "nsx.ec.eng.vmware.com"
+* `NSX_COMMON_NETMASK` - Net mask for all components.
+Ex: "255.255.254.0"
+* `NSX_COMMON_GATEWAY` - Gateway IP for all components.
+* `NSX_COMMON_DNS` - DNS server IP.
+* `NSX_COMMON_NTP` - NTP server IP.
+* `NSX_OVERWRITE` - This can be either 'true' or 'false'. If it's 'true', script will overwrite existing NSX components.
+If it's false, script will fail if there's an existing NSX component.
+
 ### Configure NSX
 To configure NSX manually follow https://github.com/vmware/photon-controller/wiki/Setting-Up-NSX.
 The script configure_nsx.sh automates the process described in the above wiki. The following environment variables must be set before running ./configure_nsx.sh:
 
-* `NETWORK_MANAGER_ADDRESS` - IP address of the NSX manager
-* `NETWORK_MANAGER_USERNAME` - Username of the NSX manager
-* `NETWORK_MANAGER_PASSWORD` - Password of the NSX manager
+The IP address pool provides internal IP addresses for NSX tunnel endpoints (i.e., ESXi hosts and Edge
+node). You will need to choose an internal IP address range that does not conflict with the IP
+addresses on the physical network. Default values will be used if the environment variables are not defined.
+* `NETWORK_TUNNEL_IP_POOL_CIDR` - CIDR of the Tunnel IP pool. Default value "192.168.150.0/24"
+* `NETWORK_TUNNEL_IP_POOL_ALLOCATION_START` - Start IP of an allocation range in the IP pool. Default
+value "192.168.150.200"
+* `NETWORK_TUNNEL_IP_POOL_ALLOCATION_END` - End IP of an allocation range in the IP pool. Default value "192.168.150.250"
 
-The IP address pool provides internal IP addresses for NSX tunnel endpoints (i.e., ESXi hosts and Edge node). You will need to choose an internal IP address range that does not conflict with the IP addresses on the physical network.
-* `NETWORK_TUNNEL_IP_POOL_CIDR` - CIDR of the Tunnel IP pool
-* `NETWORK_TUNNEL_IP_POOL_ALLOCATION_START` - Start IP of an allocation range in the IP pool
-* `NETWORK_TUNNEL_IP_POOL_ALLOCATION_END` - End IP of an allocation range in the IP pool
-
-The following should be the subnet IP address of the T0 router port which is connected to VLAN switch. This needs to be an IP address which is accessible
-from physical network.
+The following should be the subnet IP address of the T0 router port which is connected to VLAN switch.
+This needs to be an IP address which is accessible from physical network.
 * `NETWORK_T0_SUBNET_IP_ADDRESS` - subnet address of T0 router
 * `NETWORK_T0_SUBNET_PREFIX_LENGTH` - subnet length of T0 router
 * `NETWORK_T0_GATEWAY` - subnet gateway of T0 router
 
-The following should be the subnet IP address of the T1(DHCP) router port which is connected to DHCP switch. The address should depend on the
-DHCP server IP address.
-* `NETWORK_DHCP_SUBNET_IP_ADDRESS` - subnet address of DHCP router
-* `NETWORK_DHCP_SUBNET_PREFIX_LENGTH` - subnet length of DHCP router
+* `NETWORK_HOST_UPLINK_PNIC` - Name of the host uplink physical nic. Default value 'vmnic1'
 
 ### Using devbox with NSX for virtual network
 To enable virtual network in Photon Controller, some NSX parameters are needed to provision each host added to the devbox. The parameters are set in the deployment document in cloud-store. To enable virtual network define the following environment variables before running ./seed_deployment.sh:
