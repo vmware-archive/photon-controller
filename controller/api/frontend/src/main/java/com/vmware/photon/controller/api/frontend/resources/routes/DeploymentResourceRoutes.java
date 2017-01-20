@@ -42,6 +42,10 @@ public class DeploymentResourceRoutes {
 
   public static final String CONFIGURE_NSX_ACTION = "/configure_nsx";
 
+  public static final String ENABLE_SERVICE_TYPE_ACTION = "/enable_service_type";
+
+  public static final String DISABLE_SERVICE_TYPE_ACTION = "/disable_service_type";
+
   public static final String DEPLOYMENT_VMS_PATH = "/deployments/{id}/vms";
 
   public static final String DEPLOYMENT_HOSTS_PATH = "/deployments/{id}/hosts";

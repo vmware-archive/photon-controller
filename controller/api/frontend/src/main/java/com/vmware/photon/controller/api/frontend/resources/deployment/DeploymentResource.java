@@ -14,13 +14,12 @@
 package com.vmware.photon.controller.api.frontend.resources.deployment;
 
 import com.vmware.photon.controller.api.frontend.clients.DeploymentFeClient;
-import com.vmware.photon.controller.api.frontend.exceptions.external.ClusterTypeNotConfiguredException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.frontend.exceptions.external.ServiceTypeNotConfiguredException;
 import com.vmware.photon.controller.api.frontend.exceptions.internal.InternalException;
 import com.vmware.photon.controller.api.frontend.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRoutes;
-import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.model.DeploymentSize;
@@ -28,6 +27,7 @@ import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.model.NsxConfigurationSpec;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.ServiceConfigurationSpec;
 import com.vmware.photon.controller.api.model.Task;
 import static com.vmware.photon.controller.api.frontend.Responses.generateCustomResponse;
 
@@ -219,40 +219,79 @@ public class DeploymentResource {
   }
 
   @POST
-  @Path(DeploymentResourceRoutes.ENABLE_CLUSTER_TYPE_ACTION)
-  @ApiOperation(value = "Configures a given type of cluster associated with the Deployment", response = Task.class)
+  @Path(DeploymentResourceRoutes.ENABLE_SERVICE_TYPE_ACTION)
+  @ApiOperation(value = "Configures a given type of service associated with the Deployment", response = Task.class)
   @ApiResponses(value = {
-          @ApiResponse(code = 201, message = "Task created, cluster configuration process can be fetched " +
+          @ApiResponse(code = 201, message = "Task created, service configuration process can be fetched " +
                   "via the task")
   })
-  public Response configureCluster(@Context Request request,
+  public Response configureService(@Context Request request,
                                    @PathParam("id") String id,
-                                   @Validated ClusterConfigurationSpec spec) throws ExternalException {
+                                   @Validated ServiceConfigurationSpec spec) throws ExternalException {
 
     return generateCustomResponse(
         Response.Status.CREATED,
-        client.configureCluster(id, spec),
+        client.configureService(id, spec),
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
+  }
+
+  @POST
+  @Path(DeploymentResourceRoutes.DISABLE_SERVICE_TYPE_ACTION)
+  @ApiOperation(value = "Delete service configuration for a give cluster type", response = Task.class)
+  @ApiResponses(value = {
+      @ApiResponse(code = 201, message = "Task created, service configuration delete process can be fetched " +
+          "via the task")
+  })
+  public Response deleteServiceConfiguration(@Context Request request,
+                                             @PathParam("id") String id,
+                                             ServiceConfigurationSpec spec) throws ExternalException {
+    if (spec == null || spec.getType() == null) {
+      throw new ServiceTypeNotConfiguredException(null);
+    }
+
+    return generateCustomResponse(
+        Response.Status.CREATED,
+        client.deleteServiceConfiguration(id, spec.getType()),
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
+  }
+
+  @POST
+  @Path(DeploymentResourceRoutes.ENABLE_CLUSTER_TYPE_ACTION)
+  @ApiOperation(value = "Configures a given type of cluster associated with the Deployment", response = Task.class)
+  @ApiResponses(value = {
+      @ApiResponse(code = 201, message = "Task created, cluster configuration process can be fetched " +
+          "via the task")
+  })
+  public Response configureCluster(@Context Request request,
+                                   @PathParam("id") String id,
+                                   @Validated ServiceConfigurationSpec spec) throws ExternalException {
+
+    return generateCustomResponse(
+        Response.Status.CREATED,
+        client.configureService(id, spec),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
 
   @POST
   @Path(DeploymentResourceRoutes.DISABLE_CLUSTER_TYPE_ACTION)
-  @ApiOperation(value = "Delete cluster configuration for a give cluster type", response = Task.class)
+  @ApiOperation(value = "Delete service configuration for a give cluster type", response = Task.class)
   @ApiResponses(value = {
       @ApiResponse(code = 201, message = "Task created, cluster configuration delete process can be fetched " +
           "via the task")
   })
   public Response deleteClusterConfiguration(@Context Request request,
                                              @PathParam("id") String id,
-                                             ClusterConfigurationSpec spec) throws ExternalException {
+                                             ServiceConfigurationSpec spec) throws ExternalException {
     if (spec == null || spec.getType() == null) {
-      throw new ClusterTypeNotConfiguredException(null);
+      throw new ServiceTypeNotConfiguredException(null);
     }
 
     return generateCustomResponse(
         Response.Status.CREATED,
-        client.deleteClusterConfiguration(id, spec.getType()),
+        client.deleteServiceConfiguration(id, spec.getType()),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

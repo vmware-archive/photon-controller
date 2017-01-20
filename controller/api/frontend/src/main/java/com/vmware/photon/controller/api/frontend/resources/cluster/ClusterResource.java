@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.api.frontend.resources.cluster;
 
-import com.vmware.photon.controller.api.frontend.clients.ClusterFeClient;
+import com.vmware.photon.controller.api.frontend.clients.ServiceFeClient;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.resources.routes.ClusterResourceRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.TaskResourceRoutes;
-import com.vmware.photon.controller.api.model.Cluster;
+import com.vmware.photon.controller.api.model.Service;
 import com.vmware.photon.controller.api.model.Task;
 import static com.vmware.photon.controller.api.frontend.Responses.generateCustomResponse;
 
@@ -49,19 +49,19 @@ import javax.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ClusterResource {
 
-  private final ClusterFeClient clusterFeClient;
+  private final ServiceFeClient serviceFeClient;
 
   @Inject
-  public ClusterResource(ClusterFeClient clusterFeClient) {
-    this.clusterFeClient = clusterFeClient;
+  public ClusterResource(ServiceFeClient serviceFeClient) {
+    this.serviceFeClient = serviceFeClient;
   }
 
   @GET
-  @ApiOperation(value = "Find a cluster by id", response = Cluster.class)
+  @ApiOperation(value = "Find a cluster by id", response = Service.class)
   public Response get(@Context Request request, @PathParam("id") String id) throws ExternalException {
     Response response = generateCustomResponse(
         Response.Status.OK,
-        clusterFeClient.get(id),
+        serviceFeClient.get(id),
         (ContainerRequest) request,
         ClusterResourceRoutes.CLUSTERS_PATH);
     return response;
@@ -76,7 +76,7 @@ public class ClusterResource {
       throws ExternalException {
     Response response = generateCustomResponse(
         Response.Status.CREATED,
-        clusterFeClient.delete(id),
+        serviceFeClient.delete(id),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
     return response;
@@ -92,7 +92,7 @@ public class ClusterResource {
                          @PathParam("id") String clusterId) throws ExternalException {
     return generateCustomResponse(
         Response.Status.OK,
-        clusterFeClient.triggerMaintenance(clusterId),
+        serviceFeClient.triggerMaintenance(clusterId),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

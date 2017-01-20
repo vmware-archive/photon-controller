@@ -16,8 +16,6 @@ package com.vmware.photon.controller.cloudstore.xenon;
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.xenon.entity.AttachedDiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.AvailabilityZoneServiceFactory;
-import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
-import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DiskServiceFactory;
@@ -30,6 +28,8 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactor
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SchedulingConstantGenerator;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ServiceConfigurationStateFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ServiceStateFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TombstoneServiceFactory;
@@ -113,8 +113,8 @@ public class CloudStoreServiceGroupTest {
       DiskServiceFactory.SELF_LINK,
       AttachedDiskServiceFactory.SELF_LINK,
       TombstoneServiceFactory.SELF_LINK,
-      ClusterServiceFactory.SELF_LINK,
-      ClusterConfigurationServiceFactory.SELF_LINK,
+      ServiceStateFactory.SELF_LINK,
+      ServiceConfigurationStateFactory.SELF_LINK,
       AvailabilityZoneServiceFactory.SELF_LINK,
       VirtualNetworkService.FACTORY_LINK,
       SchedulingConstantGenerator.FACTORY_LINK,
