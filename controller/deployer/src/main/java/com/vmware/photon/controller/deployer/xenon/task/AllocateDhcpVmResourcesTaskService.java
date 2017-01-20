@@ -17,7 +17,6 @@ import com.vmware.photon.controller.api.model.FlavorCreateSpec;
 import com.vmware.photon.controller.api.model.QuotaLineItem;
 import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.Task;
-import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -39,6 +38,7 @@ import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateServi
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.util.ApiUtils;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
+import com.vmware.photon.controller.servicesmanager.servicedocuments.ServicesManagerConstants;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -364,7 +364,7 @@ public class AllocateDhcpVmResourcesTaskService extends StatefulService {
 
   private FlavorCreateSpec createVmFlavor() throws Throwable {
     FlavorCreateSpec spec = new FlavorCreateSpec();
-    spec.setName(ClusterManagerConstants.OTHER_VM_FLAVOR);
+    spec.setName(ServicesManagerConstants.OTHER_VM_FLAVOR);
     spec.setKind("vm");
 
     List<QuotaLineItem> cost = new ArrayList<>();
@@ -380,7 +380,7 @@ public class AllocateDhcpVmResourcesTaskService extends StatefulService {
 
   private FlavorCreateSpec createVmDiskFlavor() throws Throwable {
     FlavorCreateSpec spec = new FlavorCreateSpec();
-    spec.setName(ClusterManagerConstants.VM_DISK_FLAVOR);
+    spec.setName(ServicesManagerConstants.VM_DISK_FLAVOR);
     spec.setKind("ephemeral-disk");
 
     List<QuotaLineItem> cost = new ArrayList<>();

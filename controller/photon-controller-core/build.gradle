@@ -12,7 +12,7 @@ dependencies {
   compile project(':api:client')
   compile project(':api:api-backend')
   compile project(':api:frontend')
-  compile project(':cluster-manager:service-documents')
+  compile project(':services-manager:service-documents')
   compile project(':utils:common')
   compile project(':utils:common-xenon')
   compile project(':cloud-store')

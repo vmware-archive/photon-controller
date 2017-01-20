@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.api.frontend;
 
-import com.vmware.photon.controller.api.frontend.auth.fetcher.Cluster;
-import com.vmware.photon.controller.api.frontend.auth.fetcher.ClusterSecurityGroupFetcher;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.Deployment;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.Disk;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.DiskSecurityGroupFetcher;
@@ -27,6 +25,8 @@ import com.vmware.photon.controller.api.frontend.auth.fetcher.ProjectSecurityGro
 import com.vmware.photon.controller.api.frontend.auth.fetcher.ResourceTicket;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.ResourceTicketSecurityGroupFetcher;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.SecurityGroupFetcher;
+import com.vmware.photon.controller.api.frontend.auth.fetcher.Service;
+import com.vmware.photon.controller.api.frontend.auth.fetcher.ServiceSecurityGroupFetcher;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.Tenant;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.TenantSecurityGroupFetcher;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.Vm;
@@ -209,7 +209,7 @@ public class ApiFeModuleTest {
     public SecurityGroupFetcher tenantFetcher;
     public SecurityGroupFetcher projectFetcher;
     public SecurityGroupFetcher resourceTicketFetcher;
-    public SecurityGroupFetcher clusterFetcher;
+    public SecurityGroupFetcher serviceFetcher;
     public SecurityGroupFetcher diskFetcher;
     public SecurityGroupFetcher vmFetcher;
 
@@ -221,7 +221,7 @@ public class ApiFeModuleTest {
         @Tenant SecurityGroupFetcher tenantFetcher,
         @Project SecurityGroupFetcher projectFetcher,
         @ResourceTicket SecurityGroupFetcher resourceTicketFetcher,
-        @Cluster SecurityGroupFetcher clusterFetcher,
+        @Service SecurityGroupFetcher serviceFetcher,
         @Disk SecurityGroupFetcher diskFetcher,
         @Vm SecurityGroupFetcher vmFetcher) {
       this.noneFetcher = noneFetcher;
@@ -230,7 +230,7 @@ public class ApiFeModuleTest {
       this.tenantFetcher = tenantFetcher;
       this.projectFetcher = projectFetcher;
       this.resourceTicketFetcher = resourceTicketFetcher;
-      this.clusterFetcher = clusterFetcher;
+      this.serviceFetcher = serviceFetcher;
       this.diskFetcher = diskFetcher;
       this.vmFetcher = vmFetcher;
     }
@@ -425,8 +425,8 @@ public class ApiFeModuleTest {
       assertThat(subject.noneFetcher, instanceOf(NoneSecurityGroupFetcher.class));
       assertThat(subject.multiplexedFetcher, notNullValue());
       assertThat(subject.multiplexedFetcher, instanceOf(MultiplexedSecurityGroupFetcher.class));
-      assertThat(subject.clusterFetcher, notNullValue());
-      assertThat(subject.clusterFetcher, instanceOf(ClusterSecurityGroupFetcher.class));
+      assertThat(subject.serviceFetcher, notNullValue());
+      assertThat(subject.serviceFetcher, instanceOf(ServiceSecurityGroupFetcher.class));
       assertThat(subject.diskFetcher, notNullValue());
       assertThat(subject.diskFetcher, instanceOf(DiskSecurityGroupFetcher.class));
       assertThat(subject.projectFetcher, notNullValue());

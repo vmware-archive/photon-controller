@@ -16,8 +16,8 @@ dependencies {
   compile project(':utils:common-xenon')
   compile project(':utils:common-logging')
   compile project(':utils:common-auth')
-  compile project(':cluster-manager:backend')
-  compile project(':cluster-manager:service-documents')
+  compile project(':services-manager:backend')
+  compile project(':services-manager:service-documents')
 
   compile "commons-io:commons-io:2.4"
   compile "com.google.guava:guava:${versions.guava}"

@@ -30,7 +30,7 @@ public class ServiceUriPaths {
 
   public static final String HOUSEKEEPER_ROOT = SERVICES_ROOT + "/housekeeper";
 
-  public static final String CLUSTERMANAGER_ROOT = SERVICES_ROOT + "/clustermanager";
+  public static final String SERVICESMANAGER_ROOT = SERVICES_ROOT + "/servicesmanager";
 
   public static final String APIBACKEND_ROOT = SERVICES_ROOT + "/apibackend";
 
@@ -38,23 +38,23 @@ public class ServiceUriPaths {
 
   public static final String DHCPAGENT_ROOT = SERVICES_ROOT + "/dhcpagent";
 
-  public static final String CLUSTER_RESIZE_TASK_SERVICE =
-      CLUSTERMANAGER_ROOT + "/cluster-resize-tasks";
+  public static final String SERVICE_RESIZE_TASK =
+      SERVICESMANAGER_ROOT + "/service-resize-tasks";
 
-  public static final String CLUSTER_DELETE_TASK_SERVICE =
-      CLUSTERMANAGER_ROOT + "/cluster-delete-tasks";
+  public static final String SERVICE_DELETE_TASK =
+      SERVICESMANAGER_ROOT + "/service-delete-tasks";
 
-  public static final String KUBERNETES_CLUSTER_CREATE_TASK_SERVICE =
-      CLUSTERMANAGER_ROOT + "/kubernetes-cluster-create-tasks";
+  public static final String KUBERNETES_SERVICE_CREATE_TASK =
+      SERVICESMANAGER_ROOT + "/kubernetes-service-create-tasks";
 
-  public static final String MESOS_CLUSTER_CREATE_TASK_SERVICE =
-      CLUSTERMANAGER_ROOT + "/mesos-cluster-create-tasks";
+  public static final String MESOS_SERVICE_CREATE_TASK =
+      SERVICESMANAGER_ROOT + "/mesos-service-create-tasks";
 
-  public static final String SWARM_CLUSTER_CREATE_TASK_SERVICE =
-      CLUSTERMANAGER_ROOT + "/swarm-cluster-create-tasks";
+  public static final String SWARM_SERVICE_CREATE_TASK =
+      SERVICESMANAGER_ROOT + "/swarm-service-create-tasks";
 
-  public static final String HARBOR_CLUSTER_CREATE_TASK_SERVICE =
-      CLUSTERMANAGER_ROOT + "/harbor-cluster-create-tasks";
+  public static final String HARBOR_SERVICE_CREATE_TASK =
+      SERVICESMANAGER_ROOT + "/harbor-service-create-tasks";
 
   public static final String DEFAULT_CLOUD_STORE_NODE_SELECTOR =
       com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_3X_NODE_SELECTOR;
