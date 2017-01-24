@@ -203,9 +203,6 @@ public class DeploymentServiceTest {
     @DataProvider(name = "RequiredFieldNames")
     public Object[][] getRequiredFieldNames() {
       return new Object[][]{
-          {"imageDataStoreNames"},
-          {"imageDataStoreUsedForVMs"},
-          {"state"},
       };
     }
   }
