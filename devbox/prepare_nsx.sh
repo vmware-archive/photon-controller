@@ -133,6 +133,19 @@ EOF
   rm -rf tmp.sh
 }
 
+function escape_special_char() {
+  local str=${1}
+
+  str=${str//%/%25}
+  str=${str//$/%24}
+  str=${str//!/%21}
+  str=${str//#/%23}
+  str=${str//&/%26}
+  str=${str//*/%2A}
+
+  echo $str
+}
+
 function install_nsx_manager() {
   echo "=== Install NSX Manager ==="
 
@@ -140,6 +153,7 @@ function install_nsx_manager() {
   local host_ip=${NSX_MANAGER_HOST_IP:=$NSX_HOST_COMMON_IP}
   local host_username=${NSX_MANAGER_HOST_USERNAME:=$NSX_HOST_COMMON_USERNAME}
   local host_password=${NSX_MANAGER_HOST_PASSWORD:=$NSX_HOST_COMMON_PASSWORD}
+  host_password=`escape_special_char $host_password`
   local host_datastore=${NSX_MANAGER_HOST_DATASTORE:=$NSX_HOST_COMMON_DATASTORE}
   local host_network=${NSX_MANAGER_HOST_NETWORK:=$NSX_HOST_COMMON_NETWORK0}
 
@@ -188,6 +202,7 @@ function install_nsx_controller {
   local host_ip=${NSX_CONTROLLER_HOST_IP:=$NSX_HOST_COMMON_IP}
   local host_username=${NSX_CONTROLLER_HOST_USERNAME:=$NSX_HOST_COMMON_USERNAME}
   local host_password=${NSX_CONTROLLER_HOST_PASSWORD:=$NSX_HOST_COMMON_PASSWORD}
+  host_password=`escape_special_char $host_password`
   local host_datastore=${NSX_CONTROLLER_HOST_DATASTORE:=$NSX_HOST_COMMON_DATASTORE}
   local host_network=${NSX_CONTROLLER_HOST_NETWORK:=$NSX_HOST_COMMON_NETWORK0}
 
@@ -236,6 +251,7 @@ function install_nsx_edge {
   local host_ip=${NSX_EDGE_HOST_IP:=$NSX_HOST_COMMON_IP}
   local host_username=${NSX_EDGE_HOST_USERNAME:=$NSX_HOST_COMMON_USERNAME}
   local host_password=${NSX_EDGE_HOST_PASSWORD:=$NSX_HOST_COMMON_PASSWORD}
+  host_password=`escape_special_char $host_password`
   local host_datastore=${NSX_EDGE_HOST_DATASTORE:=$NSX_HOST_COMMON_DATASTORE}
   local host_network0=${NSX_EDGE_HOST_NETWORK0:=$NSX_HOST_COMMON_NETWORK0}
   local host_network1=${NSX_EDGE_HOST_NETWORK1:=$NSX_HOST_COMMON_NETWORK1}
