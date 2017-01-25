@@ -55,6 +55,8 @@ describe "Harbor cluster-service lifecycle", cluster: true do
       props = construct_properties(harbor1_ip)
       project = @seeder.project!
       cluster1 = create_harbor_cluster(project, props)
+      puts "sleep 900"
+      sleep 900
       validate_harbor_cluster_info(cluster1.id)
       EsxCloud::ClusterHelper.validate_ssh(harbor1_ip)
 
@@ -63,7 +65,7 @@ describe "Harbor cluster-service lifecycle", cluster: true do
       cluster2 = create_harbor_cluster(project, props)
       validate_harbor_cluster_info(cluster2.id)
       EsxCloud::ClusterHelper.delete_cluster(client, cluster2.id, "HARBOR")
-      
+
       puts "Test that two tenants can create and operate on their own Harbor cluster in parallel"
       project = @seeder2.project!
       cluster3 = create_harbor_cluster(project, props)
@@ -73,6 +75,8 @@ describe "Harbor cluster-service lifecycle", cluster: true do
       EsxCloud::ClusterHelper.delete_cluster(client, cluster1.id, "HARBOR")
       EsxCloud::ClusterHelper.delete_cluster(client, cluster3.id, "HARBOR")
     rescue EsxCloud::Error => e
+      puts "sleep 300"
+      sleep 300
       EsxCloud::ClusterHelper.show_logs(@seeder.project, client)
       fail "HARBOR cluster integration Test failed. Error: #{e.message}"
     end
