@@ -155,6 +155,9 @@ public class StepCommandFactory {
             taskCommand, stepBackend, stepEntity, imageBackend, imageStoreFactory.create());
       case CREATE_HOST:
         return new HostCreateStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
+      case CONFIGURE_HOST_WITH_NSX:
+        return new HostConfigureNsxStepCmd(taskCommand, stepBackend, stepEntity,
+            hostBackend, deploymentBackend);
       case PROVISION_HOST:
         return new HostProvisionStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
       case DEPROVISION_HOST:

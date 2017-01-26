@@ -183,6 +183,29 @@ public class NsxClientMock extends NsxClient {
       return this;
     }
 
+    public Builder getFabricNodeState(boolean isSuccess,
+                                      com.vmware.photon.controller.nsxclient.datatypes.FabricNodeState state)
+        throws Throwable {
+      if (isSuccess) {
+        FabricNodeState response = new FabricNodeState();
+        response.setState(state);
+        doAnswer(invocation -> {
+          ((FutureCallback<FabricNodeState>) invocation.getArguments()[1])
+              .onSuccess(response);
+          return null;
+        }).when(mockFabricApi).getFabricNodeState(anyString(), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("getFabricNodeState failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<FabricNodeState>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockFabricApi).getFabricNodeState(anyString(), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
     public Builder createTransportNode(boolean isSuccess,
                                        String transportNodeId) throws Throwable {
       if (isSuccess) {
@@ -209,6 +232,29 @@ public class NsxClientMock extends NsxClient {
           return null;
         }).when(mockFabricApi).createTransportNode(any(TransportNodeCreateSpec.class),
             any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
+    public Builder getTransportNodeState(boolean isSuccess,
+                                         com.vmware.photon.controller.nsxclient.datatypes.TransportNodeState state)
+        throws Throwable {
+      if (isSuccess) {
+        TransportNodeState response = new TransportNodeState();
+        response.setState(state);
+        doAnswer(invocation -> {
+          ((FutureCallback<TransportNodeState>) invocation.getArguments()[1])
+              .onSuccess(response);
+          return null;
+        }).when(mockFabricApi).getTransportNodeState(anyString(), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("getFabricNodeState failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<TransportNodeState>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockFabricApi).getTransportNodeState(anyString(), any(FutureCallback.class));
       }
 
       return this;

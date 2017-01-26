@@ -129,6 +129,7 @@ public class StepCommandFactoryTest {
 
         // Host
         {Operation.CREATE_HOST, HostCreateStepCmd.class},
+        {Operation.CONFIGURE_HOST_WITH_NSX, HostConfigureNsxStepCmd.class},
         {Operation.PROVISION_HOST, HostProvisionStepCmd.class},
         {Operation.DEPROVISION_HOST, HostDeprovisionStepCmd.class},
         {Operation.DELETE_HOST, HostDeleteStepCmd.class},

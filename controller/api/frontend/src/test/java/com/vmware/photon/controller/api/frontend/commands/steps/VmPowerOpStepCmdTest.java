@@ -34,6 +34,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 import com.vmware.photon.controller.host.gen.PowerVmOp;
 import com.vmware.photon.controller.host.gen.PowerVmOpResponse;
 import com.vmware.photon.controller.host.gen.PowerVmOpResultCode;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.resource.gen.Datastore;
 
 import org.mockito.InOrder;
@@ -78,6 +79,9 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
   private DeployerClient deployerClient;
 
   @Mock
+  private NsxClientFactory nsxClientFactory;
+
+  @Mock
   private com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient deployerXenonClient;
 
   @Mock
@@ -109,7 +113,7 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
 
     taskCommand = spy(new TaskCommand(xenonClient, photonControllerXenonRestClient, hostClient,
         housekeeperClient, deployerClient, deployerXenonClient, housekeeperXenonClient,
-        entityLockBackend, task));
+        entityLockBackend, nsxClientFactory, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getPhotonControllerXenonRestClient()).thenReturn(photonControllerXenonRestClient);
     HostService.State hostServiceState = new HostService.State();

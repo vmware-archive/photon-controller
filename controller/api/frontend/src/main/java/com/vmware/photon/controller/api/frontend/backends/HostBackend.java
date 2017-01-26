@@ -59,6 +59,8 @@ public interface HostBackend {
 
   void updateAvailabilityZone(HostEntity entity) throws HostNotFoundException;
 
+  void updateNsxConfiguration(HostEntity entity, String fabricNode, String transportNode) throws HostNotFoundException;
+
   void tombstone(HostEntity hostEntity);
 
   TaskEntity setAvailabilityZone(String hostId, HostSetAvailabilityZoneOperation hostSetAvailabilityZoneOperation)

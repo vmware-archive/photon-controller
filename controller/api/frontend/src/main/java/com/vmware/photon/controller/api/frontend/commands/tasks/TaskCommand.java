@@ -39,6 +39,7 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.resource.gen.Resource;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -74,6 +75,7 @@ public class TaskCommand extends BaseCommand {
   private HostClient hostClient;
   private HousekeeperClient housekeeperClient;
   private DeployerClient deployerClient;
+  private NsxClientFactory nsxClientFactory;
 
   private com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient deployerXenonClient;
   private com.vmware.photon.controller.api.frontend.backends.clients.HousekeeperClient housekeeperXenonClient;
@@ -89,6 +91,7 @@ public class TaskCommand extends BaseCommand {
       com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient deployerXenonClient,
       com.vmware.photon.controller.api.frontend.backends.clients.HousekeeperClient housekeeperXenonClient,
       EntityLockBackend entityLockBackend,
+      NsxClientFactory nsxClientFactory,
       @Assisted TaskEntity task) {
     super(task.getId());
     this.task = checkNotNull(task);
@@ -100,6 +103,7 @@ public class TaskCommand extends BaseCommand {
     this.deployerClient = deployerClient;
     this.deployerXenonClient = deployerXenonClient;
     this.entityLockBackend = entityLockBackend;
+    this.nsxClientFactory = nsxClientFactory;
   }
 
   @Override
@@ -219,6 +223,10 @@ public class TaskCommand extends BaseCommand {
 
   public DeployerClient getDeployerClient() {
     return checkNotNull(deployerClient);
+  }
+
+  public NsxClientFactory getNsxClientFactory() {
+    return checkNotNull(nsxClientFactory);
   }
 
   public com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient getDeployerXenonClient() {

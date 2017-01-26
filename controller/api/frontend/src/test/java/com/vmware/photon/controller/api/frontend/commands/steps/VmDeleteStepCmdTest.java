@@ -40,6 +40,7 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotPoweredOffException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.resource.gen.Datastore;
 
 import com.google.common.collect.ImmutableList;
@@ -92,6 +93,9 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
   private EntityLockBackend entityLockBackend;
 
   @Mock
+  private NsxClientFactory nsxClientFactory;
+
+  @Mock
   private com.vmware.xenon.common.Operation hostServiceOp;
 
   @Mock
@@ -121,7 +125,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
 
     taskCommand = spy(new TaskCommand(xenonClient, photonControllerXenonRestClient, hostClient,
         housekeeperClient, deployerClient, deployerXenonClient, housekeeperXenonClient,
-        entityLockBackend, task));
+        entityLockBackend, nsxClientFactory, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getPhotonControllerXenonRestClient()).thenReturn(photonControllerXenonRestClient);
     HostService.State hostServiceState = new HostService.State();

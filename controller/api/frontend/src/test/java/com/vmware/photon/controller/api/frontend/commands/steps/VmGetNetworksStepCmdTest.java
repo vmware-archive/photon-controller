@@ -43,6 +43,7 @@ import com.vmware.photon.controller.host.gen.GetVmNetworkResponse;
 import com.vmware.photon.controller.host.gen.GetVmNetworkResultCode;
 import com.vmware.photon.controller.host.gen.Ipv4Address;
 import com.vmware.photon.controller.host.gen.VmNetworkInfo;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.resource.gen.Datastore;
 
 import com.google.common.base.Optional;
@@ -115,6 +116,9 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
   @Mock
   private com.vmware.xenon.common.Operation hostServiceOp;
 
+  @Mock
+  private NsxClientFactory nsxClientFactory;
+
   private TaskCommand taskCommand;
 
   private VmEntity vm;
@@ -151,7 +155,7 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
 
     taskCommand = spy(new TaskCommand(xenonClient, photonControllerXenonRestClient, hostClient,
         housekeeperClient, deployerClient, deployerXenonClient, housekeeperXenonClient,
-        entityLockBackend, task));
+        entityLockBackend, nsxClientFactory, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getPhotonControllerXenonRestClient()).thenReturn(photonControllerXenonRestClient);
     HostService.State hostServiceState = new HostService.State();

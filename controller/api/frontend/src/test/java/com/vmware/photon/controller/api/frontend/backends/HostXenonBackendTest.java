@@ -45,6 +45,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SchedulingConstantGenerator;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
 
 import com.google.common.base.Optional;
@@ -61,6 +62,7 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
@@ -178,6 +180,9 @@ public class HostXenonBackendTest {
 
     @Inject
     private AvailabilityZoneBackend availabilityZoneBackend;
+
+    @Inject
+    private NsxClientFactory nsxClientFactory;
 
     private HostCreateSpec hostCreateSpec;
     private String deploymentId;
@@ -716,6 +721,81 @@ public class HostXenonBackendTest {
       } catch (HostNotFoundException e) {
         assertThat(e.getMessage(), is("Host #" + hostId + " not found"));
       }
+    }
+  }
+
+  /**
+   * Tests for updating host related NSX configuration.
+   */
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
+  public static class UpdateNsxConfigurationTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+
+    @Inject
+    private HostBackend hostBackend;
+
+    private String hostId;
+    private String deploymentId;
+    private String fabricNodeId;
+    private String transportNodeId;
+    private HostCreateSpec hostCreateSpec;
+    private DeploymentService.State deploymentState;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
+
+      hostCreateSpec = new HostCreateSpec();
+      hostCreateSpec.setUsername("user");
+      hostCreateSpec.setPassword("password");
+      hostCreateSpec.setAddress("0.0.0.0");
+      List<UsageTag> usageTags = new ArrayList<>();
+      usageTags.add(UsageTag.CLOUD);
+      hostCreateSpec.setUsageTags(usageTags);
+
+      deploymentState = getDeploymentState();
+      apiFeXenonRestClient.post(DeploymentServiceFactory.SELF_LINK, deploymentState);
+      deploymentId = deploymentState.documentSelfLink;
+
+      TaskEntity taskEntity = hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
+      hostId = taskEntity.getEntityId();
+
+      fabricNodeId = "fabricNode";
+      transportNodeId = "transportNodeId";
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      deleteDeployment(deploymentState);
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testUpdateNsxConfiguration() throws Throwable {
+      HostService.State hostState = apiFeXenonRestClient
+          .get(HostServiceFactory.SELF_LINK + "/" + hostId)
+          .getBody(HostService.State.class);
+      assertThat(hostState.nsxFabricNodeId, isEmptyOrNullString());
+      assertThat(hostState.nsxTransportNodeId, isEmptyOrNullString());
+
+      HostEntity hostEntity = hostBackend.findById(hostId);
+      hostBackend.updateNsxConfiguration(hostEntity, fabricNodeId, transportNodeId);
+
+      hostState = apiFeXenonRestClient
+          .get(HostServiceFactory.SELF_LINK + "/" + hostId)
+          .getBody(HostService.State.class);
+      assertThat(hostState.nsxFabricNodeId, is(fabricNodeId));
+      assertThat(hostState.nsxTransportNodeId, is(transportNodeId));
     }
   }
 

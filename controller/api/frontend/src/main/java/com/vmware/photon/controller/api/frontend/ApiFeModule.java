@@ -89,6 +89,7 @@ import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
+import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.xenon.common.ServiceHost;
 
@@ -227,6 +228,12 @@ public class ApiFeModule extends AbstractModule {
   @PhotonControllerServerSet
   public ServerSet getPhotonControllerServerSet() {
     return new StaticServerSet(new InetSocketAddress("127.0.0.1", configuration.getXenonPort()));
+  }
+
+  @Provides
+  @Singleton
+  public NsxClientFactory getNsxClientFactory() {
+    return new NsxClientFactory();
   }
 
   @Override

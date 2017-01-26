@@ -44,6 +44,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 import com.vmware.photon.controller.host.gen.VmDiskOpError;
 import com.vmware.photon.controller.host.gen.VmDiskOpResultCode;
 import com.vmware.photon.controller.host.gen.VmDisksOpResponse;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.Disk;
 
@@ -155,6 +156,9 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
   private DeployerClient deployerClient;
 
   @Mock
+  private NsxClientFactory nsxClientFactory;
+
+  @Mock
   private com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient deployerXenonClient;
 
   @Mock
@@ -243,7 +247,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
 
     taskCommand = spy(new TaskCommand(xenonClient, photonControllerXenonRestClient, hostClient,
         housekeeperClient, deployerClient, deployerXenonClient, housekeeperXenonClient,
-        entityLockBackend, task));
+        entityLockBackend, nsxClientFactory, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getPhotonControllerXenonRestClient()).thenReturn(photonControllerXenonRestClient);
     when(vmBackend.findById(vmId)).thenReturn(vm);

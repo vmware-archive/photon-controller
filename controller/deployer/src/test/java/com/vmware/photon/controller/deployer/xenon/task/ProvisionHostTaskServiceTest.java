@@ -39,11 +39,6 @@ import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
-import com.vmware.photon.controller.nsxclient.NsxClient;
-import com.vmware.photon.controller.nsxclient.NsxClientFactory;
-import com.vmware.photon.controller.nsxclient.apis.FabricApi;
-import com.vmware.photon.controller.nsxclient.datatypes.FabricNodeState;
-import com.vmware.photon.controller.nsxclient.datatypes.TransportNodeState;
 import com.vmware.photon.controller.stats.plugin.gen.StatsPluginConfig;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -63,7 +58,6 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.any;
@@ -74,7 +68,6 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -82,10 +75,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.testng.Assert.assertTrue;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -310,7 +301,7 @@ public class ProvisionHostTaskServiceTest {
       assertThat(op.getStatusCode(), is(200));
 
       ProvisionHostTaskService.State patchState = ProvisionHostTaskService.buildPatch(TaskState.TaskStage.STARTED,
-          ProvisionHostTaskService.TaskState.SubStage.GET_NETWORK_MANAGER_INFO, null);
+          ProvisionHostTaskService.TaskState.SubStage.CONFIGURE_SYSLOG, null);
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);
       declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
 
@@ -343,12 +334,10 @@ public class ProvisionHostTaskServiceTest {
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerContext deployerContext;
     private DeploymentService.State deploymentState;
-    private FabricApi fabricApi;
     private HostClient hostClient;
     private HostClientFactory hostClientFactory;
     private HostService.State hostState;
     private ListeningExecutorService listeningExecutorService;
-    private NsxClientFactory nsxClientFactory;
     private ProvisionHostTaskService.State startState;
     private TestEnvironment testEnvironment;
 
@@ -368,7 +357,6 @@ public class ProvisionHostTaskServiceTest {
           this.getClass().getResource("/config.yml").getPath()).getDeployerContext();
       hostClientFactory = mock(HostClientFactory.class);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-      nsxClientFactory = mock(NsxClientFactory.class);
 
       cloudStoreEnvironment = new com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.Builder()
           .hostClientFactory(hostClientFactory)
@@ -381,7 +369,6 @@ public class ProvisionHostTaskServiceTest {
           .hostClientFactory(hostClientFactory)
           .hostCount(1)
           .listeningExecutorService(listeningExecutorService)
-          .nsxClientFactory(nsxClientFactory)
           .build();
     }
 
@@ -403,35 +390,6 @@ public class ProvisionHostTaskServiceTest {
       usageTags.add(UsageTag.MGMT.name());
       usageTags.add(UsageTag.CLOUD.name());
       hostState = TestHelper.createHostService(cloudStoreEnvironment, usageTags, HostState.NOT_PROVISIONED);
-
-      NsxClient nsxClient = mock(NsxClient.class);
-      doReturn(nsxClient).when(nsxClientFactory).create(anyString(), anyString(), anyString());
-      fabricApi = mock(FabricApi.class);
-      doReturn(fabricApi).when(nsxClient).getFabricApi();
-
-      doAnswer(MockHelper.mockRegisterFabricNode("FABRIC_NODE_ID"))
-          .when(fabricApi)
-          .registerFabricNode(any(), any());
-
-      doAnswer(MockHelper.mockGetFabricNodeState(FabricNodeState.PENDING))
-          .doAnswer(MockHelper.mockGetFabricNodeState(FabricNodeState.IN_PROGRESS))
-          .doAnswer(MockHelper.mockGetFabricNodeState(FabricNodeState.SUCCESS))
-          .when(fabricApi)
-          .getFabricNodeState(eq("FABRIC_NODE_ID"), any());
-
-      doAnswer(MockHelper.mockGetTransportZone("TRANSPORT_ZONE_ID"))
-          .when(fabricApi)
-          .getTransportZone(eq("TRANSPORT_ZONE_ID"), any());
-
-      doAnswer(MockHelper.mockCreateTransportNode("TRANSPORT_NODE_ID"))
-          .when(fabricApi)
-          .createTransportNode(any(), any());
-
-      doAnswer(MockHelper.mockGetTransportNodeState(TransportNodeState.PENDING))
-          .doAnswer(MockHelper.mockGetTransportNodeState(TransportNodeState.IN_PROGRESS))
-          .doAnswer(MockHelper.mockGetTransportNodeState(TransportNodeState.SUCCESS))
-          .when(fabricApi)
-          .getTransportNodeState(eq("TRANSPORT_NODE_ID"), any());
 
       agentControlClient = mock(AgentControlClient.class);
 
@@ -506,7 +464,7 @@ public class ProvisionHostTaskServiceTest {
     }
 
     @Test
-    public void testSuccessWithNsx() throws Throwable {
+    public void testSuccess() throws Throwable {
 
       ProvisionHostTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -516,13 +474,6 @@ public class ProvisionHostTaskServiceTest {
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
-
-      verify(fabricApi).registerFabricNode(any(), any());
-      verify(fabricApi, times(3)).getFabricNodeState(eq("FABRIC_NODE_ID"), any());
-      verify(fabricApi, times(1)).getTransportZone(eq("TRANSPORT_ZONE_ID"), any());
-      verify(fabricApi).createTransportNode(any(), any());
-      verify(fabricApi, times(3)).getTransportNodeState(eq("TRANSPORT_NODE_ID"), any());
-      verifyNoMoreInteractions(fabricApi);
 
       verify(agentControlClient, times(7))
           .setIpAndPort(eq(hostState.hostAddress), eq(hostState.agentPort));
@@ -557,157 +508,7 @@ public class ProvisionHostTaskServiceTest {
     }
 
     @Test
-    public void testSuccessWithNsxSkipsMgmtHost() throws Throwable {
-      hostState = TestHelper.createHostService(cloudStoreEnvironment,
-          Collections.singleton(UsageTag.MGMT.name()),
-          HostState.NOT_PROVISIONED);
-      startState.hostServiceLink = hostState.documentSelfLink;
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      TestHelper.assertTaskStateFinished(finalState.taskState);
-
-      verifyNoMoreInteractions(fabricApi);
-
-      verify(agentControlClient, times(7))
-          .setIpAndPort(eq(hostState.hostAddress), eq(hostState.agentPort));
-
-      ArgumentCaptor<StatsPluginConfig> pluginConfigCaptor = ArgumentCaptor.forClass(StatsPluginConfig.class);
-
-      verify(agentControlClient)
-          .provision(
-              eq((List<String>) null),
-              eq(deploymentState.imageDataStoreNames),
-              eq(deploymentState.imageDataStoreUsedForVMs),
-              eq(hostState.hostAddress),
-              eq(hostState.agentPort),
-              eq(0.0),
-              pluginConfigCaptor.capture(),
-              eq(true),
-              eq(ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink)),
-              eq(ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink)),
-              eq(deploymentState.ntpEndpoint),
-              eq(true),
-              any());
-
-      assertThat(pluginConfigCaptor.getValue().isStats_enabled(), is(deploymentState.statsEnabled));
-
-      verify(agentControlClient, times(6)).getAgentStatus(any());
-
-      verifyNoMoreInteractions(agentControlClient);
-
-      HostService.State finalHostState = cloudStoreEnvironment.getServiceState(hostState.documentSelfLink,
-          HostService.State.class);
-      assertThat(finalHostState.reportedDatastores, containsInAnyOrder("datastore1", "datastore2"));
-    }
-
-    @Test
-    public void testSuccessWithNsxAlreadyProvisioned() throws Throwable {
-      hostState = TestHelper.getHostServiceStartState(Collections.singleton(UsageTag.MGMT.name()),
-          HostState.NOT_PROVISIONED);
-      hostState.nsxFabricNodeId = "FABRIC_NODE_ID";
-      hostState = TestHelper.createHostService(cloudStoreEnvironment, hostState);
-
-      startState.hostServiceLink = hostState.documentSelfLink;
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      TestHelper.assertTaskStateFinished(finalState.taskState);
-
-      verifyNoMoreInteractions(fabricApi);
-
-      verify(agentControlClient, times(7))
-          .setIpAndPort(eq(hostState.hostAddress), eq(hostState.agentPort));
-
-      ArgumentCaptor<StatsPluginConfig> pluginConfigCaptor = ArgumentCaptor.forClass(StatsPluginConfig.class);
-
-      verify(agentControlClient)
-          .provision(
-              eq((List<String>) null),
-              eq(deploymentState.imageDataStoreNames),
-              eq(deploymentState.imageDataStoreUsedForVMs),
-              eq(hostState.hostAddress),
-              eq(hostState.agentPort),
-              eq(0.0),
-              pluginConfigCaptor.capture(),
-              eq(true),
-              eq(ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink)),
-              eq(ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink)),
-              eq(deploymentState.ntpEndpoint),
-              eq(true),
-              any());
-
-      assertThat(pluginConfigCaptor.getValue().isStats_enabled(), is(deploymentState.statsEnabled));
-
-      verify(agentControlClient, times(6)).getAgentStatus(any());
-
-      verifyNoMoreInteractions(agentControlClient);
-
-      HostService.State finalHostState = cloudStoreEnvironment.getServiceState(hostState.documentSelfLink,
-          HostService.State.class);
-      assertThat(finalHostState.reportedDatastores, containsInAnyOrder("datastore1", "datastore2"));
-    }
-
-    @Test
-    public void testSuccessWithoutNsx() throws Throwable {
-
-      DeploymentService.State deploymentState = TestHelper.createDeploymentService(cloudStoreEnvironment, true, false);
-      startState.deploymentServiceLink = deploymentState.documentSelfLink;
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      TestHelper.assertTaskStateFinished(finalState.taskState);
-
-      verifyNoMoreInteractions(fabricApi);
-
-      verify(agentControlClient, times(7))
-          .setIpAndPort(eq(hostState.hostAddress), eq(hostState.agentPort));
-
-      ArgumentCaptor<StatsPluginConfig> pluginConfigCaptor = ArgumentCaptor.forClass(StatsPluginConfig.class);
-
-      verify(agentControlClient)
-          .provision(
-              eq((List<String>) null),
-              eq(deploymentState.imageDataStoreNames),
-              eq(deploymentState.imageDataStoreUsedForVMs),
-              eq(hostState.hostAddress),
-              eq(hostState.agentPort),
-              eq(0.0),
-              pluginConfigCaptor.capture(),
-              eq(false),
-              eq(ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink)),
-              eq(ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink)),
-              eq(deploymentState.ntpEndpoint),
-              eq(true),
-              any());
-
-      assertThat(pluginConfigCaptor.getValue().isStats_enabled(), is(deploymentState.statsEnabled));
-
-      verify(agentControlClient, times(6)).getAgentStatus(any());
-
-      verifyNoMoreInteractions(agentControlClient);
-
-      HostService.State finalHostState = cloudStoreEnvironment.getServiceState(hostState.documentSelfLink,
-          HostService.State.class);
-      assertThat(finalHostState.reportedDatastores, containsInAnyOrder("datastore1", "datastore2"));
-    }
-
-    @Test
-    public void testSucessWithAllowedDevices() throws Throwable {
+    public void testSuccessWithAllowedDevices() throws Throwable {
 
       HostService.State hostStartState = TestHelper.getHostServiceStartState(UsageTag.MGMT, HostState.NOT_PROVISIONED);
       hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_ALLOWED_DATASTORES, "datastore1, datastore2");
@@ -740,129 +541,6 @@ public class ProvisionHostTaskServiceTest {
               eq(deploymentState.ntpEndpoint),
               eq(true),
               any());
-    }
-
-    @Test
-    public void testRegisterFabricNodeFailure() throws Throwable {
-
-      doThrow(new IOException("I/O exception during registerFabricNode"))
-          .when(fabricApi)
-          .registerFabricNode(any(), any());
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("I/O exception during registerFabricNode"));
-    }
-
-    @Test(dataProvider = "FailingFabricNodeStates")
-    public void testWaitForFabricNodeFailure(FabricNodeState fabricNodeState) throws Throwable {
-
-      doAnswer(MockHelper.mockGetFabricNodeState(fabricNodeState))
-          .when(fabricApi)
-          .getFabricNodeState(eq("FABRIC_NODE_ID"), any());
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message,
-          containsString("Registering host hostAddress as a fabric node failed with result"));
-      assertThat(finalState.taskState.failure.message, containsString(fabricNodeState.toString()));
-      assertThat(finalState.taskState.failure.message, containsString("fabric node ID FABRIC_NODE_ID"));
-    }
-
-    @DataProvider(name = "FailingFabricNodeStates")
-    public Object[][] getFailingFabricNodeStates() {
-      return new Object[][]{
-          {FabricNodeState.FAILED},
-          {FabricNodeState.PARTIAL_SUCCESS},
-          {FabricNodeState.ORPHANED},
-      };
-    }
-
-    @Test
-    public void testGetTransportZoneFailure() throws Throwable {
-      doThrow(new IOException("I/O exception during getTransportZone"))
-          .when(fabricApi)
-          .getTransportZone(eq("TRANSPORT_ZONE_ID"), any());
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("I/O exception during getTransportZone"));
-    }
-
-    @Test
-    public void testCreateTransportNodeFailure() throws Throwable {
-
-      doThrow(new IOException("I/O exception during createTransportNode"))
-          .when(fabricApi)
-          .createTransportNode(any(), any());
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, is("I/O exception during createTransportNode"));
-    }
-
-    @Test(dataProvider = "FailingTransportNodeStates")
-    public void testWaitForTransportNodeFailure(TransportNodeState transportNodeState) throws Throwable {
-
-      doAnswer(MockHelper.mockGetTransportNodeState(transportNodeState))
-          .when(fabricApi)
-          .getTransportNodeState(eq("TRANSPORT_NODE_ID"), any());
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message,
-          containsString("Registering host hostAddress as a transport node failed with result"));
-      assertThat(finalState.taskState.failure.message, containsString(transportNodeState.toString()));
-      assertThat(finalState.taskState.failure.message, containsString("transport node ID TRANSPORT_NODE_ID"));
-    }
-
-    @DataProvider(name = "FailingTransportNodeStates")
-    public Object[][] getFailingTransportNodeStates() {
-      return new Object[][]{
-          {TransportNodeState.FAILED},
-          {TransportNodeState.PARTIAL_SUCCESS},
-          {TransportNodeState.ORPHANED},
-      };
     }
 
     @Test

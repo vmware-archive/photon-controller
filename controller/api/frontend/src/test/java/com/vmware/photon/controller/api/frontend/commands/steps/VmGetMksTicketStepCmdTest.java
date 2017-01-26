@@ -31,6 +31,7 @@ import com.vmware.photon.controller.common.clients.exceptions.SystemErrorExcepti
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.host.gen.MksTicketResponse;
 import com.vmware.photon.controller.host.gen.MksTicketResultCode;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.MksTicket;
 
@@ -76,6 +77,9 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
   private DeployerClient deployerClient;
 
   @Mock
+  private NsxClientFactory nsxClientFactory;
+
+  @Mock
   private com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient deployerXenonClient;
 
   @Mock
@@ -116,7 +120,7 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
 
     taskCommand = spy(new TaskCommand(xenonClient, photonControllerXenonRestClient, hostClient,
         housekeeperClient, deployerClient, deployerXenonClient, housekeeperXenonClient,
-        entityLockBackend,
+        entityLockBackend, nsxClientFactory,
         task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getPhotonControllerXenonRestClient()).thenReturn(photonControllerXenonRestClient);

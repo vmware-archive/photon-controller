@@ -15,11 +15,13 @@ package com.vmware.photon.controller.api.frontend.backends;
 
 import com.vmware.photon.controller.api.frontend.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient;
+import com.vmware.photon.controller.api.frontend.commands.steps.HostConfigureNsxStepCmd;
 import com.vmware.photon.controller.api.frontend.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.api.frontend.entities.DeploymentEntity;
 import com.vmware.photon.controller.api.frontend.entities.EntityStateValidator;
 import com.vmware.photon.controller.api.frontend.entities.HostDatastoreEntity;
 import com.vmware.photon.controller.api.frontend.entities.HostEntity;
+import com.vmware.photon.controller.api.frontend.entities.StepEntity;
 import com.vmware.photon.controller.api.frontend.entities.TaskEntity;
 import com.vmware.photon.controller.api.frontend.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
@@ -231,6 +233,16 @@ public class HostXenonBackend implements HostBackend {
   }
 
   @Override
+  public void updateNsxConfiguration(HostEntity entity,
+                                     String fabricNodeId,
+                                     String transportNodeId) throws HostNotFoundException {
+    HostService.State patchState = new HostService.State();
+    patchState.nsxFabricNodeId = fabricNodeId;
+    patchState.nsxTransportNodeId = transportNodeId;
+    updateHostDocument(entity.getId(), patchState);
+  }
+
+  @Override
   public void tombstone(HostEntity hostEntity) {
     tombstoneBackend.create(hostEntity.getKind(), hostEntity.getId());
 
@@ -348,8 +360,14 @@ public class HostXenonBackend implements HostBackend {
     TaskEntity task = createQueuedTaskEntity(host, Operation.CREATE_HOST);
     taskBackend.getStepBackend().createQueuedStep(task, Operation.QUERY_HOST_TASK_RESULT);
     if (isDeploymentReady(deploymentId)) {
-      taskBackend.getStepBackend().createQueuedStep(task, host, Operation.PROVISION_HOST);
-      taskBackend.getStepBackend().createQueuedStep(task, host, Operation.QUERY_PROVISION_HOST_TASK_RESULT);
+      StepEntity configureHostWithNsxStep = taskBackend.getStepBackend().createQueuedStep(task, host, Operation
+          .CONFIGURE_HOST_WITH_NSX);
+      configureHostWithNsxStep.createOrUpdateTransientResource(
+          HostConfigureNsxStepCmd.DEPLOYMENT_ID_RESOURCE_KEY,
+          deploymentId);
+      configureHostWithNsxStep.createOrUpdateTransientResource(
+          HostConfigureNsxStepCmd.HOST_PASSWORD_RESOURCE_KEY,
+          host.getPassword());
     }
 
     return task;

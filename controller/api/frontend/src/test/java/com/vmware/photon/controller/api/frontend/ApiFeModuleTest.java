@@ -69,6 +69,7 @@ import com.vmware.photon.controller.api.frontend.utils.PhysicalNetworkHelper;
 import com.vmware.photon.controller.api.frontend.utils.VirtualNetworkHelper;
 import com.vmware.photon.controller.common.ssl.KeyStoreUtils;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -145,6 +146,18 @@ public class ApiFeModuleTest {
     @Inject
     public TestUseVirtualNetworkFlag(@Named("useVirtualNetwork") Boolean useVirtualNetwork) {
       this.useVirtualNetwork = useVirtualNetwork;
+    }
+  }
+
+  /**
+   * Helper class used to test NsxClientFactory injection.
+   */
+  public static class TestNsxClientFactoryInjection {
+    public NsxClientFactory nsxClientFactory;
+
+    @Inject
+    public TestNsxClientFactoryInjection(NsxClientFactory nsxClientFactory) {
+      this.nsxClientFactory = nsxClientFactory;
     }
   }
 
@@ -559,6 +572,33 @@ public class ApiFeModuleTest {
       assertThat(client, notNullValue());
       assertThat(client.networkHelper, notNullValue());
       assertThat(client.networkHelper, instanceOf(VirtualNetworkHelper.class));
+    }
+  }
+
+  /**
+   * Tests NSX client factory injection.
+   */
+  public class TestUseNsxClientFactory {
+    @Test
+    public void testNsxClientFactoryInjection() throws Throwable {
+      ApiFeModule apiFeModule = new ApiFeModule(sslContext);
+      apiFeModule.setConfiguration(
+          ConfigurationUtils.parseConfiguration(ApiFeConfigurationTest.class.getResource("/config.yml").getPath())
+      );
+
+      Injector injector = Guice.createInjector(
+          apiFeModule,
+          new AbstractModule() {
+            @Override
+            protected void configure() {
+              bindScope(RequestScoped.class, Scopes.NO_SCOPE);
+            }
+          }
+      );
+
+      TestNsxClientFactoryInjection configWrapper = injector.getInstance(TestNsxClientFactoryInjection.class);
+      assertThat(configWrapper.nsxClientFactory, notNullValue());
+      assertThat(configWrapper.nsxClientFactory, instanceOf(NsxClientFactory.class));
     }
   }
 }

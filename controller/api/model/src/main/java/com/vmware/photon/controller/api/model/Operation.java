@@ -79,6 +79,7 @@ public enum Operation {
   DELETE_CONFIGURATION("DeleteConfiguration"),
 
   CREATE_HOST("CreateHost"),
+  CONFIGURE_HOST_WITH_NSX("ConfigureHostWithNsx"),
   PROVISION_HOST("ProvisionHost"),
   QUERY_PROVISION_HOST_TASK_RESULT("QueryProvisionHostResult"),
   DELETE_HOST("DeleteHost"),

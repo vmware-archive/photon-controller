@@ -23,6 +23,7 @@ import com.vmware.photon.controller.api.frontend.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.exceptions.external.OutOfThreadPoolWorkerException;
 import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -48,6 +49,7 @@ public class TaskCommandExecutorServiceTest {
   private DeployerClient deployerClient = mock(DeployerClient.class);
   private HostClient hostClient = mock(HostClient.class);
   private EntityLockBackend entityLockBackend = mock(EntityLockBackend.class);
+  private NsxClientFactory nsxClientFactory = mock(NsxClientFactory.class);
   private com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient deployerXenonClient =
       mock(com.vmware.photon.controller.api.frontend.backends.clients.DeployerClient.class);
   private com.vmware.photon.controller.api.frontend.backends.clients.HousekeeperClient housekeeperXenonClient =
@@ -150,7 +152,7 @@ public class TaskCommandExecutorServiceTest {
         TaskEntity task,
         CountDownLatch countDownLatch) {
       super(xenonClient, photonControllerXenonRestClient, hostClient, housekeeperClient,
-          deployerClient, deployerXenonClient, housekeeperXenonClient, entityLockBackend, task);
+          deployerClient, deployerXenonClient, housekeeperXenonClient, entityLockBackend, nsxClientFactory, task);
       this.countDownLatch = countDownLatch;
     }
 
