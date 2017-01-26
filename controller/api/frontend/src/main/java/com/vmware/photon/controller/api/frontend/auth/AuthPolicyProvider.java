@@ -16,11 +16,13 @@ package com.vmware.photon.controller.api.frontend.auth;
 import com.vmware.identity.openidconnect.client.ResourceServerAccessToken;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.Multiplexed;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.SecurityGroupFetcher;
+import com.vmware.photon.controller.api.frontend.clients.DeploymentFeClient;
 import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.resources.routes.AuthRoutes;
 import com.vmware.photon.controller.api.frontend.resources.routes.AvailableRoutes;
+import com.vmware.photon.controller.api.model.Deployment;
 
 import com.google.inject.Inject;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -63,12 +65,16 @@ public class AuthPolicyProvider implements PolicyProvider {
 
   private final String defaultAdminGroup;
 
+  private final DeploymentFeClient deployerClient;
+
   @Inject
   public AuthPolicyProvider(TransactionAuthorizationObjectResolver resolver,
                             @Multiplexed SecurityGroupFetcher fetcher,
-                            AuthConfig config) {
+                            AuthConfig config,
+                            DeploymentFeClient deploymentClient) {
     this.resolver = resolver;
     this.fetcher = fetcher;
+    this.deployerClient = deploymentClient;
     this.defaultAdminGroup = config.getAuthDomain() + DEFAULT_ADMIN_GROUP_NAME;
   }
 
@@ -129,6 +135,15 @@ public class AuthPolicyProvider implements PolicyProvider {
     // Make a group copy, the collection is going to be changed.
     Set<String> intersectionGroup = new HashSet<>(groups);
     intersectionGroup.add(this.defaultAdminGroup);
+
+    // This will give the system admin the same privileges as the default
+    // admin group, otherwise the system admin will get ACCESS_FORBIDDEN
+    // if a resource does not exist.
+    for (Deployment deployment : deployerClient.getAll()) {
+      if (deployment.getAuth() != null && deployment.getAuth().getSecurityGroups() != null) {
+        intersectionGroup.addAll(deployment.getAuth().getSecurityGroups());
+      }
+    }
 
     // Perform request and token group intersection, deny if empty.
     intersectionGroup.retainAll(tokenGroups);

@@ -79,10 +79,10 @@ module EsxCloud
 
     def self.clusters_routes(id = SecureRandom.uuid)
       [
-        EsxCloud::ApiRoute.new(:get, "/clusters/#{id}", 404, 403, 403, 403, 403),
-        EsxCloud::ApiRoute.new(:post, "/clusters/#{id}/resize", 400, 403, 403, 403, 403),
-        EsxCloud::ApiRoute.new(:get, "/clusters/#{id}/vms", 404, 403, 403, 403, 403),
-        EsxCloud::ApiRoute.new(:delete, "/clusters/#{id}", 404, 403, 403, 403, 403)
+        EsxCloud::ApiRoute.new(:get, "/clusters/#{id}", 404, 404, 403, 403, 403),
+        EsxCloud::ApiRoute.new(:post, "/clusters/#{id}/resize", 400, 400, 403, 403, 403),
+        EsxCloud::ApiRoute.new(:get, "/clusters/#{id}/vms", 404, 404, 403, 403, 403),
+        EsxCloud::ApiRoute.new(:delete, "/clusters/#{id}", 404, 404, 403, 403, 403)
       ]
     end
 
@@ -193,8 +193,8 @@ module EsxCloud
 
     def self.resource_tickets_routes(id = SecureRandom.uuid)
       [
-        EsxCloud::ApiRoute.new(:get, "/resource-tickets/#{id}", 404, 403, 403, 403, 403),
-        EsxCloud::ApiRoute.new(:get, "/resource-tickets/#{id}/tasks", 404, 403, 403, 403, 403)
+        EsxCloud::ApiRoute.new(:get, "/resource-tickets/#{id}", 404, 404, 403, 403, 403),
+        EsxCloud::ApiRoute.new(:get, "/resource-tickets/#{id}/tasks", 404, 404, 403, 403, 403)
       ]
     end
 
