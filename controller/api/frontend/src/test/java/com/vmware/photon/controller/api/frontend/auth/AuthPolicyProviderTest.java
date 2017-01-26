@@ -16,6 +16,7 @@ package com.vmware.photon.controller.api.frontend.auth;
 import com.vmware.identity.openidconnect.client.ResourceServerAccessToken;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.MultiplexedSecurityGroupFetcher;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.SecurityGroupFetcher;
+import com.vmware.photon.controller.api.frontend.clients.DeploymentFeClient;
 import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.frontend.helpers.JerseyPropertiesDelegate;
@@ -69,7 +70,8 @@ public class AuthPolicyProviderTest {
 
     config = new AuthConfig();
     config.setAuthDomain("esxcloud");
-    policyProvider = new AuthPolicyProvider(resolver, fetcher, config);
+    policyProvider = new AuthPolicyProvider(resolver, fetcher, config,
+        mock(DeploymentFeClient.class));
   }
 
   /**

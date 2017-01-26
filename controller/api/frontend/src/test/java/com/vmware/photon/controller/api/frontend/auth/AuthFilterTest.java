@@ -15,6 +15,7 @@ package com.vmware.photon.controller.api.frontend.auth;
 
 import com.vmware.identity.openidconnect.client.ResourceServerAccessToken;
 import com.vmware.photon.controller.api.frontend.auth.fetcher.MultiplexedSecurityGroupFetcher;
+import com.vmware.photon.controller.api.frontend.clients.DeploymentFeClient;
 import com.vmware.photon.controller.api.frontend.config.AuthConfig;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.frontend.exceptions.external.ExternalException;
@@ -71,7 +72,8 @@ public class AuthFilterTest {
     AuthPolicyProvider provider = new AuthPolicyProvider(
         mock(TransactionAuthorizationObjectResolver.class),
         mock(MultiplexedSecurityGroupFetcher.class),
-        new AuthConfig());
+        new AuthConfig(),
+        mock(DeploymentFeClient.class));
     subject = new AuthFilter(config, provider);
   }
 
