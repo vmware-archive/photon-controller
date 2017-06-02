@@ -1,0 +1,10 @@
+LICENSE
+
+Photon Controller v1.2
+
+Copyright © 2015-2017 VMware, Inc.  All rights reserved.
+
+This product is licensed to you under the Apache License, Version 2.0 (the “License”).  You may not use this product except in compliance with the License.
+
+This product may include a number of components with separate copyright notices and license terms
+You use of the source code for these components is subject to the terms and conditions of the respective component license as noted in the LICENSE file.
