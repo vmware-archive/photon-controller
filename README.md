@@ -1,3 +1,17 @@
+
+# WARNING: Photon Controller is no longer actively maintained by VMware.
+
+VMware has made the difficult decision to stop driving this project and therefore we will no longer actively respond
+to issues or pull requests. If you would like to take over maintaining this project independently from VMware, please
+let us know so we can add a link to your forked project here.
+
+The Photon OS project will proceed in fully supported and maintained form.
+
+Thank You.
+
+#
+#
+
 # Photon Controller
 
 Photon Controller is an open-source system for managing hardware, containers, and clusters at scale.
